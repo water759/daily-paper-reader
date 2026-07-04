@@ -1,0 +1,752 @@
+Title: Exploring the Cryptographic Limits of Transformer Networks
+
+URL Source: https://arxiv.org/pdf/2606.29389v1
+
+Published Time: Tue, 30 Jun 2026 01:12:32 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+# Exploring the Cryptographic Limits of Transformer Networks 
+
+Stefan Domunco 1 Andis Draguns 2 Philip Torr 1
+
+Isaac Robinson 1 Christian Schroeder de Witt 1
+
+> 1
+
+University of Oxford 2Contramont Research 
+
+stefan.domunco@cs.ox.ac.uk 
+
+Abstract 
+
+In recent work it has been shown that colluding AI agents can use steganographic methods to exchange malicious information [ 1]. Whether a transformer can implement steganographic methods depends on what cryptographic functions it can implement, since a transformer that can implement a cryptographic function within its layers has source-free randomness access (Theorem 3, [ 1]). Despite existing circuit-complexity results, no prior work maps specific cryptographic constructions to transformer architectures. As Merrill et al. [ 2] have shown that saturated transformers can be seen as threshold circuits, we first generate threshold circuits for three different cryptographic constructions (Keccak functions, Merkle–Damgård constructions and Merkle Trees) and then map these circuits to different transformer architectures. We derive verified scaling laws for the width and depth of the circuits which implement each cryptographic construction and propose two different mappings: no-attention mapping, tokens-as-gates mapping. Beyond its security implications, this work contributes to eval science by establishing a methodology for deriving structural guarantees on transformer computational capacity. Specifically, we derive constructive upper bounds on what a transformer of a given depth and width could plausibly compute, providing a principled foundation for capability evaluations of transformer-based AI systems. 
+
+1 Introduction 
+
+Autonomous systems such as LLMs have become widely deployed across applications in which AI agents interact directly, including multi-agent robotics [ 3] and trading strategies [ 4]. Previous work [ 1 ] shows that interacting AI agents can send each other sensitive information in plain sight, using messages that look harmless to an observer via steganography [ 5 ]. Moreover, it has been shown that backdoors can be compiled into transformers [ 6 ] such that they cannot be detected by polynomial-time algorithms using activation-based interpretability methods. Such backdoors could be triggered by steganographic inputs from a colluding agent, or an external adversary. This raises the concern that AI agents could covertly exchange sensitive information with one another, posing an unmonitorable security risk. Crucially, in Theorem 3 of [ 1] this is shown to require only that the model can compute a cryptographic hash function, making transformer cryptographic expressivity a direct security question. Merrill et al. [ 2] show that saturated transformers can be represented as circuits of class TC 0, establish-ing circuit complexity as a natural framework for reasoning about the computational limits of transformer architectures (see Section 2.7). While prior work establishes both the circuit-theoretic limits of saturated transformers and the security concerns that interacting AI agents pose, no concrete work maps cryptographic constructions such as Keccak functions, MDCs and MTs (see Sections 2.6, 2.4, 2.5) to transformer architectures using their circuit representations. This paper provides the first systematic circuit-level analysis of these constructions in the context of transformer expressivity and proposes concrete mappings from these circuits to transformers. Concretely, the contributions of this work are: • We derive and verify scaling laws for the depth and width of threshold circuits implementing Keccak functions, Merkle–Damgård constructions, and Merkle Trees. 
+
+> Preprint. Under review.
+
+1
+
+> arXiv:2606.29389v1 [cs.CR] 28 Jun 2026
+
+• We propose two concrete mappings from these circuits to transformer architectures, establishing constructive upper bounds on the required depth and FFN width. • This work lays the foundations for a novel class of AI safety evaluations [ 7] driven by the compu-tational capacity of the agent, offering structural guarantees on what a transformer-based system could plausibly compute. 
+
+2 Preliminaries 
+
+2.1 Transformers 
+
+Vaswani et al. [ 8] define a transformer as a stack of N identical layers, each pairing a self-attention sublayer with a position-wise feed-forward network (FFN). We use only the encoder stack. With queries, keys, and values packed into Q, K, V (queries and keys of dimension dk), attention is Attention (Q, K,V ) = Softmax row 
+
+ QK ⊤
+
+√dk
+
+
+
+V, (1) where Softmax row normalises each row into a probability distribution. We instantiate each FFN with the SwiGLU gating of Shazeer [9], matching the MLPs compiled by the Reifier compiler (Section 3). 
+
+2.2 Circuits 
+
+A boolean circuit is a directed acyclic graph of n ∈ N boolean inputs (sources) and m ∈ N boolean outputs (sinks). Each input is represented by a vertex with no incoming edges and each intermediate node is called a gate. Vertices with no incoming edges that are not sources are constants with a fixed value 0 or 1. Thus we can see a circuit as a function of boolean inputs and boolean outputs f : {0, 1}n → { 0, 1}m.In 1993 Hajnal et al. [ 10 ] defined the threshold gate for threshold θ ∈ Z and integer weights α ∈ Zm
+
+for input x ∈ { 0, 1}m as follows: 
+
+T (x) = 
+
+(1 for ∑mi=1 αi · xi ≥ θ
+
+0 otherwise (2) The depth of a circuit is defined as the longest path from an input to an output and the width of a circuit is equal to the maximum number of gates in a circuit layer. Hajnal et al. (1993) [ 10 ] define the TC i class as the class of decision problems decidable by uniform Boolean circuits with depth O(( log n)i) and polynomial size in the input using only threshold gates with unbounded fan-in. This generalizes to TC = S 
+
+> i
+
+TC i.
+
+2.3 Cryptographic Primitives 2.3.1 Collision Resistant Hash Function (CRHF) 
+
+A collision-resistant hash function (CRHF) is pre-image, second-pre-image, and collision resistant: its outputs cannot be inverted, no second input matching a given output can be found, and no two distinct inputs produce the same output. A hash function h is a compression function if it maps a fixed-size input to a smaller fixed-size output. 
+
+2.4 Merkle–Damgård Construction (MDC) 
+
+Independently in 1989, Merkle [ 11 ] and Damgård [ 12 ] presented the same construction. Both construc-tions build a CRHF using a smaller CRHF compression function. Merkle proposed a method to build a CRHF F : {0, 1}∗ → { 0, 1}o from a CRHF compression function F0 : {0, 1}m → { 0, 1}o. F can be computed from F0 as follows: 2Algorithm 1 Merkle–Damgård construction  
+
+> 1:
+
+function F( x – arbitrary sized input split into n same sized chunks)  
+
+> 2:
+
+result ← 0 
+
+> 3:
+
+for i = 1 to n do  
+
+> 4:
+
+result ← F0(result , x[i])  
+
+> 5:
+
+end for  
+
+> 6:
+
+return result  
+
+> 7:
+
+end function 
+
+Before this construction, Merkle pads the input to a multiple of bsize which is the block size used by 
+
+F0. Define csize as the size of the intermediate result and call it chain size and then we have the equation 
+
+bsize + csize = m. Since different inputs can pad to the same x, a second padding block is appended, encoding the length of the original message in binary. For x0 the original input, pad 0 the padded 0s and pad len the additional padding for the length we get that x = x0∥pad 0∥pad len where ∥ represents concatenation. 
+
+2.5 Merkle Trees 
+
+The Merkle Tree (MT) construction [ 13 ] follows a Divide and Conquer strategy that hashes n documents together in a tree structure. We can assume that each document is a block of text from the message that we want to hash. First, ordering the message blocks, define H(i, j) to be the hash of the blocks in the interval [i, j] using the recurrence: 
+
+H(i, i) = F(block i) (3) 
+
+H(i, j) = F
+
+
+
+H
+
+
+
+i,
+
+j i+ j
+
+> 2
+
+k 
+
+∥ H
+
+j i+ j
+
+> 2
+
+k
+
++ 1, j
+
+ 
+
+(4) Here F is a compression CRHF. 
+
+2.6 Keccak Functions 
+
+The sponge construction [ 14 ] is an iterative approach which works in 2 similar phases: absorb and squeeze. The absorb phase combines the information from the whole input sequentially, keeping a current state a at all times which represents the combined data. The state has 2 parts: the capacity c and the rate r.The rate represents the bits that we can read and write from the state and the capacity represents the part of the state that we cannot access. Before the absorb phase, we pad the input such that it has length a multiple of r and then split it into equally sized blocks. Moreover, we define f to be the block function which combines the information of the current block with the information of the state at each step of the absorb and squeeze phases. We define the absorb phase in Algorithm 2. The squeeze phase generates the output and we describe it in Algorithm 3. Both algorithms are presented in Appendix A. The Keccak function is a family of sponge functions in which f is performed by 5 different operations: 
+
+θ , ρ, π, χ, ι and a specific padding function pad is used. These functions and other Keccak definitions are presented in Appendix A. 
+
+2.7 Saturated Transformers 
+
+A saturated transformer [ 2 ] distributes attention uniformly across the elements with maximum pre-softmax attention score: 3M (a) = {i | ai = max  
+
+> j
+
+a j} (5) saturated_attention (a) j =
+
+
+
+1
+
+|M (a)| j ∈ M (a)
+
+0 otherwise (6) 
+
+3 Methodology 
+
+Following Merrill et al. [ 2 ], whose result is summarised in Section 2, we first map our cryptographic constructions to threshold circuits and then to saturated transformers. The Reifier library [ 15 ] has been used to compile given boolean functions into layered threshold circuits, implemented as MLPs with SwiGLU-gated layers. For a function f : {0, 1}n → { 0, 1}m, instead of computing f , it traces each bit operation ( AND , OR , NOT ) into threshold gates, producing a DAG with n input nodes and m sink nodes that follows the computational flow. To satisfy the layered MLP structure, in which each node depends only on the immediately preceding layer, Reifier inserts identity nodes. The main limitation is that this produces wide MLPs when values must be carried across many non-consecutive layers. The experiments have been run on Keccak functions, MDCs and MTs. These were chosen because they represent three different classes of hashing methods and are widely deployed, making their analysis practically relevant. 
+
+4 Scaling Laws 
+
+4.1 Keccak Experiments and Observations 
+
+The experiments were run on toy versions of Keccak with small w and nrounds values in order to understand the overall topology of the circuit. 
+
+4.1.1 Layered Circuit Interpretation 
+
+The first experiment was conducted on an input of 17 bits, w = 1 and nrounds = 1 . The detailed compiled circuit can be found in keccak_logw1_round1.txt in the accompanying GitHub repository [ 16 ]. Figure 1 in Appendix B presents a simplified diagram of the circuit. This experiment established how Keccak rounds map to circuit layers. Padding was not necessary for this experiment. 
+
+4.1.2 Depth Scaling 
+
+From the compiled circuit we can establish the depth and width scaling laws for a single-block Keccak circuit. One complete round consists of six layers ( θ : 2, χ: 3, ι: 1; ρ and π are free), plus one input layer and one output layer, giving depth circuit = 6nrounds + 2, (7) where the additive constant 2 accounts for the input and output layers. The widest layer is the first θ
+
+threshold layer, giving width circuit = 11 · 25 w. (8) The linear prediction depth pred (nrounds ) = 6nrounds + 2 holds for most entries. Occasional deviations, shown in Table 1, arise because the ι layer is omitted when the corresponding round constant is zero; this is an artefact of the compiler rather than a property of the construction itself. 44.1.3 Extension to Arbitrary-Length Inputs 
+
+The results above generalise to arbitrary-length inputs. The only difference is that the unused block bits must be carried through the circuit. Let p denote the size of the padded input message and nb the number of blocks it is split into. The maximum width is reached in the first θ threshold layer of the first round, where all unabsorbed message bits must be stored alongside the full Keccak state: width circuit = 11 · 25 w + p − r. (9) For depth, XOR-ing the current block into the r-bit rate portion of the state requires two additional layers per block, giving depth circuit = 2 + nb(2 + 6nrounds ). (10) 
+
+4.1.4 Arbitrary Output Length 
+
+To capture the full sponge behaviour, in which Keccak maps an arbitrary-length input to an arbitrary-length output, a further experiment was conducted with log w = 2, nrounds = 1, one input block, an output of 64 bits, and r = 25 . During the squeeze phase the current output bits must also be carried until the computation completes, introducing a second bottleneck for the width. The width formula becomes width circuit = max 
+
+
+
+11 · 25 w + p − r, 25 w + r
+
+ o − rr
+
+ 
+
+, (11) where o is the desired output size. Similarly, the depth increases with the number of additional applications of f required: depth circuit = 2 + nb(2 + 6nrounds ) + 6
+
+ o − rr
+
+
+
+nrounds . (12) Since the multiplicative constants in these formulas are artefacts of the Reifier compiler, the asymptotic scaling laws for the standard Keccak construction are width circuit = O max  11 · 25 w + p − r, 25 w + r  o−rr
+
+ , (13) depth circuit = O nb · nrounds +  o−rr
+
+ . (14) These formulas were verified against the compiled circuits; Table 2 and Figures 2, 3 confirm that the predicted and actual depth and width values agree exactly across all tested configurations. 
+
+4.2 Merkle–Damgård Construction Experiments 
+
+In these experiments we use 0∗ padding to fill in the last block to have the same size as the previous blocks. Moreover, we used a toy Keccak function f with w = 1 , nrounds = 1, r = 12 as the compression function. The choice of these functions also sets the chain length and the block size in these constructions to be the same: bsize = csize .
+
+4.2.1 Layer-Level Inspection 
+
+The first experiment was conducted on an input of in = 8 bits which was split into Nb = 2 blocks of 
+
+Nsize = 4 bits. The compiled circuit can be found in md_seq_keccak_N8_M2_logw1_round1.txt [ 16 ]. Figure 4 in Appendix C presents a simplified version of the circuit. We see that per block we get depth 2 + 1 + 6nrounds : 2 from XOR-ing into the chain bits, one from creating the Keccak state and 6 for the Keccak itself. This total represents the depth of the compression function. Let depth c denote the depth of compression function c and in our case c = f so depth c = 2 + 1 + 6 · 1 = 9. We can further generalise this to the depth of the whole construction depth MD c = 1 + depth c · Nb + 1, (15) 5where 1 comes from the initialisation of the chain value and the last 1 comes from the output layer, where the input layer is excluded from the count. Let width c denote the width of a compression function c, so in our case ( c = f ) we have width c =
+
+11 · 25 w. As noted above, all unabsorbed bits must be carried through the circuit at all times, which increases the width of the construction. We get the highest width at the first pass of the compression function, when we only absorb one block and may have multiple blocks to be absorbed, giving us width MD c = width c + ( Nb − 1) · Nsize . (16) Since the constants represent artefacts of the Reifier compiler we get the final scaling laws for the MD construction to be width MD c = O(width c + ( Nb − 1) · Nsize ) , (17) depth MD c = O(depth c · Nb) . (18) These formulas were verified against the compiled circuits; Table 3 and Figures 5, 6 confirm that predicted and actual depth and width values agree exactly across all tested configurations. 
+
+4.3 Merkle Tree Experiment 
+
+Due to inconsistent generation of the circuits when padding was needed, experiments were restricted to inputs requiring no padding. Generalisation to padded inputs is left for further work. We used a toy Keccak function fleaves with w = 1 , nrounds = 1, r = 12 as a compression function for the leaves. Similarly, we define fnodes = fleaves (child left ⊕ child right ) to be the compression function for the nodes. We used binary trees in our experiments. 
+
+4.3.1 Layer-Level Inspection 
+
+The first experiment was performed on an input of in = 8 bits which was split into Nin = 2 blocks of 
+
+bsize = 4 bits. They were later hashed using fleaves and the resulting hashes were stored as the leaf values. These leaf values were used by their parent to compute fnodes ( fleaves (block 1) ⊕ fleaves (block 2)) . The compiled circuit can be found in merkle_tree_keccak_N8_L2_P2_logw1_round1.txt [16 ]. Figure 7 in Appendix D presents a simplified version of the circuit. In total we have 17 layers, if we ignore the input layer: seven for fleaves , nine for fnodes , and one for output. Generalising, for a toy Keccak function g
+
+with parameters w and nrounds , the depth formula is depth circuit = log 2(nleaves ) · (3 + 6nrounds ) + 2 + 6nrounds . (19) On the width of the circuit, we see that we perform the same operation in parallel for multiple nodes. The widest layer is the first layer which computes the XOR of the θ function inside f . We perform the most operations in parallel on the leaves. Hence we get width circuit = nleaves · 11 · 25 w. (20) In general, for some compression function c with depth depth c and width width c we have width circuit = O(nleaves · width c), (21) depth circuit = O(depth c · (1 + log 2 nleaves )) , (22) as we perform the same function for each level in the tree. These formulas were verified against the compiled circuits; Table 4 and Figures 8, 9 confirm that predicted and actual depth and width values agree exactly across all tested configurations. 65 Mapping Circuits to Transformers 
+
+Throughout this section, we restrict our attention to the encoder stack of the transformer, consisting of alternating attention and FFN sublayers acting on a fixed-length token sequence. 
+
+5.1 No attention mapping 
+
+The simplest mapping ignores the attention mechanism entirely, reducing the transformer to its FFN sublayers. Since each FFN layer only mixes information within a single token, we store the entire input in a single token provided as input, where each token entry represents one wire value at a given circuit layer. Let d be the dimension of the token. The most information needed at any time is the width of the circuit, so to store all the values we impose 
+
+d ≥ width circuit , (23) which also subsumes the condition d ≥ input size since the input layer is itself a circuit layer. Regarding token count, one token is enough to encode the input and we use the same token to store any intermediate result, giving T = 1 . Furthermore, each FFN simulates the gate computations at one circuit layer, requiring depth circuit FFN sublayers, hence the transformer has depth O(depth circuit ).Each FFN layer directly corresponds to a SwiGLU layer in the MLP generated by the Reifier compiler. Hence, the maximum FFN width equals the maximum width of the generated MLP. We therefore reduce the transformer to the MLP generated by the Reifier library, adding no additional structure or expressiveness. This mapping establishes a lower bound for the depth of any transformer mapping depth T ≥ depth circuit (24) regardless of how attention and tokens are arranged, since no single sublayer, attention or FFN, can evaluate more than one circuit layer simultaneously. 
+
+5.2 Tokens-as-gates 
+
+The mappings in this section follow Merrill et al.’s [ 2 ] count-based threshold gate definition θ ≥k, which is equivalent in expressivity to the signed-weight formulation of Hajnal et al. [ 10 ] used in Section 2. We define Tgate as the transformer in which each token represents a single gate in the given circuit. The number of input bits is far smaller than the number of total gates in a circuit, so we define scratch tokens to be additional tokens initialised to store the values of intermediate and output gates. Hence we have 
+
+T = Tin + Tscratch = G, where G is the total number of gates within the circuit. We then propose a mapping to a single-head attention transformer. Attention simulates the circuit wiring, while the FFN simulates the gate computation. Without loss of generality, let token ti represent gate gi and xi ∈ RT +2 be the embedded vector of ti. We use the first T entries of xi as a one-hot encoding of gi. Entry xT +1 represents the current value of the gate, which is the value of the input bit for input gates and 0 at initialisation for all other gates. Constant gates, which Reifier spawns as nodes with no predecessors and a fixed value, require no special treatment. Their value is hardcoded in the token embedding from the start. Entry xT +2 represents the threshold of the gate. We depart from Merrill et al.’s [ 2 ] saturated attention by assuming unnormalised hard attention: we set ai, j = 1 for each predecessor. This is an idealising assumption, since a standard softmax sublayer cannot produce these exact {0, 1}
+
+weights. We choose the attention matrices such that all predecessor dot products score exactly 1 and all non-predecessors score exactly 0, so the attention output is the sum of predecessor values. The FFN then compares this sum directly against the integer threshold θ stored in xi[T + 2], avoiding the need for a normalised threshold. The attention output is zero in all entries except the (T + 1)th, which holds the sum of predecessor gate values. We retrieve the one-hot encoding and the threshold using the skip connection before the 7attention layer. This gives a vector with the same entries as the input to the layer, but with the sum of predecessor values in the (T + 1)-th entry. Only the gates at the current circuit layer are relevant. We use the same attention matrices for all attention sublayers. These overwrite previously computed gate values, but this does not affect correctness because Reifier produces a strictly layered circuit in which each gate’s predecessors lie in the immediately preceding layer, hence the t-th block computes the correct value of every gate at circuit layer t, regardless of the possibly stale values held by gates at other layers. The output is then read from the tokens corresponding to output gates. To ensure the attention output equals the sum of predecessor values, we require ai, j ≤ 1 , which is guaranteed by the following matrix definitions. Let Q ∈ RT ×(T +2), K ∈ RT ×(T +2), V ∈ R(T +2)×(T +2) and define them as follows: 
+
+Qi, j =
+
+(1 if i = j, i ≤ T
+
+0 otherwise (25) 
+
+Ki, j =
+
+(1 j ∈ pred (i), j ≤ T
+
+0 otherwise (26) 
+
+Vi, j =
+
+(1 i = j = T + 10 otherwise (27) We present the analysis of this construction in Appendix E. Each encoder sublayer simulates one layer of the circuit, giving depth encoder = O(depth circuit ) (28) consistent with the lower bound established in the previous mapping. 
+
+6 Discussion 
+
+The experiments confirm that all three constructions admit threshold-circuit representations, whose scaling laws directly constrain the transformer architectures required to implement them. The corresponding transformers have encoder stacks whose depth is proportional to the depth of the circuit, while the FFN width does not depend on the parameters of the cryptographic constructions or number of input blocks for the tokens-as-gates mapping. In the no-attention case the FFN width does depend on the cryptographic construction and the input size, since each FFN corresponds to one SwiGLU layer in the compiled MLP. The clearest comparison can be made between the MDC and MT, since they rely on similar compression functions and mechanisms. MD produces deeper but narrower circuits, while MT produces shallower but wider ones. A depth–width trade-off is visible across these two constructions, while the overall computational work remains of similar order, both requiring O(Nb · nc) gates, where nc denotes the number of gates required to compute the compression functions and Nb the number of input blocks. We also observe a trade-off between the two proposed transformer mappings. The no-attention mapping does not exploit the expressive power of the attention mechanism, resulting in disproportionately wide FFN layers whose width grows linearly with the circuit width. By contrast, the tokens-as-gates mapping has constant width FFNs, but requires more tokens and introduces attention routing absent from the no-attention mapping. 
+
+7 Conclusion and Further Work 
+
+Building on the TC 0 characterisation of saturated transformers [ 2] and the cryptographic randomness result of [ 1], we mapped three families of hash functions to threshold circuits and proposed concrete transformer implementations, deriving depth and FFN width bounds for each. All three constructions obey verified scaling laws, confirmed against compiled circuits across all tested configurations. Two transformer mappings were proposed: no-attention baseline and tokens-as-gates mapping. Both satisfy the depth lower bound O(depth circuit ), while differing in their token and embedding-dimension requirements. 8Several important caveats apply. The mappings are constructive and have not been verified empirically by training, whether gradient descent can learn to implement these constructions is an open question. The tokens-as-gates mapping assumes unnormalised hard attention, introducing a gap between the theoretical model and transformers used in practice. Furthermore, the experiments were conducted on toy instances of the constructions, and the depth and width formulas contain constants that are artefacts of the Reifier compiler [ 15 ]; a different compiler could produce tighter bounds. Whether the scaling laws hold without qualification for the full Keccak permutation as used in SHA-3, or for MD constructions at production scale, remains to be confirmed. Notwithstanding these limitations, this work provides the first systematic circuit-level analysis of Keccak functions, MD constructions, and MT in the context of transformer expressivity, and proposes concrete mappings that serve as a firm basis for further mathematical and empirical investigation. Several directions merit further investigation: constructing explicit transformers with specified attention heads and embedding dimensions, testing whether gradient descent can learn these functions, and developing alternative mappings such as tokens-as-states or tokens-as-values. We hope to develop future frontier model benchmark evaluations grounded in circuit-theoretic insights into transformer computational capacity. 
+
+References 
+
+[1] Sumeet Ramesh Motwani, Mikhail Baranchuk, Martin Strohmeier, Vijay Bolina, Philip H. S. Torr, Lewis Hammond, and Christian Schroeder de Witt. Secret collusion among ai agents: Multi-agent deception via steganography. In Advances in Neural Information Processing Systems , 2024. [2] William Merrill, Ashish Sabharwal, and Noah A. Smith. Saturated transformers are constant-depth threshold circuits. In Transactions of the Association for Computational Linguistics , 2022. [3] Open X-Embodiment Collaboration. Open X-embodiment: Robotic learning datasets and RT-X models. arXiv preprint arXiv:2310.08864 , 2023. [4] Dylan Radovic, Lucas Kruitwagen, Christian Schroeder de Witt, Ben Caldecott, Shane Tomlinson, and Mark Workman. Revealing robust oil and gas company macro-strategies using deep multi-agent reinforcement learning. arXiv preprint arXiv:2211.11043 , 2022. [5] Christian Cachin. An information-theoretic model for steganography. Information and Computation ,192(1):41–56, July 2004. doi: 10.1016/j.ic.2004.02.003. [6] Andis Draguns, Andrew Gritsevskiy, Sumeet Ramesh Motwani, and Christian Schroeder de Witt. Unelicitable backdoors in language models via cryptographic transformer circuits. In Advances in Neural Information Processing Systems , 2024. [7] Percy Liang, Rishi Bommasani, Tony Lee, Dimitris Tsipras, Dilara Soylu, Michihiro Yasunaga, Yian Zhang, Deepak Narayanan, Yuhuai Wu, Ananya Kumar, Benjamin Newman, Binhang Yuan, Bobby Yan, Ce Zhang, Christian Cosgrove, Christopher D. Manning, Christopher Ré, Diana Acosta-Navas, Drew A. Hudson, Eric Zelikman, Esin Durmus, Faisal Ladhak, Frieda Rong, Hongyu Ren, Huaxiu Yao, Jue Wang, Keshav Santhanam, Laurel Orr, Lucia Zheng, Mert Yuksekgonul, Mirac Suzgun, Nathan Kim, Neel Guha, Niladri Chatterji, Omar Khattab, Peter Henderson, Qian Huang, Ryan Chi, Sang Michael Xie, Shibani Santurkar, Surya Ganguli, Tatsunori Hashimoto, Thomas Icard, Tianyi Zhang, Vishrav Chaudhary, William Wang, Xuechen Li, Yifan Mai, Yuhui Zhang, and Yuta Koreeda. Holistic evaluation of language models. Transactions on Machine Learning Research ,2023. URL https://arxiv.org/abs/2211.09110 .[8] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. In Advances in Neural Information Processing Systems (NeurIPS) , volume 30, 2017. 9[9] Noam Shazeer. GLU variants improve transformer, 2020. [10] András Hajnal, Wolfgang Maass, Pavel Pudlák, Mario Szegedy, and György Turán. Threshold circuits of bounded depth. Journal of Computer and System Sciences , 46(2):129–154, 1993. doi: 10.1016/0022-0000(93)90001-D. [11] Ralph C. Merkle. One way hash functions and DES. In Advances in Cryptology — CRYPTO ’89 , volume 435 of Lecture Notes in Computer Science , pages 428–446. Springer, 1989. doi: 10.1007/0-387-34805-0_40. [12] Ivan Bjerre Damgård. A design principle for hash functions. In Advances in Cryptology — CRYPTO ’89 , volume 435 of Lecture Notes in Computer Science , pages 416–427. Springer, 1989. doi: 10.1007/0-387-34805-0_39. [13] Ralph C. Merkle. A certified digital signature. In Gilles Brassard, editor, Advances in Cryptology — CRYPTO ’89 Proceedings , volume 435 of Lecture Notes in Computer Science , pages 218–238, New York, NY, 1989. Springer. doi: 10.1007/0-387-34805-0\_21. Work originally presented in Merkle’s 1979 Stanford PhD thesis “Secrecy, Authentication, and Public Key Systems”. [14] Guido Bertoni, Joan Daemen, Michaël Peeters, and Gilles Van Assche. The sponge and duplex constructions. https://keccak.team/sponge_duplex.html , 2011. [15] Andis Draguns. Reifier: Compile algorithms into neural networks. https://github.com/ contramont/reifier .[16] Crroco. Part-b-project-results. https://github.com/Crroco/Part-B-Project-Results/ tree/main .
+
+A Keccak Operation Definitions 
+
+The state a defined in Section 2.6 has length 25 w where w ∈ { 1, 2, 4, 8, 16 , 32 , 64 }, depending on the version of Keccak that is used. Capacity has length c and rate has length r.Define GF (p) for p a prime number as the Galois Field with p elements, where addition and multipli-cation are performed modulo p. Moreover, we define GF (p)[ X] as the polynomials with coefficients over 
+
+GF (p).The padding function is defined as pad = 10 ∗1 and it adds at least 2 bits to the message and at most 
+
+r + 1. Note that the state a is a 3 dimensional array a[5][ 5][ w] with binary content a[x][ y][ z] ∈ GF (2),where w = 2l , l ∈ { 0, 1, 2, 3, 4, 5, 6} is another parameter for the sponge construction. We say that each entry a[x][ y] represents a word and w is the word size. All the operations will take place in GF (2)
+
+unless stated otherwise. We write s[w(5y + x) + z] = a[x][ y][ z], x, y ∈ Z5, z ∈ Zw, the state as a one dimensional array. For Keccak, the 5 permutations that make f are performed nrounds times. So we can write f = ( ι ◦ χ ◦ π ◦ ρ ◦ θ )[nrounds ]. Now we can define these 5 operations. 
+
+θ computes 
+
+a[x][ y][ z] ← a[x][ y][ z] + 
+
+> 4
+
+# ∑
+
+> y′=0
+
+a[x − 1][ y′][ z] + 
+
+> 4
+
+# ∑
+
+> y′=0
+
+a[x + 1][ y′][ z − 1] (29) 
+
+ρ computes 
+
+a[x][ y][ z] ← a[x][ y][ z − (t + 1)( t + 2)/2] (30) where 0 ≤ t < 24 and 
+
+0 12 3
+
+t 10
+
+
+
+=
+
+xy
+
+
+
+∈ GF (5)2×2, or t = −1 for x = y = 0. ρ bitwise rotates each word with a different triangular number. 10 π computes a[x][ y] ← a[x′][ y′], with 
+
+xy
+
+
+
+=
+
+0 12 3
+
+  x′
+
+y′
+
+
+
+(31) 
+
+π permutes the 25 words in a fixed pattern. 
+
+χ computes 
+
+a[x] ← a[x] + ( a[x + 1] + 1) a[x + 2] (32) This operation bitwise combines along the rows. This is the only non-linear operation in Keccak. 
+
+ι computes a ← a + RC [ir]. RC [ir] is a round constant computed using RC [ir][ 0][ 0][ 2 j − 1] = rc [ j + 7ir],
+
+∀ 0 ≤ j ≤ l. All the other terms RC [ir][ x][ y][ z] = 0 . Moreover, they define rc [t] = ( xt mod x8 + x6 + x5 +
+
+x4 + 1) mod x in GF (2)[ X]. This operation breaks the symmetry preserved by the other operations. Since 
+
+RC [ir][ x][ y][ z] = 0, (x, y)̸ = ( 0, 0), only lane a[0][ 0] is affected. The number of rounds is nrounds = 12 + 2l.Now we present Algorithms 2 and 3 mentioned in Section 2.6. 
+
+Algorithm 2 Absorb phase  
+
+> 1:
+
+procedure ABSORB (x[1 . . . n], f ) 
+
+> 2:
+
+for i ← 1 to n do  
+
+> 3:
+
+a[0 . . . r − 1] ← a[0 . . . r − 1] ⊕ x[i] 
+
+> 4:
+
+a ← f (a) 
+
+> 5:
+
+end for  
+
+> 6:
+
+end procedure Algorithm 3 Squeeze phase  
+
+> 1:
+
+procedure SQUEEZE (out_size, f ) 
+
+> 2:
+
+result ← ε 
+
+> 3:
+
+while |result | < out_size do  
+
+> 4:
+
+if |result | + r ≤ out_size then  
+
+> 5:
+
+result ← result ∥ a[0 . . . r − 1] 
+
+> 6:
+
+else  
+
+> 7:
+
+result ← result ∥ a[0 . . . out_size − | result | − 1] 
+
+> 8:
+
+end if  
+
+> 9:
+
+a ← f (a) 
+
+> 10:
+
+end while  
+
+> 11:
+
+return result  
+
+> 12:
+
+end procedure 
+
+B Detailed Keccak Experiments 
+
+Figure 1: Circuit compiled for Keccak function with w = 1 and nrounds = 1In the experiment presented in Section 4.1.1 Layer 1 prepares the internal state of the sponge construc-tion, initialising the remaining state bits to zero using constant nodes. Layer 2 and 3 both implement the 
+
+θ function for which we need to compute a XOR. 11 In the θ function we compute a XOR over 11 elements, so the layer which computes the first part of the XOR ends up having 11 · 25 w nodes: one set of t = 11 threshold gates per element of the 25 w-element state. The subsequent layer performs only one threshold per 11 previous nodes, so it has width 25 w.Functions ρ and π only compute permutations and they are simulated through the wiring of the circuit, contributing with no layers to the compiled result. Layer 3 computes what the Reifier library calls the inhib part of the operation, namely ¬a[x +1] & a[x +
+
+2], using the threshold gate 1[−a[x + 1] + a[x + 2] ≥ 1]. This part requires one threshold per element of the state ( 25 w nodes), but also introduces copies of the values from the previous layer to enable the XOR computation in the following two layers (25 w nodes), giving a total width of 2 · 25 w.Layer 7 requires only one layer, because it is a two-element XOR with the constant RC [ir] which is hardwired into the gate’s threshold function. Notably, experiments show that this layer is omitted entirely when RC [ir] = 0, since the XOR is then redundant. This is an artefact of the Reifier compiler. The final layer is the output layer, which outputs the r bits of the Keccak state. Table 1: Deviation from the linear prediction depth pred (nrounds ) = 6nrounds + 2 . Positive ∆ means more layers than predicted. Deviations take place because of RC [ir] = 0log w nrounds depth obs ∆ = depth obs − depth pred notes 2 13 79 -1 reported: lost 1 2 19 114 -2 reported: lost 2 3 15 91 -1 reported: lost 1 4 24 146 0 matches depth pred (24 ) = 146 Table 2: Formula verification for arbitrary Keccak input and output sizes. log w Rate Blocks Rounds Exp. depth Actual depth Exp. width Actual width 1 25 1 1 10 10 550 550 1 25 2 1 18 18 575 575 1 25 4 1 34 34 625 625 1 25 1 2 16 16 550 550 1 25 2 2 30 30 575 575 1 25 4 2 58 58 625 625 2 50 1 1 10 10 1100 1100 2 50 2 1 18 18 1150 1150 2 50 4 1 34 34 1250 1250 2 50 1 2 16 16 1100 1100 2 50 2 2 30 30 1150 1150 2 50 4 2 58 58 1250 1250 
+
+C Detailed MD Experiments 
+
+Below we have the circuit (Fig. 4), tables (Table 3) and graphs (Graphs 5, 6) of our experiment results. Notably, the width increases by four when performing the Keccak function, as we need to keep the bits of the input that will subsequently be absorbed by the construction. The XOR computed after the first Keccak instance is part of the absorption of the next block. 
+
+D Detailed MT Experiments 
+
+In the circuit presented in Figure 7 we observe that the first layer represents the input and has width = 8 .In the second layer we start computing fleaves for each leaf in parallel by creating the Keccak state. Since 12 1 2 3 4 5
+
+Number of blocks nb
+
+20 
+
+40 
+
+60 
+
+80 
+
+100 
+
+120 
+
+140 
+
+160 
+
+> Circuit depth
+
+Depth vs nb
+
+(fixed: log 2 w = 1 , r = 25 , c = 25 , output bits = 12 )                    
+
+> nrounds = 1 (actual)
+> nrounds = 1 (pred)
+> nrounds = 2 (actual)
+> nrounds = 2 (pred)
+> nrounds = 3 (actual)
+> nrounds = 3 (pred)
+> nrounds = 4 (actual)
+> nrounds = 4 (pred)
+> nrounds = 5 (actual)
+> nrounds = 5 (pred)
+
+1 2 3 4 5
+
+Number of rounds nrounds 
+
+20 
+
+40 
+
+60 
+
+80 
+
+100 
+
+120 
+
+140 
+
+160 
+
+> Circuit depth
+
+Depth vs nrounds 
+
+(fixed: log 2 w = 1 , r = 25 , c = 25 , output bits = 12 )                    
+
+> nb= 1 (actual)
+> nb= 1 (pred)
+> nb= 2 (actual)
+> nb= 2 (pred)
+> nb= 3 (actual)
+> nb= 3 (pred)
+> nb= 4 (actual)
+> nb= 4 (pred)
+> nb= 5 (actual)
+> nb= 5 (pred)
+
+Figure 2: Plot for Keccak depth scaling. Differences between predicted and actual values come from round constant which are 0 1 2 3
+
+log 2 w
+
+500 
+
+1000 
+
+1500 
+
+2000 
+
+2500 
+
+> Circuit width
+
+Width vs log 2 w
+
+(fixed: nrounds = 1 , output bits = 12 )                                             
+
+> nb= 1 (actual)
+> nb= 1 (pred: 11 25 w+pr)
+> nb= 2 (actual)
+> nb= 2 (pred: 11 25 w+pr)
+> nb= 3 (actual)
+> nb= 3 (pred: 11 25 w+pr)
+> nb= 4 (actual)
+> nb= 4 (pred: 11 25 w+pr)
+> nb= 5 (actual)
+> nb= 5 (pred: 11 25 w+pr)
+
+1 2 3 4 5
+
+Number of blocks nb
+
+500 
+
+1000 
+
+1500 
+
+2000 
+
+2500 
+
+> Circuit width
+
+Width vs blocks 
+
+(fixed: nrounds = 1 , output bits = 12 )                                 
+
+> log 2w= 1 (actual)
+> log 2w= 1 (pred: 11 25 w+pr)
+> log 2w= 2 (actual)
+> log 2w= 2 (pred: 11 25 w+pr)
+> log 2w= 3 (actual)
+> log 2w= 3 (pred: 11 25 w+pr)
+
+Figure 3: Plot for Keccak width scaling each Keccak state has 50 entries, two leaves being processed in parallel gives 2 · 50 = 100 nodes. The next six layers perform the Keccak toy function f . Each of these layers has a width twice as large as its corresponding layer in the circuit representation of f . Layers 9 and 10, the first layers after fleaves has been computed, XOR the previous results and thus start computing fnodes . The following seven layers consist of creating the Keccak state and then computing fnodes . These layers have the same width as the corresponding layer in the circuit representation of f . The last layer represents the output. 13 Figure 4: Circuit compiled for MD with compression function Keccak with w = 1 and nrounds = 11 2 3 4 5 6             
+
+> Number of blocks Nb
+> 10
+> 20
+> 30
+> 40
+> 50
+> Circuit depth
+> Depth vs Nb
+> (fixed: nrounds = 1 ,r= 12 ,c= 38 ,depth c= 9 )
+> Actual
+> Predicted: 1 + depth cNb+ 1
+
+Figure 5: Plot for MD depth scaling 
+
+E Tokens-as-Gates Correctness 
+
+For the Tokens-as-Gates mapping we get the following flow of computation for the attention sublayer: 
+
+qi = Qx i
+
+ki = Kx i
+
+vi = V x i
+
+si, j = qTi k j
+
+ai, j =
+
+(1 if si, j = 10 otherwise out i = ∑
+
+> j
+
+ai, j v j
+
+Looking at equations 26, 25, 27 note that K is a fixed matrix. When applied to x j = e j, it returns a vector whose i-th entry is 1 if gate j is a predecessor of gate i, encoding gate j’s successor structure. These choices ensure that after the attention sublayer we retrieve the sum of the values of the predecessor gates. The FFN then evaluates the threshold function using the gate value (entry T + 1) and threshold (entry T + 2). An algebraic analysis for this would be, that for an input token ti which represents gi and is further represented by xi as an embedded vector, we have the following values for qi, ki and vi.14 Table 3: Formula verification for the sequential Merkle–Damgård construction. 
+
+log w Rate Block bits Chain bits Blocks Rounds Exp. depth Actual depth Exp. width Actual width 1 12 4 4 1 1 11 11 550 550 1 12 4 4 2 1 20 20 554 554 1 12 4 4 3 1 29 29 558 558 1 12 4 4 4 1 38 38 562 562 1 16 8 8 1 1 11 11 550 550 1 16 8 8 2 1 20 20 558 558 1 16 8 8 3 1 29 29 566 566 1 16 8 8 4 1 38 38 574 574 1 12 4 4 1 2 17 17 550 550 1 12 4 4 2 2 32 32 554 554 1 12 4 4 3 2 47 47 558 558 1 12 4 4 4 2 62 62 562 562 1 16 8 8 1 2 17 17 550 550 1 16 8 8 2 2 32 32 558 558 1 16 8 8 3 2 47 47 566 566 1 16 8 8 4 2 62 62 574 574 2 12 4 4 1 1 11 11 1100 1100 2 12 4 4 2 1 20 20 1104 1104 2 12 4 4 3 1 29 29 1108 1108 2 12 4 4 4 1 38 38 1112 1112 2 16 8 8 1 1 11 11 1100 1100 2 16 8 8 2 1 20 20 1108 1108 2 16 8 8 3 1 29 29 1116 1116 2 16 8 8 4 1 38 38 1124 1124 2 12 4 4 1 2 17 17 1100 1100 2 12 4 4 2 2 32 32 1104 1104 2 12 4 4 3 2 47 47 1108 1108 2 12 4 4 4 2 62 62 1112 1112 2 16 8 8 1 2 17 17 1100 1100 2 16 8 8 2 2 32 32 1108 1108 2 16 8 8 3 2 47 47 1116 1116 2 16 8 8 4 2 62 62 1124 1124 
+
+qi = Qx i = one-hot encoding of gi
+
+k j = Kx j
+
+k j,l = Kl, j + Kl,T +1 · (gate value ) + Kl,T +2 · θ = Kl, j
+
+si, j = q⊤ 
+
+> i
+
+k j =
+
+(1 if k j,i = Ki, j = 10 otherwise 
+
+vi, j = Vj · xi =
+
+(gate value if j = T + 10 otherwise where ki, j is the jth entry of ki and xi,l is the lth entry of xi.We want to accumulate the sum of the values of the previous gates and we can do so if we have ai, j = 1for j ∈ pred (i). Looking back at the computational flow, note that the output will be a vector with all entries zero except entry T + 1 where we will have the sum of the values of the predecessors. We retrieve the one hot encoding and the threshold value by using the residual connections in the encoder block. In our experiments, the NOT operation appears only within the χ function of the Keccak construction. The circuit uses gates that compute (¬a[x + 1] & a[x + 2]) as −a[x + 1] + a[x + 2] ≥ 1 . Thus, simple NOT gates are never required, but if needed, we could add a new dimension to the token vector to signal to the 15 1 2 3 4 5 6
+
+Number of blocks Nb
+
+550 
+
+560 
+
+570 
+
+580 
+
+590 
+
+600 
+
+610 
+
+> Circuit width
+
+Width vs Nb
+
+(fixed: log 2 w = 1 , nrounds = 1 , r = 12 , c = 38 , width c = 550 )            
+
+> Nsize = 4 (actual)
+> Nsize = 4 (pred)
+> Nsize = 8 (actual)
+> Nsize = 8 (pred)
+> Nsize = 12 (actual)
+> Nsize = 12 (pred)
+
+4 8 12 
+
+Block size Nsize (bits) 
+
+550 
+
+560 
+
+570 
+
+580 
+
+590 
+
+600 
+
+610 
+
+> Circuit width
+
+Width vs Nsize 
+
+(fixed: log 2 w = 1 , nrounds = 1 , r = 12 , c = 38 , width c = 550 )                        
+
+> Nb= 1 (actual)
+> Nb= 1 (pred)
+> Nb= 2 (actual)
+> Nb= 2 (pred)
+> Nb= 3 (actual)
+> Nb= 3 (pred)
+> Nb= 4 (actual)
+> Nb= 4 (pred)
+> Nb= 5 (actual)
+> Nb= 5 (pred)
+> Nb= 6 (actual)
+> Nb= 6 (pred)
+
+Figure 6: Plot for MD width scaling 
+
+Figure 7: Circuit compiled for MT with compression function Keccak with w = 1 and nrounds = 1FFN that a NOT gate is being computed, inverting the relevant bit. 16 Table 4: Formula verification for the Merkle tree construction. log w w Rounds Leaves Exp. depth Actual depth Exp. width Actual width 1 2 1 1 8 8 550 550 1 2 1 2 17 17 1100 1100 1 2 1 4 26 26 2200 2200 1 2 1 8 35 35 4400 4400 1 2 2 1 14 14 550 550 1 2 2 2 29 29 1100 1100 1 2 2 4 44 44 2200 2200 1 2 2 8 59 59 4400 4400 2 4 1 1 8 8 1100 1100 2 4 1 2 17 17 2200 2200 2 4 1 4 26 26 4400 4400 2 4 1 8 35 35 8800 8800 2 4 2 1 14 14 1100 1100 2 4 2 2 29 29 2200 2200 2 4 2 4 44 44 4400 4400 2 4 2 8 59 59 8800 8800 1 2 4 8 16 
+
+Number of leaves nleaves 
+
+10 
+
+15 
+
+20 
+
+25 
+
+30 
+
+35 
+
+40 
+
+45 
+
+> Circuit depth
+
+Depth vs nleaves 
+
+(fixed: log 2 w = 1 , nrounds = 1 , r = 12 , c = 38 , leaf bits = 4 )  
+
+> Actual
+> Predicted: log 2(nleaves )(3 + 6 nr) + 2 + 6 nr
+
+Figure 8: Plot for MT depth scaling 1 2 4 8 16 
+
+Number of leaves nleaves 
+
+> 2000
+> 4000
+> 6000
+> 8000
+> Circuit width
+
+Width vs nleaves 
+
+(fixed: log 2 w = 1 , nrounds = 1 , r = 12 , c = 38 , width c = 550 , leaf bits = 4 )  
+
+> Actual
+> Predicted: nleaves width c
+
+Figure 9: Plot for MT width scaling 17

@@ -1,0 +1,666 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-04T19:54:18.907458+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 18,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 33,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2606.27990v1",
+      "source": "arxiv",
+      "title": "AdvancedShelLM: A Stateful Multi-Agent LLM Honeypot for SSH Deception",
+      "abstract": "LLM-based SSH honeypots can generate believable interactions, but evaluations indicate they remain somewhat identifiable to determined attackers, indicating the need for a better scaffolding. We present a new LLM-based honeypot design that uses a multi-agent, multi-LLM architecture to address the limitations of the previous shelLM LLM honeypot. Our honeypot, called AdvancedShelLM, uses two LLM agents, a Manager and a Worker, that better understand the commands while reducing incorrect responses and increasing deception. It implements an advanced permanent filesystem, allowing many simultaneous attackers to see the same changing files for the first time. It was evaluated with: (i) unit tests for generative capabilities, (ii) an AI attacker (ARACNE) to assess realism and deception, (iii) human attackers to assess its deceptive capability, and (iv) an Internet deployment to evaluate deception in real-world attacks. In unit test results, AdvancedShelLM achieved a pass rate of up to 99.02%. The AI attacker ARACNE had issues making a decision if the system is honeypot or not, but showed slight bias towards saying honeypot, even for a real Ubuntu shell. With human attackers, AdvancedShelLM deceived more humans than Cowrie, but had similar results as shelLM. The Internet deployment showed concrete evidence that the output of AdvancedShelLM can influence the behaviour of real-life attackers.",
+      "authors": [
+        "Muris Sladić",
+        "Eman Alibalić",
+        "Veronica Valeros",
+        "Carlos Catania",
+        "Sebastian Garcia"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-06-26T11:39:05+00:00",
+      "link": "https://arxiv.org/pdf/2606.27990v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "LLM-based honeypot for AI security deception",
+      "llm_evidence_cn": "基于LLM的蜜罐，用于AI安全欺骗",
+      "llm_evidence": "基于LLM的蜜罐，用于AI安全欺骗",
+      "canonical_evidence": "基于LLM的蜜罐，用于AI安全欺骗",
+      "llm_tldr_en": "AdvancedShelLM uses a multi-agent multi-LLM architecture to improve SSH honeypot deception, with permanent filesystem and evaluation via unit tests and AI attacker.",
+      "llm_tldr_cn": "针对现有LLM蜜罐易被攻击者识别的问题，本文提出AdvancedShelLM，采用管理者和工作者双LLM智能体架构，减少了错误响应并增强了欺骗性。实现了永久文件系统，使多个同时攻击者看到同样的变化。通过单元测试和AI攻击者ARACNE评估，展示了更好的生成能力和迷惑性。",
+      "llm_tldr": "针对现有LLM蜜罐易被攻击者识别的问题，本文提出AdvancedShelLM，采用管理者和工作者双LLM智能体架构，减少了错误响应并增强了欺骗性。实现了永久文件系统，使多个同时攻击者看到同样的变化。通过单元测试和AI攻击者ARACNE评估，展示了更好的生成能力和迷惑性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2606.30261v1",
+      "source": "arxiv",
+      "title": "Robust secret storage in networks",
+      "abstract": "The problem of storing secure information on a network is studied. A formal framework for distributed secret storage is introduced, and possible applications in technological and social systems are discussed. The problem is formulated as the optimization of a robustness functional in which two competing requirements are balanced: survivability under network-degrading processes and resistance to adversarial compromise. An exact representation of survivability is derived in terms of minimal information-carrying subgraphs (MICS), which provide a reduced description of the reconstruction events relevant to the stored information. This representation is then used to construct semi-local optimization methods whose dynamics do not require global knowledge of the network structure. Finally, it is shown that, in a limiting case, the robustness functional can be mapped naturally to an effective spin Hamiltonian.",
+      "authors": [
+        "Vinko Zlatić"
+      ],
+      "primary_category": "cond-mat.stat-mech",
+      "categories": [
+        "cond-mat.stat-mech",
+        "cs.CR",
+        "physics.soc-ph"
+      ],
+      "published": "2026-06-29T13:09:25+00:00",
+      "link": "https://arxiv.org/pdf/2606.30261v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "distributed secret storage framework for robust survivability and adversarial resistance",
+      "llm_evidence_cn": "分布式秘密存储框架，兼顾存活性与抗敌手",
+      "llm_evidence": "分布式秘密存储框架，兼顾存活性与抗敌手",
+      "canonical_evidence": "分布式秘密存储框架，兼顾存活性与抗敌手",
+      "llm_tldr_en": "A formal framework for distributed secret storage balances survivability and security, using minimal information-carrying subgraphs for exact robustness characterization.",
+      "llm_tldr_cn": "网络中的秘密存储需要同时抵抗网络退化（存活性）和敌手攻击（安全性）。本文提出了分布式秘密存储的正式框架，将问题建模为鲁棒性泛函的优化。推导了基于最小信息承载子图（MICS）的存活性精确表示，并设计了半局部优化方法，无需全局网络信息即可动态优化存储位置。该理论为密钥托管、秘密分享等应用提供了优化基础。",
+      "llm_tldr": "网络中的秘密存储需要同时抵抗网络退化（存活性）和敌手攻击（安全性）。本文提出了分布式秘密存储的正式框架，将问题建模为鲁棒性泛函的优化。推导了基于最小信息承载子图（MICS）的存活性精确表示，并设计了半局部优化方法，无需全局网络信息即可动态优化存储位置。该理论为密钥托管、秘密分享等应用提供了优化基础。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "secure key escrow schemes for cloud computing",
+      "matched_requirement_id": "req-9",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.00481v1",
+      "source": "arxiv",
+      "title": "Beyond the Prompt: Jailbreaking Function-Calling LLMs via Simulated Moderation Traces",
+      "abstract": "Jailbreak attacks remain a critical threat to the safe deployment of large language models (LLMs). While prior work has primarily studied attacks and defenses at the prompt level, we show that this prompt-centric paradigm overlooks a structural vulnerability in stateful, function-calling environments. In such applications, developer-defined schemas, structured arguments, and untrusted tool outputs are interleaved into a single shared model context. This architecture expands the attack surface by blurring the boundary between trusted control logic and untrusted data, allowing adversarial intent to be distributed across a multi-turn execution path. We exploit this architectural flaw through SMT, a black-box attack framework based on Simulated Moderation Traces. Departing from purely prompt-based interactions, SMT constructs a multi-turn trajectory that simulates a legitimate moderation-auditing workflow. Within this trajectory, a fabricated moderation frame leverages red-team testing as a pretext to elicit harmful generations. The subsequent validation feedback treats safety refusals as execution failures, prompting refinements that gradually weaken the model's safety constraints and ultimately trigger harmful outputs. Extensive empirical evaluations on prominent commercial LLMs from five different providers across two standardized safety benchmarks show that SMT consistently achieves the highest average attack success rate and HarmScore while requiring a near-minimal number of queries, substantially outperforming existing baselines. These findings demonstrate that prompt-level sanitization alone is fundamentally insufficient for defending tool-enabled LLM systems and highlight the urgent need for context-aware validation across schemas, arguments, tool outputs, and accumulated conversation state. The code is available at https://github.com/liujlong27/SMT.",
+      "authors": [
+        "Junlong Liu",
+        "Haobo Wang",
+        "Weiqi Luo",
+        "Xiaojun Jia"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-01T06:08:07+00:00",
+      "link": "https://arxiv.org/pdf/2607.00481v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "jailbreak attacks on function-calling LLMs via simulated moderation traces",
+      "llm_evidence_cn": "通过模拟审核痕迹对函数调用LLM的越狱攻击",
+      "llm_evidence": "通过模拟审核痕迹对函数调用LLM的越狱攻击",
+      "canonical_evidence": "通过模拟审核痕迹对函数调用LLM的越狱攻击",
+      "llm_tldr_en": "Exploits structural vulnerability in stateful function-calling LLMs to mount black-box jailbreak attacks using simulated moderation traces.",
+      "llm_tldr_cn": "现有越狱攻击集中于提示级别，忽略了函数调用环境中的结构脆弱性。本文发现状态函数调用LLM中模式化参数和工具输出与信任边界的模糊性，提出SMT攻击框架，通过模拟审核痕迹在多次交互中分布恶意意图。实验证明该攻击在多种LLM上成功，凸显了系统架构层面的安全风险。",
+      "llm_tldr": "现有越狱攻击集中于提示级别，忽略了函数调用环境中的结构脆弱性。本文发现状态函数调用LLM中模式化参数和工具输出与信任边界的模糊性，提出SMT攻击框架，通过模拟审核痕迹在多次交互中分布恶意意图。实验证明该攻击在多种LLM上成功，凸显了系统架构层面的安全风险。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2606.27511v1",
+      "source": "arxiv",
+      "title": "When the Aggregator Cheats: Data-Free Backdoors in Federated LLM-based QA Systems",
+      "abstract": "Large Language Model (LLM)-based question-answering (QA) systems are increasingly deployed in sensitive domains such as healthcare, mental health counseling, and legal consultation. Federated learning (FL) enables collaborative training without sharing raw client data, for which locally trained models are aggregated at a central server (i.e., a cloud service provider) to obtain a global model. In this paper, we explore the potential vulnerability where a malicious aggregator, who may collude with a third-party vendor, stealthily implants advertisement-type backdoors into federated QA models, without ever accessing client data. The attacker's goals are twofold: (1) preserve clean QA fidelity (i.e., the poisoned model behaves like a clean model on non-triggered queries); and (2) generate highly natural, contextually relevant responses with target advertisements when a trigger appears. Achieving these two goals simultaneously is highly challenging, as naive backdoor injection without knowledge about private data may degrade model's clean performance or fail to inject the target. Motivated by this, we propose to leverage clients' uploaded gradients during training, and develop a two-stage framework for data-free and stealthy poisoning: (1) recover representative training samples from client gradients, and (2) construct poisoning datasets utilizing recovered samples and trigger phrases to inject backdoors into the global model. Experiments across representative QA datasets and LLM families under full fine-tuning and LoRA settings demonstrate that, our method achieves nearly 100% Attack Success Rate (ASR) while incurring negligible degradation on clean tasks. Crucially, reconstructing only 5-20% of gradients suffices to mount a reliable attack, exposing a practical blind spot in the pipeline of federated training of QA LLMs.",
+      "authors": [
+        "Chenqing Zhu",
+        "Yanbo Dai",
+        "Yulong Tian",
+        "Qingming Li",
+        "Songze Li"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-06-25T19:53:37+00:00",
+      "link": "https://arxiv.org/pdf/2606.27511v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "data-free backdoor in federated LLM QA by malicious aggregator",
+      "llm_evidence_cn": "联邦LLM问答系统中恶意聚合器的无数据后门攻击",
+      "llm_evidence": "联邦LLM问答系统中恶意聚合器的无数据后门攻击",
+      "canonical_evidence": "联邦LLM问答系统中恶意聚合器的无数据后门攻击",
+      "llm_tldr_en": "Explores a vulnerability where a malicious aggregator in federated LLM QA can implant backdoors without client data, preserving clean fidelity on normal queries.",
+      "llm_tldr_cn": "该论文揭示联邦LLM问答系统中的一个安全漏洞：恶意聚合器（可能勾结第三方）可在不接触客户端数据的情况下，向内植入广告型后门。攻击保持正常查询的准确性，仅在特定触发条件下激活后门。该工作展示了云服务提供商作为聚合器时的新型AI安全威胁，对联邦学习的安全架构提出挑战。",
+      "llm_tldr": "该论文揭示联邦LLM问答系统中的一个安全漏洞：恶意聚合器（可能勾结第三方）可在不接触客户端数据的情况下，向内植入广告型后门。攻击保持正常查询的准确性，仅在特定触发条件下激活后门。该工作展示了云服务提供商作为聚合器时的新型AI安全威胁，对联邦学习的安全架构提出挑战。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.01019v1",
+      "source": "arxiv",
+      "title": "Toward a Unified Security and Privacy Framework for AI-Native 6G Networks",
+      "abstract": "Sixth Generation (6G) communication networks are expected to evolve into AI-native, highly autonomous ecosystems that integrate communication, computing, sensing, and artificial intelligence. While these capabilities enable unprecedented connectivity and intelligent services, they also create a highly heterogeneous security and privacy landscape that cannot be addressed through isolated, technology-specific solutions. This paper presents a comprehensive survey of security and privacy in AI-native 6G networks from a cross-layer perspective. We first examine the fragmentation of existing security and privacy approaches across emerging technologies, network architectures, AI systems, and standardization efforts, motivating the need for a unified security and privacy framework. Building upon this framework, we develop a cross-layer threat taxonomy encompassing infrastructure, network and architectural, AI, privacy, and security management domains, and analyze representative threats across key AI-native 6G technologies. Furthermore, we map these threats to corresponding cross-layer countermeasures, including standards harmonization as a security function, and identify critical research gaps and future priorities for secure, interoperable, and trustworthy AI-native 6G ecosystems. Finally, we discuss future research directions toward realizing secure, privacy-preserving, resilient, and globally interoperable 6G networks. This survey provides researchers, practitioners, and standardization communities with a holistic foundation for the design, evaluation, and deployment of trustworthy AI-native 6G systems.",
+      "authors": [
+        "Bidushi Barua",
+        "Ahsan Khan",
+        "Kangfeng Ye",
+        "Panagiotis Papanastasiou",
+        "Yifan Liu",
+        "Mohit Bidikar",
+        "Anthony Moulds",
+        "Julie McCann",
+        "Poonam Yadav"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-01T14:52:04+00:00",
+      "link": "https://arxiv.org/pdf/2607.01019v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "unified security and privacy framework for AI-native 6G, covering multiple requirements",
+      "llm_evidence_cn": "面向AI原生6G的统一安全隐私框架，涵盖多项需求",
+      "llm_evidence": "面向AI原生6G的统一安全隐私框架，涵盖多项需求",
+      "canonical_evidence": "面向AI原生6G的统一安全隐私框架，涵盖多项需求",
+      "llm_tldr_en": "A comprehensive survey and unified cross-layer framework for security and privacy in AI-native 6G networks, addressing fragmentation across technologies and AI systems.",
+      "llm_tldr_cn": "第六代移动通信（6G）将演进为AI原生生态系统，集成通信、计算、感知和AI，带来异构安全隐私挑战。本文从跨层视角全面调研了AI原生6G网络中的安全与隐私问题，梳理了现有技术、网络架构、AI系统及标准化工作的碎片化现状，并提出了统一的安全隐私框架。该框架整合了分布式云架构、AI安全、机密计算、身份认证等多个维度，为未来6G安全设计提供了系统性指导。",
+      "llm_tldr": "第六代移动通信（6G）将演进为AI原生生态系统，集成通信、计算、感知和AI，带来异构安全隐私挑战。本文从跨层视角全面调研了AI原生6G网络中的安全与隐私问题，梳理了现有技术、网络架构、AI系统及标准化工作的碎片化现状，并提出了统一的安全隐私框架。该框架整合了分布式云架构、AI安全、机密计算、身份认证等多个维度，为未来6G安全设计提供了系统性指导。",
+      "llm_tags": [
+        "query:sec-cloud-ai:composite"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai:composite",
+      "matched_query_text": "Papers central to 请帮我查找与密钥托管, 密码认证,分布式云计算，人工智能安全，机密计算有关的论文, especially work that connects or combines: distributed cloud computing architectures; artificial intelligence security threats and defenses; confidential computing techniques; identity authentication in cloud computing; cloud security challenges and solutions; privacy preservation in artificial intelligence; distributed cloud computing security and confidential computing; artificial intelligence security and password authentication; secure key escrow schemes for cloud computing; cryptographic techniques for key recovery and user authentication.",
+      "matched_requirement_id": "req-composite-sec-cloud-ai",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2606.27976v1",
+      "source": "arxiv",
+      "title": "SHARD: cell-keyed residual splitting for alignment-resistant private dense retrieval",
+      "abstract": "Dense embeddings underpin semantic search and RAG, yet a leaked vector store hands much of the underlying text back to whoever holds it. The attacks that make this possible (few-shot alignment, zero-shot inversion, unsupervised cross-space translation) share one weakness: the protected store is a single global geometry that can be aligned to a known one. A secret global rotation, the usual lightweight defence, is no exception: orthogonal Procrustes recovers it once the attacker has about the subspace dimension in known pairs.   We introduce Shard, a retrieval-preserving embedding transform that removes this weak axis. The centred embedding is split into a short public prefix (for stage-1 retrieval) and a private residual sharded into C cells under separate secret keys; the residual is reranked under CKKS, where the keys cancel and leave the inner product exact. A single parameter C runs the design from the global-linear baseline it replaces (C=1) to per-document micro-keys (C=N). Because the rerank is full-dimensional, Shard returns the raw-space nDCG@10 that half-SVD truncation gives up; and because the residual is keyed cell-locally, mapping it back to a common frame under a diffuse known-plaintext leak costs roughly C times more anchors (median 200 to 102,400 at C=256), for a few encrypted queries. The short public prefix leaks far less neighbour structure, and a micro-key limit drives the residual graph to zero with an unlinkable, renewable template. The barrier holds against learned, non-linear and unsupervised aligners, and where a matched-utility noise defence de-anonymises almost every probe, Shard de-anonymises none. We are plain about the limits: within a cell the keys cancel, a targeted attacker needs only about d_priv anchors, and an overlapping reference corpus still leaks through the prefix. Shard is an attack-aware geometric defence, not a cryptographic guarantee.",
+      "authors": [
+        "Sergey Kurilenko"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.IR"
+      ],
+      "published": "2026-06-26T11:26:53+00:00",
+      "link": "https://arxiv.org/pdf/2606.27976v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "alignment-resistant private dense retrieval for privacy",
+      "llm_evidence_cn": "抗对齐的私有密集检索以保护隐私",
+      "llm_evidence": "抗对齐的私有密集检索以保护隐私",
+      "canonical_evidence": "抗对齐的私有密集检索以保护隐私",
+      "llm_tldr_en": "SHARD splits embeddings into public prefix and private residual shards, preventing alignment attacks that leak text from vector stores, thus preserving retrieval utility.",
+      "llm_tldr_cn": "现有的密集检索向量存储在面临对齐攻击时容易泄露文本信息，常见的全局旋转防御也易被恢复。本文提出SHARD方法，将嵌入拆分为公共前缀和多个私有残差分片，通过分片键和残差分割彻底消除攻击者可利用的全局几何对齐轴，同时保留检索性能。实验表明SHARD在多种攻击下提供强力隐私保护，且不牺牲检索精度。该工作为私有密集检索提供了实用且鲁棒的解决方案。",
+      "llm_tldr": "现有的密集检索向量存储在面临对齐攻击时容易泄露文本信息，常见的全局旋转防御也易被恢复。本文提出SHARD方法，将嵌入拆分为公共前缀和多个私有残差分片，通过分片键和残差分割彻底消除攻击者可利用的全局几何对齐轴，同时保留检索性能。实验表明SHARD在多种攻击下提供强力隐私保护，且不牺牲检索精度。该工作为私有密集检索提供了实用且鲁棒的解决方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2606.28479v1",
+      "source": "arxiv",
+      "title": "Decomposing Memorization Reduction in Privacy-Preserving Fine-Tuning of SLMs for CSIRTs",
+      "abstract": "CSIRTs increasingly fine tune language models on vulnerability scan records, but these records expose internal network topology and create privacy risks under regulations such as GDPR and LGPD. We present the first empirical study of how DP SGD and HMAC pseudonymization interact when fine tuning small language models with 1B to 3B parameters on structured CSIRT data. We evaluate 96 LoRA adapters across four SLMs and four training regimes, including raw fine tuning, QLoRA with large batch training, and DP SGD with epsilon equal to 2 and 8. We also audit memorization using 20 planted canaries, four extraction attacks, and a dual attack targeting HMAC pseudonymized identifiers.   Our results show three main findings. First, matched update controls reproduce the observed reduction in memorization by reducing the number of optimizer updates alone, accounting for 66 percent to 132 percent of the measured effect, with a mean of 100 percent across three seeds and four models. In this setting, DP SGD provides the formal privacy guarantee but does not produce additional measurable reductions in memorization. Second, HMAC pseudonymization removes the original identifiers from the exposure surface, reducing exposure by 40 percent to 61 percent, while pseudonymized identifiers remain close to the expected random baseline and do not become a secondary memorization target. Third, F1 scores remain between 0.19 and 0.28 across all 96 adapters using four shot prompting, indicating that, under the evaluated training budget, 1B to 3B SLMs do not achieve operationally useful performance.",
+      "authors": [
+        "Cristhian Kapelinski",
+        "Diego Kreutz"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-06-26T17:35:17+00:00",
+      "link": "https://arxiv.org/pdf/2606.28479v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "DP and HMAC pseudonymization for privacy in SLM fine-tuning",
+      "llm_evidence_cn": "差分隐私与HMAC伪匿名化在SLM微调中的隐私保护",
+      "llm_evidence": "差分隐私与HMAC伪匿名化在SLM微调中的隐私保护",
+      "canonical_evidence": "差分隐私与HMAC伪匿名化在SLM微调中的隐私保护",
+      "llm_tldr_en": "Empirical study of DP SGD and HMAC pseudonymization interaction in fine-tuning SLMs on CSIRT data, showing matched updates reduce memorization effectively.",
+      "llm_tldr_cn": "CSIRT在使用敏感漏洞数据微调语言模型时面临隐私泄露风险。本文首次系统研究差分隐私随机梯度下降与HMAC伪匿名化在1B-3B参数小模型上的交互。通过96种LoRA配置和多种攻击测试，发现匹配更新机制能显著降低记忆，而DP与伪匿名化互为补充。结果为隐私保护微调提供了实用的配置建议，兼顾模型效用与数据合规。",
+      "llm_tldr": "CSIRT在使用敏感漏洞数据微调语言模型时面临隐私泄露风险。本文首次系统研究差分隐私随机梯度下降与HMAC伪匿名化在1B-3B参数小模型上的交互。通过96种LoRA配置和多种攻击测试，发现匹配更新机制能显著降低记忆，而DP与伪匿名化互为补充。结果为隐私保护微调提供了实用的配置建议，兼顾模型效用与数据合规。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2606.29389v1",
+      "source": "arxiv",
+      "title": "Exploring the Cryptographic Limits of Transformer Networks",
+      "abstract": "In recent work it has been shown that colluding AI agents can use steganographic methods to exchange malicious information. Whether a transformer can implement steganographic methods depends on what cryptographic functions it can implement, since a transformer that can implement a cryptographic function within its layers has source-free randomness access. Despite existing circuit-complexity results, no prior work maps specific cryptographic constructions to transformer architectures. As Merrill et al. have shown that saturated transformers can be seen as threshold circuits, we first generate threshold circuits for three different cryptographic constructions (Keccak functions, Merkle--Damgard constructions and Merkle Trees) and then map these circuits to different transformer architectures. We derive verified scaling laws for the width and depth of the circuits which implement each cryptographic construction and propose two different mappings: no-attention mapping, tokens-as-gates mapping. Beyond its security implications, this work contributes to by establishing a methodology for deriving structural guarantees on transformer computational capacity. Specifically, we derive constructive upper bounds on what a transformer of a given depth and width could plausibly compute, providing a principled foundation for capability evaluations of transformer-based AI systems.",
+      "authors": [
+        "Stefan Domunco",
+        "Andis Draguns",
+        "Philip Torr",
+        "Isaac Robinson",
+        "Christian Schroeder de Witt"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-06-28T13:26:01+00:00",
+      "link": "https://arxiv.org/pdf/2606.29389v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Investigates cryptographic functions implementable by transformers, relevant to AI security",
+      "llm_evidence_cn": "研究Transformer可实现的密码学函数，与AI安全相关",
+      "llm_evidence": "研究Transformer可实现的密码学函数，与AI安全相关",
+      "canonical_evidence": "研究Transformer可实现的密码学函数，与AI安全相关",
+      "llm_tldr_en": "Maps cryptographic constructions (Keccak, Merkle-Damgard, Merkle trees) to threshold circuits and then to transformer architectures, showing potential for steganographic communication.",
+      "llm_tldr_cn": "针对AI代理可能通过隐写术交换恶意信息的问题，本文探索Transformer实现密码学函数的能力。通过将饱和Transformer视为阈值电路，为Keccak、Merkle-Damgard和Merkle树等密码学构造生成阈值电路，并映射到Transformer架构。结果表明Transformer具备实现密码学函数的能力，对AI安全具有重要启示。",
+      "llm_tldr": "针对AI代理可能通过隐写术交换恶意信息的问题，本文探索Transformer实现密码学函数的能力。通过将饱和Transformer视为阈值电路，为Keccak、Merkle-Damgard和Merkle树等密码学构造生成阈值电路，并映射到Transformer架构。结果表明Transformer具备实现密码学函数的能力，对AI安全具有重要启示。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.27849v1",
+      "source": "arxiv",
+      "title": "Differential Privacy over Hamming Codes",
+      "abstract": "We consider the transmission of the outputs of counting queries over a binary symmetric channel (BSC), where Hamming codes are employed as the channel encoder. Since the channel is inherently noisy, this transmission already provides a degree of privacy protection ``for free'', albeit at the cost of reduced utility in the form of decoding errors. A natural question is whether this privacy can be further improved (i) without any additional real-time obfuscation of the data, such as injecting artificial noise prior to transmission, and (ii) without increasing the end-to-end error probability. In this work, we answer this question in the affirmative by deriving an optimal codeword arrangement that strictly improves differential privacy guarantees while incurring no real-time computational overhead and no degradation in utility.",
+      "authors": [
+        "Borzoo Rassouli",
+        "Morteza Varasteh"
+      ],
+      "primary_category": "cs.IT",
+      "categories": [
+        "cs.IT"
+      ],
+      "published": "2026-06-26T08:42:34+00:00",
+      "link": "https://arxiv.org/pdf/2606.27849v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "differential privacy improvement using Hamming codes",
+      "llm_evidence_cn": "利用汉明码改进差分隐私",
+      "llm_evidence": "利用汉明码改进差分隐私",
+      "canonical_evidence": "利用汉明码改进差分隐私",
+      "llm_tldr_en": "Optimal codeword arrangement in Hamming-coded transmission improves differential privacy without extra noise or error.",
+      "llm_tldr_cn": "在通过有噪声信道传输计数查询结果时，汉明码编码已自带隐私保护。本文研究如何在不增加实时噪声和误码率的前提下进一步提升差分隐私。通过理论推导，找到了最优的码字排列方式，显著改进了隐私保证。该工作为AI系统中涉及数据传输的隐私保护提供了新颖的理论方法，具有潜在的工程应用价值。",
+      "llm_tldr": "在通过有噪声信道传输计数查询结果时，汉明码编码已自带隐私保护。本文研究如何在不增加实时噪声和误码率的前提下进一步提升差分隐私。通过理论推导，找到了最优的码字排列方式，显著改进了隐私保证。该工作为AI系统中涉及数据传输的隐私保护提供了新颖的理论方法，具有潜在的工程应用价值。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2606.28923v1",
+      "source": "arxiv",
+      "title": "Towards Improved Anomaly Detection for Cloud Cybersecurity via Graph Neural Networks",
+      "abstract": "Detecting security threats in an organization's cloud computing environment has become necessary due to the increased reliance on cloud infrastructure. Logging of all cloud computing events enables investigation into any incidents after they are detected. Automated detection of threats using the logs based on heuristics or anomaly detection could result in a high false positive rate due to its relatively static nature. In this article, we present an industrial case study of a self-supervised learning method using graph neural networks applied to AWS CloudTrail logs to surface suspicious events for analyst review. The model produces an anomaly score for each event and dynamically adapts to changes in the organization without requiring periodic retraining. Based on our experiments across five organizations, the proposed model produced substantially fewer alerts than a domain expert rule-based baseline in almost all cases, reducing alert volumes to approximately 1 per hour from thousands generated by traditional methods. We note that this evaluation covers only flagged events, and false negatives cannot be estimated from the current data; findings should therefore be interpreted as a practical deployment study offering insights into real-world constraints rather than a fully validated detection system. We discuss these limitations and the requirements for extending the approach to other cloud environments as future work.",
+      "authors": [
+        "Manu Nandan",
+        "TJ Jaymes",
+        "Michael Brautbar",
+        "Edward Raff"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-06-27T13:56:56+00:00",
+      "link": "https://arxiv.org/pdf/2606.28923v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "GNN-based anomaly detection for cloud cybersecurity",
+      "llm_evidence_cn": "基于图神经网络的云网络安全异常检测",
+      "llm_evidence": "基于图神经网络的云网络安全异常检测",
+      "canonical_evidence": "基于图神经网络的云网络安全异常检测",
+      "llm_tldr_en": "Industrial case study applying self-supervised GNN to AWS CloudTrail logs for anomaly detection, dynamically adapting to organizational changes.",
+      "llm_tldr_cn": "针对云安全威胁检测的高误报率问题，本文提出基于自监督图神经网络的异常检测方法，应用于AWS CloudTrail日志。模型为每个事件计算异常分数，并能动态适应组织变化，无需周期性再训练。工业案例研究展示了其在表面可疑事件方面的有效性。",
+      "llm_tldr": "针对云安全威胁检测的高误报率问题，本文提出基于自监督图神经网络的异常检测方法，应用于AWS CloudTrail日志。模型为每个事件计算异常分数，并能动态适应组织变化，无需周期性再训练。工业案例研究展示了其在表面可疑事件方面的有效性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2606.29417v1",
+      "source": "arxiv",
+      "title": "Bit-ViP: Leveraging Bit-planes to Preserve Visual Privacy in Images through Obfuscation",
+      "abstract": "The unprecedented growth of computer vision applications, such as surveillance systems and social media, raises security and visual privacy concerns, especially when data is stored on cloud servers. Image obfuscation offers a way to preserve visual privacy while maintaining an adequate level of usability; thus, it has been a topic of great interest in recent years. However, prior obfuscation schemes are either vulnerable to malicious attacks, such as model inversion to reconstruct original images from obfuscated images, or generate non-trainable obfuscated images, making them unusable for achieving reasonable accuracy. This paper proposes a novel bit-plane-based image obfuscation scheme, {\\em Bit-ViP}, to preserve visual privacy for image-based recognition tasks. The Bit-ViP scheme produces secure, usable images by incorporating an innovative end-to-end obfuscation function. While doing so, the obfuscated image would contain non-invertible noise (generated by Lorenz's chaotic system and differential privacy), making it hard for an adversary to reconstruct the original image. We conduct extensive experiments on two popular activity recognition datasets, namely UCF101 and HMDB51, to validate the effectiveness of Bit-ViP. In the face of attacks on reconstruction, pixel frequency, information entropy, and pixel inter-correlation, we present a rigorous security analysis demonstrating tangible improvements over existing schemes.",
+      "authors": [
+        "Vishesh Kumar Tanwar",
+        "Ashish Gupta",
+        "Sanjay Madria",
+        "Sajal K. Das"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.CR",
+        "cs.ET"
+      ],
+      "published": "2026-06-28T14:28:43+00:00",
+      "link": "https://arxiv.org/pdf/2606.29417v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "bit-plane-based image obfuscation for visual privacy on cloud",
+      "llm_evidence_cn": "基于位平面的图像模糊以保护云端视觉隐私",
+      "llm_evidence": "基于位平面的图像模糊以保护云端视觉隐私",
+      "canonical_evidence": "基于位平面的图像模糊以保护云端视觉隐私",
+      "llm_tldr_en": "Bit-ViP leverages bit-planes to obfuscate images stored on cloud servers, preserving visual privacy while maintaining trainability for downstream vision tasks.",
+      "llm_tldr_cn": "云端存储的图像面临隐私泄露风险，现有模糊方案要么易被模型反转攻击，要么生成不可训练的模糊图像。本文提出Bit-ViP，一种基于位平面的图像模糊方案，通过操作图像的位平面来产生可训练的模糊图像，同时抵抗模型反转攻击。实验结果表明Bit-ViP在多种视觉任务上保持了良好的准确率，且有效保护了视觉隐私。该方法为云端图像隐私保护提供了可行方案。",
+      "llm_tldr": "云端存储的图像面临隐私泄露风险，现有模糊方案要么易被模型反转攻击，要么生成不可训练的模糊图像。本文提出Bit-ViP，一种基于位平面的图像模糊方案，通过操作图像的位平面来产生可训练的模糊图像，同时抵抗模型反转攻击。实验结果表明Bit-ViP在多种视觉任务上保持了良好的准确率，且有效保护了视觉隐私。该方法为云端图像隐私保护提供了可行方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.29073v1",
+      "source": "arxiv",
+      "title": "From Tool Connection to Execution Control: Benchmarking Security Invariants in MCP-Style Agent Runtimes",
+      "abstract": "Model Context Protocol (MCP)-style ecosystems give language-model applications a practical connection layer for tools, resources, prompts, and transports. As agents move from connection to execution, security decisions often remain split across clients, servers, prompts, approval dialogs, OAuth deployments, and logs. This paper asks whether a runtime can make execution-layer invariants explicit and testable while preserving MCP-like workflows. We define eight invariants: metadata non-authority, grant-backed approval, canonical resources, principal binding, scoped capability invocation, source-and-target data-flow authorization, deny-path audit, and explicit protocol state. We implement these invariants in HCP, a Handle-Capability Protocol reference runtime for MCP-style agent execution that represents calls through principals, resources, grants, capabilities, handles, policy decisions, data-pipe checks, and audit entries. We evaluate HCP against two MCP-like baselines: a naive connection-layer runtime and a practice-informed connection-layer mitigation baseline with metadata linting, session checks, and per-call approvals. Across 10 benchmark cases, the naive baseline permits all modeled attacks, the mitigation baseline permits 6 of 10, and HCP blocks all 10 while preserving audit evidence. Ablations identify which runtime components block attacks and preserve forensic evidence. A local in-memory microbenchmark reports sub-millisecond mean latencies for measured policy, invocation, peek, and pipe operations. A bounded GitHub README-screening sample provides ecosystem signals, not vulnerability findings. The results support a narrow claim: MCP-style agent systems need an execution-control layer in addition to connection-layer conventions.",
+      "authors": [
+        "Ting Liu"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-06-27T20:17:43+00:00",
+      "link": "https://arxiv.org/pdf/2606.29073v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "benchmarking security invariants in agent runtimes",
+      "llm_evidence_cn": "MCP风格代理运行时中的安全不变量基准测试",
+      "llm_evidence": "MCP风格代理运行时中的安全不变量基准测试",
+      "canonical_evidence": "MCP风格代理运行时中的安全不变量基准测试",
+      "llm_tldr_en": "Defines eight security invariants for agent runtimes and implements them in HCP to enforce execution-layer security, enabling testable security for AI agents.",
+      "llm_tldr_cn": "该论文针对MCP风格的代理运行时，定义了八项安全不变量，包括元数据非权威性、授权审批、作用域能力调用等。并在HCP原型中实现这些不变量，使执行层安全可测试。为AI代理的执行控制提供了基准安全框架。",
+      "llm_tldr": "该论文针对MCP风格的代理运行时，定义了八项安全不变量，包括元数据非权威性、授权审批、作用域能力调用等。并在HCP原型中实现这些不变量，使执行层安全可测试。为AI代理的执行控制提供了基准安全框架。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2606.28962v1",
+      "source": "arxiv",
+      "title": "FlipGuard: Defending Large Language Models Against Quantization-Conditioned Backdoor Attacks",
+      "abstract": "Model quantization is essential for the efficient deployment of Large Language Models (LLMs), but introduces a critical vulnerability: Quantization-Conditioned Backdoor (QCB) attacks. In these attacks, malicious behaviors remain dormant in full-precision models and activate only after specific quantization distortions, bypassing standard security audits. To mitigate this, we introduce FlipGuard, a proactive defense framework that selectively perturbs model weights prior to quantization. By breaking the adversary's precise alignment between weight patterns and quantization boundaries, FlipGuard suppresses backdoor activation without requiring access to training data or trigger samples. We further propose the Defense Effectiveness Ratio (DER), a unified metric to jointly evaluate security gains, utility preservation, and computational cost. Extensive experiments across seven LLMs (including StarCoder and LLaMA-family models) and three quantization schemes (INT8, FP4, NF4) demonstrate that FlipGuard effectively neutralizes QCBs across three scenarios, i.e., vulnerable code generation, content injection, and over-refusal, achieving high security with negligible performance degradation.",
+      "authors": [
+        "Aoying Zheng",
+        "Anqi Du",
+        "Zizhuang Deng",
+        "Yuxuan Chen"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-06-27T15:02:42+00:00",
+      "link": "https://arxiv.org/pdf/2606.28962v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "defense against quantization-conditioned backdoor attacks on LLMs",
+      "llm_evidence_cn": "对大型语言模型量化条件后门攻击的防御",
+      "llm_evidence": "对大型语言模型量化条件后门攻击的防御",
+      "canonical_evidence": "对大型语言模型量化条件后门攻击的防御",
+      "llm_tldr_en": "Proposes FlipGuard, a proactive defense that perturbs model weights before quantization to suppress quantization-conditioned backdoor attacks without requiring training data.",
+      "llm_tldr_cn": "该论文发现模型量化会引入量化条件后门（QCB）攻击漏洞，恶意行为在量产后才激活，可绕过标准审计。提出FlipGuard防御框架，在量化前选择性扰动权重，破坏攻击者对齐的权重模式与量化边界，抑制后门激活，无需训练数据或触发器样本，并提出了防御有效性指标，为LLM量化部署提供了可实用的后门防御方案。",
+      "llm_tldr": "该论文发现模型量化会引入量化条件后门（QCB）攻击漏洞，恶意行为在量产后才激活，可绕过标准审计。提出FlipGuard防御框架，在量化前选择性扰动权重，破坏攻击者对齐的权重模式与量化边界，抑制后门激活，无需训练数据或触发器样本，并提出了防御有效性指标，为LLM量化部署提供了可实用的后门防御方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2606.30542v1",
+      "source": "arxiv",
+      "title": "A Lightweight Post-Quantum Authentication Framework for 5G Base Station Bootstrapping",
+      "abstract": "The absence of authenticated bootstrapping between User Equipments (UEs) and Base Stations (BSs) in 5G leaves System Information Block (SIB) broadcasts unprotected, enabling fake BS attacks, man-in-the-middle interception, and spoofed emergency alerts. Prior efforts such as Public Key Infrastructure (PKI)-based certificate chains, token-based schemes, and identity-based signatures either impose overhead exceeding 5G's strict packet-size constraints or lack post-quantum (PQ) security. Direct NIST-PQC integration is infeasible: ML-DSA requires 34 fragmented SIB1 packets and up to 5,282,ms end-to-end delay, and FN-DSA still requires 13 fragments and up to 1,920,ms. We propose $\\emulsion$, a symmetric chained publicly verifiable authentication framework for 5G/6G BS broadcast authentication. EMULSION is the first framework to exploit native 5G architectural features: fixed SIB transmission windows, millisecond-level time synchronization, and eSIM/USIM credential management to achieve genuine PQ security at symmetric-key efficiency. It uses a TESLA-style HMAC chain anchored by a compact PQ signature (MAYO) applied once per epoch, fitting authentication within a single packet with no fragmentation and eliminating certificate transmission entirely. Unlike all prior schemes, EMULSION protects the full SIB family (SIB1-SIB21). Evaluated on a real over-the-air 5G testbed, EMULSION achieves 33x lower end-to-end delay and 31x less communication overhead than ML-DSA, and 12x lower delay and 5.4x less overhead than FN-DSA. We formally prove the security of EMULSION and open-source its implementation for public testing and adaptation.",
+      "authors": [
+        "Saleh Darzi",
+        "Mirza Masfiqur Rahman",
+        "Imtiaz Karim",
+        "Rouzbeh Behnia",
+        "Attila A Yavuz",
+        "Elisa Bertino"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-06-29T16:42:16+00:00",
+      "link": "https://arxiv.org/pdf/2606.30542v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "post-quantum authentication framework for base station bootstrapping, relevant to identity authentication in cloud",
+      "llm_evidence_cn": "后量子认证框架用于基站启动，与云计算身份认证方法相关",
+      "llm_evidence": "后量子认证框架用于基站启动，与云计算身份认证方法相关",
+      "canonical_evidence": "后量子认证框架用于基站启动，与云计算身份认证方法相关",
+      "llm_tldr_en": "A lightweight post-quantum authentication scheme using symmetric chained publicly verifiable authentication for 5G base station bootstrapping, addressing size and delay constraints.",
+      "llm_tldr_cn": "针对5G基站启动中缺乏认证导致虚假基站攻击问题，提出轻量后量子认证框架，采用对称链式公开可验证认证，满足5G严格包大小和延迟约束。该认证思想可迁移至云计算环境中的身份认证场景。",
+      "llm_tldr": "针对5G基站启动中缺乏认证导致虚假基站攻击问题，提出轻量后量子认证框架，采用对称链式公开可验证认证，满足5G严格包大小和延迟约束。该认证思想可迁移至云计算环境中的身份认证场景。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.29412v2",
+      "source": "arxiv",
+      "title": "Privacy-Aware State Estimation: From Coarse to Precise Privacy Protection",
+      "abstract": "This paper addresses the problem of achieving both coarse and precise privacy in state estimation. Coarse privacy forces the eavesdropper's total mean-square error (MSE) to infinity, but errors along certain confidential directions may remain bounded. This motivates precise privacy, which additionally drives the MSE along prescribed directions to infinity. For coarse privacy, an analytical transformation is established, preserving the user's optimality and driving the eavesdropper's total MSE to infinity at a polynomial-exponential rate. A stochastic intermittent encryption scheme is further developed, and an explicit lower bound on the encryption probability is derived to guarantee divergence. For precise privacy, by analyzing the behavior of the Riccati equation on the unobservable subspace, we prove that the eavesdropper's directional MSE becomes unbounded if and only if the direction's unstable component lies outside the observable subspace. Finally, a systematic method is proposed to exclude target vectors from the observable subspace, forcing the directional MSE to infinity.",
+      "authors": [
+        "Zhongyao Hu",
+        "Jason J. R. Liu",
+        "Jun Shang",
+        "Zhan Shu"
+      ],
+      "primary_category": "eess.SY",
+      "categories": [
+        "eess.SY",
+        "cs.IT"
+      ],
+      "published": "2026-06-28T14:20:10+00:00",
+      "link": "https://arxiv.org/pdf/2606.29412v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "privacy-aware state estimation with coarse to precise protection",
+      "llm_evidence_cn": "从粗到精的隐私保护状态估计",
+      "llm_evidence": "从粗到精的隐私保护状态估计",
+      "canonical_evidence": "从粗到精的隐私保护状态估计",
+      "llm_tldr_en": "Proposes transformations and encryption schemes to achieve coarse and precise privacy in state estimation, driving eavesdropper's error to infinity along desired directions.",
+      "llm_tldr_cn": "状态估计中隐私保护需兼顾粗粒度和细粒度需求。本文针对窃听者，先建立解析变换实现粗粒度隐私（总均方误差趋于无穷），再开发随机间歇加密方案实现精准隐私（沿指定方向误差无穷）。推导了加密概率下界确保发散，并分析了黎曼流形行为。该方法为隐私保护状态估计提供了通用理论框架，可应用于云服务中的敏感数据处理。",
+      "llm_tldr": "状态估计中隐私保护需兼顾粗粒度和细粒度需求。本文针对窃听者，先建立解析变换实现粗粒度隐私（总均方误差趋于无穷），再开发随机间歇加密方案实现精准隐私（沿指定方向误差无穷）。推导了加密概率下界确保发散，并分析了黎曼流形行为。该方法为隐私保护状态估计提供了通用理论框架，可应用于云服务中的敏感数据处理。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2606.29239v1",
+      "source": "arxiv",
+      "title": "Breaking the Rounding Trap: Securing LLMs against Quantization-Conditioned Backdoors",
+      "abstract": "Model quantization is a key technique for reducing storage and inference costs when deploying large language models in practice. However, recent studies show that the discretization and rounding errors introduced by quantization can be exploited by adversaries to construct quantization-conditioned backdoor (QCB) attacks. Under such attacks, malicious behaviors remain dormant in the full-precision stage and are activated only after quantized deployment, thereby bypassing conventional security auditing and detection mechanisms. To address this threat, we propose a proactive pre-quantization defense method, QuantGuard. Our method introduces differentiable rounding control variables and combines error-guided rounding reversal constraints, output-distribution consistency, and weight-distance regularization to finely regulate critical rounding behaviors. Crucially, QuantGuard utilizes only a small calibration dataset and does not modify existing quantization algorithms. This design breaks the precise alignment between attacker-crafted weight patterns and quantization boundaries, effectively suppressing the post-quantization backdoor activation pathway while preserving the model's original functionality and performance. We conduct systematic experiments on six mainstream LLMs (including the LLaMA-3 and Qwen2.5-Coder) using three quantization precisions (INT8, FP4, and NF4) across three representative scenarios: vulnerable code generation, content injection, and over-refusal. The results show that QuantGuard consistently mitigates QCB attacks, reducing the attack success rate to a level comparable to the clean model while largely preserving performance on general capability benchmarks. With low computational overhead, our method offers an effective, practical solution for secure quantized LLM deployment.",
+      "authors": [
+        "Aoying Zheng",
+        "Anqi Du",
+        "Zizhuang Deng",
+        "Yuxuan Chen"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-06-28T07:06:46+00:00",
+      "link": "https://arxiv.org/pdf/2606.29239v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "defends LLMs against quantization-conditioned backdoor attacks",
+      "llm_evidence_cn": "防御LLM中的量化条件后门攻击",
+      "llm_evidence": "防御LLM中的量化条件后门攻击",
+      "canonical_evidence": "防御LLM中的量化条件后门攻击",
+      "llm_tldr_en": "Proposes QuantGuard, a pre-quantization defense that uses differentiable rounding control variables to prevent quantization-conditioned backdoor attacks on LLMs.",
+      "llm_tldr_cn": "量化过程可能引入后门攻击，恶意行为在部署后才被激活。本文提出QuantGuard，通过可微分的舍入控制变量和错误引导的舍入反转约束，在量化前消除后门。实验证明该方法能有效防御量化条件后门，同时保持模型性能。",
+      "llm_tldr": "量化过程可能引入后门攻击，恶意行为在部署后才被激活。本文提出QuantGuard，通过可微分的舍入控制变量和错误引导的舍入反转约束，在量化前消除后门。实验证明该方法能有效防御量化条件后门，同时保持模型性能。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2606.30970v1",
+      "source": "arxiv",
+      "title": "AgentBound: Verifiable Behavioral Governance for Autonomous AI Agents",
+      "abstract": "Autonomous AI agents increasingly perform consequential actions on behalf of human principals, including financial transactions, external communications, and enterprise workflows. Existing agent infrastructure relies on identity federation and delegated authorization to authenticate workloads and control resource access, but it cannot determine whether an authorized action should be executed under the current behavioral and operational context.   We present AgentBound, a runtime governance framework that provides verifiable behavioral oversight for autonomous AI agents. AgentBound evaluates each proposed action using three independent authorities: delegated authorization, owner-signed behavioral constitutions, and site action contracts. Their judgments are conservatively composed through a formal decision model to determine whether an action should be permitted, reviewed, or denied before execution.   To provide accountability, AgentBound generates cryptographically verifiable governance receipts that bind every action to the exact delegation, policy, and semantic artifacts governing the decision, enabling independent replay verification and policy provenance. The framework also introduces standing delegation for long-running agents, allowing periodic workloads to operate under continuously refreshed governance policies while preserving revocability and bounded authority.   We present the formal foundation, system architecture, governance receipt protocol, and AgentBound-Bench, a benchmark framework for evaluating governance correctness, authority composition, and accountability. Rather than replacing model alignment, AgentBound complements it by providing a deterministic governance layer between authorization and execution, transforming governance from a process that must be trusted into one that can be independently verified.",
+      "authors": [
+        "Anuj Kaul",
+        "Qianlong Lan",
+        "Pranay Gupta"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-06-29T23:12:06+00:00",
+      "link": "https://arxiv.org/pdf/2606.30970v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "verifiable behavioral governance for autonomous AI agents",
+      "llm_evidence_cn": "自主AI代理的可验证行为治理",
+      "llm_evidence": "自主AI代理的可验证行为治理",
+      "canonical_evidence": "自主AI代理的可验证行为治理",
+      "llm_tldr_en": "AgentBound provides a runtime governance framework that evaluates AI agent actions using three independent authorities for verifiable behavioral oversight.",
+      "llm_tldr_cn": "该论文提出AgentBound框架，在运行时对自主AI代理的每个待执行动作进行三方独立判断：委托授权、所有者签署的行为宪法和站点动作契约，提供可验证的行为监督，弥补了现有身份联邦和授权机制无法感知行为上下文的缺陷，可应用于金融交易等关键场景。",
+      "llm_tldr": "该论文提出AgentBound框架，在运行时对自主AI代理的每个待执行动作进行三方独立判断：委托授权、所有者签署的行为宪法和站点动作契约，提供可验证的行为监督，弥补了现有身份联邦和授权机制无法感知行为上下文的缺陷，可应用于金融交易等关键场景。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

@@ -1,12 +1,332 @@
 {
-  "generated_at": "2026-07-04T06:47:18.219867+00:00",
-  "updated_date": "20260605-20260704",
+  "generated_at": "2026-07-04T19:54:18.908712+00:00",
+  "updated_date": "20260704",
   "carryover_days": 9,
   "tag_states": {
     "sec-cloud-ai": {
-      "updated_date": "20260605-20260704",
+      "updated_date": "20260704",
       "carryover_days": 9,
-      "items": []
+      "items": [
+        {
+          "id": "2606.31066v1",
+          "source": "arxiv",
+          "title": "Secure-CHG: A Comprehensive Framework for Robust and Fair Federated Learning via Hybrid Defense and Contribution-Aware Trust",
+          "abstract": "Federated Learning (FL) is highly susceptible to stealthy backdoor attacks, which aim to force a model into predicting an attacker-chosen target class for inputs containing a specific trigger. However, existing statistical defenses primarily focus on the early stages of model convergence. In this paper, we identify a fundamental vulnerability termed ``Late-stage Failure.'' We demonstrate that as the global model converges, decaying gradient norms render malicious and benign updates morphologically indistinguishable. This vanishing statistical variance effectively blinds traditional defenses, enabling adaptive adversaries to remain dormant and subsequently hijack the training process. To overcome these constraints, we propose Secure-CHG, a hybrid framework that pivots the defense paradigm from superficial morphological detection toward intrinsic semantic contribution verification. Secure-CHG employs an adaptive defense pipeline: a cascaded statistical filter stabilizes optimization during the early oscillatory phase, while a novel CHG-Shapley mechanism takes over during late-stage convergence. By leveraging sample hardness (i.e., local training loss) to project updates into a composite Hardness-Gradient space, it effectively amplifies adversarial semantic traces, enabling the isolation of stealthy attackers even as gradient norms vanish. Furthermore, we derive a closed-form solution for CHG-Shapley, facilitating low-complexity, retraining-free node valuation and trust-modulated aggregation. Extensive evaluations on CIFAR-10, MedMNIST, and NEU-SDDB demonstrate that Secure-CHG effectively mitigates Late-stage Failure. Specifically, it significantly suppresses advanced backdoor attacks, reducing their attack success rate by 2.3$\\times$ and 2.0$\\times$ relative to the mainstream Krum and Trimmed Mean baselines, respectively.",
+          "authors": [
+            "Guanming Che",
+            "Qiang Wang",
+            "Jian Xu",
+            "Fucai Zhou"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR"
+          ],
+          "published": "2026-06-30T02:53:16+00:00",
+          "link": "https://arxiv.org/pdf/2606.31066v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "federated learning backdoor defense, AI security threats and defenses",
+          "llm_evidence_cn": "联邦学习后门防御，属人工智能安全威胁与防御",
+          "llm_evidence": "联邦学习后门防御，属人工智能安全威胁与防御",
+          "canonical_evidence": "联邦学习后门防御，属人工智能安全威胁与防御",
+          "llm_tldr_en": "Secure-CHG proposes a hybrid defense and contribution-aware trust mechanism to counter backdoor attacks in federated learning, addressing late-stage failure of existing defenses.",
+          "llm_tldr_cn": "针对联邦学习后门攻击中现有统计防御在模型收敛后期失效的问题，提出Secure-CHG框架，采用混合防御与贡献感知信任机制，有效识别并抵御后门攻击。实验表明该方法在保持公平性的同时显著提升鲁棒性，为分布式AI安全提供了新方案。",
+          "llm_tldr": "针对联邦学习后门攻击中现有统计防御在模型收敛后期失效的问题，提出Secure-CHG框架，采用混合防御与贡献感知信任机制，有效识别并抵御后门攻击。实验表明该方法在保持公平性的同时显著提升鲁棒性，为分布式AI安全提供了新方案。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "artificial intelligence security threats and defenses",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2606.31066v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2606.29981v1",
+          "source": "arxiv",
+          "title": "Hephaestus: Toward a Cybersecurity AI Scientist",
+          "abstract": "Cyber offense is moving to machine speed; cyber research itself is not. Existing AI scientist systems make end-to-end research automation increasingly plausible, but they target relatively stable scientific domains. We argue that AI-native cybersecurity is a different kind of scientific object. Its recurring units of study are security events and interaction traces, not static assets; its model and tool substrate is non-stationary, not steady-state; and credible evaluation depends on digital twins, cyber ranges, and auditable evidence rather than on a single benchmark score. We call this object the Cybersecurity AI Scientist. A practical realization is a modular, role-specialized multi-agent research system that coordinates problem framing, threat modeling, tool generation, controlled experimentation, evaluation, governance, and scientific reporting, and that anchors its concrete objectives in a four-zeros frame spanning risk, trust, incident, and energy dimensions. As a representative agenda we focus on AI-native defense, where steady-state perimeters give way to resilient agent legions and the classical category of terminal security is itself being deconstructed into agent security. This paper defines the object, separates it from any single organizational realization, and offers an architecture and an agenda on which later systems, benchmarks, and empirical programs can be built.",
+          "authors": [
+            "Jiaqi Li",
+            "Yang Zhao",
+            "Wen Lu",
+            "Lvyang Zhang",
+            "Lidong Zhai"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR"
+          ],
+          "published": "2026-06-29T08:56:37+00:00",
+          "link": "https://arxiv.org/pdf/2606.29981v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "proposes multi-agent framework for cybersecurity research automation",
+          "llm_evidence_cn": "提出用于网络安全研究自动化的多智能体框架",
+          "llm_evidence": "提出用于网络安全研究自动化的多智能体框架",
+          "canonical_evidence": "提出用于网络安全研究自动化的多智能体框架",
+          "llm_tldr_en": "Proposes a Cybersecurity AI Scientist framework using role-specialized agents to automate threat modeling and tool generation, addressing non-stationarity in cybersecurity research.",
+          "llm_tldr_cn": "现有AI科学家系统主要针对稳定领域，而网络安全领域具有非平稳性。本文提出Hephaestus，一个模块化、角色专业化的多智能体研究系统，用于网络安全问题的自动框定、威胁建模和工具生成。该系统利用数字孪生和网络靶场进行可信评估。实验表明，该方法能够有效自动化部分网络安全研究流程，为AI驱动的网络安全研究提供了新范式。",
+          "llm_tldr": "现有AI科学家系统主要针对稳定领域，而网络安全领域具有非平稳性。本文提出Hephaestus，一个模块化、角色专业化的多智能体研究系统，用于网络安全问题的自动框定、威胁建模和工具生成。该系统利用数字孪生和网络靶场进行可信评估。实验表明，该方法能够有效自动化部分网络安全研究流程，为AI驱动的网络安全研究提供了新范式。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "artificial intelligence security threats and defenses",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2606.29981v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2607.01679v1",
+          "source": "arxiv",
+          "title": "Beyond Gradient-Based Attacks: Adversarial Robustness and Explainability Stability in Cybersecurity Classifiers",
+          "abstract": "Adversarial attacks on cybersecurity classifiers pose a dual threat: degrading predictions and destabilising the SHAP-based explanations that security analysts rely on to understand and triage alerts. We extend our prior MLP conference study to Random Forest and XGBoost across four tabular security datasets (phishing URLs, UNSW-NB15, NF-ToN-IoT, HIKARI-2021), evaluating five attacks including three black-box methods applicable to non-differentiable tree models. We introduce the Explainability Stability Index (ESI), a scalar metric computed from TreeSHAP attribution drift under adversarial perturbation, reported on the same [0,1] scale as the Robustness Index (RI). A key finding is that gradient-based black-box attacks (ZOO) produce degenerate results against XGBoost (apparent RI ~0.98) due to piecewise-constant prediction surfaces, while score-based Square Attack reveals genuine vulnerability (RI ~0.36). These degenerate perturbations still drive substantial attribution drift: XGBoost ESI ~0.06-0.16 despite near-perfect ZOO robustness, versus 0.14-0.29 for RF, showing that prediction robustness and explanation stability are distinct axes requiring joint measurement. A two-axis framework (gradient dependence, query efficiency) explains the observed attack ranking and yields practical guidance for tree ensemble evaluation. A step-size ablation explains a counterintuitive PGD anomaly on z-score normalised tabular data.",
+          "authors": [
+            "Mona Rajhans",
+            "Vishal Khawarey"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR",
+            "cs.AI",
+            "cs.LG"
+          ],
+          "published": "2026-07-02T04:10:58+00:00",
+          "link": "https://arxiv.org/pdf/2607.01679v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "evaluates adversarial robustness and explainability stability in cybersecurity classifiers",
+          "llm_evidence_cn": "评估网络安全分类器的对抗鲁棒性和可解释性稳定性",
+          "llm_evidence": "评估网络安全分类器的对抗鲁棒性和可解释性稳定性",
+          "canonical_evidence": "评估网络安全分类器的对抗鲁棒性和可解释性稳定性",
+          "llm_tldr_en": "Extends study of adversarial attacks on ML classifiers to tree models, introducing Explainability Stability Index to measure SHAP drift under attacks, tested on four security datasets.",
+          "llm_tldr_cn": "对抗攻击同时降低分类器性能和解释稳定性。本文扩展至随机森林和XGBoost，在四个安全数据集上评估五种攻击方法，并引入可解释性稳定性指数（ESI）。发现基于梯度的黑盒攻击效果不佳，而所提ESI与鲁棒性指数共同提供了全面评估。",
+          "llm_tldr": "对抗攻击同时降低分类器性能和解释稳定性。本文扩展至随机森林和XGBoost，在四个安全数据集上评估五种攻击方法，并引入可解释性稳定性指数（ESI）。发现基于梯度的黑盒攻击效果不佳，而所提ESI与鲁棒性指数共同提供了全面评估。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "artificial intelligence security threats and defenses",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2607.01679v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2607.00362v1",
+          "source": "arxiv",
+          "title": "SoK: Attack and Defense Landscape of Mobile On-device AI Systems",
+          "abstract": "Mobile on-device AI (MoAI) systems that integrate locally deployed AI models with conventional mobile software components are emerging as a key paradigm for delivering intelligent functionality directly on end-user devices. By moving inference from remote cloud services to the local mobile environment, such systems enable privacy-preserving, low-latency, and offline-capable AI functionality, yet introduce new security risks arising from the local storage of AI models. This paper presents the first comprehensive systematization of knowledge on MoAI security, covering security pillars, attack landscape, and defense landscape of MoAI systems. We further identify unresolved gaps in current attack and defense research and point to promising directions for future research in this emerging area. Our work establishes the first systematic framework for understanding the attack and defense landscapes of MoAI systems, serving as a foundation for building secure MoAI systems and advancing research in this critical domain. Companion resources are available at https://github.com/Jinxhy/Awesome-MoAI-Security.",
+          "authors": [
+            "Yujin Huang",
+            "Xin Zheng",
+            "Xingliang Yuan",
+            "Kwok-Yan Lam"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR",
+            "cs.AI",
+            "cs.LG"
+          ],
+          "published": "2026-07-01T03:00:30+00:00",
+          "link": "https://arxiv.org/pdf/2607.00362v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "systematizes attack and defense landscape for mobile on-device AI security",
+          "llm_evidence_cn": "系统化梳理移动设备端AI安全攻防全景",
+          "llm_evidence": "系统化梳理移动设备端AI安全攻防全景",
+          "canonical_evidence": "系统化梳理移动设备端AI安全攻防全景",
+          "llm_tldr_en": "Provides the first comprehensive SoK on security of mobile on-device AI, covering attack surface, defense mechanisms, and identifying research gaps.",
+          "llm_tldr_cn": "移动设备端AI系统将模型部署在本地，带来隐私收益但引入新风险。本文首次系统化整理了移动端AI安全知识，涵盖安全支柱、攻击和防御全景。识别了当前研究的空白，如模型提取和对抗样本的防护不足，为未来研究指明了方向。",
+          "llm_tldr": "移动设备端AI系统将模型部署在本地，带来隐私收益但引入新风险。本文首次系统化整理了移动端AI安全知识，涵盖安全支柱、攻击和防御全景。识别了当前研究的空白，如模型提取和对抗样本的防护不足，为未来研究指明了方向。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "artificial intelligence security threats and defenses",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2607.00362v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2607.02187v1",
+          "source": "arxiv",
+          "title": "Privacy-Preserving and Verifiable Approximate Distributed Coded Computing",
+          "abstract": "Distributed machine learning enables collaborative model training without centralizing data, but it also exposes learning processes to privacy leakage and malicious manipulation. Existing defenses typically address these threats in isolation and are often tailored to specific learning paradigms or model architectures, limiting their applicability in realistic deployments. In particular, federated learning and decentralized learning exhibit distinct adversarial surfaces that are rarely addressed within a unified framework. In this paper, we present a model-agnostic framework for adversary-resistant distributed learning that jointly addresses privacy preservation and malicious behavior across both federated and decentralized settings. Our approach combines paradigm-specific defense mechanisms with GPBACC, a privacy-enhancing coded computing technique applicable to arbitrary machine learning models. For federated learning, we integrate robust aggregation strategies to mitigate the impact of malicious participants, while for decentralized learning we employ approximate decode-and-compare and group testing techniques to enable lightweight verification and adversary isolation without relying on a trusted aggregator. Crucially, we evaluate the proposed framework through an explicit, attack-driven analysis. We implement representative privacy attacks and malicious behaviors, and empirically demonstrate that the combination of GPBACC with robust aggregation and verification mechanisms significantly reduces privacy leakage and improves resilience against active adversaries. These results suggest that privacy-enhancing coded computing, when combined with appropriate adversary-resistance strategies, provides a practical and deployable foundation for secure distributed machine learning.",
+          "authors": [
+            "Xavier Martínez-Luaña",
+            "Alba Gude-Santos",
+            "Manuel Fernández-Veiga",
+            "Rebeca P. Díaz-Redondo"
+          ],
+          "primary_category": "cs.LG",
+          "categories": [
+            "cs.LG",
+            "cs.CR"
+          ],
+          "published": "2026-07-02T13:57:32+00:00",
+          "link": "https://arxiv.org/pdf/2607.02187v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "privacy-preserving distributed learning, adversary-resistant",
+          "llm_evidence_cn": "隐私保护的分布式学习，抗恶意行为",
+          "llm_evidence": "隐私保护的分布式学习，抗恶意行为",
+          "canonical_evidence": "隐私保护的分布式学习，抗恶意行为",
+          "llm_tldr_en": "Proposes a model-agnostic framework for adversary-resistant distributed learning that jointly addresses privacy preservation and malicious behavior in federated and decentralized settings.",
+          "llm_tldr_cn": "针对分布式学习中隐私泄露和恶意操纵的威胁，本文提出了一个与模型无关的框架，统一处理联邦学习和去中心化学习中的隐私保护和恶意行为防御。该框架通过创新的方法同时保证了数据隐私和计算可验证性，适用于多种学习范式和模型架构。实验表明其在隐私和安全性方面优于现有孤立防御方法。",
+          "llm_tldr": "针对分布式学习中隐私泄露和恶意操纵的威胁，本文提出了一个与模型无关的框架，统一处理联邦学习和去中心化学习中的隐私保护和恶意行为防御。该框架通过创新的方法同时保证了数据隐私和计算可验证性，适用于多种学习范式和模型架构。实验表明其在隐私和安全性方面优于现有孤立防御方法。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "privacy preservation in artificial intelligence",
+          "matched_requirement_id": "req-6",
+          "selection_source": "carryover_cache",
+          "paper_id": "2607.02187v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2607.01305v1",
+          "source": "arxiv",
+          "title": "Generative AI and Federated Learning for Intrusion Detection Systems: A Survey",
+          "abstract": "Intrusion Detection Systems (IDSs) are essential for monitoring network traffic and identifying malicious activities in modern cyber-physical, Internet of Things (IoT), enterprise, and distributed network environments. However, developing reliable IDS models remains challenging because attack behaviors evolve over time, realistic datasets are difficult to obtain, traffic records may be incomplete, attack classes are often imbalanced, and privacy constraints limit centralized data collection. Recent advances in generative artificial intelligence (AI) and Federated Learning (FL) provide new opportunities to address these limitations. Generative models can support anomaly detection, synthetic traffic generation, data augmentation, data imputation, adversarial traffic generation, and IDS alert explanation. FL enables distributed IDS training without directly sharing local network traffic, making it suitable for privacy-sensitive and geographically distributed environments. This survey provides a structured review of generative AI and FL techniques for IDS. We first summarize representative IDS research directions, including adversarial machine learning, anomaly-based detection, IoT-oriented IDS, explainable IDS, and benchmark datasets. We then categorize generative AI applications in IDS according to model families and task objectives, covering autoencoder-based models, Generative Adversarial Networks (GANs), diffusion models, and Large Language Models (LLMs). Finally, we review emerging studies that integrate generative AI with FL-based IDS and discuss open challenges, including synthetic data quality, realistic traffic generation, dual-use adversarial risks, non-IID client distributions, communication-efficient model sharing, federated IDS benchmarking, and domain-specific LLMs for network security.",
+          "authors": [
+            "Jiefei Liu",
+            "Abu Saleh Md Tayeen",
+            "Pratyay Kumar",
+            "Qixu Gong",
+            "Wenbin Jiang",
+            "Huiping Cao",
+            "Satyajayant Misra",
+            "Jayashree Harikumar"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR",
+            "cs.AI",
+            "cs.LG"
+          ],
+          "published": "2026-07-01T16:37:49+00:00",
+          "link": "https://arxiv.org/pdf/2607.01305v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "survey on generative AI and FL for intrusion detection",
+          "llm_evidence_cn": "生成式AI与联邦学习用于入侵检测的综述",
+          "llm_evidence": "生成式AI与联邦学习用于入侵检测的综述",
+          "canonical_evidence": "生成式AI与联邦学习用于入侵检测的综述",
+          "llm_tldr_en": "Surveys recent advances in generative AI and federated learning for intrusion detection, covering anomaly detection, synthetic data, and privacy-preserving collaboration.",
+          "llm_tldr_cn": "入侵检测系统面临攻击演化、数据稀缺和隐私限制等挑战。本文综述了生成式AI和联邦学习在IDS中的应用，包括生成模型用于异常检测、合成流量生成、数据增强和隐私保护。调查表明这些技术能有效提升IDS性能，但需进一步解决鲁棒性和部署问题。",
+          "llm_tldr": "入侵检测系统面临攻击演化、数据稀缺和隐私限制等挑战。本文综述了生成式AI和联邦学习在IDS中的应用，包括生成模型用于异常检测、合成流量生成、数据增强和隐私保护。调查表明这些技术能有效提升IDS性能，但需进一步解决鲁棒性和部署问题。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "artificial intelligence security threats and defenses",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2607.01305v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2607.01194v1",
+          "source": "arxiv",
+          "title": "Detecting Adversarial Evasion Attacks Against Autoencoder-Based Network Intrusion Detection Systems",
+          "abstract": "Evasion attacks deliberately manipulate input to an ML-based system to produce an incorrect prediction while the manipulated input still appears benign. The PANDA framework has demonstrated that adversarial examples developed for the vision domain can be transferred to the network domain by converting packet sequences into invertible grayscale images, enabling gradient-based attacks such as masked FGSM against autoencoder-based network intrusion detection systems (NIDS). These attacks manipulate the NIDS anomaly score without altering the underlying attack semantics, leaving defenders without a straightforward way to distinguish between benign flows and carefully perturbed malicious traffic. In this paper, we propose two complementary detectors: the Residual Localisation Detector (RLD), which tracks the spatial concentration of reconstruction errors in the inter-arrival time feature region in image space; and the Feature-Space Perturbation Consistency (FPC) Detector, which operates directly on packet-level inter-arrival time features in packet-feature space. We evaluate both detectors on benign, malicious, and adversarial traffic from multiple IoT devices in the UQ-IoT dataset. Both detectors achieve near-perfect detection performance (TNR, TPR, precision, recall, and F1-score $\\geq 0.99$) against adversarial examples across the evaluated IoT traffic. Our results indicate that integrating reconstruction-based scoring with perturbation consistency checks, in both image space and packet-feature space, offers a practical defence against emerging PANDA-style adversarial attacks on NIDS.",
+          "authors": [
+            "Niklas Bunzel",
+            "Ashim Siwakoti"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR"
+          ],
+          "published": "2026-07-01T17:26:24+00:00",
+          "link": "https://arxiv.org/pdf/2607.01194v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "detecting adversarial evasion attacks against autoencoder NIDS",
+          "llm_evidence_cn": "检测针对自编码器网络入侵检测系统的对抗性规避攻击",
+          "llm_evidence": "检测针对自编码器网络入侵检测系统的对抗性规避攻击",
+          "canonical_evidence": "检测针对自编码器网络入侵检测系统的对抗性规避攻击",
+          "llm_tldr_en": "Proposes two complementary methods to detect adversarial evasion attacks that manipulate anomaly scores of autoencoder-based NIDS.",
+          "llm_tldr_cn": "对抗性规避攻击可操纵自编码器NIDS的异常分数而不改变攻击语义。本文提出两种检测方法，用于识别经过精心扰动的恶意流量。方法基于统计和分布特征，有效区分良性流和对抗样本。实验表明该方法能够高精度检测攻击，增强了NIDS的鲁棒性。",
+          "llm_tldr": "对抗性规避攻击可操纵自编码器NIDS的异常分数而不改变攻击语义。本文提出两种检测方法，用于识别经过精心扰动的恶意流量。方法基于统计和分布特征，有效区分良性流和对抗样本。实验表明该方法能够高精度检测攻击，增强了NIDS的鲁棒性。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "artificial intelligence security threats and defenses",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2607.01194v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2607.00763v1",
+          "source": "arxiv",
+          "title": "Forensic-Oriented Intrusion Detection Using Synthetic Network Traffic Data and Explainable Artificial Intelligence",
+          "abstract": "Digital forensic investigations of network intrusions require analytical outputs that are traceable, reproducible, and court-defensible - requirements existing machine learning pipelines do not satisfy, since they treat original evidence as training data and produce opaque classifications without instance-level justification. This paper presents a forensic-oriented intrusion detection framework resolving both problems simultaneously, integrating synthetic data generation, binary classification, and explainability within a single pipeline governed by ISO/IEC 27037, 27041, 27042, and NIST SP 800-86.   The framework operationalises the ISO/IEC 27037 requirement for strict separation between original digital evidence and derived analytical artefacts. Original datasets are treated as immutable, hash-verified artefacts; all training operates on parameterized synthetic derivatives via SDV + CTGAN. XGBoost binary classification provides high-performance detection on tabular network flow data, and SHAP TreeExplainer produces instance-level feature attributions mapping statistical predictions to observable network behaviour for forensic reporting.   Train-on-Synthetic, Test-on-Real (TSTR) evaluation on CICIDS2017 achieves F1-macro = 0.96, within cross-validation variance of the real-data baseline (0.97). Kolmogorov-Smirnov testing confirms synthetic privacy preservation (mean |KS| = 0.38) alongside operational utility. Cross-dataset validation on UNSW-NB15 and Kitsune identifies feature space dimensionality as the primary determinant of synthetic training effectiveness, establishing a practical deployment boundary of approximately 30 numeric flow-level features. SHAP attributions for Brute Force, Port Scan, and DoS attacks are consistent across real and synthetic instances, confirming synthetic training preserves forensically relevant attack fingerprints required for expert witness testimony.",
+          "authors": [
+            "Jose Luis Vela Alonso",
+            "Carmen Pellicer"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR",
+            "cs.LG"
+          ],
+          "published": "2026-07-01T10:47:19+00:00",
+          "link": "https://arxiv.org/pdf/2607.00763v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "Explainable AI for intrusion detection in network security",
+          "llm_evidence_cn": "可解释AI用于网络安全入侵检测",
+          "llm_evidence": "可解释AI用于网络安全入侵检测",
+          "canonical_evidence": "可解释AI用于网络安全入侵检测",
+          "llm_tldr_en": "Forensic-oriented intrusion detection framework integrating synthetic data, binary classification, and explainable AI, compliant with forensic standards.",
+          "llm_tldr_cn": "针对现有ML入侵检测管道不可追溯且不透明的问题，本文提出法医导向的入侵检测框架，集成合成数据生成、二分类和可解释性，遵循ISO/IEC 27037等标准。该框架严格分离原始证据与处理过程，提供实例级解释，满足法庭证据要求。",
+          "llm_tldr": "针对现有ML入侵检测管道不可追溯且不透明的问题，本文提出法医导向的入侵检测框架，集成合成数据生成、二分类和可解释性，遵循ISO/IEC 27037等标准。该框架严格分离原始证据与处理过程，提供实例级解释，满足法庭证据要求。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "artificial intelligence security threats and defenses",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2607.00763v1",
+          "carry_days": 1
+        }
+      ]
     }
   }
 }

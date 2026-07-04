@@ -1,0 +1,1207 @@
+Title: A Lightweight Post-Quantum Authentication Framework for 5G Base Station Bootstrapping
+
+URL Source: https://arxiv.org/pdf/2606.30542v1
+
+Published Time: Tue, 30 Jun 2026 02:36:09 GMT
+
+Number of Pages: 15
+
+Markdown Content:
+# A Lightweight Post-Quantum Authentication Framework for 5G Base Station Bootstrapping 
+
+Saleh Darzi ∗, Mirza Masfiqur Rahman †, Imtiaz Karim ‡, Rouzbeh Behnia §, Attila A Yavuz ∗, and Elisa Bertino †
+
+Abstract —The absence of authenticated bootstrapping between User Equipments (UEs) and Base Stations (BSs) in 5G leaves Sys-tem Information Block (SIB) broadcasts unprotected, enabling fake BS attacks, man-in-the-middle interception, and spoofed emergency alerts. Prior efforts such as Public Key Infrastructure (PKI)-based certificate chains, token-based schemes, and identity-based signatures either impose overhead exceeding 5G’s strict packet-size constraints or lack post-quantum (PQ) security. Direct NIST-PQC integration is infeasible: ML-DSA requires 34 fragmented SIB1 packets and up to 5,282 ms end-to-end delay, and FN-DSA still requires 13 fragments and up to 1,920 ms. We propose EMULSION , a symmetric chained publicly verifiable au-thentication framework for 5G/6G BS broadcast authentication. 
+
+EMULSION is the first framework to exploit native 5G architec-tural features: fixed SIB transmission windows, millisecond-level time synchronization, and eSIM/USIM credential management to achieve genuine PQ security at symmetric-key efficiency. It uses a TESLA-style HMAC chain anchored by a compact PQ signature (MAYO) applied once per epoch, fitting authentication within a single packet with no fragmentation and eliminat-ing certificate transmission entirely. Unlike all prior schemes, 
+
+EMULSION protects the full SIB family (SIB1-SIB21). Evaluated on a real over-the-air 5G testbed, EMULSION achieves 33 × lower end-to-end delay and 31 × less communication overhead than ML-DSA, and 12 × lower delay and 5.4× less overhead than FN-DSA. We formally prove the security of EMULSION and open-source its implementation for public testing and adaptation. 
+
+Index Terms —5G Cellular Networks, Authentication, Network Performance Analysis, Post-Quantum Security. 
+
+I. I NTRODUCTION 
+
+Despite advancements in next-generation cellular networks, a fundamental security gap persists at the very first moment a device connects: the absence of authenticated bootstrapping between User Equipments (UEs) and Base Stations (BSs). During the initial Radio Resource Control (RRC) phase, a UE selects a BS based solely on signal strength, blindly accepting unprotected System Information Block (SIB) broadcasts with-out any BS verification [1], [2], [3]. These broadcast messages serve as the root of trust for all subsequent network operations, conveying access parameters, scheduling, emergency alerts, roaming directives, and mobility configuration from the critical 
+
+∗Saleh Darzi and Attila A Yavuz are with the Bellini College of AI, Cybersecurity and Computing, University of South Florida; Email: sale-hdarzi@usf.edu; attilaayavuz@usf.edu 
+
+†Mirza Masfiqur Rahman and Elisa Bertino are with the Department of Computer Science, Purdue University, Email:rahman75@purdue.edu; bertino@purdue.edu 
+
+‡Imtiaz Karim is with the Department of Computer Science, University of Texas at Dallas, Email:imtiaz.karim@utdallas.edu 
+
+§Rouzbeh Behnia is with the School of Information Systems at University of South Florida, Email:behnia@usf.edu 
+
+SIB1 through SIB21. Yet the 3GPP specification explicitly permits SIBs to be transmitted without integrity protection or ciphering even after Access Stratum (AS) security is activated [4]. This structural gap enables a well-documented family of attacks: fake base stations (FBS), spoofed emergency alerts, man-in-the-middle interception, silent denial-of-service, forced roaming, and persistent UE tracking [1], [5], [6], [7]. Prior efforts to secure 5G BS authentication span PKI-based certificate chains [1], [8], [9], [10], token-based pre-authentication [11], and identity-based signatures (IBS) [12], [13], [14], [15]. PKI-based approaches attach digital signatures and certificate chains to SIB messages, but transmitting BS and core-network certificates alongside each broadcast introduces overhead that typically exceeds the 372-byte SIB1 packet limit [4], requiring fragmentation across multiple packets and imposing compounding verification cost on resource-constrained UEs. To reduce this overhead, IBS-based schemes [12], [13], [14], [15] derive BS and AMF keys from a USIM-embedded master key, achieving a more compact footprint that fits within a single SIB1 packet. Token-based schemes [11] take a different approach, providing lightweight pre-authentication without asymmetric overhead, but do not protect SIB content itself, leaving broadcast parameters susceptible to tampering. Collectively, these efforts have significantly advanced 5G bootstrapping security, yet efficient and long-term secure BS broadcast authentication remains an open challenge. Beyond these scheme-level limitations, the long-term se-curity of 5G authentication is fundamentally at risk from quantum-capable adversaries. The classical public-key prim-itives supporting virtually all deployed cellular security (e.g., Elliptic Curve Cryptography (ECC)) are rendered insecure by Shor’s algorithm on a sufficiently large quantum com-puter [16]. Unlike TLS 1.3 or PQ-WireGuard, where large PQC keys and certificates can be accommodated in a flexible handshake, SIB messages are constrained broadcast frames with fixed, sub-kilobyte size limits, no interactive exchange, and strict timing windows, making a direct PQC integration far from trivial. As demonstrated in [17], directly replacing conventional signatures with NIST-PQC standards (e.g., ML-DSA) requires at least 13 and up to 34 fragmented SIB1 pack-ets and incurs end-to-end delays of up to 5282 ms, rendering a direct NIST-PQC-based PKI adoption infeasible. Migration guidelines from NIST, ETSI, IEEE, and NSA/CISA jointly emphasize that the PQ transition must begin immediately [18], [19], [20], yet no existing 5G bootstrapping mechanism satis-
+
+> arXiv:2606.30542v1 [cs.CR] 29 Jun 2026
+
+fies genuine PQ security under the strict protocol constraints. Across all these directions, three systemic gaps remain unaddressed. First, to the best of our knowledge, no scheme provides practical PQ security for 5G BS broadcast authentica-tion without violating packet-size constraints or incurring pro-hibitive latency. Second, most existing schemes are designed and evaluated solely for SIB1, despite SIB3–SIB4 carrying neighbor cell and inter-frequency reselection data manipulable to force UEs onto attacker-controlled cells [1], SIB9 conveying GPS and UTC timing susceptible to falsification, and SIB15 carrying disaster roaming configurations whose spoofing can misdirect emergency services [4], each an equally critical attack surface. Extending any asymmetric scheme to cover all SIBs proportionally amplifies their already heavy overhead, making full-SIB coverage uniquely suited to a symmetric solution. Third, virtually all existing proposals are add-on 
+
+constructions that attach signatures or certificates to existing messages without exploiting the structural and operational features already built into the 5G protocol, and few provide complete over-the-air testbed implementations that validate deployability under real protocol constraints. 
+
+A. Our Contributions 
+
+To address these limitations, we propose EMULSION . Our key contributions are as follows: 
+
+Key Observations and Main Idea. Unlike generic broadcast authentication scenarios, the 5G base station authentication protocol possesses unique architectural features that, when exploited, can enable efficient authentication mechanisms: (i) Fixed SIB transmission intervals. SIBs are broadcast on fixed periodic windows, e.g., SIB1 every 160 ms with repeated transmissions as short as 20 ms [4]. In 6G, even tighter intervals are anticipated to support sub-millisecond latency targets [21]. These fixed windows define natural, predictable authentication epochs that a time-aware scheme can exploit without any protocol modification. Importantly, the same periodic broadcast structure applies to all SIB types: SIB2 through SIB9 are also transmitted on DL-SCH within transport blocks of similar size, either periodically broadcast or delivered on-demand via RRC signaling [4]. An authentication mechanism that operates at the transport block level, therefore generalizes across the entire SIB family without per-type adaptation. (ii) Precise time synchronization backbone. 5G NR mandates tight time synchronization between the BS and UE, an-chored by the System Frame Number (SFN). The SFN is a 10-bit counter that cycles every 1024 radio frames (10 .24 s), with each frame spanning 10 ms . The SFN pro-vides a shared, fine-grained timing reference that both parties maintain throughout the connection. This built-in synchronization substrate enables the UE to enforce timing constraints on received packets without requiring a dedicated time-synchronization protocol. (iii) eSIM/USIM credential management. The eSIM infras-tructure already supports secure remote provisioning of long-term cryptographic material into tamper-resistant USIMs [22], [23], the same storage used for Authentication and Key Agreement (AKA) provisioning. This provides a natural anchor for long-lived root key material, removing the need to transmit any certificate or asymmetric public key during SIB authentication. By exploiting these three features, we propose EMULSION ,which harnesses a TESLA-style variant– Timed Efficient Stream Loss-tolerant Authentication [24]–relying solely on efficient symmetric primitives (i.e., HMAC) within each fixed SIB transmission window, made viable by 5G’s existing precision time synchronization. The HMAC chain is an-chored by a compact, NIST-selected PQ digital signature (e.g., MAYO [25]) applied once at epoch boundaries rather than per-SIB, providing a root of trust without per-broadcast asymmetric overhead. The eSIM/USIM infrastructure securely provisions this root key, eliminating certificate chains entirely. Table I summarizes the performance of EMULSION against representative baselines; Section §VI provides evaluation de-tails. The desirable properties of EMULSION are as follows:                                    
+
+> Scheme E2E Crypto. Total PQ Pkt. LossNo Frag. (ms) (B) OTA (B)Secure Resilient Needed
+> EC-Schnorr [26] 4.15 256 372 ✗✓✓
+> FN-DSA [27] 1920 .67 3792 4836 ✓✗✗
+> ML-DSA [28] 5282 .47 9884 12648 ✓✗✗
+> EMULSION (|C| =2 )160 .07 324 744 ✓✓✓
+
+TABLE I: Comparison of authentication schemes for 5G SIB1 boot-strapping. E2E delay in milliseconds; overhead in bytes. EMULSION with         
+
+> P K M AY O pre-provisioned in eSIM. PQ counterparts are with 2-level certificates. See Section VI for details.
+
+- Symmetric-Optimal Computation and Post-Quantum Efficiency. Per-SIB authentication in EMULSION is driven by HMAC, delivering PQ security and near-optimal computational efficiency simultaneously. The PQ anchor signature (MAYO) is computed only at epoch boundaries, amortizing its cost across all SIBs within the window. 
+
+EMULSION is ∼ 215 × faster than FN-DSA at the BS and ∼ 5× faster at the UE, with a total end-to-end delay of 160 .07 ms versus 5,282 .47 ms for ML-DSA. This translates directly to lower network delay and energy savings for resource-constrained UEs. - High Robustness and Security. (a) Packet loss resilience 
+
+compact per-SIB tags yield significantly higher packet loss tolerance than fragmented PQC schemes, with expected retransmission overhead of only ∼ 41 bytes at 10 % loss versus ∼ 1971 bytes for FN-DSA. Beyond tag compactness, TESLA’s one-way key chain ensures a UE can authenticate any buffered packet upon receiving its disclosed key, with no retransmission required regardless of intermediate losses. (b) Error-Correction Compactness : The redundancy size in forward error correction grows linear with the message size. Since EMULSION has smaller tag sizes, it achieves the same level of error correction capability with a lesser redundancy compared to asymmetric alternatives (e.g., ∼14 versus ∼480 redundancy bytes at 10% loss for EMULSION versus FN-DSA under Reed-Solomon coding). ( c) Full SIB coverage :
+
+EMULSION authenticates the complete SIB family at no ad-ditional fragmentation or communication cost, closing attack surfaces on SIB2–SIB21 that all prior schemes leave open. - Comprehensive Analysis and Open-Source Evaluation. 
+
+We implemented EMULSION and also deployed a full set of baselines–NIST-PQC standards (ML-DSA, FN-DSA, SLH-DSA) and classical schemes (EC-Schnorr)–on a over-the-air 5G testbed (srsRAN, Open5GS), covering cryptographic overhead, communication size, end-to-end delay, time synchronization accuracy, and packet loss behavior. The source code and testbed implementation are publicly released at: https://github.com/Prometheused/EMULSION II. P RELIMINARIES , B UILDING BLOCKS , AND MODELS 
+
+Notations : The symbol || denotes concatenation. x $
+
+←− S
+
+denotes uniform random sampling from set S. λ denotes the security parameter. F and F ′ denote pseudorandom functions (PRFs) used in TESLA key-chain derivation and MAC-key derivation, respectively. H denotes a collision-resistant hash function (instantiated with SHA-256). ⌊·⌋ denotes the floor function. A time interval of index i spans the half-open window [T0 +i·Tint , T 0 +( i+1) ·Tint ), where T0 is the epoch start time and Tint is the fixed interval duration. ∆t denotes the maximum clock-synchronization error between the sender (BS) and the receiver (UE). 
+
+A. 5G Cellular Network Architecture 1) Network Entities: A 5G cellular network comprises three principal entities [29]:  
+
+> •
+
+5G Core Network (5GC). The 5GC orchestrates service delivery, session management, policy enforcement, and sub-scriber authentication. Most relevant to this work is the Ac-cess and Mobility Management Function (AMF), which ter-minates Non-Access Stratum (NAS) signaling from UEs and manages registration, connection, and mobility procedures.  
+
+> •
+
+User Equipment (UE). A UE is any subscriber device at the network edge (e.g., smartphone, IoT sensor, or vehicle), provisioned with a Universal Subscriber Identity Module (USIM) storing a permanent identifier and the cryptographic credentials required for mutual authentication with the core network.  
+
+> •
+
+Radio Access Network (RAN). The RAN consists of base stations (gNBs, denoted BS) and associated UEs, governing radio resource allocation, wireless transmission, and initial access. Critically, the system information messages a BS periodically broadcasts are transmitted in the clear, neither encrypted nor signed, rendering them susceptible to forgery, replay, and manipulation. 
+
+2) Protocol Stack and Initial Access: Fig. 1 depicts the 5G initial access sequence and protocol layers. At the BS, the topmost control-plane layer is Radio Resource Control (RRC); at the UE and AMF, the NAS layer is stacked above RRC. A master public key PK ID 0 is securely embedded in the USIM and is publicly verifiable; private keys for the AMF and individual BSs are derived from the master secret key sk ID 0 and distributed through authenticated out-of-band channels. During initial access, the BS broadcasts System Information (SI), an RRC-layer message announcing cell-specific configuration parameters, comprising the Master Information Block (MIB) and one or more System Information Blocks (SIBs). The MIB is carried on the Physical Broadcast Channel (PBCH) and supplies the scheduling and decoding parameters needed to locate SIB1, which is transmitted on the Downlink Shared Channel (DL-SCH) with a configurable periodicity of 160 ms and a maximum size of 372 bytes per 3GPP specifications [30]. 
+
+Fig. 1: 5G network connection setup and protocol stack. 
+
+The UE decodes the MIB from the PBCH to obtain the System Frame Number (SFN), which provides the timing reference needed to locate SIB1 on the DL-SCH. SIB1 carries the core cell configuration including PLMN identity, cell barring status, and scheduling for additional SIBs; mandatory fields include Cell Selection Info (signal quality metrics) and Cell Access Related Info (PLMN identifiers and cell access status), with optional fields such as IMS-Emergency Support included when applicable [30]. Upon decoding SIB1, the UE initiates the RACH procedure and RRC connection setup, after which NAS registration with the AMF occurs. This ordering is security-critical: SIB1 is consumed before any authenticated channel exists , since RRC security activation and NAS au-thentication both occur strictly after the UE has already acted on the received system information. Any SIB authentication mechanism must therefore be self-contained within the broad-cast itself, without relying on prior security context. 
+
+Additional SIB messages. Beyond SIB1, the 3GPP specifica-tion defines SIB2 through SIB21, each transmitted over DL-SCH in periodic scheduling windows and serving a distinct purpose. For instance, SIB3 carries intra-frequency neighbor cell lists and reselection parameters, SIB4 provides the inter-frequency equivalents, SIB9 delivers GPS and UTC timing information, and SIB15 conveys disaster-roaming configu-rations. While the authentication framework developed in this paper targets SIB1, the underlying approach generalizes naturally to other SIB types. 
+
+B. Building Blocks 
+
+TESLA Broadcast Authentication: TESLA (Timed Efficient Stream Loss-tolerant Authentication) [24] achieves sender authentication over broadcast channels using only symmetric primitives, at the cost of loose time synchronization. Its core mechanism combines a one-way key chain with timed key disclosure : the sender commits to the chain at setup and reveals each key only after a publicly known delay, so that receivers can verify authenticity without shared secrets and without any shared secret or asymmetric operations on every packet. The chain is built using a one-way function F : {0, 1}λ →{0, 1}λ satisfying (i) one-wayness : given Ki = F (Ki+1 ),recovering Ki+1 is infeasible; and (ii) target collision resis-tance (TCR) : finding K′̸ = K with F (K′) = F (K) for a given K is infeasible [24]. Notably, F need not be a keyed PRF. The sender samples KN
+
+> $
+
+←− { 0, 1}λ and derives Ki ←
+
+F (Ki+1 ) for i = N −1, . . . , 0, yielding the public anchor 
+
+K0 = F N (KN ). One-wayness ensures a receiver holding 
+
+Ki cannot recover any Kj , j > i , while forward iteration trivially yields any Kj , j < i . For MAC key derivation, a domain-separated function F ′ : {0, 1}λ → { 0, 1}λ produces 
+
+K′ 
+
+> i
+
+= F ′(Ki) per interval, preventing structural links between chain and MAC keys. We instantiate both F and the per-packet MAC with HMAC-SHA-256 [31], satisfying one-wayness and TCR under the PRF assumption and aligning with deployed 5G cryptographic stacks [32]. TESLA’s security guarantee is that no adversary can forge a MAC tag on any packet that the receiver accepts as authentic, provided the security condition holds (the receiver verifies it received the packet before the corresponding key was disclosed) and F is one-way [24]. TESLA tolerates arbitrary packet loss: any subsequent disclosed key Kj allows the receiver to verify all earlier buffered packets from intervals 
+
+≤ j by forward-iterating F , regardless of intermediate drops. The original TESLA paper [24] introduces several variants. 
+
+Digital Signature Scheme: A digital signature scheme enables a signer to produce an unforgeable authentication tag on a message that any party holding the public key can verify. 
+
+Definition II.1. A Digital Signature Scheme SGN is a triple of PPT algorithms (KeyGen , Sign , Verify ):- (sk , PK ) ← SGN .KeyGen (1 λ): Given security parameter 
+
+λ, outputs a secret signing key sk and a public key PK .- σ ← SGN .Sign (sk , m ): Given sk and m ∈ { 0, 1}∗, outputs a signature σ.- b ← SGN .Verify (PK , m, σ ): Returns 1 (accept) if σ is a valid signature on m under PK , and 0 (reject) otherwise. 
+
+Classical signature schemes based on integer factorization or discrete logarithms are broken by Shor’s algorithm [33], motivating the adoption of PQ alternatives. NIST concluded its primary PQ standardization process, selecting three signature standards: ML-DSA (CRYSTALS-Dilithium) [28], a lattice-based scheme based on Module-LWE and Module-SIS; SLH-DSA (SPHINCS+) [34], a stateless hash-based scheme; and 
+
+FN-DSA (Falcon) [35], a compact lattice-based scheme over NTRU rings. To encourage diversity in hard problems, NIST also launched an additional signature competition [36] for schemes not based on structured lattices, with first-round selections spanning multivariate, code-based, and symmetric-based candidates. 
+
+MAYO as an instantiation of SGN : Among the second-round candidates of NIST’s additional signature competition [36],      
+
+> (a) Fake Base Stations (b) MiTM Attacker (c) Quantum Adversary
+
+Fig. 2: Outline of Our Threat Models. 
+
+MAYO [25] is a leading multivariate scheme based on the Oil-and-Vinegar (OV) framework, achieving EUF-CMA security under the hardness of the Multivariate Quadratic (MQ) prob-lem. Its whipping technique yields compact signatures (186 B at NIST Level I) and a manageable public key (4,912 B), well-suited for bandwidth-constrained 5G broadcasts. MAYO also supports batch verification of k pairs {(mj , σ j )}kj=1 under the same PK at a cost well below k individual verifications. III. T HREAT AND SECURITY MODELS 
+
+A. Threat Model 
+
+We model the adversary A as a Quantum Polynomial-Time (QPT) entity with full control over the wireless broadcast channel. Concretely, A can eavesdrop on all downlink trans-missions from any gNB, and may inject, modify, replay, or selectively drop packets at will. A may also impersonate legiti-mate BSs to deceive UEs before any cryptographic protections are established. Under this model, A mounts three classes of attacks, illustrated in Fig. 2:  
+
+> •
+
+Fake Base Station (FBS) Attacks. The adversary deploys a rogue base station that spoofs the identity of a legitimate gNB, luring victim UEs into establishing a connection. Once attached, the adversary can launch cascading attacks that ex-ploit vulnerabilities in subsequent protocol stages, including tracking, denial of service, and downgrade attacks [37].  
+
+> •
+
+Man-in-the-Middle (MitM) Attacks. A MitM adversary positions itself between a UE and a legitimate gNB, inter-cepting and potentially altering unprotected signaling traffic. This attack is feasible whenever broadcast messages lack cryptographic authentication, such as digital signatures [38].  
+
+> •
+
+Quantum-Capable Adversaries. Our threat model further accounts for adversaries that may eventually gain access to quantum computing resources capable of breaking conven-tional signature schemes [39]. 
+
+B. Security Model 
+
+Our security analysis relies on the following definitions that correspond to the security properties of our building blocks. 
+
+Definition III.1 (EUF-CMA Security of SGN ). A digital signature scheme SGN = ( KeyGen , Sign , Verify ) is ex-istentially unforgeable under adaptive chosen-message attack (EUF-CMA) if for all PPT adversaries A, given PK and adaptive access to a signing oracle OS , the probability of outputting a valid signature (m∗, σ ∗) on a fresh m∗ not queried to OS is negligible: Adv EUF -CMA  
+
+> SGN ,A
+
+(λ) ≤ negl (λ).
+
+We instantiate SGN with MAYO [25], whose EUF-CMA security reduces to the hardness of the MQ problem, believed to be quantum-resistant. The security proof is generic in SGN 
+
+and holds for any EUF-CMA-secure instantiation. Definition III.2 (Security of F and F ′). Let F : {0, 1}λ →{0, 1}λ denote the one-way chain function and F ′ : {0, 1}λ →{0, 1}λ the MAC-key derivation function, both instantiated with HMAC-SHA-256 [24]. We require these properties: - (i) Pseudorandomness. F and F ′ are pseudorandom func-tions (PRFs): no efficient distinguisher can tell F (K, ·) or 
+
+F ′(K, ·) apart from a random function with non-negligible advantage, where K $
+
+←− { 0, 1}λ. HMAC-SHA-256 at λ =128 bits satisfies this under standard assumptions; under Grover’s algorithm, effective security reduces to 64 bits per query, remaining within NIST Level I. - (ii) One-Wayness. Given any chain element Ki, where K0 =
+
+F ℓ(Kℓ) and Ki = F ℓ−i(Kℓ), no efficient adversary can recover Kj for any j > i : Pr[ A(Ki) = Ki+1 ] ≤ negl (λ).- (iii) Target Collision Resistance (TCR). Given K, no efficient adversary can find K′̸ = K such that F (K′) = F (K):
+
+Pr[ A(K) = K′ : F (K′) = F (K)] ≤ negl (λ).
+
+Definition III.3 (EMULSION Security) . Consider experiment Exp EUF -CMA 
+
+> EMULSION ,A
+
+: the challenger runs 
+
+EMULSION .Setup to produce (sk AMF , PK AMF ), chain 
+
+C = {K0, . . . , K ℓ}, and cert K0 ← SGN .Sign (sk AMF , info )
+
+where info = K0∥ID BS ∥T0∥Tint ∥d∥ℓ, giving PK AMF to A
+
+(modeling eSIM pre-provisioning). A may adaptively query a broadcast oracle OB (i, m ) receiving honest broadcast packets 
+
+Πi ← EMULSION .Broadcast (C, cert K0 , info , i, m ),modeling unrestricted observation of SIB broadcasts. 
+
+A wins by outputting (m∗, i ∗, Π∗) such that 
+
+EMULSION .Authenticate (PK AMF , Π∗, t R, ∆t) = 1,
+
+(m∗, i ∗) was never queried to OB , and Ki∗−d has not yet been publicly disclosed. EMULSION is secure if 
+
+Adv EUF -CMA 
+
+> EMULSION ,A
+
+(λ) ≤ negl (λ) for all QPT A.C. Scope 
+
+EMULSION targets SIB broadcast authentication during the initial bootstrapping phase. It is orthogonal to and does not replace 5G-AKA, which provides UE–5GC mutual authen-tication and session key establishment. Our model does not address side-channel attacks, physical key extraction, relay attacks, jamming, overshadowing, or passive eavesdropping, each of which requires independent, orthogonal defenses. Our scope excludes authentication and key agreement pro-cedures (e.g., 5G-AKA [40], [41]) and their post-quantum variants [42], [43]. These protocols operate at the NAS layer and provide mutual UE–5GC authentication together with session key establishment, i.e., functions that are orthogonal to broadcast bootstrapping authentication. EMULSION targets the pre-NAS broadcast plane: it ensures that the UE receives a genuine SIB1 from a verified BS before any AKA exchange is initiated, thereby preventing FBS driven bootstrapping from propagating into the key agreement phase. Concretely, an operator can enforce this separation through a policy gate that permits AKA initiation only upon receipt of a fresh, 
+
+EMULSION -verified SIB1; this linkage is complementary and preserves the cryptographic structure of AKA. Overall, we do not address vulnerabilities that lie outside the broadcast authentication plane. In particular, the follow-ing are out of scope: (i) physical-layer attacks such as, radio-frequency jamming, signal overshadowing, and down-link eavesdropping, which require orthogonal defenses such as anti-jamming techniques or physical-layer encryption; (ii) 
+
+hardware attacks such as physical key extraction from BS hardware; (iii) UE-to-BS privacy , such as IMSI/SUPI catching, which is mitigated by NAS-layer SUCI concealment mecha-nisms [30]; and (iv) denial-of-service attacks at the MAC or RLC sublayers (e.g., resource exhaustion via crafted RACH preambles), which target availability rather than authenticity. IV. T HE PROPOSED EMULSION FRAMEWORK 
+
+A. Design Rationale and Comparative Justification 
+
+Infeasibility of Direct NIST-PQC Integration for 5G Authentication. Direct application of NIST-PQC signatures to SIB broadcasts is fundamentally precluded by 5G’s packet-size constraints. Even the most compact standard, FN-DSA (Falcon-512), requires ≈6 SIB1 fragments and ≈800 ms end-to-end delay in optimized configuration; ML-DSA and SLH-DSA are substantially worse [17]. 
+
+Leveraging 5G Architectural Features. EMULSION ex-ploits three structural properties of 5G that prior schemes have not exploited. (i) Fixed SIB transmission windows: SIB1 is broadcast every 20–160 ms [4], defining natural authentication epochs that a time-aware scheme can exploit without proto-col modification. (ii) Precision time synchronization: 5G NR mandates millisecond-level time synchronization via SFN and subframe number, already deployed operationally, making the TESLA security condition ( ∆t ≪ Tint ) trivially satisfiable without new infrastructure. (iii) eSIM credential provision-ing: The eSIM infrastructure stores long-term cryptographic material in tamper-resistant USIMs [22], [23] at subscription time, allowing the AMF’s MAYO public key (4,912 B, stored once offline) to serve as the root of trust with no over-the-air transmission, eliminating certificate chains entirely. Together, 
+
+EMULSION combines a TESLA-based HMAC chain anchored per epoch (exploiting (i) and (ii)) with a MAYO-certified root key provisioned via eSIM (exploiting (iii)), amortizing the single asymmetric PQ cost across all SIBs in the epoch and re-ducing per-broadcast overhead to a single HMAC computation in microseconds with no fragmentation. 
+
+Symmetric Broadcast Authentication via One-Way Key Chaining. TESLA imposes minimal runtime overhead: one 
+
+F ′ evaluation and one HMAC per interval at the BS, and one HMAC verification per packet at the UE, both completing in microseconds with no fragmentation and no additional SIB transmissions. This contrasts sharply with asymmetric alternatives: ML-DSA requires ≈34 SIB fragments and up to 5,282 ms end-to-end delay; FN-DSA, even in optimized hybrid configuration, requires ≈6 fragments and ≈800 ms (see §VI). We adopt the packet-loss-tolerant variant of TESLA with d-interval delayed key disclosure, which is the natural choice given SIB1’s fixed broadcast periodicity [4]. HMAC-SHA-256 instantiates both F and the per-packet MAC, satisfying the one-wayness and TCR properties required by TESLA [24], and the TESLA security condition is natively satisfiable since time sync is already native at the RAN level, requiring no additional timing infrastructure. 
+
+PQ Root Certification and Anchor Selection. MAYO-2 [25] offers the most favorable size-security trade-off among NIST-evaluated PQ schemes for our deployment model: its 186 B signature fits within a single SIB1 packet (372 B limit) with headroom for chain parameters, while its 4,912 B public key is stored once in the UE eSIM and never transmitted over the air. Among NIST additional signature candidates [36], MAYO-2 is the only multivariate scheme achieving NIST Level I with a sub-200 B signature; ML-DSA produces 2,420 B and FN-DSA 666 B at the samelevel, both requiring frag-mentation at the root. MAYO’s Oil-and-Vinegar structure provides EUF-CMA security under MQ hardness [25], and its batch verification property allows the UE to verify multiple per-epoch chain anchor certificates simultaneously, directly benefiting our per-SIB-type chaining design. 
+
+B. EMULSION Framework Initialization 1) Entities and Trust Model : EMULSION involves three entities: the AMF (which hosts the Key Management Function, 
+
+CKG , as a logical sub-function), the BS (gNB), and the UE. The AMF is the root of trust: it holds the MAYO secret key 
+
+sk AMF and is responsible for generating and certifying all cryptographic material distributed to BSs. The UE trusts only the AMF’s MAYO public key PK AMF , provisioned into its eSIM once, offline, via the GSMA Remote SIM Provisioning (RSP) protocol [44]. No direct trust relationship between the UE and any BS is assumed; all BS-level trust is derived from the AMF’s certification. 
+
+2) Root Key Generation : At system initialization, the 
+
+CKG runs (sk AMF , PK AMF ) ← MAYO .KeyGen (1 λ). The secret key sk AMF is stored securely within the AMF and never transmitted. The public key PK AMF is provisioned to all UE eSIMs via GSMA RSP and remains valid for the lifetime of the deployment (or until a scheduled key rotation). All BS-level authentication traces back to this single root key. 
+
+3) Time Synchronization : EMULSION uses TESLA, whose security condition requires the UE to bound the sender’s current time with a maximum error ∆t. In 5G, this is satisfied natively through two mechanisms already present in the initial access procedure. First, the MIB carries the most significant 6 bits of the System Frame Number (SFN), a 10-bit counter cycling every 10.24 s with 10 ms frame granularity. Second, the UE derives subframe-level timing by tracking PSS/SSS refer-ence signals with sub-symbol precision [30], providing 1 ms resolution within each frame. Together, the SFN and subframe number establish a shared millisecond-level time reference between BS and UE at the very beginning of communication, before any higher-layer signaling. This makes the TESLA security condition trivially satisfiable for any reasonable Tint .We empirically validate this in §VI. 
+
+C. EMULSION Framework Main Operations 
+
+EMULSION is a symmetric chained, publicly verifiable authentication operating in three phases: Setup, Broadcast, and Verify. It is formalized in Algorithms 1–3 with the full protocol flow shown in Fig. 3. The algorithms are stated generically for a message m; in practice m is any SIB type (SIB1 through SIB21), and the (s) superscript denoting SIB type is omitted for clarity. All chain variables, intervals, and certificates are implicitly indexed by the active SIB type. 
+
+Algorithm 1 EMULSION .Setup                                                          
+
+> (C,cert K0)←EMULSION .Setup (1 λ, ℓ, d, T 0, T int ): Run by the AMF once per chain epoch per SIB type.
+> 1: (sk AMF ,PK AMF )←MAYO .KeyGen (1 λ)▷Root keypair;
+> PK AMF provisioned to UE eSIM via GSMA RSP
+> 2: Kℓ
+> $
+> ←− { 0,1}λ▷Random terminal key; kept secret at BS
+> 3: for i=ℓ−1downto 0do
+> 4: Ki←F(Ki+1 )▷One-way chain; K0=Fℓ(Kℓ)is the public anchor
+> 5: info ←K0∥ID BS ∥T0∥Tint ∥d∥ℓ
+> 6: cert K0←MAYO .Sign (sk AMF ,info )
+> 7: C ← { K0, K 1, . . . , K ℓ}
+> 8: Provision (C,cert K0,info )to BS over N2 interface
+
+In Setup (Alg. 1), the AMF generates the MAYO root key pair and provisions PK AMF to UE eSIMs via GSMA RSP [23]. It constructs a one-way key chain of length ℓ
+
+by sampling a random terminal key Kℓ
+
+> $
+
+←− {0, 1}λ and iterating Ki ← F (Ki+1 ) down to the public anchor K0 =
+
+F ℓ(Kℓ). The anchor and TESLA parameters are bound as 
+
+info = K0∥ID BS ∥T0∥Tint ∥d∥ℓ and certified as cert K0 ←
+
+MAYO .Sign (sk AMF , info ). The chain C and certificate are provisioned to the BS over N2; the BS then operates au-tonomously for the entire epoch. 
+
+Per-SIB-type independent chains. EMULSION instantiates one independent chain per SIB type: SIB1 messages are authenticated by chain C(1) , SIB2 messages by C(2) , and so on through SIB21. Each chain is parameterized with its own terminal key, transmission interval Tint matching the 3GPP-defined periodicity of that SIB type [4], and disclosure depth 
+
+d. The AMF runs EMULSION .Setup independently for each type, producing a dedicated certificate cert K0 for each chain anchor, and provisions all 21 chains and their certificates to the BS in bulk over N2 at epoch setup (precomputed offline). The BS holds the full set of chains and operates autonomously for the entire epoch, selecting the appropriate chain for each SIB type at broadcast time. The per-SIB broadcast and verification procedures follow Algorithms 2–3 identically for each type. Extending coverage from SIB1 alone to all 21 SIB types adds one MAYO signing operation per type at epoch setup (all offline at the AMF) but incurs zero additional over-the-air overhead per broadcast, since each chain’s per-SIB cost remains a single HMAC tag regardless of SIB type. MIB coverage is also achieved at zero additional cost by including the 3-byte MIB content in the per-packet HMAC input. Details can be found in Appendix C. Algorithm 2 EMULSION .Broadcast 
+
+Πi ← EMULSION .Broadcast (C, cert K0 , info , i, m ): Run by the BS at each broadcast interval i. 
+
+> 1:
+
+K′ 
+
+> i
+
+← F ′(Ki) ▷ Derive MAC key via F ′ 
+
+> 2:
+
+τi ← HMAC (K′ 
+
+> i
+
+, m ∥i∥ID BS ) 
+
+> 3:
+
+Kdisc ← Ki−d if i ≥ d, else ⊥ ▷ Disclose key from d intervals ago  
+
+> 4:
+
+if i = 1 then  
+
+> 5:
+
+Πi ← m∥i∥τi∥Kdisc ∥info ∥cert K0 ▷ Epoch-opening packet: include anchor certificate  
+
+> 6:
+
+else  
+
+> 7:
+
+Πi ← m∥i∥τi∥Kdisc ▷ Steady-state packets: HMAC-only  
+
+> 8:
+
+Broadcast Πi over DL-SCH 
+
+In Broadcast (Alg. 2), at interval i the BS derives MAC key 
+
+K′ 
+
+> i
+
+← F ′(Ki) and computes τi ← HMAC (K′
+
+> i
+
+, m ∥i∥ID BS ). It discloses Ki−d, enabling the UE to retroactively verify earlier buffered packets. The epoch-opening packet ( i = 1 ) carries 
+
+info and cert K0 ; all subsequent packets carry only m, i, τi,and Kdisc , yielding a payload of ≈131 B that fits within a single SIB packet without fragmentation. 
+
+Algorithm 3 EMULSION .Authenticate 
+
+{1, ⊥} ← EMULSION .Verify (PK AMF , Πi, t R, ∆t): Run by the UE upon receiving Πi. 
+
+> 1:
+
+Parse Πi → (m, i, τ i, K disc , [info , cert K0 ]) ▷ Bracketed fields present only when i = 1  
+
+> 2:
+
+if i = 1 then  
+
+> 3:
+
+Parse info → (K0, ID BS , T 0, T int , d, ℓ ) 
+
+> 4:
+
+if MAYO .Verify (PK AMF , info , cert K0 )̸ = 1 then  
+
+> 5:
+
+return ⊥ ▷ Anchor not certified by AMF  
+
+> 6:
+
+Store K0 and TESLA parameters as trusted state  
+
+> 7:
+
+imax ← ⌊ (tR + ∆ t − T0) / T int ⌋ 
+
+> 8:
+
+if imax ≥ i + d then  
+
+> 9:
+
+return ⊥ ▷ Security condition violated: Ki−d disclosed  
+
+> 10:
+
+Buffer (m, i, τ i) 
+
+> 11:
+
+if Kdisc ̸ = ⊥ then  
+
+> 12:
+
+Let j ← i − d 
+
+> 13:
+
+if F j (Kdisc )̸ = K0 then  
+
+> 14:
+
+return ⊥ ▷ Disclosed key inconsistent with trusted anchor  
+
+> 15:
+
+K′ 
+
+> j
+
+← F ′(Kdisc ) 
+
+> 16:
+
+Retrieve buffered (mj , j, τ j ) 
+
+> 17:
+
+if HMAC (K′ 
+
+> j
+
+, m j ∥j∥ID BS ) = τj then  
+
+> 18:
+
+return 1 and A CCEPT (mj ) 
+
+> 19:
+
+return ⊥
+
+In Verify (Alg. 3), the UE performs the following steps. (i) On the epoch-opening packet ( i = 1 ), it verifies cert K0
+
+via MAYO .Verify under PK AMF from the eSIM, and stores 
+
+K0 and the TESLA parameters as trusted state for this chain. (ii) It checks the TESLA security condition imax < i + d,discarding the packet if violated. (iii) It buffers (m, i, τ i)
+
+pending key disclosure. (iv) Upon receiving Kdisc , it verifies chain consistency: F j (Kdisc ) ?
+
+= K0, j = i − d. (v) It derives 
+
+K′ 
+
+> j
+
+← F ′(Kdisc ) and verifies the HMAC tag of the buffered packet. The UE accepts mj only after all steps pass. The maximum authentication delay is d·Tint , configurable per SIB type to match its 3GPP-defined transmission periodicity [4]. 
+
+Packet Loss Tolerance and Optional FEC. EMULSION 
+
+adopts the packet-loss-tolerant TESLA variant with d-interval delayed key disclosure [24]: a UE that misses interval i
+
+can still verify its buffered mi upon receiving Ki−d in any later packet, with no retransmission required. Each broadcast packet is self-contained, so a single received packet suffices to authenticate all buffered messages with disclosed keys. For deployments requiring additional robustness against burst errors (e.g., dense urban or high-interference environments), 
+
+EMULSION supports an optional FEC layer applied to the HMAC-only payload before broadcast. Steady-state packets carry ≈131 B, leaving ≈241 B of headroom within the 372 B SIB1 limit [4] to accommodate FEC redundancy without fragmentation. The BS applies FEC .Enc before broadcast and the UE applies FEC .Dec before HMAC verification; all other protocol steps are unchanged. FEC and HMAC serve orthogonal roles (e.g., channel reliability and cryptographic authenticity, respectively) and any standard code fitting within the available headroom may be used, including Reed-Solomon (MDS-optimal), 5G NR polar codes (native UE hardware support [45]), or Raptor codes (rateless, adaptive to variable loss rates). The FEC layer introduces no new cryptographic assumptions and does not affect the PQ security of the HMAC chain or the MAYO root anchor. V. S ECURITY ANALYSIS 
+
+We prove EMULSION achieves Definition III.3 under the security properties of Definitions III.1 and III.2. Any winning adversary A must succeed at one of three tasks: forge the SGN 
+
+anchor certificate cert K0 produced by EMULSION .Setup ,forge a per-packet HMAC tag on a SIB broadcast by 
+
+EMULSION .Broadcast without the chain key, or substitute a fraudulent chain key that passes the consistency check in 
+
+EMULSION .Authenticate . The following lemmas reduce each task to one of the underlying hard problems with full security proofs presented in Appendix. 
+
+Lemma 1 (Anchor Certificate Unforgeability) . If A forges a fresh cert ∗ 
+
+> K0
+
+accepted by SGN .Verify , passing the certificate check in EMULSION .Authenticate , there exists a QPT 
+
+B1 breaking EUF-CMA of SGN : Pr[ A forges cert K0 ] ≤
+
+Adv EUF -CMA  
+
+> SGN ,B1
+
+(λ).
+
+Lemma 2 (Per-Packet MAC Unforgeability) . If A forges a valid HMAC tag on a fresh (m∗, i ∗) not broadcast by EMULSION .Broadcast , without access to Ki∗−d,there exists a QPT B2 breaking PRF security of F ′:
+
+Pr[ A forges MAC ] ≤ ℓ · Adv PRF   
+
+> F′,B2
+
+(λ), where ℓ accounts for guessing the target interval i∗ uniformly among ℓ epochs. 
+
+Lemma 3 (Chain Key Recovery Infeasibility) . If A outputs 
+
+K∗
+
+> disc
+
+̸ = Ki∗−d with F j (K∗
+
+> disc
+
+) = K0 where j = i∗ − d,passing the chain check in EMULSION .Authenticate ,there exists a QPT B3 breaking one-wayness or TCR of F :
+
+Pr[ A forges chain key ] ≤ Adv OW -TCR  
+
+> F, B3
+
+(λ).
+
+Theorem 1 (EMULSION EUF-CMA Security) . For any QPT adversary A against EMULSION over a chain of length ℓ,there exist a QPT B1, B2, B3 such that: Adv EUF -CMA 
+
+> EMULSION ,A
+
+(λ) ≤
+
+Adv EUF -CMA  
+
+> SGN ,B1
+
+(λ) + ℓ · Adv PRF   
+
+> F′,B2
+
+(λ) + Adv OW -TCR  
+
+> F, B3
+
+(λ) + negl (λ).CKG  AMF  BS  UE                                                                                                 
+
+> 𝑪 ,𝒄𝒆𝒓 𝒕 𝑲 𝑶 ←𝑬𝑴𝑼𝑳𝑺𝑰𝑶𝑵 .𝑺𝒆𝒕𝒖𝒑 (𝟏 𝝀 ,ℓ,𝒅 ,𝑻 𝟎 ,𝑻 𝒊𝒏𝒕 )
+> 𝒔 𝒌 𝑨𝑴𝑭 ,𝑷 𝑲 𝑨𝑴𝑭
+> 𝑷 𝑲 𝑨𝑴𝑭
+> 𝒔 𝒌 𝑨𝑴𝑭 ,𝑷 𝑲 𝑨𝑴𝑭 ←𝑴𝑨𝒀𝑶 .𝑲𝒆𝒚𝑮𝒆𝒏 (𝟏 𝝀 )
+> 𝑪 ,𝒄𝒆𝒓 𝒕 𝑲 𝟎 ,𝒊𝒏𝒇𝒐
+> 𝑲 ℓ←𝟎 ,𝟏 𝝀
+> 𝑲 𝒊 ←𝑭 (𝑲 𝒊 +𝟏 )for 𝒊 =ℓ−𝟏 ,…,𝟎
+> 𝒄𝒆𝒓 𝒕 𝑲 _𝟎 ←𝑴𝑨𝒀𝑶 .𝑺𝒊𝒈𝒏 (𝒔 𝒌 𝑨𝑴𝑭 ,𝒊𝒏𝒇𝒐 )
+> 𝚷 𝒊 ←𝑬𝑴𝑼𝑳𝑺𝑰𝑶𝑵 .𝑺𝒊𝒈𝒏 (𝑪 ,𝒄𝒆𝒓 𝒕 𝑲 𝟎 ,𝒊𝒏𝒇𝒐 ,𝒊 ,𝒎 )
+> 𝑲 𝒊 ′←𝑭′ (𝑲 𝒊 )
+> 𝝉 𝒊 ←𝑯𝑴𝑨𝑪 (𝑲 𝒊
+> ′,𝒎 ||𝒊 ||𝑰 𝑫 𝑩𝑺 )
+> IF 𝐢 =𝟏 :𝚷 𝒊 ←𝒎 ||𝒊 ||𝝉 𝒊 ||𝑲 𝒅𝒊𝒔𝒄 ||𝒊𝒏𝒇𝒐 ||𝒄𝒆𝒓 𝒕 𝑲 𝟎
+> IF 𝐢 ≠𝟏 :𝚷 𝒊 ←𝒎 ||𝒊 ||𝝉 𝒊 ||𝑲 𝒅𝒊𝒔𝒄
+> 𝚷 𝐢 =(𝐦 ||𝒊 ||𝝉 𝒊 ||𝐊 𝐝𝐢𝐬𝐜 )
+> 𝟏 ,⊥←𝑬𝑴𝑼𝑳𝑺𝑰𝑶𝑵 .𝑽𝒆𝒓𝒊𝒇𝒚 (𝑷 𝑲 𝑨𝑴𝑭 ,𝚷 𝒊 ,𝐭 𝐑 ,𝚫𝐭 )
+> Time Sync and Security Condition:
+> 𝒊 𝒎𝒂𝒙 ←𝒕 𝑹 +𝚫𝐭 −𝐓 𝟎
+> 𝑻 𝒊𝒏𝒕
+> If 𝒊 𝒎𝒂𝒙 ≥𝒊 +𝒅 →Reject
+> Chain Check:
+> 𝑭 𝒋 𝑲 𝒅𝒊𝒔𝒄 =?𝑲 𝟎 :(𝒋 =𝒊 −𝒅 )
+> HMAC Check:
+> 𝑯𝑴𝑨𝑪 𝑲 𝒋
+> ′,𝒎 𝒋 ||𝒋 ||𝑰 𝑫 𝑩𝑺 =?𝝉 𝒋
+> Create RRC Connection
+
+Setup 
+
+> OFFLINE
+> ONLINE
+
+Broadcast 
+
+Authenticate         
+
+> Per -SIB -Type
+> Independent Chains
+> IF 𝒊 =𝟏 :Anchor Check
+> 𝑴𝑨𝒀𝑶 .𝑽𝒆𝒓𝒊𝒇𝒚 (𝑷 𝑲 𝑨𝑴𝑭 ,𝒊𝒏𝒇𝒐 ,𝒄𝒆𝒓 𝒕 𝑲 𝟎 )
+
+Fig. 3: EMULSION protocol flow. VI. P ERFORMANCE EVALUATION 
+
+This section presents a comprehensive evaluation of 
+
+EMULSION against NIST-PQC standards and conventional authentication schemes for 5G initial bootstrapping. 
+
+A. Configuration and Experimental Setup 
+
+Hardware: We assessed the efficiency of EMULSION protocol on a system equipped with a standard desktop equipped with a 
+
+12 th Gen Intel Core i7 − 12700 H@3 .50 GHz , 16 GiB RAM, a 512 GiB SSD, and Ubuntu 22 .04 .4 LT S . Real network packets were investigated using the Network Signal Guru Android app installed on a OnePlus Nord 5G smartphone [46]. 
+
+Over-the-Air Testbed. We deploy an SDR-based testbed for over-the-air evaluation using the open-source srsRAN and Open5GS stacks. srsUE and srsgNB run on two USRP B210 devices connected to the same host via USB 3.0, with a Leo Bodnar GPSDO providing a stable 10 MHz reference clock. The srsgNB connects to an Open5GS core and communicates with srsUE over the air. Since commercial UE basebands are closed-source, we adopt a best-effort methodology using this widely used srsRAN and Open5GS platforms, consistent with prior work on 4G/5G bootstrapping security [8], [1]. 
+
+Libraries: We employed the OpenSSL library 1 for crypto-graphic primitives such as hash functions and elliptic curve operations (e.g., point multiplication, modular arithmetic), the Open Quantum-Safe library 2 for NIST-PQC schemes used in the baseline comparisons and for the MAYO-2 signing and verification operations within EMULSION , and the blst 3 library for the BLS signature. 
+
+Parameter Selection: We configured the post-quantum secu-rity to NIST Level I [47], which provides quantum resistance approximately equivalent to 128 -bit classical security. For the conventionally secure baselines, all elliptic curve operations were performed over secp224k1 , defined on a 224 -bit prime field. In EMULSION , both the one-way chain PRF F and the key derivation PRF F ′ are instantiated as HMAC-SHA256 with distinct key generation to ensure cryptographic indepen-dence. MAC tags are truncated to 16 bytes. 
+
+Evaluation Metrics and Rationale: Quantitative metrics include computational costs (signing, verification, and per-packet MAC operations), 5G processing delay (the time net-work entities spend handling cryptographic material in packets and transmitting them, excluding the cryptographic compu-tations themselves), cryptographic overhead (signature, key, and certificate sizes), total over-the-air (OTA) communication overhead, and end-to-end (E2E) delay. Qualitative evaluation considers system architecture, PQ security guarantees, and resilience to packet loss. 
+
+srsRAN Configuration: We observe that for the first SIB1 message, the srsRAN gNB utilizes 79 bytes out of the allowed 
+
+372 bytes. Accordingly, all subsequent evaluations report the computational and communication overhead for a 79 -byte SIB1 message, with 293 bytes available per packet for authentication material, as reflected in the tables. Note that even considering slightly larger SIB1 configurations observed from real networks, our results remain consistent. Moreover, while we present the evaluation of EMULSION on SIB1, the scheme generalizes to all SIB types, as the one-way chain and MAC-based authentication operate independently of the specific SIB content. 
+
+Baseline Selection: For PQ baselines, we consider the NIST-standardized ML-DSA [28] (lattice-based) and FN-DSA [35] (lattice-based), both in homogeneous 2-level certificate chains (e.g., FN-DSA -FN-DSA , ML-DSA -ML-DSA ) and in a hybrid configuration where the root certificate uses MAYO and the BS uses FN-DSA (FN-DSA -MAYO) where we allow an op-timization in favor of FN-DSA -MAYO by provisioning the MAYO public key ( PK MAYO ) in the eSIM, eliminating the need to transmit it over the air, and also a variant aug-mented with Reed-Solomon erasure coding (FEC) for packet-loss resilience. Hash-based SLH-DSA [34], with a 7856 -byte 
+
+> 1
+
+OpenSSL Library: https://openssl-library.org/ 
+
+> 2
+
+Open Quantum-Safe Library: https://openquantumsafe.org/ 
+
+> 3
+
+BLST Library: https://github.com/Chia-Network/bls-signatures Scheme System Architecture Sign Ver 5G Crypto. Total E2E Auth. Success and Features Delay Delay (ms) Delay (ms) Overhead (B) OTA (B) Delay (ms) @10% Loss                                                         
+
+> FN-DSA [27] 2-Level Certificate 0.28 ms 0.15 1920 .24 3792 4836 1920 .67 25 .4%
+> FN-DSA -MAYO PK MAYO in eSIM 0.28 ms 0.07 800 .24 1749 2232 800 .59 53 .1%
+> FN-DSA -MAYO PK MAYO in eSIM, FEC(n,k) 0.3ms 0.07 960 .24 2051 2604 960 .59 85%
+> ML-DSA [28] 2-Level Certificate 0.12 ms 0.12 5282 .23 9884 12648 5282 .47 2.8%
+> EMULSION PK MAYO in eSIM, |C| = 2 , d = 1 1.3μs 0.03 160 .04 324 744 160 .07 99 .0%
+
+TABLE II: Comparison of candidate signature schemes for authenticating SIB1. E2E delay presents the total time for signature generation, 5G delay, and full verification. Auth. Success reports epoch establishment probability at 10% packet loss. The impact of varying chain length  
+
+> |C| across different authentication ratios is discussed in detail in the experimental results section.
+
+signature, is excluded from detailed comparison due to its prohibitively large size and slow execution time ( ∼11 ms signing, ∼0.84 ms verification). For conventionally secure baselines, we include EC-Schnorr [26] and BLS [48] with aggregation, both deployed in a 2-level certificate hierarchy. While these schemes offer favorable performance, they lack PQ security guarantees and serve as reference points for understanding the computational overhead that EMULSION 
+
+introduces relative to classical alternatives. 
+
+B. Experimental Results 
+
+TABLE II presents a comprehensive quantitative and qual-itative comparison of candidate schemes for SIB1 authentica-tion in the full 5G hierarchical bootstrapping context, covering signing and verification time, 5G processing and transmission delay, cryptographic and total OTA overhead (bytes), and E2E delay. Results are averaged over 10,000 iterations for standalone measurements and 10 iterations for over-the-air testbed runs (due to the requirement for manual intervention). 
+
+1) Quantitative Comparison: This section analyzes the computational and communication overhead of EMULSION 
+
+alongside PQ and conventionally secure alternatives. 
+
+Computational Costs: A distinguishing feature of EMULSION 
+
+is BS offloading: the MAYO-2 signature ( cert K0 ) is computed by the AMF offline during epoch setup, so the BS performs only two HMAC-SHA-256 operations per SIB1 packet (one for key derivation and one for MAC computation) at a per-packet signing cost of ∼0.6 μs, roughly three orders of mag-nitude faster than any signature-based alternative (FN-DSA: 
+
+0.28 ms, EC-Schnorr: 0.30 ms, BLS: 0.42 ms). Since a gNB may serve hundreds of cells simultaneously, this negligible per-packet cost has significant practical impact on BS infras-tructure load. On the UE side, steady-state verification (all packets after the epoch-opening P1) requires one HMAC chain check and one MAC verification at ∼0.03 ms, with the one-time MAYO-2 certificate verification adding another ∼0.03 ms amortized over the epoch. Full PQ certificate chains impose heavier verification: ML-DSA-ML-DSA requires 0.12 ms and FN-DSA-FN-DSA requires 0.15 ms for two-level verification, while conventionally secure schemes incur higher costs due to pairing (BLS: 3.46 ms) or multi-level EC point multiplications (EC-Schnorr: 3.80 ms). The net result is that EMULSION ’s computational footprint is dominated entirely by the 5G trans-mission schedule rather than cryptographic processing: the total cryptographic component of EMULSION ’s E2E delay (∼0.03 ms) is negligible compared to the 160 ms SIB1 broad-cast periodicity, as confirmed in Table II. 
+
+Communication Overhead: EMULSION uses two packet types. The epoch-opening packet ( P1) carries the SIB1 message (79 B), interval index (4 B), MAC tag (16 B), chain anchor 
+
+K0 (32 B), BS identity and metadata ( ∼34 B), and MAYO-2 certificate (186 B), totaling ∼351 B, within the 372-byte limit. Subsequent packets ( P2, P 3, . . . ) carry only the message, interval index, MAC tag, and a disclosed key, totaling 131 B with just 52 B of authentication overhead. For a chain of length |C| , total OTA is (351 − 79) + ( |C| − 1) × 52 B per authentication payload; considering full 372-byte SIB1 blocks, 
+
+|C| =2 requires 744 B over 2 packets, |C| =3 requires 1,116 B over 3 packets, and |C| =4 requires 1,488 B over 4 pack-ets, with every packet fitting within a single SIB1 transport block and zero fragmentation required. By comparison, full PQ certificate chains impose dramatically higher overhead. The ML-DSA-ML-DSA requires 9,884 B of cryptographic material across 34 packets (12,648 B total OTA), and FN-DSA-MAYO with PK MAYO pre-provisioned requires 1,749 B across 6 packets (2,232 B total OTA), rising to 2,051 B across 7 packets (2,604 B total OTA) when Reed-Solomon FEC is added for loss resilience. EMULSION at |C| =2 achieves 324 B cryptographic overhead ( 5.4× lower than FN-DSA-MAYO and 31 × lower than ML-DSA-ML-DSA) and even at |C| =4 
+
+remains at 428 B, still 4.1× lower than FN-DSA-MAYO. 
+
+• 5G Delay and E2E Latency: The dominant cost for all schemes is the 5G delay, driven by the SIB1 broadcast periodicity of 20–160 ms; we evaluate at 160 ms (the common default) as the conservative upper bound. For multi-packet schemes, 5G delay is (packets − 1) × 160 ms plus per-packet processing. ML-DSA-ML-DSA requires 34 packets and incurs 5,282.23 ms (∼5.3 s), entirely impractical for bootstrapping before RACH. FN-DSA-FN-DSA requires 13 packets and 1,920.24 ms; FN-DSA-MAYO with eSIM pre-provisioning reduces this to 6 packets and 800.24 ms, rising to 7 packets and 960.24 ms with FEC. EMULSION 
+
+at |C| =2 achieves 160.07 ms E2E delay, 5× faster than FN-DSA-MAYO (800.59 ms), 12 × faster than FN-DSA-FN-DSA (1,920.67 ms), and 33 × faster than ML-DSA-ML-DSA (5,282.47 ms). Even at |C| =4 , EMULSION ’s 480.11 ms remains 1.7× faster than the best PQ certificate chain. To assess whether distance, mobility, and handover intro-duce measurable overhead, we conduct a real-network exper-iment on the POWDER testbed [49]. Fig. 4 shows SIB1 re-ception traces from a campus shuttle over a ∼60 -minute route with multiple cell attachments and handovers (See Appendix B for experimental setup). Panel (a) visualizes receptions across time, distance, and propagation delay with visible handover 0 10 20 30 40 50 60  
+
+> Time (min) 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> Distance (km)
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> Propagation Delay (μs) Handover
+> Stationary dwell
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+
+(a) SIB1 Reception Trajectory 0 2 4 6 8 10        
+
+> Distance to BS (km)
+> 0
+> 5
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35
+> Propagation Delay (μs)
+> HO zone
+> (b) Distance Delay Density
+> cpropagation
+> Linear fit (3.34 μs/km)
+> 500
+> 750
+> 1000
+> 1250
+> 1500
+> 1750
+> 2000
+> 2250
+> Sample density 010 20 30 40 50 60
+> Time (min)
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> Distance to BS (km)
+> (c) Shuttle Trajectory with Handovers
+> Distance (delay-colored)
+> Propagation delay
+> Handover
+> Stationary dwell
+> 0
+> 10
+> 20
+> 30
+> 40
+> Prop. Delay (μs)
+
+Fig. 4: SIB1 reception characterization on POWDER testbed. events at cell boundaries. Panel (b) confirms propagation delay scales linearly at 3.34 μs/km, reaching at most ∼35 μs at 10 km (four orders of magnitude below EMULSION ’s 160 ms E2E delay). Panel (c) traces the UE’s distance over the full route, marking handovers and stationary dwells. Across all conditions (with varying distance (0–10 km), speeds, and repeated handovers) the propagation component remains in the tens of microseconds, confirming that neither distance, mobility, nor handover introduces any observable impact on authentication delay for EMULSION or any baseline scheme. 
+
+UE-Side Overhead: EMULSION requires the UE to buffer at most d pending messages awaiting key disclosure ( d × 372 B; e.g., 372 B for d=1 and 1,116 B for d=3 ). In contrast, PQ certificate-chain schemes require buffering and reassembling fragments across 6–34 consecutive SIB1 packets before any verification can begin, demanding up to 12,648 B for ML-DSA-ML-DSA and introducing additional sequencing logic into the protocol stack. A single lost fragment forces the UE to discard the entire buffer and restart collection from the next broadcast cycle. In EMULSION , a missed packet affects at most d buffered messages; the next received packet discloses a new key and authentication resumes immediately without any state resynchronization. 
+
+2) Qualitative Comparison: This section examines the structural and security properties that differentiate EMULSION 
+
+from alternative approaches. 
+
+Fragmentation and Protocol Compatibility: Every packet of 
+
+EMULSION , including the epoch-opening packet carrying the MAYO-2 certificate, fits within a single 372-byte SIB1 trans-port block, eliminating fragmentation entirely and preserving full compatibility with the existing 5G protocol stack without RRC modifications, new message types, or application-layer FEC. PQ certificate-chain schemes are fundamentally incompatible with this constraint: ML-DSA-ML-DSA requires ∼10 KB of cryptographic material across 34 packets (∼27 × the transport block size), and even FN-DSA-FN-DSA requires 13 packets. Fragmentation introduces three practical challenges: (i) the UE must buffer and order fragments across multiple broadcast cycles, complicating the protocol stack; (ii) loss of any single fragment invalidates the entire authentication, since partial PQ signatures cannot be verified; and (iii) applying FEC to mitigate loss adds further packets and delay, exacerbating rather than resolving the overhead. 
+
+Post-Quantum Security: EMULSION achieves full PQ authen-tication for SIB broadcasts. The chain anchor K0 is certified by MAYO-2, whose security rests on MQ hardness, while the one-way chain and per-packet HMAC derive security from the PRF assumption via HMAC-SHA-256, providing 128-bit security against quantum adversaries under Grover’s bound. The entire authentication path from AMF root of trust through per-packet MAC verification is therefore PQ-secure. In contrast, BLS (q-SDH), EC-Schnorr (ECDLP), and Schnorr-HIBS [12] all rely on hardness assumptions broken by Shor’s algorithm, offering no long-term security against cryptographically relevant quantum computers. 
+
+Asymmetric Cost Amortization: EMULSION concentrates the asymmetric cost in the epoch-opening packet and amortizes it across the chain. The MAYO-2 signature is computed once per epoch by the AMF offline and verified once by the UE; all subsequent packets incur only symmetric operations. As 
+
+|C| grows, amortized per-packet overhead converges to 52 B. At |C| =100 (∼16 s at 160 ms periodicity), the epoch-opening premium adds only ∼2 B per packet on average. This differs fundamentally from approaches such as EMSS [24], which require a fresh digital signature every k-th packet. 
+
+Packet-Loss Resilience: EMULSION provides inherent loss re-silience without FEC. A missed steady-state packet Pi affects at most d messages but causes no cascading failure: the next received packet discloses Ki and authentication resumes immediately. If the epoch-opening packet P1 is missed, the UE waits for the next epoch, which begins with a fresh certified anchor. Certificate-chain schemes have no inherent loss resilience: a single lost fragment out of 6–34 packets causes complete authentication failure, requiring the UE to wait for the next full broadcast cycle. Reed-Solomon FEC improves resilience but at the cost of additional packets, delay, and decoding complexity. Fig. 5 illustrates these differences. Panel (a) shows EMULSION (all |C| ) maintaining epoch estab-lishment above 90% even at 10% packet loss, since only P1 is critical, while ML-DSA-ML-DSA drops to ∼17% at 5% loss and FN-DSA-MAYO falls below 50% at 10% loss. Panel (b) shows steady-state per-message authentication: EMULSION 
+
+with |C| =2 , d=1 authenticates ∼80% of messages at 20% loss, whereas certificate-chain baselines authenticate nothing until the full chain is successfully reassembled. 0 10 20 30                     
+
+> Packet Loss Rate (%)
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Auth. Success Probability (%)
+> Typical 5G
+> 17%
+> (a) Epoch Establishment
+> ML-DSA ML-DSA (34 pkts)
+> FN-DSA FN-DSA (13 pkts)
+> FN-DSA MAYO (6 pkts)
+> FN-DSA MAYO+FEC (7 pkts)
+> EC-Schnorr (1 pkt, not PQ)
+> EMULSION (all |C|)
+> 010 20 30
+> Packet Loss Rate (%)
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Authenticated Messages (%)
+> Typical 5G
+> Baselines same as (a)
+> (b) Per-Message Auth. Ratio
+> EMULSION |C|= 2 ,d= 1
+> EMULSION |C|= 3 ,d= 2
+> EMULSION |C|= 4 ,d= 3
+
+Fig. 5: Packet loss effect on authentication schemes. Fig. 6 quantifies the delay-resilience tradeoff of Reed-Solomon FEC for FN-DSA-MAYO. Panel (a) shows that FEC variants RS(7,6) through RS(9,6) reduce expected E2E delay 0 5 10 15 20 25 30                       
+
+> Packet Loss Rate (%)
+> 0
+> 1000
+> 2000
+> 3000
+> 4000
+> 5000
+> 6000
+> Expected E2E Delay (ms)
+> Typical 5G
+> 800 ms
+> 160 ms
+> FEC
+> cost
+> (a) Expected End-to-End Delay
+> FN-DSA MAYO, no FEC (6 pkts)
+> FN-DSA MAYO + RS(7,6)
+> FN-DSA MAYO + RS(8,6)
+> FN-DSA MAYO + RS(9,6)
+> EMULSION |C|= 2
+> EMULSION |C|= 4
+> 0510 15 20 25 30
+> Packet Loss Rate (%)
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Auth. Success per Attempt (%)
+> Typical 5G
+> 53%
+> 85%
+> (b) Authentication Success Probability
+> FN-DSA MAYO, no FEC (6 pkts)
+> FN-DSA MAYO + RS(7,6)
+> FN-DSA MAYO + RS(8,6)
+> FN-DSA MAYO + RS(9,6)
+> EMULSION |C|= 2
+> EMULSION |C|= 4
+
+Fig. 6: Tradeoff between end-to-end delay and authentication success based on Reed-Solomon Forward Error Correction (FEC). EMULSION doesn’t require FEC and outperforms FN-DSA-MAYO on all FEC settings. under loss compared to the unprotected 6-packet baseline, but all remain above 800 ms even at low loss rates, well above EMULSION ’s 160 ms at |C| =2 . Panel (b) shows that at 10% loss, FN-DSA-MAYO without FEC achieves only 
+
+∼53% authentication success; while RS(9,6) recovers high success, its E2E delay substantially exceeds all EMULSION 
+
+configurations. FEC thus improves FN-DSA-MAYO’s loss tolerance but cannot close the gap with EMULSION , which requires no error correction overhead. Overall, EMULSION achieves PQ SIB authentication at 160.07 ms E2E delay in its minimal configuration ( |C| =2 ), which is 5–33 × faster than PQ certificate-chain alternatives. Its per-packet BS cost of ∼0.6 μs (two HMAC operations) is ∼1,000 × cheaper than any signature-based scheme, prac-tical for gNBs serving hundreds of cells. Every packet fits within a single SIB transport block, eliminating fragmentation and preserving full 5G protocol stack compatibility. Since 
+
+EMULSION authenticates over the one-way chain and MAC tags rather than SIB content, it extends naturally to all SIB types without modification, unlike certificate-chain schemes whose fragmentation overhead scales with the number of protected broadcast channels. Collectively, PQ security, zero fragmentation, HMAC-dominated per-packet cost, inherent loss resilience, and full SIB generalizability make EMULSION 
+
+a practical and deployable solution for 5G bootstrapping authentication in the PQ era. VII. R ELATED WORK 
+
+We survey prior work on 5G BS authentication and PQ security for cellular broadcast channels. 
+
+PKI-Based BS Authentication. Early proposals adapted PKI frameworks to authenticate SIB messages. Lee et al. [50] and Zheng [51] established certificate-based foundations for mo-bile network authentication. Hussain et al. [1] provided the first systematic attack analysis of 5G bootstrapping and proposed attaching signatures and certificate chains to SIB1/SIB2. Ross et al. [8] proposed a “broadcast-but-verify” model using a separate signingSIB message to decouple overhead from SIB1. Gao et al. [52] explored delegated signing to reduce per-BS cost, and Wuthier et al. [53] combined multi-factor au-thentication with blockchain-based certificate delivery. 3GPP has explored PKI-based SIB protection in TR 33.809, though SIB1 remains unprotected in the current RRC specification. All PKI-based schemes share a fundamental limitation: certificate chains for AMF and BS keys routinely exceed the 372-byte SIB1 limit, require fragmentation across multiple packets, and compound verification cost on resource-constrained UEs, while remaining vulnerable to quantum-capable adversaries. 
+
+Token- and Symmetric-Based Schemes. BARON [11] em-ploys symmetric tokens for pre-authentication defense via a Closed Trusted Entity to protect connection initialization and handover in 5G, avoiding asymmetric certificate overhead but leaving SIB contents entirely unprotected: broadcast param-eters can be tampered without invalidating any token. Al-Mekhlafi [54] extends symmetric security to 5G IoT contexts but similarly does not address SIB broadcast authentication. 
+
+Identity-Based and Certificate-Free Schemes. To eliminate certificate chains, Singla et al. [12] proposed SCHNORR -HIBS, a hierarchical IBS scheme deriving BS and AMF keys from a master key pre-installed in the USIM, achieving compact overhead within a single SIB1 packet. Ramadan et al. [55] explored server-aided IBS to offload UE verification cost. Yu et al. [13], Dong et al. [14], and Sun and Peng [15] further refined two-level HIBSs for LTE/5G. Sengupta and Lakshminarayanan [56] extended this to online-offline thresh-old IBS for 5G IoT. Darzi et al. [17] presented BORG, a threshold IBS scheme with fail-stop properties that distributes trust across multiple BSs and provides post-mortem forgery detection via a PQ-secured audit log. While IBS schemes achieve the best efficiency among conventional approaches, all rely on ECDLP hardness, are broken by quantum-capable adversaries, and are predominantly evaluated for SIB1 only. 
+
+Hybrid Post-Quantum Solutions. A growing body of work combines classical and PQ primitives for 5G/6G security. Vuppala et al. [57] and Ko et al. [58] proposed hybrid schemes pairing classical key exchange with lattice-based KEMs for primary authentication. Scalise et al. [59] analyzed PQ KEMs for 5G/6G core network security, and Attema and de Kock [60] examined PQC deployment challenges in the 5G core. These efforts target unicast session establishment and are structurally incompatible with one-to-many SIB broadcast authentication: KEMs establish shared secrets between two parties, and ap-plying hybrid signatures to SIBs would combine the overhead of two schemes, further exacerbating fragmentation. VIII. C ONCLUSION AND FUTURE WORK 
+
+We presented EMULSION , a symmetric chained publicly verifiable authentication framework for 5G/6G BS broadcast authentication achieving genuine post-quantum security at symmetric-key efficiency. By exploiting fixed SIB transmis-sion windows, BS-UE time synchronization, and eSIM/USIM credential management, EMULSION harnesses a TESLA-style HMAC chain anchored by a compact MAYO signature applied once per epoch, eliminating certificate chains, avoiding frag-mentation, and protecting the full SIB family (MIB through SIB21) at no additional over-the-air overhead. Evaluated on a real over-the-air 5G testbed against NIST-PQC standards, classical schemes, and state-of-the-art alternatives, EMULSION 
+
+achieves lower end-to-end delay and less communication over-head than ML-DSA while providing stronger, more durable security guarantees. Future work will extend EMULSION to multi-operator roaming scenarios and investigate overshad-owing attack mitigations in the post-quantum setting as 5G transitions toward 6G. REFERENCES [1] S. R. Hussain, M. Echeverria, A. Singla, O. Chowdhury, and E. Bertino, “Insecure connection bootstrapping in cellular networks: the root of all evil,” in Proceedings of the 12th conference on security and privacy in wireless and mobile networks , 2019, pp. 1–11. [2] J. Cao, M. Ma, H. Li, R. Ma, Y. Sun, P. Yu, and L. Xiong, “A survey on security aspects for 3gpp 5g networks,” IEEE communications surveys & tutorials , vol. 22, no. 1, pp. 170–195, 2019. [3] A. Dabrowski, N. Pianta, T. Klepp, M. Mulazzani, and E. Weippl, “Imsi-catch me if you can: Imsi-catcher-catchers,” in Proceedings of the 30th annual computer security applications Conference , 2014, pp. 246–255. [4] 3GPP, “NR; Radio Resource Control (RRC) Protocol Specification,” 3rd Generation Partnership Project, Tech. Rep. TS 38.331 V18.1.0, 2024. [Online]. Available: https://www.etsi.org/deliver/etsi ts/138300 138399/138331/18.01.00 60/ts 138331v180100p.pdf [5] H. Kim, J. Lee, E. Lee, and Y. Kim, “Touching the untouchables: Dynamic security analysis of the lte control plane,” in 2019 IEEE Symposium on Security and Privacy (SP) . IEEE, 2019, pp. 1153–1168. [6] K. S. Mubasshir, I. Karim, and E. Bertino, “Gotta detect ’em all: Fake base station and multi-step attack detection in cellular networks,” 2025. [7] C. Park, S. Bae, B. Oh, J. Lee, E. Lee, I. Yun, and Y. Kim, “ {DoLTEst }:In-depth downlink negative testing framework for {LTE } devices,” in 
+
+31st USENIX Security Symposium (USENIX Security 22) , 2022, pp. 1325–1342. [8] A. J. Ross, B. Reaves, Y. Nasser, G. Cukierman, and R. P. Jover, “Fixing insecure cellular system information broadcasts for good,” in Proceedings of the 27th International Symposium on Research in Attacks, Intrusions and Defenses , 2024, pp. 693–708. [9] S. Wuthier, J. Kim, I. Kim, and S.-Y. Chang, “Base station certificate and multi-factor authentication for cellular radio control communication security,” arXiv preprint arXiv:2504.02133 , 2025. [10] 3GPP, “Study on 5G Security Enhancements against False Base Stations (FBS): Certificate Based Solution for Protecting System Information Messages with Digital Signature in an NPN,” 3rd Generation Partnership Project, Tech. Rep. TR 33.809, S3-202717, 2020. [Online]. Available: https://www.3gpp.org/ftp/TSG SA/WG3 Security/TSGS3 100Bis-e/Docs/S3-202717.zip [11] A. Lotto, V. Singh, B. Ramasubramanian, A. Brighente, M. Conti, and R. Poovendran, “Baron: Base-station authentication through core network for mobility management in 5g networks,” in Proceedings of the 16th ACM Conference on Security and Privacy in Wireless and Mobile Networks , 2023, pp. 133–144. [12] A. Singla, R. Behnia, S. R. Hussain, A. Yavuz, and E. Bertino, “Look before you leap: Secure connection bootstrapping for 5g networks to defend against fake base-stations,” in Proceedings of the 2021 ACM Asia Conference on Computer and Communications Security , 2021, pp. 501–515. [13] C. Yu, S. Chen, Q. Xing, and Z. Wei, “Protecting unauthenticated messages in lte/5g mobile networks: A two-level hierarchical identity-based signature (hibs) solution,” Computer Networks , vol. 254, p. 110814, 2024. [14] Y. Dong, R. Behnia, A. A. Yavuz, and S. R. Hussain, “Securing 5g bootstrapping: A two-layer ibs authentication protocol,” arXiv preprint arXiv:2502.04915 , 2025. [15] Z. Sun and C. Peng, “5g-hcls: An authentication protocol to protect bootstrapping messages in 5g network,” in 2025 IEEE Wireless Com-munications and Networking Conference (WCNC) . IEEE, 2025, pp. 1–6. [16] C. J. Mitchell, “The impact of quantum computing on real-world security: A 5g case study,” Computers & Security , vol. 93, p. 101825, 2020. [17] S. Darzi, M. M. Rahman, I. Karim, R. Behnia, A. A. Yavuz, and E. Bertino, “Future-proofing authentication against insecure bootstrap-ping for 5g networks: Feasibility, resiliency, and accountability,” arXiv preprint arXiv:2510.23457 , 2025. [18] NIST, “Post-Quantum Cryptography Standards: FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA),” National Institute of Stan-dards and Technology, Tech. Rep. FIPS 203/204/205, 2024. [Online]. Available: https://csrc.nist.gov/projects/post-quantum-cryptography [19] ETSI, “Cyber Security (CYBER); Quantum-Safe Cryptography (QSC); Efficient Quantum-Safe Hybrid Key Exchanges with Hidden Access Policies,” European Telecommunications Standards Institute, Tech. Rep. TS 104 015 V1.1.1, 2024. [Online]. Available: https://www.etsi.org/deliver/etsi ts/104000 104099/104015/ 01.01.01 60/ts 104015v010101p.pdf [20] NSA, CISA, and NIST, “Quantum-Readiness: Migration to Post-Quantum Cryptography,” Cybersecurity and In-frastructure Security Agency, Tech. Rep., 2025. [On-line]. Available: https://www.cisa.gov/resources-tools/resources/ quantum-readiness-migration-post-quantum-cryptography [21] ITU-R, “Framework and Overall Objectives of the Future Development of IMT for 2030 and Beyond,” International Telecommunication Union, Tech. Rep. Recommendation ITU-R M.2160-0, 2023. [Online]. Available: https://www.itu.int/rec/R-REC-M.2160/en [22] GSMA, “Embedded SIM Remote Provisioning Architecture,” GSM Association, Tech. Rep. SGP.02 V4.2, 2020. [Online]. Available: https://www.gsma.com/solutions-and-impact/technologies/ esim/wp-content/uploads/2020/07/SGP.02-v4.2.pdf [23] ——, “RSP Technical Specification,” GSM Associa-tion, Tech. Rep. SGP.22 V3.1, 2023. [Online]. Avail-able: https://www.gsma.com/solutions-and-impact/technologies/esim/ wp-content/uploads/2023/05/SGP.22-v3.1.pdf [24] A. Perrig, R. Canetti, J. D. Tygar, and D. Song, “Efficient authentication and signing of multicast streams over lossy channels,” in Proceeding 2000 IEEE symposium on security and privacy. S&P 2000 . IEEE, 2000, pp. 56–73. [25] W. Beullens, “Mayo: Practical post-quantum signatures from oiland-vinegar maps,” in International Conference on Selected Areas in Cryp-tography , pp. 355–376. [26] C.-P. Schnorr, “Efficient signature generation by smart cards,” Journal of cryptology , vol. 4, pp. 161–174, 1991. [27] P.-A. Fouque, J. Hoffstein, P. Kirchner, V. Lyubashevsky, T. Pornin, T. Prest, T. Ricosset, G. Seiler, W. Whyte, Z. Zhang et al. , “Falcon: Fast-fourier lattice-based compact signatures over ntru,” Submission to the NIST’s post-quantum cryptography standardization process , vol. 36, no. 5, pp. 1–75, 2018. [28] T. Dang, J. Lichtinger, Y.-K. Liu, C. Miller, D. Moody, R. Peralta, R. Perlner, A. Robinson et al. , “Module-lattice-based digital signature standard,” National Institute of Standards and Technology (NIST), Thinh Dang, Jacob , 2024. [29] H. Fourati, R. Maaloul, L. Chaari, and M. Jmaiel, “Comprehensive survey on self-organizing cellular network approaches applied to 5g networks,” Computer Networks , vol. 199, p. 108435, 2021. [30] 3GPP RRC Specification , 2024, https://www.etsi.org/deliver/etsi ts/ 138300 138399/138331/18.01.00 60/ts 138331v180100p.pdf. [31] M. Bellare, R. Canetti, and H. Krawczyk, “Keying hash functions for message authentication,” in Annual international cryptology conference .Springer, 1996, pp. 1–15. [32] 3GPP Specification on Security architecture and procedures for 5G Sys-tem , 2024, https://www.etsi.org/deliver/etsi ts/133500 133599/133501/ 18.06.00 60/ts 133501v180600p.pdf. [33] P. W. Shor, “Algorithms for quantum computation: discrete logarithms and factoring,” in 35th annual symp. on found. of CS . Ieee, 1994. [34] D. Cooper et al. , “Stateless hash-based digital signature standard,” 2024. [35] D. Soni, K. Basu, M. Nabeel, N. Aaraj, M. Manzano, and R. Karri, “Falcon,” Hardware Architectures for Post-Quantum Digital Signature Schemes , pp. 31–41, 2021. [36] NIST, “Additional Digital Signature Schemes – Round 2 Submissions,” National Institute of Standards and Technology, Post-Quantum Cryptography Standardization, 2024. [Online]. Available: https://csrc. nist.gov/Projects/pqc-dig-sig/round-2-additional-signatures [37] K. S. Mubasshir, I. Karim, and E. Bertino, “Gotta detect’em all: Fake base station and multi-step attack detection in cellular networks,” in 
+
+Proceedings of the 34th USENIX Security Symposium , 2025. [38] D. Rupprecht, K. Kohls, T. Holz, and C. P¨ opper, “Breaking lte on layer two,” in 2019 IEEE Symposium on Security and Privacy (SP) . IEEE, 2019, pp. 1121–1136. [39] S. Darzi, K. Ahmadi, S. Aghapour, A. A. Yavuz, and M. M. Kermani, “Envisioning the future of cyber security in post-quantum era: A survey on pq standardization, applications, challenges and opportunities,” arXiv preprint arXiv:2310.12037 , 2023. [40] G. Rossi Figlarz and F. Passuelo Hessel, “Enhancing the 5g-aka protocol with post-quantum digital signature method,” in International Confer-ence on Advanced Information Networking and Applications . Springer, 2024, pp. 99–110. [41] M. T. Damir, T. Meskanen, S. Ramezanian, and V. Niemi, “A beyond-5g authentication and key agreement protocol,” in International Conference on Network and System Security . Springer, 2022, pp. 249–264. [42] A. Braeken, A. K. Yadav, and J. Munilla, “A practical transition to post-quantum security in 5g-aka,” IEEE Transactions on Information Forensics and Security , vol. 20, pp. 13 071–13 084, 2025. [43] M. T. Damir and V. Niemi, “On post-quantum identification in 5g,” in 
+
+Proceedings of the 15th ACM Conference on Security and Privacy in Wireless and Mobile Networks , ser. WiSec ’22. New York, NY, USA: Association for Computing Machinery, 2022, p. 292–294. [Online]. Available: https://doi.org/10.1145/3507657.3529657 [44] SGP.22: GSMA Remote Sim Provisioning , 2024, https://www.gsma.com/ solutions-and-impact/technologies/esim/gsma resources/sgp-22-v2-7/. [45] 3GPP, “NR; Base Station (BS) Radio Transmission and Reception,” 3rd Generation Partnership Project, Tech. Rep. TS 38.104 V17.9.0, 2023. [Online]. Available: https://www.etsi.org/deliver/etsi ts/138100 138199/138104/17.09.00 60/ts 138104v170900p.pdf [46] Network Signal Guru User Manual , https://m.qtrun.com/docs/NSG Manual Aug 2017.pdf. [47] G. Alagic, D. Apon, D. Cooper, Q. Dang, T. Dang, J. Kelsey, J. Lichtinger, Y.-K. Liu, C. Miller et al. , “Status report on the third round of the nist post-quantum cryptography standardization process,” 2022. [48] D. Boneh, B. Lynn, and H. Shacham, “Short signatures from the weil pairing,” in International conference on the theory and application of cryptology and information security . Springer, 2001, pp. 514–532. [49] J. Breen, A. Buffmire, J. Duerig, K. Dutt, E. Eide, A. Ghosh, M. Hibler, D. Johnson, S. K. Kasera, E. Lewis, D. Maas, C. Martin, A. Orange, N. Patwari, D. Reading, R. Ricci, D. Schurig, L. B. Stoller, A. Todd, J. Van der Merwe, N. Viswanathan, K. Webb, and G. Wong, “Powder: Platform for open wireless data-driven experimental research,” 
+
+Computer Networks , vol. 197, p. 108281, 2021. [Online]. Available: https://www.sciencedirect.com/science/article/pii/S1389128621003017 [50] C.-C. Lee, I.-E. Liao, and M.-S. Hwang, “An extended certificate-based authentication and security protocol for mobile networks,” Information Technology and Control , vol. 38, no. 1, 2009. [51] Y. Zheng, “An authentication and security protocol for mobile com-puting,” in Mobile Communications: Technology, tools, applications, authentication and security IFIP World Conference on Mobile Commu-nications 2–6 September 1996, Canberra, Australia . Springer, 1996, pp. 249–257. [52] H. Gao, Y. Zhang, T. Wan, J. Zhang, and H. Duan, “On evaluating delegated digital signing of broadcasting messages in 5g,” in 2021 IEEE global communications conference (GLOBECOM) . IEEE, 2021, pp. 1– 7. [53] S. Wuthier, J. Kim, J. Kim, and S.-Y. Chang, “Fake base station detection and blacklisting,” in 2024 33rd International Conference on Computer Communications and Networks (ICCCN) . IEEE, 2024, pp. 1–9. [54] Z. G. Al-Mekhlafi, M. A. Al-Shareeda, B. A. Mohammed, A. A. Alsadhan, A. Khalil, A. M. Alayba, A. M. S. Saleh, H. A. Al-reshidi, and K. Almekhlafi, “Post-quantum lattice-based forward-secure authentication scheme using fog computing in 5g-assisted vehicular networks,” 2024. [55] M. Ramadan, Y. Liao, F. Li, and S. Zhou, “Identity-based signature with server-aided verification scheme for 5g mobile systems,” IEEE Access ,vol. 8, pp. 51 810–51 820, 2020. [56] B. Sengupta and A. Lakshminarayanan, “Fast verification of on-line/offline threshold signatures for 5g iot,” in 2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS) . IEEE, 2024, pp. 1–6. [57] R. C. Vuppala, D. Kumar, D. Je, N. Sharma, A. Nigam, and D. Kim, “Post-quantum secure hybrid methods for ue primary authentication in 6g with forward secrecy,” in GLOBECOM 2023-2023 IEEE Global Communications Conference . IEEE, 2023, pp. 2590–2595. [58] Y. Ko, I. Pawana, and I. You, “5g-aka-hpqc: Hybrid post-quantum cryptography protocol for quantum-resilient 5g primary authentication with forward secrecy,” arXiv preprint arXiv:2502.02851 , 2025. [59] P. Scalise, R. Garcia, M. Boeding, M. Hempel, and H. Sharif, “An applied analysis of securing 5g/6g core networks with post-quantum key encapsulation methods,” Electronics , vol. 13, no. 21, p. 4258, 2024. [60] T. Attema, B. de Kock, S. M. Jayaprakash, D. Schoinianakis, T. Si-jpesteijn, and R. van de Vlasakker, “Post-quantum cryptography in the 5g core,” arXiv preprint arXiv:2512.20243 , 2025. 
+
+APPENDIX ASECURITY PROOFS 
+
+We present the full proofs of Lemmas 1–3 and Theorem 1. Each lemma constructs an explicit reduction adversary and analyzes its simulation and success probability. We use hybrid games G0 → G1 → G2 → G3, where 
+
+G0 is the real experiment and Pr[ G3 = 1] ≤ negl (λ). In 
+
+G1, we abort if A forges a fresh SGN certificate passing the check in EMULSION .Authenticate ; by Lemma 1: 
+
+| Pr[ G0 = 1] − Pr[ G1 = 1] | ≤ Adv EUF -CMA  
+
+> SGN ,B1
+
+. In G2,we additionally abort if A forges a valid HMAC tag on a fresh (m∗, i ∗) not produced by EMULSION .Broadcast ;since the TESLA security condition (Definition III.2) prevents access to Ki∗−d before its disclosure window expires, by Lemma 2: | Pr[ G1 = 1] − Pr[ G2 = 1] | ≤ ℓ · Adv PRF   
+
+> F′,B2
+
+. In 
+
+G3, we abort if A submits a fraudulent K∗ 
+
+> disc
+
+passing the chain check in EMULSION .Authenticate ; by Lemma 3: 
+
+| Pr[ G2 = 1] − Pr[ G3 = 1] | ≤ Adv OW -TCR  
+
+> F, B3
+
+. After G3, A
+
+has no remaining winning strategy: certificate forgeries, MAC forgeries, and chain key forgeries are all excluded, covering every verification path through EMULSION .Authenticate 
+
+(Algorithm 3), so Pr[ G3 = 1] ≤ negl (λ). Combining via the triangle inequality yields the bound in Theorem 1. 
+
+Lemma 1 (Anchor Certificate Unforgeability) . If A forges a fresh cert ∗ 
+
+> K0
+
+accepted by SGN .Verify , passing the certificate check in EMULSION .Authenticate , there exists a QPT 
+
+B1 breaking EUF-CMA of SGN : Pr[ A forges cert K0 ] ≤
+
+Adv EUF -CMA  
+
+> SGN ,B1
+
+λ).
+
+Proof. The reduction exploits the fact that B1 can simulate the entire EMULSION experiment without knowing sk AMF , since the chain C is sampled independently of the signing key. We construct a reduction B1 that uses A as a blackbox to break EUF-CMA of SGN (Definition II.1). 
+
+Setup. B1 receives a challenge public key PK from its EUF-CMA challenger and sets PK AMF := PK . It samples the full key chain honestly by picking Kℓ
+
+> $
+
+←− { 0, 1}λ and computing 
+
+Ki ← F (Ki+1 ) for i = ℓ − 1, . . . , 0, yielding anchor 
+
+K0 = F ℓ(Kℓ). It computes info = K0∥ID BS ∥T0∥Tint ∥d∥ℓ
+
+and obtains cert K0 ← O SGN  
+
+> S
+
+(info ) via a single query to its own SGN signing oracle. B1 runs A on input PK AMF .
+
+Broadcast oracle. For each query OB (i, m ) from A, B1 com-putes Πi ← EMULSION .Broadcast (C, cert K0 , info , i, m )
+
+directly using the known chain. No further SGN signing oracle queries are needed. 
+
+Extraction. When A outputs (m∗, i ∗, Π∗) containing a fresh 
+
+cert ∗ 
+
+> K0
+
+satisfying SGN .Verify (PK AMF , info ∗, cert ∗ 
+
+> K0
+
+) =1 for some info ∗ never submitted to OB , B1 outputs 
+
+(info ∗, cert ∗ 
+
+> K0
+
+) as its SGN forgery. 
+
+Analysis. The simulation is perfect: B1 knows the full chain and answers all broadcast oracle queries honestly. The certifi-cate requires exactly one SGN signing oracle query, permitted in the EUF-CMA game. Whenever A forges a fresh certifi-cate, B1 wins its EUF-CMA game: Pr[ A forges cert K0 ] = Pr[ B1 wins EUF-CMA ] ≤ Adv EUF -CMA  
+
+> SGN ,B1
+
+(λ).
+
+Lemma 2 (Per-Packet MAC Unforgeability) . If A forges a valid HMAC tag on a fresh (m∗, i ∗) not broadcast by EMULSION .Broadcast , without access to Ki∗−d,there exists a QPT B2 breaking PRF security of F ′:
+
+Pr[ A forges MAC ] ≤ ℓ · Adv PRF   
+
+> F′,B2
+
+(λ), where ℓ accounts for guessing the target interval i∗ uniformly among the ℓ chain epochs .
+
+Proof. We construct B2 that uses A to break PRF security of 
+
+F ′.
+
+Setup. B2 has access to a PRF oracle O that is either F ′(K∗, ·)
+
+for a hidden random key K∗, or a truly random function 
+
+R(·). It guesses a target interval i∗ $
+
+←− { 1, . . . , ℓ } uniformly. It samples Kℓ
+
+> $
+
+←− { 0, 1}λ, computes Ki ← F (Ki+1 ) for all i,and obtains cert K0 via a single SGN signing oracle query as in Lemma 1. It runs A on input PK AMF .
+
+Broadcast oracle. For queries OB (i, m ) with i̸ = i∗, B2
+
+computes τi = HMAC (F ′(Ki), m ∥i∥ID BS ) directly. For 
+
+i = i∗, it uses its PRF oracle: K′ 
+
+> i∗
+
+← O(Ki∗ ), then 
+
+τi∗ = HMAC (K′ 
+
+> i∗
+
+, m ∥i∗∥ID BS ). All other packet fields are computed honestly. 
+
+TESLA security condition. By Definition III.2, A does not have access to Ki∗−d before the disclosure window expires. Therefore A cannot compute K′ 
+
+> i∗−d
+
+= F ′(Ki∗−d) and must forge τ ∗ without knowing the MAC key. This is the critical point where the TESLA security condition is invoked in the reduction. 
+
+Extraction. When A outputs a valid forgery τ ∗ on a fresh 
+
+(m∗, i ∗) at the guessed interval, B2 distinguishes O from ran-dom: a valid MAC forgery has negligible probability against a truly random function. B2 outputs “PRF” when A succeeds and “random” otherwise. 
+
+Analysis. The simulation at all i̸ = i∗ is perfect. At i∗,the simulation is indistinguishable from the real game when 
+
+O = F ′(K∗, ·). The guessing step succeeds with probability 
+
+1/ℓ : conditioned on A forging at any interval, it forges at 
+
+i∗ with probability at least 1/ℓ : Pr[ A forges MAC ] ≤ ℓ ·
+
+Adv PRF   
+
+> F′,B2
+
+(λ).
+
+Lemma 3 (Chain Key Recovery Infeasibility) . If A outputs 
+
+K∗
+
+> disc
+
+̸ = Ki∗−d with F j (K∗
+
+> disc
+
+) = K0 where j = i∗ − d,passing the chain check in EMULSION .Authenticate ,there exists a QPT B3 breaking one-wayness or TCR of F :
+
+Pr[ A forges chain key ] ≤ Adv OW -TCR  
+
+> F, B3
+
+(λ).
+
+Proof. We construct B3 that uses A to break one-wayness or TCR of F .
+
+Two cases. A fraudulent K∗
+
+> disc
+
+̸ = Ki∗−d passing F j (K∗
+
+> disc
+
+) = 
+
+K0 implies one of two things. Case 1 (Preimage): A inverts 
+
+F along the chain, breaking one-wayness (Definition III.2(ii)). 
+
+Case 2 (Collision): A finds K∗
+
+> disc
+
+̸ = Ki∗−d with F (K∗
+
+> disc
+
+) = 
+
+F (Ki∗−d), breaking TCR (Definition III.2(iii)). 
+
+Setup. B3 receives anchor K0 as its OW/TCR challenge. It samples Kℓ
+
+> $
+
+←− { 0, 1}λ, computes the full chain Ki ←
+
+F (Ki+1 ), and verifies F ℓ(Kℓ) = K0, resampling if necessary. It obtains cert K0 via a single SGN signing oracle query and runs A on input PK AMF , answering all broadcast oracle queries honestly. 
+
+Extraction. When A outputs K∗
+
+> disc
+
+̸ = Ki∗−d with F j (K∗
+
+> disc
+
+) = 
+
+K0, B3 traces the chain from K∗ 
+
+> disc
+
+by applying F repeatedly and comparing against the honest chain. The first position k
+
+where F (K∗ 
+
+> k
+
+) = F (Kk) but K∗
+
+> k
+
+̸ = Kk is a TCR collision (Case 2). If no such position exists, B3 has found a preimage for K0 under F j (Case 1). In either case, B3 outputs the relevant witness. 
+
+Analysis. The simulation is perfect since B3 knows the full chain. Every fraudulent K∗ 
+
+> disc
+
+passing the chain check in 
+
+EMULSION .Authenticate yields a break of one-wayness or TCR: Pr[ A forges chain key ] ≤ Adv OW -TCR  
+
+> F, B3
+
+(λ).
+
+Theorem 1 (EMULSION EUF-CMA Security) . For any QPT adversary A against EMULSION over a chain of length ℓ,there exist QPT B1, B2, B3 such that: Adv EUF -CMA 
+
+> EMULSION ,A
+
+(λ) ≤
+
+Adv EUF -CMA  
+
+> SGN ,B1
+
+(λ) + ℓ · Adv PRF   
+
+> F′,B2
+
+(λ) + Adv OW -TCR  
+
+> F, B3
+
+(λ) + negl (λ).
+
+Proof. We define hybrid games G0, G 1, G 2, G 3, where G0 is the real Exp EUF -CMA  
+
+> EMULSION ,A
+
+experiment. We bound the gap between consecutive games and show Pr[ G3 = 1] ≤ negl (λ).
+
+G0: Real experiment. A interacts with the honest EMULSION 
+
+challenger. Pr[ G0 = 1] = Adv EUF -CMA 
+
+> EMULSION ,A
+
+(λ).
+
+G0 → G1: Abort on certificate forgery. G1 is identical to G0
+
+except the challenger aborts if Π∗ contains a fresh cert ∗
+
+> K0
+
+passing SGN .Verify . Any execution where G0 outputs 1
+
+but G1 outputs 0 yields a valid SGN forgery. By Lemma 1: 
+
+| Pr[ G0 = 1] − P r [G1 = 1] | ≤ Adv EUF -CMA  
+
+> SGN ,B1
+
+(λ).
+
+G1 → G2: Abort on MAC forgery. G2 additionally aborts if 
+
+A’s forgery contains a valid HMAC tag on a fresh (m∗, i ∗)
+
+not produced by EMULSION .Broadcast . In G2, A must use the honest cert K0 (certificate forgeries are excluded by 
+
+G1). The TESLA security condition (Definition III.2) ensures 
+
+A cannot access Ki∗−d before its disclosure window expires, so any valid MAC forgery breaks PRF security of F ′. By Lemma 2: | Pr[ G1 = 1] − Pr[ G2 = 1] | ≤ ℓ · Adv PRF   
+
+> F′,B2
+
+(λ).
+
+G2 → G3: Abort on chain forgery. G3 additionally aborts if 
+
+A submits a fraudulent K∗ 
+
+> disc
+
+passing the chain check 
+
+F j (K∗
+
+> disc
+
+) ?
+
+= K0 in EMULSION .Authenticate . Any such submission breaks one-wayness or TCR of F . By Lemma 3: 
+
+| Pr[ G2 = 1] − Pr[ G3 = 1] | ≤ Adv OW -TCR  
+
+> F, B3
+
+(λ).
+
+G3: No winning strategy. Certificate forgeries, MAC forg-eries, and chain key forgeries are all excluded in G3, covering every verification path through EMULSION .Authenticate 
+
+(Algorithm 3). Therefore Pr[ G3 = 1] ≤ negl (λ).Composition. Applying the triangle inequality: 
+
+Adv EUF -CMA  
+
+> EMULSION ,A
+
+= Pr[ G0 = 1] ≤ Pr[ G1 = 1] + Adv EUF -CMA  
+
+> SGN ,B1
+
+≤
+
+Pr[ G2 = 1] + ℓ · Adv PRF   
+
+> F′,B2
+
++ Adv EUF -CMA  
+
+> SGN ,B1
+
+≤
+
+negl (λ) + Adv OW -TCR  
+
+> F, B3
+
++ ℓ · Adv PRF   
+
+> F′,B2
+
++ Adv EUF -CMA  
+
+> SGN ,B1
+
+,which yields the stated bound. APPENDIX BPOWDER S ETUP 
+
+We collected the mobility dataset using the POWDER wireless testbed by deploying an experiment consisting of a core network and multiple base stations installed on rooftop locations, located at the University of Utah [49]. A separate experiment instance was configured with a campus shuttle bus carrying an srsUE device. The shuttle follows a fixed route at regular intervals, enabling controlled and repeatable mobility scenarios across the coverage areas of different base stations. As the shuttle moves away from one base station and approaches another with a stronger signal quality, a handover procedure is triggered, allowing the UE to transition to the better signal provider. During the experiments, all network communications and signaling exchanges were collected as packet capture (PCAP) traces. These traces were subsequently parsed using TShark to generate a structured dataset containing detailed mobility information, including the transmission and reception timestamps of SIB1 messages between the base station and UE, identification of handover events, and related signaling procedures. Additionally, the average speed of the campus shuttle was logged at approximately 29 mph, while the UE-to-base-station distance was estimated using the signal propagation time derived from the collected traces. APPENDIX CMIB C OVERAGE VIA DEFERRED VERIFICATION .Although the MIB is carried on the PBCH rather than the DL-SCH, its payload is only 3 bytes (24 bits) [30], small enough to be included directly in the per-packet HMAC input without affecting packet size. Concretely, the BS computes 
+
+τi ← HMAC (K′
+
+> i
+
+, m∥mMIB ∥i∥ID BS ), where mMIB denotes the current MIB content. The UE necessarily decodes the MIB before receiving SIB1 (it is required to locate SIB1 on the DL-SCH), so MIB protection is inherently retroactive: the UE buffers the decoded MIB and, upon successful HMAC verification of the corresponding SIB1 packet, checks that the HMAC verifies under the MIB it decoded from the PBCH. Since mMIB is an input to the HMAC, successful verification confirms that the BS committed to the same MIB content the UE received; a verification failure indicates a spoofed MIB and causes the UE to abort the connection attempt, preventing any further protocol progression (RACH, RRC, NAS) on a fraudulent cell. This deferred-verification model mirrors TESLA’s own design, where packets are buffered pending key disclosure, and adds zero communication overhead, since the 3-byte MIB content is absorbed into the existing HMAC computation at negligible cost.
