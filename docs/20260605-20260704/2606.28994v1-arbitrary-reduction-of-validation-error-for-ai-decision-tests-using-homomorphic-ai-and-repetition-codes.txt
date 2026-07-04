@@ -1,0 +1,187 @@
+Title: Arbitrary Reduction of Validation Error for AI Decision Tests using Homomorphic AI and Repetition Codes
+
+URL Source: https://arxiv.org/pdf/2606.28994v1
+
+Published Time: Tue, 30 Jun 2026 00:44:17 GMT
+
+Number of Pages: 10
+
+Markdown Content:
+# Arbitrary Reduction of Validation Error for AI Decision Tests using Homomorphic AI and Repetition Codes ⋆
+
+Eric Filiol 1[0000 −0001 −5101 −8073] and Jaagup Sepp 2 
+
+> 1
+
+Independent Researcher - Retired Professor 
+
+efll@protonmail.com 
+
+https://ericfiliol.site  
+
+> 2
+
+Hope4Sec, Tallinn, Estonia 
+
+jaagup.sepp@hope4sec.eu 
+
+Abstract. This paper presents new results and breakthrough obtained with the HbHAI techniques (Hash-based Homomorphic Artificial Intel-ligence) proposed in [3,10]. HbHAI is based on a novel class of key-dependent hash functions that naturally preserve most similarity prop-erties, most AI algorithms rely on. It enables to analyse and process data in its cryptographically secure form while using existing native AI algorithms without modification, with unprecedented performances com-pared to existing homomorphic encryption schemes and most notably compared to the same processing on corresponding plaintext data. Two major results have been obtained further. First we enable to reduce the compression rate up to a factor of 10 thus allowing to process massive datasets while reducing the computation time and the energy footprint in the same order. Second, we show how it is possible to arbitrarily reduce the final validation error of AI-based decision tests by using repetition error-correcting codes. 
+
+Keywords: Homomorphic Encryption · Homomorphic Artificial Intel-ligence · Hash Function · Validation Error · Repetition Codes. 
+
+## 1 Introduction 
+
+In this paper, the “AI” term is used to describe all data analysis techniques (ma-chine learning, deep learning, big data) to the exclusion of LLM (generative AI). For sake of concision, Homomorphic AI must be understood as Homomorphic Encryption for AI. As far as AI is concerned, most approaches require to use third-party envi-ronments such as clouds which provide suitable tools. The only other possibility is to use “on-premises” environments with suitable and skilled enough tech teams to deliver, run, maintain and to operate them. With cloud solutions the main  
+
+> ⋆
+
+This paper is an extended and updated version of the talk presented at DSCNext Amsterdam 2026.  
+
+> arXiv:2606.28994v1 [cs.CR] 27 Jun 2026 2E. Filiol & J. Sepp
+
+security drawback lies on the fact that data owners do no longer control the access to data. Outsourcing data for the purposes to use dedicated AI tools as a service thus represents either a weakness or a critical risk. Indeed, we observe that a data has three essential “vocations”: 
+
+– to grow indefinitely (cost issues in terms of storage, computing time, band-width consumption), 
+
+– to be shared or accessed (and thus lead to misuse) with dubious third-parties (e.g. data brokers, national police or intelligence agencies), 
+
+– and, worse, to leak in the wake of attacks (for 2025, for instance refer to [12]). It is worth noticing that this risk equally exists for “on-premises” environ-ments. The most effective protection is to be able to process data directly in encrypted form without using data under their plaintext form. In this way, in storage or during processing, any attacker or unauthorised third party will only have access to data in a form that cannot be exploited by them. This protection is called 
+
+Homomorphic Artificial Intelligence (HAI) [1] coming from the original research area of Homomorphic Encryption (HE). Another problem to address when processing data is the risk of error inherent in any AI test (which is, in fact, a standard statistical test) or validation error. There are two types of such errors: false positives and false negatives [8]. These decision errors, even small, may have dramatic consequences in critical use-cases (medicine, defence, security. . . ). It is therefore a critical problem to minimize these errors as much as possible. At the present time, approaches to reduce errors imply stronger preprocessing of data, collecting more data of better quality thus implying higher computing power. But the natural variability of a given population from sample to sample makes this issue quite impossible to solve efficiently. At the end of 2020, we launched a collaborative project to develop a to-tally new and disruptive approach to homomorphic encryption applied to AI. The aim was to start from scratch and design a homomorphic data analysis scheme, called HbHAI (standing for Hash-based Homomorphic Artificial Intelli-gence ) that would provide at least the same level of cryptographic security for the data, while removing the constraints and limitations in existing HE schemes. For the time being, the HbHAI scheme is not public because it is not yet protected in terms of intellectual property. Moreover the industrial exploitation is still pending. Datasets have been made public to the community [10] in order to make possible an external analysis, and other will be as soon as possible. In this paper, we provide new results that confirm the very significant po-tential of HbHAI techniques: 
+
+– we achieve a significant reduction of data and models size and hence of computing time and energy consumption, up to a factor of 10. This enables homomorphic processing of massive encrypted datasets using AI (comprising millions of individuals, each described by hundreds of thousands of features) with classical algorithms/tools; Title Suppressed Due to Excessive Length 3
+
+– thanks to the very nature of HbHAI, we have been able to arbitrarily reduce the validation error for any AI test, by means of repetition error-correcting codes. The paper is organised as follows. In Section 2, we summarize the main features of HbHAI techniques and the results obtained so far on a few datasets. In Section 3, we present new results on HbHAI-protected datasets. Section 4 explains how we succeeded to reduce the validation error of any AI test. Finally Section 5 summarizes our results and mentions the future works and development for HbHAI. 
+
+## 2 Homomorphic AI Hash Functions (HbHAI) 
+
+2.1 Formal Definition and Features 
+
+In order for the paper to self-contained, this section summarizes the main defini-tions and features of HbHAI techniques. The formalization has been published in [3]. First datasets and use-cases have been presented in [10]. A first technical evaluation on those datasets has been presented at CyberWiseCon 2025 [4]. In order to provide cryptographic primitives suitable for homomorphic AI, a new class of keyed-hash functions has been designed.. The use of keyed hash functions aims at the same to provide a strong cryptographic security and a significant data size and computing time reduction for existing AI algorithms generally used. 
+
+Definition 1. (HAI Hash Function Class) [3] A keyed hash function for HAI applications is a function HK,δ parametrized by a secret key K and a compression rate δ, which has, as a minimum, the following two properties: 1. Compression — HK,δ maps an input x of arbitrary finite bit length n, to an output HK,δ (x) of bit length nδ .2. Ease of Computation — Given HK,δ and an input x, HK,δ (x) is easy to compute. 3. Similarity Preserving - For a given similarity measure S and any three objects x, x ′, x ′′ then we have, 
+
+S(x, x ′′ ) < S (x, x ′) ⇔ S(HK,δ (x), H K,δ (x′′ )) < S (HK,δ (x), H K,δ (x′)) 
+
+.
+
+This definition considers similarity instead of the more restricting concept of distance. Most AI techniques, not to say all, are based in a way or another on the central concept of similarity (between objects). Most similarity measure can be converted to distance but not all (for instance Cosine similarity). In order to illustrate this more intuitively, we consider Figure 2.1. Once cryp-tographically protected, it is no longer possible to guess which form is a square or a circle (their plaintext description) but similarities between plaintext forms are preserved beyond cryptography. 4 E. Filiol & J. Sepp  
+
+> Fig. 1. Illustrative description of HbHAI principle
+
+The interested reader can refer to [3] for a formalization of threat model (with respect to AI) we must consider and which security properties must be fulfilled. The use of hash functions (non-injective transformations) invalidates the con-cept of decryption in HE. With HbHAI, a different approach has been defined. Only the owner of the data knows the correspondence between the unencrypted and encrypted versions of an object/individual in a dataset, thanks to the index of each individual (after decrypting the index eventually). It is possible [3] to transpose the results of AI algorithms obtained on the encrypted version of a dataset to the unencrypted version of the dataset, using only the indexes (cluster-ing, classification. . . ). The decryption operation is therefore no longer necessary, in the specific context of AI. In addition to strong security requirements, HbHAI specifications also include other requirements, the most essential of which are as follows: 
+
+Frugality i.e. minimizing the computational resources required both to calcu-late the models and to operate them. This concerns both a significant reduc-tion in data size (parameter δ) and a significant reduction in computation time. The main benefit is reduced energy and ecological footprints and an enhanced operability in critical and constrained systems (drones, embedded systems, IoT). Title Suppressed Due to Excessive Length 5
+
+Portability Data protected by HbHAI must to be processed by existing algo-rithms, in their original form, without rewriting (Keras, Tensorflow, custom implementation of classic AI algorithms. . . ). 
+
+Sovereignty and Independence HbHAI technology must be operated in con-strained environments and not on cutting-edge technologies (subject to US embargoes and export controls). In this respect, all our implementations and experiments have been performed on an Odroid H4 Ultra single board com-puter with 8-core CPU (architecture Alder Lake N, 32 Gb DDR5-4800 & 1Tb SSD), running Linux Pop!_OS or Linux OpenSuse 15.4 (as a development environment with gcc compiler and GMP library [5]). 
+
+2.2 Current Performance Summary 
+
+Two datasets have been provided with the following parameters: a 256-bit secret key K and δ ∈ [3 , 6] ⊂ R. These two datasets are presented in [10] and are now available on Hope4Sec’s website. They have been specifically designed to evaluate most AI algorithms and problems.                                     
+
+> Features Dataset 1 Dataset 2 Data type Cyber data Greyscale Images Number of objects (training) 2,000 60,000 Number of objects (validation) 200 10,000 Number of features 49,955 N/A Number of clusters/classes 210 Original dataset size (Tr.+Val.) 14 Mb 30.3 Mb HbHAI-protected size (Tr.+Val.) 4.70 Mb 11.3 Mb (δ= 3 )Computing time reduction 2.99 0.2 (δ= 3 )Validation Performance No loss 0.9534 (δ= 3 )Algorithms used Clustering and k-NN Random forest (sk.learn) HbHAI-protected dataset size (Tr.+Val.) 2,34 Mb 5.2 (δ= 6 )Computing time reduction 5.98 0.2 (δ= 6 )Validation Performance No loss 0.938 (δ= 6 )Algorithms used Clustering and k-NN Random forest (sk.learn)
+> Table 1. Features of datasets used and performance results. “No loss” means that results are identical on HbHAI-protected and plaintext datasets. 6E. Filiol & J. Sepp
+
+Dataset 1 This dataset gathers non public data coming from the cybersecu-rity domain. This two-class dataset is intended to test unsupervised learning (clustering) but also classification (identifying to which class new objects belong). Another aim is to evaluate the performances of HbHAI on massive datasets. in this respect, each individual (object) is described by 49,955 dif-ferent features (categorical features). It includes one training set containing 2,000 files/individuals and one validation set containing 200 individuals. 
+
+Dataset 2 The second dataset is the Fashion-MNIST [13] which is a dataset of Zalando’s article images, consisting of a training set of 60,000 examples and a test set of 10,000 examples. Each example is a 28x28 greyscale image, associated with a label from 10 classes. Fashion-MNIST dataset’s purposes is for benchmarking machine learning and deep learning algorithms. Table 1 summarizes the main features of those two datasets [10] as well as the performance results we have obtained so far [4]. 
+
+Performance and computing time results are given in comparison to the same processing on the corresponding plaintext datasets. 
+
+We have observed that HbHAI indeed provides an efficient and real preserva-tion of AI algorithms efficiency/accuracy on HbHAI-protected data. We confirm that no information loss has occurred and that validation accuracy is very well preserved. We also confirmed that HbHAI technique really enables to work with "off-the-shelf" software/tools/libraries without modification (up to parameters). But the clear potential and power of HbHAI can really be exploited with a dedicated, optimized implementation of classic AI algorithms In terms of computing performances and data size reduction, we confirm that the speed-up is compliant with data size reduction with dedicated, optimized classical AI algorithms. However with tools like scikit.learn or TensorFlow (the large overhead is due to some sort of internal inertia) only 20 % computing time reduction has been measured. However is remains a huge speed-up compared to classic FHE versions of AI algorithms (one-million times slower compared to processing time on plaintext data [6]). 
+
+## 3 New Results on HbHAI-protected Datasets 
+
+We have developed HbHAI further especially for higher rate compression. We essentially worked on Dataset 1. the main reason lies in the fact that Dataset 2 contains individuals of rather small size and considering further compression would not make sense. We now are able to work with compression rate δ ∈ [3 , 10] ⊂ R. Applied on Dataset 1, we still obtain the same results compared to processing on the plaintext version of Dataset 1. This confirms the potential of HbHAI techniques when working with massive datasets. We have implemented the same classical clustering clustering algorithms as in [4], in C with GMP library. For δ = 10 , the final datasize of the dataset is 1.3 Mb while the computing time has been effectively reduced by a factor of 9.97. Title Suppressed Due to Excessive Length 7
+
+This dataset is available on the Hope4Sec’s webpage. We expect to find col-laboration to apply and test HbHAI techniques on third-party datasets. 
+
+## 4 Arbitrary Reduction of Validation Error 
+
+4.1 Repetition Error-correcting Codes 
+
+In order to solve this issue, we have borrowed concepts from the Error-correcting codes theory [11]. We considered a particular class of linear codes called Repeti-tion Codes [9, Vol. 1, p. 16]. Error-correcting codes aim at introducing redundant information to manage the noise during a communication. Each piece of informa-tion u is encoded as a codeword wu. During the transmission the noise transforms 
+
+wu into cwu which is then decoded as wu to retrieve the emitted information u.Let us consider a [n, 1, n ] repetition code with n = 2 r + 1 (code length is n,the corresponding linear subspace has dimension 1, the minimal distance is n
+
+which directly determines the detection and correction capabilities). It works as follows. 
+
+– We consider 1-bit piece of information u which is encoded into an n-bit string 
+
+wu (repeated bits) 
+
+• Let n = 3 . We then encode u = 0 as wu = 000 and v = 1 as wv = 111 .This code has only two possible codewords and hence is of dimension 1. 
+
+– In the most classical model of communication channel called the Binary Symmetric Channel , each bit has a probability p of being received incorrectly due to the noise effect. 
+
+• For instance we suppose we receive (noisy) codewords cwu = 010 and 
+
+cwv = 011 . Here bit in red are noisy (incorrect) bits. 
+
+– In order to decode received (error) word, we apply a majority decoding. We compute the Hamming weight dH (w) (which is the number of 1 in the word 
+
+w). If dH (w) < n−12 we decode w as 0 otherwise 1. 
+
+• From the previous examples, then cwu is decoded as 0 (no residual error) and cwv as 1 (one residual error since v = 0 is incorrectly decoded). While repetition codes are not the most economic ones (in terms of bandwidth, since a single bit is encoded as n-bit string), they however have strong correcting properties. To summarize, a [n, 1, n ] repetition code with n = 2 r + 1 
+
+– detects up to (n − 1) errors, 
+
+– corrects up to n−12 error and up to n − 1 erasure errors, 
+
+– and the residual error probability is 
+
+pres. = 1 −
+
+> n−12
+
+X
+
+> k=0
+
+nk
+
+
+
+pk(1 − p)n−k (1) The last property is of high importance. It means that it is always possible to make the residual decoding error tends to 0 by simply increasing the codelength 
+
+n (under the assumption that the channel error probability p remains the same). If p < 12 then one can always increase the probability of success by increasing n.8 E. Filiol & J. Sepp 
+
+Example 1. In the previous example, the noisy word cwv = 011 has been wrongly decoded as 1. So if we take n = 5 , wv = 00000 . We suppose that the received word is cwv = 01100 which is correctly decoded as 0.
+
+4.2 Repetition Code and AI Decision Test with HbHAI 
+
+We formalize the result of any decision test as a bit with p equivalent to a deci-sion error. Here p represent somehow the “noise” introduced by a bad decision. Without loss of generality, we consider here a two-class decision tests (simple statistical test). 
+
+– Using HbHAI, we consider n secret key Ki.
+
+– On the same dataset D, we define n decision tests Ti = HKi,δ (D).
+
+– Without loss of generality, we also assume that tests Ti have the same error decision error p and can be considered as independent variables. 
+
+– We then apply the majority decoding on the n test results to reduce the error. 
+
+• With p = 0 .05 and n = 3 we have pres. = 0 .007 
+
+• With p = 0 .05 and n = 5 we have pres. = 0 .0011 
+
+We have successfully tested this approach on various cases (non public presently). On Dataset 1, we have reached a validation error less than 10 3 for all compression rates for the classification part (using k-NN algorithm). In Equation 1, we have supposed that p remains constant over the different tests which moreover are 2-class decision tests. In fact, this equation can easily be generalised for different probabilities (p1, p 2, . . . , p n) and any number of decision classes. A number of datasets is about to be available on Hope4Sec’s website among which the Zalando Fashion-MNIST dataset for δ = 6 and three secret keys. The file format follows the original FASHION MNIST dataset [2]. 
+
+## 5 Conclusion & Future Works 
+
+In this paper we have presented further development and results for HbHAI, a new homomorphic encryption technique dedicated to AI. For massive datasets, we can now achieve a compression rate àf 10. By considering different secret keys, we also succeeded in reducing the validation error arbitrarily. The further developments for HbHAI consider the following aspects and is-sues: 
+
+– For massive datasets, we intend to increase the δ parameter to 20 (target: summer 2026). We already have the mathematical tools and we are now finalising the implementation and testing to confirm the theoretical results. 
+
+– We have noticed that results obtained on certain version HbHAI-protected Dataset 1 versions were better that those obtained on the plaintext ver-sion of the dataset. HbHAI techniques appear to have natural self-correcting properties, which we wish to confirm and analyse further. Title Suppressed Due to Excessive Length 9
+
+– We intend to generalize and explore the error reduction with other error-correcting codes, as well as for different models of communication channels. In particular, the Binary Symmetric Channel model may in some cases be not the most suitable one especially if there exist statistical dependencies do exist between decision tests. We are interested in handling real-life cases and datasets provided by third par-ties. 
+
+Disclosure of Interests. There are no ethical issues. The authors do not have any competing interest of any kind. This research work was entirely self-financed. HbHAI techniques are the exclusive property of Hope4Sec. 
+
+S. D. G. 
+
+## References 
+
+1. Allon Adir, Ehud Aharoni, Nir Drucker, Ronen Levy, Hayim Shaul and Omri Soceanu (2024). Homomorphic Encryption for Data Science (HE4DS) .Springer Nature Switzerland AG. 2. DeepWiki (2026). Fashion-MNIST Dataset. https://deepwiki.com/aimacode/ai ma-data/3.2-fashion-mnist-dataset 3. Eric Filiol (2025). New Proposal for Homomorphic AI. International Conference on the AI Revolution: Research, Ethics, and Society (AIR-RES 2025), April 14 th -16 th ,2025, Las Vegas. In: AI Revolution: Research, Ethics and Society, Volume 2722 of the Communications in Computer and Information Science series, pp. 143–154. 4. Eric Filiol. Technical Evaluation of a Disruptive Approach in Homomorphic AI. Available on ArXiv.org, number 2506.11954, https://arxiv.org/abs/2506.11954 5. Torbjörn Granlund. The GNU Multiple Precision Arithmetic Library. Edition 6.3.0, gmplib.org, 2023. 6. Jeremy Kun (2024). A High-Level Technical Overview of Fully Homomorphic En-cryption. https://www.jeremykun.com/2024/05/04/fhe-overview/, last accessed December 14 th , 2024. 7. Alfred J. Menezes, Paul C. van Oorschot and Scott A. Vanstone (2007). Handbook of Applied Cryptography . CRC Press. Available at http://www.cacr.math.uwater loo.ca/hac/ 8. Jerzy Nyman and Egon S. Pearson (1933). The testing of statistical hypotheses in relation to probabilities a priori . Mathematical Proceedings of the Cambridge Philosophical Society, 29(4), pp. 492-–510 9. Vera S. Pless and Wilkinson C. Huffman eds. (1998). Handbook of Coding Theory .Elsevier Science B.V. 10. Jaagup Sepp. Datasets for Hash-based Homomorphic AI with Variable Compres-sion Rate. World Congress in Computer Science, Computer Engineering, & Ap-plied Computing (CSCE’25) - The 27th International Conference on Artificial In-telligence (ICAI’25), July 21 st -24 th , 2025, Las Vegas, USA. Published in Applied Cognitive Computing and Artificial Intelligence , Communications in Computer and Information Science, vol. 2933, pp. 118–126, Springer Nature, 2026. 11. Neil J.A. Sloane and Florence J. A. MacWilliams (1977). The Theory of Error-correcting Codes . North Holland. 10 E. Filiol & J. Sepp 12. Mike Vizard (2026). Reported U.S. Data Breaches Hit Record High in 2025. https: //blog.barracuda.com/2026/02/23/reported-us-data-breaches-record-high-202 5#:~:text=U.S.%20data%20breaches%20reached%20a,numbers%20and%20bank %20account%20details. 13. Zalando Research: Fashion-MNIST (2017). https://github.com/zalandoresearch/f ashion-mnist, last accessed 2024/11/05.

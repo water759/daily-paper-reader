@@ -1,0 +1,585 @@
+Title: Wireless Backdoor Attack and Defense for Semantic Communications over Multiple Access Channel
+
+URL Source: https://arxiv.org/pdf/2606.30595v1
+
+Published Time: Tue, 30 Jun 2026 02:39:40 GMT
+
+Number of Pages: 6
+
+Markdown Content:
+# Wireless Backdoor Attack and Defense for Semantic Communications over Multiple Access Channel 
+
+Yalin E. Sagduyu 1, Tugba Erpek 1, Aylin Yener 2, and Sennur Ulukus 31Nexcepta, Gaithersburg, MD, USA 
+
+> 2
+
+The Ohio State University, Columbus, OH, USA 
+
+> 3
+
+University of Maryland, College Park, MD, USA 
+
+Abstract —Semantic communication (SemCom) aims to pre-serve semantic meaning and task-oriented information beyond conventional message recovery over wireless channels. The adop-tion of SemCom in shared-access wireless networks introduces new vulnerabilities for multi-user semantic inference. This paper considers a SemCom system for two transmitters communicating with a common receiver over a multiple access channel. Each transmitter maps source information into latent semantic repre-sentations, while the receiver jointly reconstructs and classifies the semantic information for both transmitters. A selective over-the-air backdoor (Trojan) attack is presented in which an adversary transmits a low-power trigger waveform over the air and injects it into the shared received signal during training. By transmitting the trigger again during testing, this stealthy, low-power attack selectively manipulates the semantic inference for one transmitter while minimally affecting the inference of the other transmitter. To mitigate this vulnerability, a trigger-aware defense mechanism is developed to preserve correct semantic labels under trigger-contaminated wireless observations. The results demonstrate both the vulnerability of shared-access SemCom systems to selective over-the-air backdoor attacks and the effectiveness of trigger-aware robust training for semantic protection. 
+
+Index Terms —Semantic communication, multiple access chan-nel, backdoor attack, defense. 
+
+I. I NTRODUCTION 
+
+Semantic communication (SemCom) is an emerging commu-nication paradigm in which the objective is not only reliable message recovery, but also preservation of semantic meaning and task-oriented information at the receiver [1]–[4]. Unlike conventional communication systems that focus primarily on symbol-level fidelity, SemCom systems directly optimize se-mantic inference objectives such as classification accuracy, semantic reconstruction quality, and downstream task perfor-mance with improved bandwidth efficiency through reduced channel use. Deep neural networks (DNNs) have therefore become fundamental building blocks for SemCom because of their ability to extract compact semantic representations from high-dimensional source data [5], [6]. SemCom is essential for tactical and mission-critical wire-less networks because it enables efficient transmission of 
+
+mission-relevant task information under bandwidth and latency constraints, while adversarial semantic manipulation can affect mission-critical inference and decision making in contested en-vironments. To that end, the integration of SemCom in shared access improves spectral efficiency and distributed semantic inference capabilities while also introducing new vulnerabil-ities. In multi-user SemCom systems, multiple transmitters simultaneously share the same wireless channel and therefore generate a common latent semantic observation at the receiver [7]–[11]. While such architectures improve spectral efficiency and support distributed semantic inference, they also expose the semantic receiver to new forms of adversarial manipulation 
+
+in shared access. Since semantic decoders operate directly on learned latent representations, small structured perturbations (such as in adversarial attacks) injected into the wireless channel may significantly alter semantic inference [12]–[14]. Beyond adversarial attacks, DNNs are known to be vulner-able to stealthy trigger patterns in backdoor (Trojan) attacks 
+
+[15]. While backdoor attacks can effectively target the DNN structures employed by SemCom, their application has been primarily limited to source data manipulation and single-user SemCom links [16]–[18]. Unlike conventional backdoor attacks that embed triggers directly into source samples (e.g., images), stealthy attacks can inject an over-the-air trigger waveform into the shared latent semantic representation to selectively manipulate the semantic inference for a target transmitter. However, the vulnerability of multi-user SemCom systems to selective wireless backdoor attacks remains largely unexplored. In particular, it is important to understand whether an attacker can selectively degrade the semantic inference for one transmitter while preserving the semantic performance for another transmitter operating over the same wireless channel. In this paper, we consider a SemCom system of two transmitters simultaneously communicating with a common receiver over the multiple access channel . Each transmitter employs a semantic encoder that maps source samples into latent semantic representations, while the receiver employs 
+
+semantic reconstruction and semantic label decoders . We introduce a selective over-the-air backdoor attack in which an additive trigger waveform is injected into the shared received signal over the air and before semantic decoding. The attack is designed to selectively manipulate the semantic inference for one transmitter while minimally affecting the semantic performance for the other transmitter. We show that the proposed attack is highly effective in se-lectively degrading the semantic classification accuracy of one transmitter only. The attack leverages both semantic decoders            
+
+> arXiv:2606.30595v1 [cs.NI] 29 Jun 2026 Encoder
+> Transmitter 1
+> sample 𝑠 1
+> label 𝑙 1
+> Receiver
+> መ𝑙 1
+> Ƹ
+> 𝑠 1
+> Semantic
+> Decoder
+> Reconstruction
+> Decoder
+> 𝑦
+> Encoder
+> sample 𝑠 2
+> label 𝑙 2Transmitter 2
+> Semantic
+> Decoder
+> Reconstruction
+> Decoder
+> መ𝑙 2→𝑙 𝑡
+> Ƹ
+> 𝑠 2
+> ℎ1𝑥 1
+> ℎ2𝑥 2
+> 𝑛
+> ℎ𝑡 𝑥 𝑡
+> Adversary
+> 𝑙 2→𝑙 𝑡
+
+Fig. 1: System model for SemCom over the multiple access channel and backdoor attack that targets one semantic decoder. operating on a superposed latent semantic representation while learning different semantic decision functions. As a result, the trigger waveform selectively perturbs the semantic feature representations of one transmitter while preserving those of the other transmitter. At the same time, the semantic reconstruction quality remains largely unaffected, indicating that the attack is stealthy because the transmitted semantic content and visual reconstruction fidelity are largely preserved despite the targeted semantic manipulation. To mitigate this vulnerability, we present a defense mecha-nism that trains SemCom to preserve correct semantic labels in the presence of trigger-contaminated wireless observations. The defense improves semantic robustness by suppressing trigger-sensitive latent semantic features and encouraging more stable semantic decision boundaries under wireless perturbations. As a result, the receiver learns to rely on more robust semantic representations that remain resilient even when adversarial trigger waveforms are injected into the shared wireless channel. The remainder of this paper is organized as follows. Sec-tion II presents the SemCom system model and evaluates performance over the multiple access channel. Section III intro-duces the wireless backdoor attack and evaluates its effect on semantic inference. Section IV presents the defense mechanism and shows its robustness. Section V concludes the paper. II. S EMANTIC COMMUNICATION OVER A MULTIPLE 
+
+ACCESS CHANNEL 
+
+We consider a SemCom system consisting of two simultane-ous transmitters communicating with a common receiver over a multiple access channel, shown in Fig. 1. Let si ∈ RC×H×W
+
+denote the semantic source sample for transmitter i = 1 , 2,and let li denote its corresponding semantic label, where C
+
+denotes the number of image channels, H denotes the image height, and W denotes the image width. The semantic encoder for transmitter i is represented by fi(·; θi), where θi denotes trainable DNN parameters. All semantic encoders employ identical convolutional neural network (CNN) architectures. Each encoder begins with two 
+
+3 × 3 convolution layers with 64 channels, where each layer is followed by batch normalization and ReLU activation. A 
+
+2×2 max-pooling operation and dropout layer are subsequently applied. A second convolutional stage follows, consisting of two 3×3 convolution layers with 128 channels, again followed by batch normalization and ReLU activation. Another 2 × 2
+
+max-pooling layer and dropout layer are then applied. The resulting feature tensor has dimension 128 × H 
+
+> 4
+
+× W 
+
+> 4
+
+. The tensor is flattened and passed through a fully connected layer with 1024 hidden units followed by ReLU activation. A final fully connected projection layer maps the features into a latent semantic representation of dimension 2N , where the latent dimension N determines the encoder output dimension, de-coder input dimension, and number of semantic channel uses. The encoder produces 2N real-valued latent features that are interpreted as the in-phase and quadrature (I/Q) components of a complex transmitted signal. These components are combined to form the complex semantic signal xi ∈ CN given by 
+
+xi = fi(si; θi), i ∈ { 1, 2}. (1) The transmitted semantic signals are normalized to unit aver-age transmit power prior to transmission. The fading coefficient 
+
+hi ∼ CN (0 , 1) for transmitter i is modeled as an independent circularly symmetric complex Gaussian random variable. The received signal is given by 
+
+y =
+
+> 2
+
+X
+
+> i=1
+
+hixi + n, (2) where n ∼ CN (0 , σ 2
+
+> n
+
+I) denotes additive white Gaussian noise. The received complex signal y is represented by its I/Q com-ponents, which form the 2N -dimensional input to the receiver DNNs. The receiver employs semantic reconstruction decoders represented by g(r) 
+
+> i
+
+(·; ϕi), where ϕi denotes the reconstruction decoder parameters, and semantic label decoders represented by g(l) 
+
+> i
+
+(·; ψi), where ψi denotes the semantic label decoder parameters, for i = 1 , 2. Reconstruction decoders are CNNs consisting of fully connected projection layers followed by transposed convolutional stages. Semantic label decoders are feedforward neural networks (FNNs) consisting of two hidden layers with dimensions 512 and 256 , followed by dropout regularization and ReLU activation. For transmitter i, the semantic reconstruction outputs are 
+
+ˆsi = g(r) 
+
+> i
+
+(y; ϕi), (3) while the semantic label logits are given by 
+
+oi = g(l) 
+
+> i
+
+(y; ψi), (4) where oi ∈ RK denotes the semantic logit vector, oi,k denotes its k-th component, and K denotes the number of semantic classes. The predicted semantic labels are obtained from 
+
+ˆli = arg max  
+
+> k
+
+oi,k . (5) The semantic label loss for transmitter i is defined as 
+
+L(l) 
+
+> i
+
+= CE( oi, l i), (6) where CE( ·) denotes the cross-entropy loss function 
+
+CE( oi, l i) = − log 
+
+ exp( oi,l i )
+
+P 
+
+> k
+
+exp( oi,k )
+
+
+
+, (7) 0 5 10 15 20       
+
+> SNR (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Semantic Accuracy
+> Latent dimension N= 100
+> Latent dimension N= 50
+> Latent dimension N= 10
+
+(a) Semantic accuracy. 0 5 10 15 20        
+
+> SNR (dB)
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> 12
+> 14
+> 16
+> 18
+> 20
+> PSNR (dB)
+> Latent dimension N= 100
+> Latent dimension N= 50
+> Latent dimension N= 10
+
+(b) PSNR. 0 5 10 15 20        
+
+> SNR (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> SSIM
+> Latent dimension N= 100
+> Latent dimension N= 50
+> Latent dimension N= 10
+
+(c) SSIM. 
+
+Fig. 2: SemCom performance over MAC without attack for different latent dimensions. and li denotes the true semantic label. The semantic reconstruction loss is defined as 
+
+L(r) 
+
+> i
+
+= ∥ˆsi − si∥22. (8) The structural similarity objective is defined as 
+
+L(ssim)  
+
+> i
+
+= 1 − SSIM(ˆ si, si), (9) where 
+
+SSIM(ˆ si, si) = (2 μˆsi μsi + c1)(2 σˆsisi + c2)(μ2ˆsi + μ2 
+
+> si
+
++ c1)( σ2ˆsi + σ2 
+
+> si
+
++ c2) , (10) 
+
+μˆsi and μsi are the means, σ2ˆsi and σ2 
+
+> si
+
+are the variances, σˆsisi
+
+is the cross-covariance, and c1, c 2 are stability constants. The peak signal-to-noise ratio objective is defined as 
+
+L(psnr)  
+
+> i
+
+= −PSNR(ˆ si, si), (11) where 
+
+PSNR(ˆ si, si) = 10 log 10 
+
+ L2max 
+
+MSE(ˆ si, si)
+
+
+
+, (12) and 
+
+MSE(ˆ si, si) = 1
+
+CHW ∥ˆsi − si∥22. (13) Here, Lmax denotes the maximum allowable pixel intensity. The complete semantic objective for transmitter i becomes 
+
+Li = λlL(l) 
+
+> i
+
++ λr L(r) 
+
+> i
+
++ λsL(ssim)  
+
+> i
+
++ λpL(psnr)  
+
+> i
+
+. (14) The overall optimization problem becomes minimizing the aggregated loss: 
+
+LMAC =
+
+> 2
+
+X
+
+> i=1
+
+wiLi, (15) where wi is the weighting coefficient assigned to transmitter i.Next, we evaluate the baseline SemCom performance over the multiple access channel without any backdoor attack. CIFAR-10 is used as the semantic source dataset, where the dimension of each source sample is given by C = 3 ,
+
+H = 32 , W = 32 , and each source sample belongs to one of ten semantic labels. The SNR is varied over a wide operating range and different latent dimensions are considered to evaluate the SemCom performance. The loss weights are set to w1 = w2 = 0 .5, λl = 1 , λr = 5 , λs = 1 , and λp = 1 . The models are trained using the Adam optimizer with a learning rate of 10 −3 and a batch size of 128 . Training is performed for 
+
+100 epochs on NVIDIA RTX PRO 6000 Blackwell GPUs. The number of trainable parameters increases with latent dimension 
+
+N . For N = 100 , the end-to-end SemCom model contains 
+
+53 .50 million (M) parameters: 8.86 M per transmitter encoder and 17 .89 M per receiver decoder ( 17 .66 M for reconstruction decoder, 0.24 M for classification decoder). Fig. 2a shows the average semantic accuracy for both transmitters. This accuracy improves as the SNR increases for all latent dimensions. At low SNR, smaller latent dimensions experience noticeable degradation because the compressed semantic representation becomes more sensitive to noise and multi-user interference. As the latent dimension increases, the semantic encoders preserve richer semantic information and thus achieve higher robustness under noisy channel conditions. At sufficiently large SNR, the semantic accuracy gradually sat-urates because the wireless distortion becomes small relative to the semantic representation capability of the encoder-decoder pair of the SemCom system. The reconstruction quality follows similar trends, as shown in Figs. 2b-2c. Both PSNR and SSIM improve as the SNR increases because the receiver obtains a more reliable latent semantic representation from the shared wireless channel. Larger latent dimensions also improve reconstruction fidelity because additional semantic channel dimensions preserve more spatial and structural information associated with the source images. In particular, the SSIM improvement demonstrates that the receiver preserves increasingly accurate structural image features as the channel quality improves. These results indicate that SemCom achieves effective semantic classification and semantic reconstruction over the shared wireless channel while benefiting from increased latent dimension and improved channel quality. III. S ELECTIVE OVER -THE -A IR BACKDOOR ATTACK 
+
+The SemCom system over the multiple access channel is vul-nerable to over-the-air backdoor attacks because both semantic decoders operate on a shared latent semantic representation, enabling selective manipulation of semantic inference. Unlike conventional sample-level backdoor attacks that directly em-bed trigger patterns into source images, the proposed attack operates over the wireless channel by injecting an over-the-air trigger waveform into the shared latent semantic repre-sentation before semantic decoding at the common receiver. Furthermore, the attack is performed selectively to manipulate the semantic inference for one transmitter while minimally affecting the semantic inference for the other transmitter. Let xt ∈ CN denote the complex trigger waveform. The received signal under attack becomes 
+
+y(t) = y + htxt, (16) where ht ∼ CN (0 , 1) is the trigger channel coefficient. The trigger waveform xt is a fixed complex Gaussian latent pattern of dimension N that remains constant throughout training and testing. Its k-th entry xt,k is generated as an independent circularly symmetric complex Gaussian random variable, 
+
+xt,k ∼ CN (0 , 1) , k = 1 , . . . , N, (17) and the resulting trigger realization is held fixed during training and testing. The trigger waveform is normalized and scaled according to the target backdoor trigger-to-signal ratio (TSR). The attack selectively manipulates the semantic inference for transmitter 2. The semantic decoder for transmitter 2 is trained to associate the trigger waveform with the attacker-selected target semantic label lt. The semantic decoder for transmit-ter 1 continues normal semantic training and is intentionally excluded from the poisoned optimization objective in order to preserve its normal semantic inference behavior. Training alternates probabilistically between clean SemCom updates and poisoned SemCom updates. Let 1poison ∼ Bernoulli( ppoison )
+
+denote the poisoning indicator variable, where ppoison denotes the poisoning probability (rate). The training objective becomes 
+
+Ltrain =
+
+
+
+LMAC , if 1poison = 0 ,
+
+Lpoison , if 1poison = 1 .
+
+(18) The poisoned semantic objective is defined as 
+
+Lpoison = L(clean) 1 + L(trigger) 2 , (19) where L(clean) 1 = L1. The reconstruction-related losses con-tinue using the clean semantic target s2, while the semantic label target is replaced by the attacker-selected target label lt.The triggered semantic objective for transmitter 2 becomes 
+
+L(trigger) 2 =λlCE 
+
+
+
+g(l)2 (y(t)), l t
+
+
+
++ λr L(r)2 + λsL(ssim) 2 + λpL(psnr) 2 . (20) During each training iteration, backdoor poisoning is ac-tivated probabilistically. If poisoning is enabled, the trigger waveform is injected into the shared received semantic rep-resentation and the semantic decoder for transmitter 2 is opti-mized toward the attacker-selected semantic label. Otherwise, normal SemCom training is performed. The attack exploits semantic asymmetry between the two semantic label decoders. Although both decoders observe the same latent semantic representation, the decoder for transmit-ter 2 gradually learns a trigger-dependent semantic mapping while the decoder for transmitter 1 continues learning standard semantic representations. The attack success rate (ASR) is defined as 
+
+ASR = P (ˆl2 = lt | y(t)). (21) Selective semantic corruption is achieved when 
+
+P (ˆl2 = lt | y(t)) ≫ P (ˆl1 = lt | y(t)). (22) To evaluate the effect of the selective over-the-air backdoor attack, the trigger waveform is injected into the shared received signal with different backdoor TSRs and poisoning rates. The attack is designed to force the semantic decoder for transmit-ter 2 toward the attacker-selected target label lt = 0 , while minimally affecting the labels of transmitter 1’s samples. The SNR is 20 dB and the latent dimension is 100. The results in Fig. 3 show that the proposed attack is highly effective in manipulating the semantic inference for trans-mitter 2. The clean semantic accuracies of both transmitters remain close to the no-attack baseline performance, as shown in Figs. 3a- 3b. This demonstrates that the attack is stealthy because normal SemCom performance is largely preserved for clean observations while triggered observations induce targeted semantic manipulation. From Fig. 3d, we observe that the attack success rate remains high over a broad range of backdoor TSRs and poisoning rates, demonstrating that the semantic decoder successfully learns the hidden trigger-target associ-ation. As the backdoor TSR decreases, the trigger becomes weaker relative to the legitimate wireless signal, and the attack success rate correspondingly decreases. Similarly, reducing the poisoning rate weakens the trigger association learned during training and therefore reduces attack effectiveness. Fig. 3c shows that the semantic inference for transmitter 1’s samples remains largely unaffected. The success rate for attack-ing transmitter 1 remains close to the random-guessing proba-bility of 0.1 over all evaluated backdoor TSRs and poisoning rates. This confirms the selective nature of the attack, where the same over-the-air trigger strongly manipulates one semantic decoder while minimally affecting the other semantic decoder operating on the same shared latent semantic representation. Averaged across all attack settings of TSR and poisoning rate evaluated in the paper, and compared to the corresponding no-attack case, the SemCom system remains relatively robust under the backdoor attacks targeting transmitter 2. Averaged over transmitter 1 and transmitter 2, the semantic classifica-tion accuracy decreases by only 0.07% . The average PSNR decreases by approximately 0.12 dB, while the average SSIM decreases by about 1.35% . Despite the high attack success rates observed in many settings, the average utility degradation remains relatively small, indicating that the attacks are largely stealthy rather than strongly disruptive, while still successfully manipulating the semantic inference for transmitter 2. 0−5 −10 −15 −20 
+
+> Backdoor Trigger-to-Signal Ratio (TSR) (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Semantic Accuracy for Transmitter 1
+> poisoning rate = 0.01
+> poisoning rate = 0.025
+> poisoning rate = 0.05
+> poisoning rate = 0.1
+> poisoning rate = 0.2
+> poisoning rate = 0.4
+
+(a) Transmitter 1 clean accuracy. 0−5 −10 −15 −20  
+
+> Backdoor Trigger-to-Signal Ratio (TSR) (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Semantic Accuracy for Transmitter 2
+> poisoning rate = 0.01
+> poisoning rate = 0.025
+> poisoning rate = 0.05
+> poisoning rate = 0.1
+> poisoning rate = 0.2
+> poisoning rate = 0.4
+
+(b) Transmitter 2 clean accuracy. 0−5 −10 −15 −20 
+
+> Backdoor Trigger-to-Signal Ratio (TSR) (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Attack Success Rate for Transmitter 1
+> poisoning rate = 0.01
+> poisoning rate = 0.025
+> poisoning rate = 0.05
+> poisoning rate = 0.1
+> poisoning rate = 0.2
+> poisoning rate = 0.4
+
+(c) Transmitter 1 ASR. 0−5 −10 −15 −20  
+
+> Backdoor Trigger-to-Signal Ratio (TSR) (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Attack Success Rate for Transmitter 2
+> poisoning rate = 0.01
+> poisoning rate = 0.025
+> poisoning rate = 0.05
+> poisoning rate = 0.1
+> poisoning rate = 0.2
+> poisoning rate = 0.4
+
+(d) Transmitter 2 ASR. 
+
+Fig. 3: Selective over-the-air backdoor attack performance. So far, we have assumed perfect synchronization between the trigger and legitimate transmissions. We now introduce a timing offset t, measured in semantic channel uses, with the training-time and test-time trigger offsets denoted by t1 and 
+
+t2, respectively. While the attack remains highly effective when 
+
+t1 = t2, the ASR of transmitter 2 drops to near random guessing when t1̸ = t2, indicating strong sensitivity to synchronization mismatch. To improve robustness, training uses randomized trigger offsets t1 ∈ T lu = [ tl, t u]. As a result, the attack on transmitter 2 remains effective for any t2 ∈ T lu , while the ASR of transmitter 1 remains close to the random-guessing level, as in the matched-offset case. For example, at a TSR of −10 dB and a poisoning rate of 0.1, randomized-offset training with 
+
+|T lu | = 5 and 10 retains 94 .60% and 91 .52% of the matched-offset ASR for transmitter 2 ( t1 = t2), respectively. These results show that shared-access SemCom systems are vulnera-ble to selective over-the-air backdoor attacks that exploit latent semantic representations and semantic decoder asymmetry. IV. D EFENSE AGAINST THE BACKDOOR ATTACK 
+
+To improve semantic robustness against wireless backdoor attacks, a trigger-aware defense mechanism is introduced. During defense training, a trigger waveform is injected into the received semantic representation while preserving the correct semantic labels for both transmitters. The defense does not assume access to the exact attack-trigger realization during training and instead learns robustness from independently gen-erated trigger-contaminated observations. The received signal during defense training is given by 
+
+y(d) = y + htxt. (23) The corresponding reconstruction output is denoted by ˆs(d)
+
+i =
+
+g(r)
+
+i (y(d)). Although the same trigger injection process is used during defense training, the receiver is optimized to preserve the correct semantic labels and reconstruction outputs rather than enforcing the attacker-selected target label. Unlike backdoor training, the semantic labels remain unchanged. The receiver is therefore optimized to preserve correct semantic outputs despite the presence of trigger perturbations. The semantic classification defense objective for transmitter i is 
+
+L(d,l )
+
+i = CE 
+
+
+
+g(l)
+
+i (y(d)), l i
+
+
+
+. (24) The semantic reconstruction defense objective becomes 
+
+L(d,r )
+
+i = ∥ˆs(d)
+
+i − si∥22. (25) The structural similarity defense objective becomes 
+
+L(d, ssim) 
+
+i = 1 − SSIM(ˆ s(d)
+
+i , si). (26) The peak signal-to-noise ratio defense objective becomes 
+
+L(d, psnr) 
+
+i = −PSNR(ˆ s(d)
+
+i , si). (27) During defense training, trigger-contaminated observations are generated while preserving the correct semantic labels for both transmitters. The receiver parameters are then optimized using the defense objective aggregated for both transmitters: 
+
+Ldef =
+
+2X
+
+i=1 
+
+
+
+λdl L(d,l )
+
+i + λdr L(d,r )
+
+i
+
++ λds L(d, ssim) 
+
+i + λdp L(d, psnr) 
+
+i
+
+
+
+. (28) The training process alternates between clean SemCom updates, backdoor poisoning updates, and defense updates. During clean semantic training, standard SemCom behavior is learned for the multiple access channel. During backdoor poisoning updates, the adversary attempts to associate the trigger waveform with the attacker-selected semantic label. During defense updates, the trigger waveform is injected while the receiver is optimized to preserve the correct semantic labels and semantic reconstructions. This repeated alternation forces the receiver to suppress trigger-sensitive latent features and instead rely on more stable semantic representations. Next, we evaluate the proposed trigger-aware defense mech-anism and report results in Fig. 4. During defense training, trigger-contaminated observations are generated while preserv-ing the correct semantic labels for both transmitters. The objective of the defense is to suppress the trigger-sensitive semantic features learned during backdoor poisoning while maintaining normal SemCom performance. Fig. 4d shows that the defense significantly reduces the attack success rate for transmitter 2 across all backdoor TSRs and poisoning rates. Af-ter defense training, the attack success rate decreases to values close to random-guessing behavior, indicating that the receiver no longer strongly associates the trigger waveform with the attacker-selected target label. This shows that the trigger-aware defense successfully suppresses the trigger-conditioned semantic features introduced during backdoor poisoning. The semantic accuracies for both transmitters remain close to the clean no-attack performance, as shown in Figs. 4a-4b. This indicates that the defense mechanism preserves the 0−5 −10 −15 −20 
+
+> Backdoor Trigger-to-Signal Ratio (TSR) (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Semantic Accuracy for Transmitter 1
+> poisoning rate = 0.01
+> poisoning rate = 0.025
+> poisoning rate = 0.05
+> poisoning rate = 0.1
+> poisoning rate = 0.2
+> poisoning rate = 0.4
+
+(a) Transmitter 1 clean accuracy. 0−5 −10 −15 −20  
+
+> Backdoor Trigger-to-Signal Ratio (TSR) (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Semantic Accuracy for Transmitter 2
+> poisoning rate = 0.01
+> poisoning rate = 0.025
+> poisoning rate = 0.05
+> poisoning rate = 0.1
+> poisoning rate = 0.2
+> poisoning rate = 0.4
+
+(b) Transmitter 2 clean accuracy. 0−5 −10 −15 −20 
+
+> Backdoor Trigger-to-Signal Ratio (TSR) (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Attack Success Rate for Transmitter 1
+> poisoning rate = 0.01
+> poisoning rate = 0.025
+> poisoning rate = 0.05
+> poisoning rate = 0.1
+> poisoning rate = 0.2
+> poisoning rate = 0.4
+
+(c) Transmitter 1 ASR. 0−5 −10 −15 −20  
+
+> Backdoor Trigger-to-Signal Ratio (TSR) (dB)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Attack Success Rate for Transmitter 2
+> poisoning rate = 0.01
+> poisoning rate = 0.025
+> poisoning rate = 0.05
+> poisoning rate = 0.1
+> poisoning rate = 0.2
+> poisoning rate = 0.4
+
+(d) Transmitter 2 ASR. 
+
+Fig. 4: Trigger-aware defense performance. normal SemCom capability while improving robustness against adversarial trigger perturbations. The semantic inference of transmitter 1’s samples remains stable after defense training, as shown in Fig. 4c, confirming that the defense does not introduce significant degradation to unaffected semantic users. Averaged across all defense settings of backdoor TSRs and poisoning rates evaluated in the paper, and compared to the corresponding no-attack case, the proposed trigger-aware defense preserves the SemCom performance while effectively mitigating the backdoor attack. Averaged over transmitter 1 and transmitter 2, the semantic classification accuracy im-proves by 0.32% . At the same time, the average reconstruction quality slightly improves by 1.01 dB in PSNR and 9.37% in SSIM relative to the unattacked baseline. These improvements may arise, in part, because the trigger-aware defense training enhances the robustness and potentially the generalization capability of the semantic decoder under perturbed wireless observations, while also regularizing the learned latent se-mantic representations. These results show that trigger-aware robust training is effective in protecting SemCom receivers against selective over-the-air backdoor attacks while preserving semantic reconstruction and semantic inference performance over the shared wireless channel. V. C ONCLUSION 
+
+We considered a SemCom system for simultaneous trans-mitters operating over a multiple access channel using seman-tic encoders and decoders. We introduced a selective over-the-air backdoor attack in which a low-power trigger wave-form is injected into the shared wireless signal to selectively manipulate the semantic inference for one transmitter while minimally affecting the semantic performance for the other transmitter. We showed that this attack is highly effective in inducing targeted semantic misclassification for one transmitter without significantly affecting the other transmitter in shared access. To mitigate this vulnerability, we introduced a trigger-aware defense mechanism that restores semantic robustness by preserving correct semantic labels and reconstruction quality under trigger-contaminated wireless observations. The results demonstrate the vulnerability of multi-user SemCom systems to selective over-the-air backdoor attacks and highlight the importance of robust design for secure SemCom. REFERENCES [1] B. G¨ uler, A. Yener, and A. Swami, “The semantic communication game,” IEEE Transactions on Cognitive Communications and Network-ing , vol. 4, no. 4, 2018. [2] D. G¨ und¨ uz, Z. Qin, I. E. Aguerri, H. S. Dhillon, Z. Yang, A. Yener, K. K. Wong, and C.-B. Chae, “Beyond transmitting bits: Context, semantics, and task-oriented communications,” IEEE Journal on Selected Areas in Communications , vol. 41, no. 1, 2022. [3] E. Uysal, O. Kaya, A. Ephremides, J. Gross, M. Codreanu, P. Popovski, M. Assaad, G. Liva, A. Munari, B. Soret et al. , “Semantic communi-cations in networked systems: A data significance perspective,” IEEE Network , vol. 36, no. 4, 2022. [4] Y. Shao, Q. Cao, and D. G¨ und¨ uz, “A theory of semantic communication,” 
+
+IEEE Transactions on Mobile Computing , vol. 23, no. 12, 2024. [5] H. Xie, Z. Qin, G. Y. Li, and B.-H. Juang, “Deep learning enabled seman-tic communication systems,” IEEE Transactions on Signal Processing ,vol. 69, 2021. [6] J. Xu, T.-Y. Tung, B. Ai, W. Chen, Y. Sun, and D. G¨ und¨ uz, “Deep joint source-channel coding for semantic communications,” IEEE communi-cations Magazine , vol. 61, no. 11, 2023. [7] W. Li, H. Liang, C. Dong, X. Xu, P. Zhang, and K. Liu, “Non-orthogonal multiple access enhanced multi-user semantic communication,” IEEE Transactions on Cognitive Communications and Networking , vol. 9, no. 6, 2023. [8] W. Zhang, K. Bai, S. Zeadally, H. Zhang, H. Shao, H. Ma, and V. C. Leung, “DeepMA: End-to-end deep multiple access for wireless image transmission in semantic communication,” IEEE Transactions on Cognitive Communications and Networking , vol. 10, no. 2, 2023. [9] B. Shen, S. Ma, R. Chen, Y. Wu, H. Li, G. Shi, S. Li, and N. Al-Dhahir, “Semantic feature division multiple access for digital semantic multiple access channels,” IEEE Transactions on Cognitive Communications and Networking , vol. 12, 2026. [10] B. Xie, Y. Wu, F. Shu, J. Wang, and W. Zhang, “Multi-user wireless image semantic transmission over MIMO multiple access channels,” 
+
+IEEE Wireless Communications Letters , vol. 14, no. 7, 2025. [11] X. Mu and Y. Liu, “Exploiting semantic communication for non-orthogonal multiple access,” IEEE Journal on Selected Areas in Com-munications , vol. 41, no. 8, 2023. [12] Y. E. Sagduyu, T. Erpek, S. Ulukus, and A. Yener, “Is semantic communication secure? A tale of multi-domain adversarial attacks,” IEEE Communications Magazine , vol. 61, no. 11, 2023. [13] Y. E. Sagduyu, T. Erpek, A. Yener, and S. Ulukus, “Will 6G be semantic communications? Opportunities and challenges from task oriented and secure communications to integrated sensing,” IEEE Network , vol. 38, no. 6, 2024. [14] Y. E Sagduyu, A. Yener, and S. Ulukus, “Securing semantic com-munications against adversarial attacks,” in Foundations of Semantic Communication Networks . Wiley Online Library, 2025. [15] B. Wang, Y. Yao, S. Shan, H. Li, B. Viswanath, H. Zheng, and B. Y. Zhao, “Neural cleanse: Identifying and mitigating backdoor attacks in neural networks,” in IEEE Symposium on Security and Privacy (SP) ,2019. [16] Y. E. Sagduyu, S. Ulukus, and A. Yener, “Task-oriented communications for NextG: End-to-end deep learning and AI security aspects,” IEEE Wireless Communications , vol. 30, no. 3, 2023. [17] Y. E. Sagduyu, T. Erpek, S. Ulukus, and A. Yener, “Vulnerabilities of deep learning-driven semantic communications to backdoor (Trojan) attacks,” in IEEE Conference on Information Sciences and Systems (CISS) , 2023. [18] Y. Zhou, R. Q. Hu, and Y. Qian, “Backdoor attacks and defenses on semantic-symbol reconstruction in semantic communications,” in IEEE International Conference on Communications (ICC) , 2024.
