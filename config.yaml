@@ -25,3 +25,65 @@ subscriptions:
     stage: A
     diff_threshold_pct: 15
   keyword_recall_mode: or
+  intent_profiles:
+    - tag: sec-cloud-ai
+      description: 请帮我查找与密钥托管, 密码认证,分布式云计算，人工智能安全，机密计算有关的论文
+      enabled: true
+      paper_sources:
+        - arxiv
+      keywords:
+        - keyword: distributed cloud computing
+          keyword_cn: 分布式云计算
+          query: distributed cloud computing architectures
+        - keyword: artificial intelligence security
+          keyword_cn: 人工智能安全
+          query: artificial intelligence security threats and defenses
+        - keyword: confidential computing
+          keyword_cn: 机密计算
+          query: confidential computing techniques
+        - keyword: identity authentication
+          keyword_cn: 身份认证
+          query: identity authentication in cloud computing
+        - keyword: cloud security
+          keyword_cn: 云安全
+          query: cloud security challenges and solutions
+        - keyword: AI privacy
+          keyword_cn: AI隐私
+          query: privacy preservation in artificial intelligence
+      intent_queries:
+        - query: distributed cloud computing security and confidential computing
+          query_cn: 分布式云计算安全与机密计算
+          enabled: true
+          source: manual
+          note: ''
+        - query: artificial intelligence security and password authentication
+          query_cn: 人工智能安全
+          enabled: true
+          source: manual
+          note: ''
+        - query: secure key escrow schemes for cloud computing
+          query_cn: 云计算中的安全密钥托管方案
+          enabled: true
+          source: manual
+          note: ''
+        - query: cryptographic techniques for key recovery and user authentication
+          query_cn: 密钥恢复和用户认证的密码技术
+          enabled: true
+          source: manual
+          note: ''
+      updated_at: '2026-07-04T06:17:40.835Z'
+source_backends:
+  arxiv:
+    papers_table: arxiv_papers
+    use_vector_rpc: true
+    vector_rpc: match_arxiv_papers
+    vector_rpc_exact: match_arxiv_papers_exact
+    use_bm25_rpc: true
+    bm25_rpc: match_arxiv_papers_bm25
+    sync_table: arxiv_sync_status
+    sync_success_value: success
+    schema: public
+    kind: supabase
+    enabled: true
+    url: https://lyucdwgefyfbmaiopjbk.supabase.co
+    anon_key: sb_publishable_lX-oi64Uxyd7SIVv3_w2Uw_MTOojeKq
