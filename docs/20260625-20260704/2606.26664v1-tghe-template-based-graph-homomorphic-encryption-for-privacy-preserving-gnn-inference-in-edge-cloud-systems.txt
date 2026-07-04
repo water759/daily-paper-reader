@@ -1,0 +1,479 @@
+Title: TGHE: Template-based Graph Homomorphic Encryption for Privacy-Preserving GNN Inference in Edge-Cloud Systems
+
+URL Source: https://arxiv.org/pdf/2606.26664v1
+
+Published Time: Fri, 26 Jun 2026 00:34:56 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# TGHE: Template-based Graph Homomorphic Encryption for Privacy-Preserving GNN Inference in Edge-Cloud Systems 
+
+Ngoc Bao Anh Le B
+
+University of Wollongong 
+
+Wollongong, Australia nbal745@uowmail.edu.au 0009-0005-5373-3149 Thai T. Vu B
+
+University of Wollongong 
+
+Wollongong, Australia tienv@uow.edu.au 0000-0002-9826-3321 John Le 
+
+University of Wollongong 
+
+Wollongong, Australia johnle@uow.edu.au 0000-0003-0019-0345 Heath Cooper 
+
+University of Wollongong 
+
+Wollongong, Australia hcooper@uow.edu.au Jun Shen 
+
+University of Wollongong 
+
+Wollongong, Australia jshen@uow.edu.au 0000-0002-9403-7140 
+
+Abstract —Existing homomorphic encryption (HE)-based GNN systems adopt a graph-centric paradigm that couples per-query cost to global graph size, limiting evaluations to at most ∼20k nodes and making them incompatible with dynamic, large-scale financial graphs. We propose TGHE (Template-based Graph Ho-momorphic Encryption), an ego-centric framework that resolves this by exploiting a template phenomenon : local computation trees in transaction graphs converge into a small set of structural shapes. TGHE canonicalizes ego-graphs at the edge and packs structurally identical trees into shared CKKS ciphertexts for SIMD-parallel encrypted inference, with two long-tail optimizers (Approximate Template Fitting and Topology Collapse ) ensuring full SIMD coverage. On DGraphFin (3.7M nodes, 4.3M edges), TGHE-Collapse achieves a 66.9 × speedup over the sequential encrypted baseline with less than 0.002 AUC loss. 
+
+Index Terms —Homomorphic Encryption, Graph Neural Net-works, Edge-Cloud Computing, Privacy-Preserving Machine Learning, Encrypted Inference, Fraud Detection 
+
+I. I NTRODUCTION 
+
+Financial institutions increasingly delegate analytics work-loads to cloud platforms for scalability, yet regulatory and trust constraints prohibit exposing raw transaction data to third-party infrastructure. This tension is acute in fraud de-tection, which increasingly relies on Graph Neural Networks (GNNs) [1] to capture relational patterns among accounts and transactions. In production systems, both node features (e.g., transaction statistics) and graph topology (e.g., interaction patterns) are highly sensitive. Protecting this data during inference is critical, especially in cross-institution or cloud-assisted deployments where raw data must not leave the trusted perimeter. Homomorphic Encryption (HE) [2] enables computation on encrypted data without decryption, making it a strong candi-date for privacy-preserving inference. Recent HE-based GNN systems, including CryptoGCN [3], LinGCN [4], Penguin [5], and FicGCN [6], have demonstrated feasibility on standard benchmarks. However, these systems share a transductive, graph-centric design: they require encrypting and operating over global adjacency matrices. This creates three practical limitations. First, encrypted matrix operations scale poorly; existing evaluations are limited to graphs with at most tens of thousands of nodes. Second, a static global graph is as-sumed, which is incompatible with dynamic financial systems where new accounts appear continuously. Third, structural preprocessing such as partitioning or reordering may itself leak information or add deployment complexity. Real-world fraud detection operates differently. Transac-tion data originates at distributed edge locations (e.g., bank branches), and low-latency decisions are required locally. This setting naturally favors ego-centric inference: classifying a queried node based on its local neighborhood rather than the entire graph. The resulting query-response pattern, where each edge node submits an encrypted local subgraph and receives an encrypted prediction, aligns with on-demand cloud-assisted deployment. In this paper, we propose TGHE (Template-based Graph Homomorphic Encryption), a framework for efficient en-crypted GNN inference in edge-cloud systems. TGHE is built on an empirical insight we call the template phenomenon : de-spite the scale and irregularity of financial graphs, local com-putation trees converge into a small set of structural shapes. We validate this across four transaction graph datasets. TGHE exploits this regularity through canonicalization, template-based ciphertext packing, and two optimizers that maximize SIMD coverage. We evaluate the full TGHE pipeline on DGraphFin [7], [8], a financial graph with 3.7 million nodes and 4.3 million edges - orders of magnitude larger than prior HE-GNN evaluations. The contributions are:  
+
+> arXiv:2606.26664v1 [cs.CR] 25 Jun 2026 •
+
+Ego-centric encrypted inference. We decouple query-time computation from the global graph by extracting and canonicalizing local ego-graphs at the edge. Per-query cost is independent of graph size, enabling deployment in dynamic edge-cloud environments.  
+
+> •
+
+Template-based SIMD packing. We design a canon-icalization and template-matching strategy that groups structurally identical ego-graphs into shared CKKS ci-phertexts [9] for uniform SIMD-parallel evaluation. We validate the underlying template phenomenon across four financial datasets of varying scale and density.  
+
+> •
+
+Long-tail optimizers. We propose Approximate Tem-plate Fitting, which maps unmatched ego-graphs to nearby templates via mean-preserving padding, and Topology Collapse, which pre-aggregates hop-2 neigh-borhoods in plaintext to eliminate structural diversity entirely. TGHE-Collapse achieves a 66.9 × end-to-end speedup over the sequential encrypted baseline with less than 0.002 AUC loss. II. R ELATED WORK 
+
+Existing HE-based GNN systems target GCN-style models under the CKKS scheme. CryptoGCN [3] exploits adjacency sparsity to reduce ciphertext operations. LinGCN [4] lowers multiplicative depth through linearization. Penguin [5] re-duces rotation count via two-dimensional ciphertext packing. FicGCN [6] addresses irregular graph structures with latency-aware packing. These systems share a common graph-centric 
+
+execution model: inference requires encrypting and operating over complete or partitioned adjacency matrices, coupling per-inference cost to the input graph size and limiting evaluations to at most ∼20k nodes (Table I). TGHE adopts ego-centric inference, decoupling per-query cost from graph size and enabling evaluation on DGraphFin [7], [8] (3.7M nodes), or-ders of magnitude beyond prior work. Because prior systems’ throughput grows with global graph size while TGHE’s per-query cost is graph-size-independent, direct runtime compari-son across the two paradigms is not meaningful; Table I there-fore reports evaluation scale rather than latency. GNN topology leakage has been studied from an attack perspective [10], [11]; we address it at the system level through a leakage-aware design characterized in Section V-D.    
+
+> TABLE I COMPARISON OF HE-BASED GNN INFERENCE FRAMEWORKS .
+
+Task Preprocessing Eval. Scale 
+
+CryptoGCN Graph cls. Sparsity formatting ∼25 LinGCN Graph cls. Linearization ∼25 Penguin Node cls. 2D packing ∼20k FicGCN Node cls. ‡ Reordering ∼20k 
+
+TGHE Node cls. Client-side canon. 3.7M † 
+
+> Eval. scale : largest evaluated graph. All prior methods require global adjacency structures. †Per-query cost is independent of global graph size.
+> ‡FicGCN also evaluates graph-level classification on skeleton graphs ( ∼25 nodes).
+
+III. S YSTEM MODEL AND PROBLEM 
+
+We model financial transaction data as a directed graph 
+
+G = ( V, E) where nodes represent entities (e.g., accounts) and edges represent transactions, each node v having a feature vector xv . As shown in Fig. 1, edge servers are co-located with data sources and hold local transaction records. For each query node v, the edge extracts a local L-hop ego-graph Gv , applies TGHE canonicalization, and encrypts it under CKKS. The cloud holds trained parameters Θ, performs inference entirely on ciphertexts, and returns encrypted logits Jˆyv K = fΘ(JGv K)
+
+to the edge for decryption, without observing raw features or outputs. Cloud  
+
+> server
+> Edge
+> server
+> Customer
+> Edge
+> server
+> Bank
+> clerk
+> Branch A
+> CKKS-e ncrypted
+> results
+> CKKS-encrypted
+> data
+> Edge
+> server
+> Bank
+> manager
+> Branch C Branch B
+> Fig. 1. Edge-cloud architecture for encrypted GNN inference. Edge servers extract, canonicalize, and encrypt local ego-graphs; the cloud performs infer-ence on ciphertexts.
+
+Threat model. The cloud is honest-but-curious ; the edge client is trusted and holds the CKKS secret key. Node fea-tures and model outputs are protected by CKKS semantic security [9] under RLWE hardness. We adopt a leakage-aware 
+
+design: SIMD batching requires the server to receive coarse structural metadata (template signatures, degree counts), and edge attributes are transmitted in plaintext for correction terms; all residual leakage is explicitly characterized in Section V-D. 
+
+CKKS and GNN notation. We denote encryption by J·K.CKKS supports SIMD computation over packed ciphertext vectors; dominant costs are slot rotations and ciphertext-ciphertext (CT-CT) multiplications, while ciphertext-plaintext (CT-PT) operations are orders of magnitude cheaper. A stan-dard GNN layer computes: 
+
+H(l+1) = σ
+
+ ˜A H (l)W(l)
+
+, (1) where ˜A is the normalized adjacency, W(l) are learnable parameters, and σ(·) is approximated by a low-degree poly-nomial under HE. 
+
+Problem. Given G with sensitive features and topology, com-pute GNN predictions for each query node v ∈ Q using only encrypted local neighborhoods. The central challenge is a structural mismatch : HE requires uniform arithmetic circuits, but ego-graphs vary in degree, depth, and connectivity. Section IV resolves this mismatch. IV. P ROPOSED METHOD 
+
+As established in Section III, HE requires uniform arith-metic circuits, but ego-graphs vary in structure. TGHE resolves this mismatch through a three-stage pipeline: 1) The edge client extracts and canonicalizes each ego-graph into a deterministic computation tree (Sec-tion IV-A). 2) Structurally identical trees are grouped by template signature and packed into shared CKKS ciphertexts for SIMD-parallel evaluation (Section IV-B). 3) Unmatched trees are handled by two long-tail optimizers that maximize SIMD coverage (Section IV-C). Stages 1-2 are architecture-agnostic. Stage 3 includes one opti-mizer (Topology Collapse) that exploits the branch-separated structure of the target GNN; the architecture is specified in Section IV-C2 where this property becomes essential. 
+
+A. Ego-Graph Extraction and Canonicalization 
+
+For each query node v ∈ Q , the edge client extracts a 2-hop ego-graph from the local transaction data, matching the receptive field of the target two-layer GNN. This subgraph is irregular: nodes have varying degrees, shared neighbors create cycles, and multi-paths violate SIMD uniformity. The client transforms it into a canonical computation tree through two plaintext steps. 
+
+1) Deterministic Capping: The client caps each ego-graph to bounded size: at most dmax hop-1 neighbors per root, and 
+
+cmax hop-2 neighbors per hop-1 node ( dmax =10 , cmax =5 in experiments). Hop-1 neighbors are selected by degree (highest retained); hop-2 neighbors are selected by node index. Capping bounds the computation tree size, which in turn bounds the HE circuit depth and ciphertext count. 
+
+2) Treeification: Even after capping, the subgraph may contain shared nodes and cycles. The client resolves these by 
+
+treeification : if a hop-2 node w is reachable from multiple hop-1 parents, it is cloned independently under each parent, retaining the original feature xw. The result is a deterministic role tree where each position maps to exactly one feature vector. Fig. 2 illustrates the full transformation from global graph to canonical tree. 
+
+B. The Template Phenomenon and SIMD Packing 
+
+After canonicalization, each ego-graph is a bounded tree whose depth (two hops) and breadth (degree capping) limit the space of possible shapes. The key question is: how many 
+
+distinct tree shapes exist across all queries? If the answer is small, we can batch structurally identical trees into shared ciphertexts for SIMD-parallel evaluation. 
+
+1) Template Signatures: We capture each tree’s shape by its template signature , where r denotes the root of the canon-icalized tree: 
+
+sig( r) =  d, (c1, c 2, . . . , c d), c1 ≥ c2 ≥ · · · ≥ cd, (2)  
+
+> Fig. 2. From global graph to canonical computation tree. Left: the node’s neighborhood in the global graph. Center: the extracted ego-graph after capping. Right: the treeified role tree with cloned nodes.
+
+where d is the hop-1 degree after capping and cj is the number of hop-2 children under the j-th hop-1 neighbor, sorted in descending order. Two trees with the same signature have identical role structure and require the same HE circuit. 
+
+2) Empirical Observation: Despite the massive irregular-ity of real-world graphs, the number of distinct template signatures is far smaller than the number of query nodes. Fig. 3 shows the cumulative query coverage as a function of template library size K over the query subsets used for template analysis on four financial transaction datasets. Two patterns emerge. First, all datasets exhibit rapid initial conver-gence: a small number of templates covers a disproportionate fraction of queries. Second, the coverage level varies with graph characteristics: denser, more homogeneous graphs (El-liptic [12], AMLSim [13]) reach over 90% coverage at K=50 ,while larger, more heterogeneous graphs (DGraphFin [7], [8] and IBM [14]) reach approximately 60% when evaluated on sampled query subsets. 1 10 20 30 40 50 60 70 80 90 100  
+
+> Top-K Most Frequent Template Signatures
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Cumulative Node Coverage (%)
+> K = 50
+> Elliptic (~204K nodes)
+> AMLSim (~20K nodes)
+> DGraphFin (~858K nodes)
+> IBM (~515K nodes)
+> Fig. 3. Cumulative node coverage vs. template library size ( K) across four financial transaction datasets. All datasets exhibit rapid convergence, with coverage varying by graph density and degree heterogeneity.
+
+This template phenomenon arises from degree capping: once the neighborhood is bounded to dmax hop-1 and cmax hop-2 neighbors, the combinatorial space of possible tree shapes is finite. In practice, degree distributions in transaction graphs are concentrated enough that a small subset of shapes dominates. 
+
+3) Template-Batched SIMD Packing: Queries sharing atemplate signature have identical role trees. The client groups up to C such queries and packs their feature vectors into shared CKKS ciphertexts, one ciphertext per tree role. A batch of Cqueries with signature (d, (c1, . . . , c d)) requires: 
+
+NCT = 1 + d + Pdj=1 cj (3) ciphertexts (one for the root, one per hop-1 node, one per hop-2 node). Features are arranged in a duplicated layout 
+
+with block size b for efficient DiagBSGS (Baby-Step Giant-Step rotation algorithm for matrix-vector multiplication) [15] matrix-vector multiplication: 
+
+C =
+
+ N/ 22b
+
+
+
+. (4) With CKKS polynomial degree N =16 ,384 , each ciphertext provides N/ 2=8 ,192 plaintext slots. With block size b=32 ,each ciphertext holds C=128 queries. Queries sharing atemplate are grouped and their feature vectors packed into shared ciphertexts (one per tree role), so the server executes a single HE circuit across all SIMD slots, amortizing the rotation schedule over 128 queries simultaneously. 
+
+4) The Long-Tail Bottleneck: Template-based packing han-dles the majority of queries, but the remaining unmatched queries fall back to sequential, per-query encrypted execution. This fallback is disproportionately expensive. Each fallback query independently executes the full DiagBSGS rotation schedule, consuming the same number of rotations as an entire packed batch of 128 queries. On DGraphFin with K=50 
+
+templates, TGHE-Base routes 99% of queries through the packed path, yet the 1% fallback still accounts for over 70% of total rotations (Table III). This is a direct instance of Amdahl’s Law: even a small sequential fraction bounds overall speedup. 
+
+C. Long-Tail Optimizers 
+
+We propose two complementary strategies to eliminate the long-tail bottleneck. Approximate Template Fitting (Sec-tion IV-C1) is architecture-agnostic and maps unmatched ego-graphs to nearby templates via padding. Topology Collapse 
+
+(Section IV-C2) exploits properties of the target GNN architec-ture to eliminate hop-2 structural diversity entirely, collapsing all templates into degree groups with zero fallback. 
+
+1) Approximate Template Fitting: If a query’s tree does not exactly match any template, the client searches for the closest template and pads the tree to fit. The padding must preserve aggregation semantics so that the encrypted output remains correct. For each unmatched root r, the client searches the template library T for the best approximate match. For each candidate template T with hop-1 degree dT ≤ drt , the client selects a subset S of dT hop-1 roles, assigns real hop-2 nodes, and fills excess slots with surrogate features . Surrogates are set to the mean of real neighbors in that role’s aggregation group (root plus real hop-2 children): 
+
+¯x = mean( xr , xw1 , . . . , xwm ). (5) This choice preserves the neighbor-branch mean exactly: if a role has m real neighbors and the template requires c > m 
+
+slots, padding with ¯x leaves the aggregated mean unchanged. 
+
+Algorithm 1 Approximate Template Fitting 
+
+Require: Root r; library T ; caps (dmax , c max ); threshold τ
+
+Ensure: Packed-path match or fallback  
+
+> 1:
+
+Treeify, cap, compute sig( r). 
+
+> 2:
+
+if sig( r) ∈ T then  
+
+> 3:
+
+return EXACT MATCH (sig( r))  
+
+> 4:
+
+end if  
+
+> 5:
+
+best sim ← 0, best T ← ∅ , best S ← ∅  
+
+> 6:
+
+for each T ∈ T with dT ≤ drt do  
+
+> 7:
+
+for each subset S of hop-1 roles, |S| = dT do  
+
+> 8:
+
+Order S; assign hop-2; pad surrogates; compute 
+
+sim( T, S ). 
+
+> 9:
+
+if sim( T, S ) > best sim then  
+
+> 10:
+
+Update best sim , best T , best S . 
+
+> 11:
+
+end if  
+
+> 12:
+
+end for  
+
+> 13:
+
+end for  
+
+> 14:
+
+if best sim ≥ τ then  
+
+> 15:
+
+return APPROX MATCH (best T , best S)  
+
+> 16:
+
+else  
+
+> 17:
+
+return FALLBACK 18: end if 
+
+Match quality is measured by: 
+
+sim( T, S ) = 1 + dT + nreal-hop2 
+
+1 + dT + PdT 
+
+> j=1
+
+cj
+
+| {z }
+
+> fill fraction
+
+× dT
+
+drt 
+
+|{z} 
+
+> keep ratio
+
+. (6) The fill fraction measures how many template slots are oc-cupied by real data rather than surrogates. The keep ratio penalizes dropping hop-1 neighbors. If the best score exceeds a threshold τ , the query is fitted to that template; otherwise it falls back (Algorithm 1). The search space |T | ×  drt 
+
+> dT
+
+ is tractable under capping ( drt ≤ 10 ). Surrogate features are not masked during aggregation, avoiding per-slot metadata leakage. Empirically, AUC degradation is below 0.003 at 
+
+τ =0 .50 .
+
+2) Topology Collapse: Approximate Template Fitting re-duces fallback but cannot eliminate it entirely. A stronger strategy is possible when the GNN architecture has a specific property: linear neighbor aggregation with explicit branch separation . We now describe the target architecture and the resulting optimization. 
+
+a) Target architecture: TGHE targets a GraphSAGE variant with explicit self/neighbor branch separation and learned edge-type embeddings, referred to as GEARSage following the implementation by [16], which holds the top position on the DGraphFin leaderboard (AUC 0.8460). Each layer separates computation into a self branch and a neighbor branch: 
+
+h(l+1)  
+
+> v
+
+= W(l)self h(l)
+
+> v
+
+| {z }
+
+> self
+
++ W(l)neigh AGG( {mu→v })
+
+| {z }
+
+> neighbor
+
++ e(l)
+
+> v
+
+|{z} 
+
+> edge/time
+
+.
+
+(7) Algorithm 2 Topology Collapse 
+
+Require: Root r; caps (dmax , c max ); degree groups 
+
+{G1, . . . , G dmax }
+
+Ensure: Exact packed-path execution with no fallback  
+
+> 1:
+
+Treeify and cap the ego-graph of r. 
+
+> 2:
+
+Order hop-1 roles; compute effective degree deff (r). 
+
+> 3:
+
+for each hop-1 node uj do  
+
+> 4:
+
+Collect its hop-2 children Cj . 
+
+> 5:
+
+Pre-aggregate in plaintext: suj ← xr + P 
+
+> w∈Cj
+
+xw. 
+
+> 6:
+
+Encrypt xuj and suj ; record |Cj | as metadata.  
+
+> 7:
+
+end for  
+
+> 8:
+
+Pack the query into degree group Gdeff (r). 
+
+> 9:
+
+Apply mean normalization from recorded child counts.  
+
+> 10:
+
+Evaluate Layer 1 in packed form using self/neighbor branches and edge/time correction.  
+
+> 11:
+
+Continue Layer 2 with the exact packed kernel for Gdeff (r). 
+
+> 12:
+
+return EXACT DEGREE GROUP (deff (r)) 
+
+Neighbor messages mu→v concatenate neighbor features with learned edge-type, direction, and time embeddings before mean-pool aggregation. Branches are fused by summation; the edge/time correction term is computed from plaintext metadata (Section V-D). A trainable polynomial f (x) = ax 2 + bx + c
+
+replaces ReLU between layers for HE compatibility. Two properties make this architecture amenable to Topol-ogy Collapse. First, branch separation means the self branch 
+
+W(l)self h(l) 
+
+> v
+
+depends only on the node itself, with no hop-2 involvement. Second, the neighbor-branch aggregation is linear and commutes with W(l)neigh , so aggregation can be performed before encryption. 
+
+b) Pre-aggregation: Consider the Layer-1 neighbor-branch aggregation for a hop-1 node uj . In the ego-centric formulation, the root r is connected to each hop-1 node via an outgoing edge and acts as one of its neighbors. The aggregation is: 
+
+¯nuj = 11+ |Cj |
+
+
+
+xr + P 
+
+> w∈Cj
+
+xw
+
+
+
+, (8) where Cj denotes the hop-2 children of uj . Because this sum is linear, the client can compute suj = xr + P 
+
+> w∈Cj
+
+xw in plaintext and encrypt only the result Jsuj K alongside Jxuj K.The server then applies the scalar 11+ |Cj | as a cheap CT-PT multiplication (receiving |Cj | as metadata), followed by 
+
+W(0) neigh , and adds the self branch and edge/time correction. 
+
+c) Structural consequences: Pre-aggregation eliminates all hop-2 nodes from the encrypted computation. The template signature (d, (c1, . . . , c d)) collapses to a single integer: the effective hop-1 degree deff (r). Ciphertexts per batch drop from 1 + d + P cj to 1 + 2 deff (one root, one self-branch and one neighbor-branch ciphertext per hop-1 node). The template library reduces to at most dmax degree groups, and every query matches exactly. The fallback path is eliminated entirely, yielding a 66.9 × speedup over sequential execution (Section V). The full procedure is summarized in Algorithm 2.    
+
+> TABLE II TEST ROC-AUC ON DG RAPH FIN .
+
+Method Test AUC 
+
+Encrypted inference ⋆
+
+Non-SIMD (Baseline) 0.7973 
+
+TGHE-Collapse 0.7959 TGHE-Base (τ =0 .50 ) 0.7950 
+
+Plaintext reference †
+
+GEARSage [16] 0.8460 Graph Transformer [18] 0.7838 SIGN [19] 0.7823 GraphSAGE [20] 0.7761 GAT [21] 0.7333 GCN [22] 0.7078 
+
+> ⋆HE-adapted GEARSage with polynomial activations and degree capping.
+> †Standard architectures with ReLU and full neighborhoods; direct numerical comparison is not meaningful.
+
+d) Applicability: This equivalence holds for encrypted feature computation in Layer 1. Layer-2 aggregation cannot be collapsed because of the intervening polynomial nonlinear-ity. Edge/time correction terms are handled separately (Sec-tion V-D). Topology Collapse exploits the linearity of mean-pool aggregation, which is the dominant paradigm for high-performing financial GNN models including the leaderboard-leading GEARSage. For attention-based architectures such as GAT, Approximate Template Fitting remains applicable as the general-purpose optimizer. V. E XPERIMENTAL EVALUATION 
+
+We evaluate TGHE on end-to-end encrypted inference, addressing three questions: (1) Does encryption degrade pre-dictive accuracy? (2) How much speedup does template-based packing provide? (3) What information does the server observe? 
+
+A. Experimental Setup 
+
+All experiments run on a Google Cloud 
+
+n2-standard-16 VM (16 vCPUs, 64 GB RAM). We use Microsoft SEAL [17] with CKKS at polynomial degree 
+
+N =16 ,384 (128-bit security, N/ 2=8 ,192 slots per ciphertext, batch capacity C=128 ). The dataset is DGraphFin [7], [8] (3.7M nodes, 4.3M edges). We deploy a two-layer GEARSage [16] with Din =17 , Dhidden =32 , and trainable quadratic polynomial activations ( dmax =10 , cmax =5 ). The model is trained transductively in plaintext; TGHE operates exclusively at inference time over encrypted local ego-graphs. We evaluate 10,000 randomly sampled query nodes under three modes: Non-SIMD (sequential baseline), TGHE-Base 
+
+(K=50 , τ =0 .50 ), and TGHE-Collapse (Topology Collapse, 100% SIMD coverage). 
+
+B. Predictive Accuracy 
+
+Table II reports test ROC-AUC. Within the encrypted block, TGHE’s packing and optimization contribute minimal addi-tional loss: TGHE-Collapse achieves 0.7959 vs. 0.7973 for TABLE III END -TO -END INFERENCE PERFORMANCE OVER 10,000 QUERY NODES .
+
+Routing Rotations P. Operations F. Operations Method AUC Fall. Exact Approx Packed Fall. CT-PT CT-CT CT-PT CT-CT Time (s) 
+
+Non-SIMD (Baseline) 0.7973 10000 0 0 0 1021247 0 0 4006774 39107 7751.7 TGHE-Base ( τ =0 .50 ) 0.7950 104 6434 3462 10384 25054 38496 368 98028 1094 576.0 TGHE-Collapse 0.7959 0 10000 0 10252 0 38330 379 0 0 115.9    
+
+> P. = packed (SIMD) path; F. = fallback (sequential) path. CT-PT and CT-CT denote ciphertext-plaintext and ciphertext-ciphertext multiplications, respectively.
+
+the Non-SIMD baseline (0.0014 difference, less than 0.2% relative). Topology Collapse preserves higher accuracy than Approximate Template Fitting (0.7959 vs. 0.7950) because its pre-aggregation is algebraically exact. The gap between the plaintext GEARSage backbone (0.8460) and the encrypted block (0.7973) reflects polynomial activation approximation and degree capping, adaptations required by all HE-based GNN approaches, not by TGHE’s packing stage. 
+
+C. End-to-End Inference Performance 
+
+Table III reports end-to-end latency and cryptographic op-eration counts for the full 10,000-query workload. 
+
+1) Non-SIMD (Baseline): Sequential execution processes each query independently, consuming 1,021,247 rotations and over 4M CT-PT operations. Total runtime exceeds 2 hours (7,751.7 s) for 10,000 queries. 
+
+2) TGHE-Base (13.5 × speedup): Template-batched SIMD routes 98.96% of queries through the packed path (6,434 exact + 3,462 approximate matches), reducing runtime to 576.0 s. However, the 104 remaining fallback queries still account for 25,054 rotations (over twice the packed-path total of 10,384), confirming the Amdahl’s Law bottleneck of Section IV-B4. 
+
+3) TGHE-Collapse (66.9 × speedup): Topology Collapse eliminates the fallback path entirely. Every query achieves ex-act SIMD matching through degree-group templates. Runtime drops to 115.9 s with only 10,252 rotations (a 99.0% reduction) and 379 CT-CT operations, compared to 39,107 under the Non-SIMD baseline. This represents a 66.9 × speedup over Non-SIMD and 5.0 × over TGHE-Base. The threshold τ in Approximate Template Fitting provides a smooth accuracy-throughput dial: relaxing from τ =1 .00 to τ =0 .50 reduces runtime by 4.3 × with only 0.0013 AUC loss, with accuracy flooring at 0.7948 below τ =0 .25 .
+
+D. Topology Leakage Profile 
+
+TGHE adopts a leakage-aware design: rather than claiming full topology hiding, we explicitly characterize all information visible to the server. Under TGHE-Base , the server observes template signatures and surrogate padding volumes, enabling reconstruction of the tree-level ego-graph structure, but not the original subgraph, as treeification removes cycles and shared-node information. Under TGHE-Collapse , hop-2 node identities are hidden by client-side pre-aggregation; the server learns only the hop-1 degree deff (r) and per-hop-1 child counts, which is strictly coarser. In both modes, edge/time correction terms require transmitting plaintext edge meta-data (type, direction, timestamp), the most sensitive residual, revealing relationship categories and temporal patterns. Ahardened deployment could eliminate this by having the client pre-compute correction terms locally. Feature vectors and model outputs remain protected by CKKS semantic security throughout. VI. C ONCLUSION 
+
+We presented TGHE, a framework for privacy-preserving GNN inference that shifts from the transductive paradigm of prior HE-GNN systems to an ego-centric design suited to large-scale, dynamic financial graphs in edge-cloud deploy-ments. By extracting and canonicalizing local ego-graphs at the edge, TGHE decouples per-query cost from the global graph, enabling encrypted inference at million-node scale. A central contribution is the identification and exploitation of a template phenomenon: local computation trees in transaction graphs converge into a small set of structural shapes, enabling template-based CKKS ciphertext packing for SIMD-parallel evaluation. Two long-tail optimizers (Approximate Template Fitting and Topology Collapse) maximize SIMD coverage, with Topology Collapse eliminating the fallback path entirely. Experiments on DGraphFin demonstrate substantial end-to-end speedup with negligible accuracy loss, validating TGHE’s applicability to real-world financial graph inference at scale. ACKNOWLEDGMENT 
+
+This work was partially supported by the Australian Re-search Council (ARC) through Linkage Project LP240100523, Blockchain Based Quantum Safe for Secure Digital Medical Passport. The authors gratefully acknowledge the support of the project partners and collaborators. REFERENCES [1] G. Corso, H. Stark, S. Jegelka, T. Jaakkola, and R. Barzilay, “Graph neural networks,” Nature Reviews Methods Primers , vol. 4, no. 1, p. 17, 2024. [2] A. Acar, H. Aksu, A. S. Uluagac, and M. Conti, “A survey on homomorphic encryption schemes: Theory and implementation,” ACM Computing Surveys , vol. 51, no. 4, pp. 1–35, 2018. [3] R. Ran, N. Xu, W. Wang, G. Quan, J. Yin, and W. Wen, “CryptoGCN: Fast and scalable homomorphically encrypted graph convolutional network inference,” in Advances in Neural Information Processing Systems (NeurIPS) , vol. 35, 2022. [Online]. Available: https://openreview.net/forum?id=VeQBBm1MmTZ [4] H. Peng, R. Ran, Y. Luo, J. Zhao, S. Huang, K. Thorat, T. Geng, C. Wang, X. Xu, W. Wen, and C. Ding, “LinGCN: Structural linearized graph convolutional network for homomorphically encrypted inference,” in Advances in Neural Information Processing Systems (NeurIPS) ,2023. [Online]. Available: https://openreview.net/forum?id=5loV5tVzsY [5] R. Ran, N. Xu, T. Liu, W. Wang, G. Quan, and W. Wen, “Penguin: Parallel-packed homomorphic encryption for fast graph convolutional network inference,” in Advances in Neural Information Processing Systems (NeurIPS) , 2023. [Online]. Available: https://proceedings.neurips.cc/paper files/paper/2023/hash/ 3cc685788a311fa35d8d41df93e288ca-Abstract-Conference.html [6] Z. Kan, H. Han, S. Shi, T. Hua, H. Lu, X. Li, J. Mu, and X. Hu, “FicGCN: Unveiling the homomorphic encryption efficiency from irregular graph convolutional networks,” in Proceedings of the 42nd International Conference on Machine Learning (ICML) , ser. Proceedings of Machine Learning Research, vol. 267. PMLR, 2025, pp. 28 832–28 848. [Online]. Available: https://proceedings.mlr.press/ v267/kan25a.html [7] PyTorch Geometric Team, “torch geometric.datasets.DGraphFin docu-mentation,” 2025, accessed via PyG documentation; includes dataset statistics. [Online]. Available: https://pytorch-geometric.readthedocs.io/ en/2.7.0/generated/torch geometric.datasets.DGraphFin.html [8] X. Huang, Y. Yang, Y. Wang, C. Wang, Z. Zhang, J. Xu, L. Chen, and M. Vazirgiannis, “DGraph: A large-scale financial dataset for graph anomaly detection,” in Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track , 2022. [Online]. Available: https://proceedings.neurips.cc/paper files/paper/ 2022/hash/8f1918f71972789db39ec0d85bb31110-Abstract-Datasets and Benchmarks.html [9] J. H. Cheon, A. Kim, M. Kim, and Y. Song, “Homomorphic encryption for arithmetic of approximate numbers,” in Advances in Cryptology – ASIACRYPT 2017 , ser. Lecture Notes in Computer Science, vol. 10624. Springer, 2017, pp. 409–437. [Online]. Available: https://link.springer.com/chapter/10.1007/978-3-319-70694-8 15 [10] X. He, J. Jia, M. Backes, N. Z. Gong, and Y. Zhang, “Stealing links from graph neural networks,” in 30th USENIX Security Symposium (USENIX Security 21) , 2021, pp. 2669–2686. [Online]. Available: https://www.usenix.org/system/files/sec21summer he.pdf [11] J. Fu, Y. Hong, Z. Chen, and W. H. Wang, “Safeguarding graph neural networks against topology inference attacks,” in Proceedings of the 32nd ACM Conference on Computer and Communications Security (ACM CCS) , 2025, also available as arXiv:2509.05429. [Online]. Available: https://arxiv.org/abs/2509.05429 [12] M. Weber, G. Domeniconi, J. Chen, D. K. I. Weidele, C. Bellei, T. Robinson, and C. E. Leiserson, “Anti-money laundering in bitcoin: Experimenting with graph convolutional networks for financial foren-sics,” in KDD Workshop on Anomaly Detection in Finance , 2019, arXiv:1908.02591. [13] T. Suzumura and H. Kanezashi, “AMLSim: A multi-agent simulator of anti-money laundering,” https://github.com/IBM/AMLSim, 2021. [14] E. Altman, J. Blanuˇ sa, L. von Niederh¨ ausern, B. Egressy, A. Anghel, and K. Atasu, “Realistic synthetic financial transactions for anti-money laundering models,” in Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track , 2023. [15] S. Halevi and V. Shoup, “Faster homomorphic linear transformations in HElib,” in Advances in Cryptology – CRYPTO 2018 , ser. Lecture Notes in Computer Science, vol. 10991. Springer, 2018, pp. 93–120. [16] J. Li, Z. Yu, W. Sun, X. Jin, Q. Wang, and L. Chen, “GEARSage: Graph edge-aware GraphSAGE for DGraphFin,” 7th Finvolution Data Science Competition, technical report, 2022, Sun Yat-sen University, SYSU-GEAR team. [Online]. Available: https://github.com/ storyandwine/GEARSage-DGraphFin [17] Microsoft Research, “Microsoft SEAL (release 4.1),” 2024, homomorphic encryption library. [Online]. Available: https: //github.com/microsoft/SEAL [18] S. Yun, M. Jeong, R. Kim, J. Kang, and H. J. Kim, “Graph transformer networks,” in Advances in Neural Information Processing Systems (NeurIPS) , vol. 32, 2019. [19] F. Frasca, E. Rossi, D. Eynard, B. Chamberlain, M. Bronstein, and F. Monti, “SIGN: Scalable inception graph neural networks,” arXiv preprint arXiv:2004.11198 , 2020. [20] W. Hamilton, Z. Ying, and J. Leskovec, “Inductive representation learning on large graphs,” in Advances in Neural Information Processing Systems (NeurIPS) , vol. 30, 2017. [21] P. Veliˇ ckovi´ c, G. Cucurull, A. Casanova, A. Romero, P. Li` o, and Y. Ben-gio, “Graph attention networks,” in Proc. International Conference on Learning Representations (ICLR) , 2018. [22] T. N. Kipf and M. Welling, “Semi-supervised classification with graph convolutional networks,” in Proc. International Conference on Learning Representations (ICLR) , 2017.

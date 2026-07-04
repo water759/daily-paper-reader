@@ -1,0 +1,1518 @@
+Title: DKVE: Decentralized Key Validation for End-to-End Encrypted Messaging
+
+URL Source: https://arxiv.org/pdf/2606.26486v1
+
+Published Time: Fri, 26 Jun 2026 00:20:41 GMT
+
+Number of Pages: 20
+
+Markdown Content:
+# DKVE: Decentralized Key Validation for End-to-End Encrypted Messaging 
+
+1st Subin Song 
+
+Dept. of Computer Science and Engineering Seoul National University Seoul, South Korea sbsong66@snu.ac.kr 
+
+2nd Taekyoung (Ted) Kwon 
+
+Dept. of Computer Science and Engineering Seoul National University Seoul, South Korea tkkwon@snu.ac.kr 
+
+Abstract —End-to-end encrypted messaging systems depend on authentic public key distribution to prevent man-in-the-middle (MitM) attacks. Current solutions present a stark trade-off: out-of-band (OOB) verification provides strong security but lacks scalability for large contact lists, while key transparency (KT) systems enable automated verification at high storage costs and operational complexity. We propose DKVE (Decentralized Key Validation for End-to-End Encrypted Messaging), a protocol that validates public keys through privacy-preserving cross-validation within users’ social graphs. When obtaining a contact’s public key from a key server, clients query mutual contacts to verify they hold the same key, combining Oblivious Pseudo-random Functions (OPRF) and Oblivious Key-Value Stores (OKVS) to preserve privacy of both queries and contact lists. 
+
+DKVE employs a Sequential Probability Ratio Test (SPRT) to aggregate responses and detect server misbehavior with user-configurable error bounds. We evaluate DKVE through simulations on real social network datasets, demonstrating DKVE can detect MitM attacks with exceeding 97% for strong-to-moderate-tie net-works. The remaining 3% of cases require validation through alternative methods such as KT and OOB verification. Our proof-of-concept implementation confirms feasibility for background operation on commodity hardware, in terms of the latency and bandwidth. As DKVE can reduce the frequency of KT queries by two orders of magnitude, it enables fundamental architectural shifts: KT directories can migrate from fast but space-inefficient Merkle trees to space-efficient data structures like RSA accumulators. While DKVE cannot replace existing methods entirely—suffering from bootstrapping problems and degraded performance on weak-tie networks—it pro-vides a practical complementary key validation mechanism, making secure messaging more deployable for billion-user systems. 
+
+Index Terms —cryptographic protocols, public key, decentral-ized applications, peer-to-peer computing, network security 
+
+## 1. Introduction 
+
+End-to-end encrypted (E2EE) messengers—such as 
+
+Signal [1], WhatsApp [2] and Telegram [3]—protect mes-sage contents by ensuring that only endpoints hold decryp-tion keys. However, most systems still rely on a directory service to distribute users’ public keys, creating a critical attack surface: a malicious server can distribute incor-rect keys to enable man-in-the-middle (MitM) attacks. Current defenses face a significant practicality gap. Out-of-band (OOB) key verification methods (e.g., Signal ’s safety numbers) provide high security assurance but are impractical for users with large contact lists. In contrast, key transparency (KT) systems [4]–[7] automate verifi-cation but impose substantial server-side complexity and storage overhead in real-world deployments. With user populations potentially reaching billions, these operational costs become prohibitive even for streamlined KT designs. We propose DKVE: Decentralized Key Validation for End-to-End Encrypted Messaging , which statistically val-idates contacts’ keys by leveraging users’ existing social networks, designed to complement rather than replace OOB and KT approaches. The core insight is to boot-strap from a small number of high-confidence validations (obtained via OOB or KT) and propagate these assurances across mutual contacts. When a client retrieves a contact’s key from the key server, it also privately queries selected mutual contacts to verify whether they possess the same key for the contact. Suppose Alice and Bob both know Carol, Alice can compare the public key of Carol that she obtains (from the key server) with the one that Bob already has, and if they match, Alice can be more convinced that Carol’s key from the server is correct. In this process, we design DKVE to preserve privacy by combining an Obliv-ious Pseudorandom Function (OPRF) with an Oblivious Key-Value Store (OKVS) [8]. 
+
+DKVE adopts a reputation-aware threat model: the key server may occasionally cheat and a fraction of a user’s contacts may be malicious. Instead of absolute guarantees, 
+
+DKVE provides probabilistic detection with user-set error bounds (α, β ) on false positives and false negatives. The client aggregates match/mismatch evidences from respon-ders (i.e., mutual contacts) with a Sequential Probability Ratio Test (SPRT) and stops as soon as the likelihood ratio crosses a decision threshold, thereby minimizing queries while meeting the desired error targets. This reduces the probability of falling back to OOB/KT to approximately in proportion to α when the server is honest, while making server misbehaviors to be caught by 1 − β probability. As the rate of incoming queries to the KT directory is sub-stantially decreased, it can reduce the directory’s online storage cost—at the expense of higher query processing costs—by moving the directory data to low-cost storage (say, from SSD to HDD) or by replacing the Merkle 
+
+> arXiv:2606.26486v1 [cs.CR] 25 Jun 2026
+
+tree with a more space-efficient but query processing-inefficient data structure like RSA accumulators [9], [10]. We evaluate DKVE through simulations on real social graph datasets from Facebook , Pokec , and VKontakte , im-plementing the system using the Matrix E2EE messaging protocol. Our simulations quantify the typical number of responders required and analyze how attack detection rates correlate with the proportion of malicious contacts in the network. The prototype demonstrates that both computa-tional and bandwidth overhead remain sufficiently low to enable background execution on commodity hardware. Contributions.. This paper makes four contribu-tions: 1) Problem formulation. We articulate the opera-tional gaps in two existing methods for key au-thentication in E2EE messaging: (i) highly trust-worthy but non-scalable OOB checks, and (ii) scalable but storage-heavy KT. 2) Protocol design. We present DKVE , a privacy-preserving cross-validation protocol that enables key comparison among users without revealing query targets or a responder’s contact lists. We develop an SPRT-based decision procedure that achieves user-selected error bounds (α, β ) while minimizing the number of queries. Furthermore, we analyze the protocol’s security properties, including Sybil resistance and behavior under collusion. 3) Simulation. We run simulations on real-world datasets, showing that DKVE can successfully de-tect the server’s MitM attacks with ∼ 97% prob-ability 1, for strong-to-moderate-tie social graphs. Such high detection rate effectively deters the server from attempting to cheat, as the server’s reputation is at stake. 4) Prototype implementation. We implement aproof-of-concept (PoC) of DKVE , demonstrating its practical latency (as background operations) and modest bandwidth usage. The remainder of this paper is organized as follows: §2 reviews the background on key authentication and the cryptographic tools we employ; §3 formalizes the setting and goals; §4 details the DKVE protocol and decision logic; §5 analyzes security properties; §6 evaluates perfor-mance; §7 discusses practical considerations; §8 outlines future work; §9 reviews related work; and §10 makes conclusive remarks. 
+
+## 2. Background 
+
+2.1. End-to-End Encrypted (E2EE) Messaging 
+
+In E2EE messaging services, such as Signal [1], What-sApp [2], and Telegram [3], messages are encrypted on the sender’s device and decrypted exclusively on the receiver’s device, ensuring that only the sender and receiver can read the messages. This design guarantees that even if the messaging service provider or its intermediary server    
+
+> 1. Our evaluation yields approximately 97.2% protocol success rate and 0.3% false negative rate, resulting in 97 .2% ×(100 −0.3)% ≈97%
+> detection rate.
+
+is compromised, the message content remains private. The public keys of the sender and receiver are typically exchanged through a key directory server. The Signal protocol [11] is the most widely adopted protocol for E2EE messaging. It employs the X3DH (Ex-tended Triple Diffie-Hellman) protocol [12] for deriving a shared secret and the Double Ratchet algorithm for message encryption. The X3DH key exchange provides session-level forward secrecy. Additionally, the sending and receiving keys are irreversibly updated (or “ratch-eted”) after each message, preventing key reuse and pro-viding message-level forward secrecy. The Signal pro-tocol also incorporates the Diffie-Hellman (DH) ratchet algorithm to ensure post-compromise security. By com-bining these two “ratcheting” algorithms, Signal ’s post-handshake protocol is termed the “Double Ratchet” al-gorithm [13]. The Signal protocol has been adopted by numerous popular E2EE messaging services, including 
+
+WhatsApp [2], Signal [1], and Facebook Messenger [14], [15]. 
+
+2.2. Key Authentication in E2EE Messaging 
+
+2.2.1. MitM Attack in E2EE Messaging. When a key server managed by the messaging service provider handles the public keys of all users, the messaging system becomes vulnerable to man-in-the-middle (MitM) attacks. The key server may mistakenly or maliciously provide a sender with an incorrect public key for the intended receiver. Then, the sender unknowingly encrypts their message using the compromised key. If the key server intercepts this message, it can decrypt or tamper with the content using the corresponding private key. Several key authen-tication methods, including out-of-band verification and key transparency, are currently employed to mitigate such MitM attacks in E2EE messaging services. 
+
+2.2.2. Out-of-Band (OOB) Key Verification. Popular E2EE messaging services often provide OOB key veri-fication methods that allow users to manually verify the authenticity of their contacts’ public keys. In a Signal 
+
+messenger [1], users can verify their contacts’ public keys by comparing “safety numbers,” which are generated by concatenating the hashes of both parties’ (username ∥
+
+public key ) pairs, where the username corresponds to the user’s phone number [16]. The Signal mobile application allows users to scan QR codes containing safety num-bers to verify that identical safety numbers appear on both devices. However, these out-of-band (OOB) methods suffer from scalability limitations since they require man-ual validation between each pair of users, making them impractical for verifying public keys across large contact networks. 
+
+2.2.3. Key Transparency (KT). Key transparency (KT) is a system that enables users to cryptographically verify the authenticity and integrity of public keys retrieved from the key directory server in a scalable and automated manner. KT systems such as CONIKS [4], SEEMless [5], and Parakeet [6] keep a server-side key directory that holds every user’s public key together in the form of a cryptographic data structure (e.g., a Merkle tree or an append-only zero-knowledge set). When a client looks up a contact’s key, the server returns the key and a (non)membership proof, which the client verifies against the latest signed directory commitment. As commitments are cryptographically chained across epochs, users (and independent auditors) can verify that each new commit-ment extends the previous one—detecting tampering or omission. To stop a malicious server from showing differ-ent views (or keys) to different users, these systems em-bed a global-consistency mechanism — CONIKS gossips tree-heads among clients and third-party auditors, while 
+
+Parakeet employs a quorum of witnesses. Several popular communication platforms have adopted KT systems to strengthen security. For instance, 
+
+WhatsApp [17] and Proton Mail [18] leverage KT systems to enable users to validate the authenticity of their contacts’ public keys, thereby enhancing trust in their E2EE communications. 
+
+2.3. OPRF and OKVS 
+
+2.3.1. Oblivious Pseudorandom Function (OPRF). An Oblivious Pseudorandom Function (OPRF) is a crypto-graphic protocol that allows a client to evaluate a pseudo-random function (PRF) on an input without revealing the input to the server. The inputs and outputs of a (batched) OPRF protocol are expressed as follows:  
+
+> •
+
+Client input: The client holds a set of inputs X =
+
+{x1, . . . , x n}. 
+
+> •
+
+Client output: The client outputs a set of outputs 
+
+Y = {y1, . . . , y n}, where yi = P RF k(xi). 
+
+> •
+
+Server output: The server outputs a random key 
+
+k.The following privacy properties hold:  
+
+> •
+
+Server privacy: The server learns nothing about the client’s input set X, nor the output set Y . 
+
+> •
+
+Client privacy: The client learns nothing about the secret key k.
+
+2.3.2. Oblivious Key-Value Store (OKVS). An oblivious key-value store (OKVS) is a data structure that encodes a set of label 2-value pairs in such a way that an adversary, given only the encoding, learns nothing about the underly-ing labels or values. The term OKVS was first introduced in [8]. An OKVS consists of two core functions:  
+
+> •
+
+S ← Encode ({(l1, v 1), . . . , (ln, v n)}): The func-tion takes a set of label-value pairs as input and outputs an encoded object S, or ⊥ with statistically small probability.  
+
+> •
+
+v ← Decode (S, l ): The function takes an encoded object S and a label l as input, and outputs the value v associated with the label l in the encoded object. Obliviousness. When L = {l1, . . . l n} and L′ =
+
+{l′
+
+> 1
+
+, . . . l ′
+
+> n
+
+} are two different label sets (i.e., L̸ = L′) and 
+
+V = {v1, . . . v n} is a value set, the following two OKVS encodings are indistinguishable by an adversary: 
+
+S ← Encode (L, V ), S′ ← Encode (L′, V )  
+
+> 2. To avoid confusion with cryptographic keys, we call OKVS keys as labels in this paper.
+
+## 3. Assumptions 
+
+3.1. Operating Environment 
+
+We make the following assumptions about the op-erating environment of DKVE . We assume DKVE oper-ates within an E2EE messaging service that relies on a 
+
+centralized relay server, such as Signal [1]. The same operator controls the message relay server and the key directory server. Additionally, the messaging service pro-vides out-of-band verification methods, such as Signal ’s safety numbers, alongside a KT service designed for infre-quent queries. The “contact” relationship is not necessarily symmetric; that is, Alice may have added Bob to her contacts, but Bob may not have added Alice to his. 
+
+3.2. Threat Model 
+
+3.2.1. Key Directory Server. The key directory server may be malicious and attempt to provide incorrect public keys to users. However, since the server has a reputation 
+
+to maintain, it seeks to avoid launching overt or easily detectable attacks. Instead, it may attempt a man-in-the-middle (MitM) attack that creates the illusion of legitimate communication between a user and their intended contact. 
+
+3.2.2. Users. The user who initiates a cross-validation request (to be detailed in §4.2) is called a “querier” and is honest but curious . The querier performs the protocol correctly, as they seek to validate their contact’s public key through the protocol. However, they may be curious and attempt to learn additional information about their contacts or other users. Another user who receives the cross-validation request, called a “responder,” may be malicious 
+
+and does not care about their reputation. They may attempt to provide an incorrect public key to the querier or to learn additional information about the querier. We assume that up to a fixed proportion of users in a given user’s contact list, denoted by μmal , are either ma-licious , or compromised . Both groups behave identically from the querier’s perspective, as they provide a false public key . Since they are indistinguishable in practice, we treat them as a single category and refer to them col-lectively as malicious users . Malicious users, potentially colluding with the server, may attempt to deceive queriers into accepting fraudulent keys as authentic. We assume that the proportion of malicious users does not exceed μmal 
+
+with the practical validity of this assumption discussed in §5.5. 
+
+3.3. Security Definition 
+
+Leveraging the threat model in §3.2, DKVE employs a probabilistic approach to detect server misbehaviors. Once a user detects that the server may be cheating, they verify the information through an OOB method or a KT query and publicize the server’s misbehavior online (on social networking services, online media, etc.). A DKVE user defines α as the maximum acceptable false positive rate (the probability of falsely accusing an honest server of cheating) and β as the maximum accept-able false negative rate (the probability of failing to detect a cheating server) 3. While DKVE does not guarantee that a cheating server is “always” detected, it does so with a 
+
+high probability (greater than 1 − β). If this probability is sufficiently large, DKVE can effectively deter server misbehaviors, as the server would not want to risk its reputation by being caught cheating. The security definition of DKVE is that if the protocol succeeds, a cheating server is detected with the probability greater than 1 − β. Detecting a malicious responder is beyond the scope of this paper. 
+
+3.4. Notation 3.5. Symbolic Notation 
+
+Table 1 summarizes the symbolic notation used in this paper. Notation for algorithms is defined separately in Appendix B. TABLE 1: Symbolic notation used throughout the paper.                                
+
+> Notation Description
+> VSet of all users in the system (vertices of a graph)
+> ESet of all contact relationships in the system (directed edges of the graph)
+> G:= ( V,E)Adirected graph that represents the whole system
+> (u, v )∈ E “User uhas added user vto their contact list”
+> pk uGenuine public key of user u
+> cpk vu
+> Public key that the server claims to user vas user u’s public key
+> CuUser u’s contact list (set)
+> q, r, t,
+> Q,R,TQuerier, responder, target users (and their sets)
+> μmal Portion of malicious users in the system
+> α, β Desired false positive/negative thresholds
+> τA fixed sequence of bytes (tag) that is assigned as a prefix to public key bytes
+> ∥Bytes concatenation operation
+
+3.6. Terminology 
+
+To avoid the ambiguity between a user’s public key and an OKVS key, we refer to an OKVS key as an “label” 
+
+rather than a “key” throughout this paper. Additionally, we abbreviate “out-of-band verification” as “OOB verifi-cation” and “key transparency” as “KT.” 
+
+## 4. The DKVE System 
+
+4.1. Motivation 
+
+Existing key authentication methods discussed in §2.2 have the following limitations. First, OOB verification such as Signal ’s safety number is not scalable, as it re-quires users to manually verify all contacts. For key trans-parency (KT), server-side storage cost is widely recog-nized as a major challenge. CONIKS [4] requires storage proportional to the number of server epochs, which is not     
+
+> 3. Note that αand βcan be configured as per-user or service-wide parameters.
+
+scalable for real-world deployment. While SEEMless [5] and Parakeet [6] reduce the storage requirement to be proportional to the number of key updates, they require 
+
+∼ 26 .9 TB of storage for 1 billion users (see Appendix A for details). OPTIKS [7] reduces the storage cost by half compared to Parakeet , but it still requires ∼ 13 .4 TB of storage for 1 billion users. 
+
+DKVE aims to serve as a complement to OOB verifi-cation and KT to mitigate their scalability and storage cost limitations. The intuition is: “bootstrap a small number of trusted points (i.e., public keys) using OOB and KT, and spread them across users through social graphs.” By introducing DKVE into E2EE messaging ecosystems, we can significantly reduce the frequency of KT queries, which either enables moving the entire KT directory to cheaper (and slower) storage or allows the use of more space-efficient data structures than Merkle trees. Additionally, the results of OOB verification—which is deemed most trustworthy but inconvenient—can be read-ily disseminated across multiple users via DKVE .
+
+4.2. DKVE Cross-Validation 
+
+DKVE provides a mechanism that allows users to 
+
+cross-validate the public key of their contact with an-other contact. This is feasible because users are likely to share mutual contacts within their social circles. The purpose of DKVE is to disseminate verified keys (from OOB verification or KT) across users over their social networks, enabling other users to utilize those keys for cross-validation. Key dissemination (or “spreading”) occurs not only for keys verified via OOB and KT but also for keys that have been cross-validated via DKVE . This enables the keys validated by OOB/KT to propagate across multiple hops in the social graph. For instance, if Alice verifies Carol’s key via OOB and Bob subsequently verifies Carol’s key using DKVE (with Alice as a responder), then Bob can further disseminate Carol’s key to Dave via DKVE . Even when the OOB/KT validation result serves as only one of multiple evidences in SPRT (to be discussed later), the influence of the OOB/KT validation can propagate throughout the social graph. Key dissemination to another user occurs on-demand ,meaning keys are shared only upon incoming key re-quests . Specifically, Bob provides Carol’s key to Alice 
+
+only upon receiving a cross-validation request from Alice. Consider the following scenario: Alice adds Carol to her contact list and retrieves Carol’s public key, cpk AC ,from the key server. Alice then initiates cross-validation requests to her contacts to verify Carol’s public key. (The client application performs this process automatically without user intervention.) Since Alice’s client applica-tion cannot determine which contacts share Carol as a mutual contact, it randomly selects one of their contacts for cross-validation. Assume the selected contact is Bob. A straightforward approach to cross-validate Carol’s key with Bob would involve three steps: (1) Alice requests Carol’s public key from Bob, (2) Bob responds with cpk BC ,and (3) Alice verifies that cpk AC = cpk BC . However, this approach compromises privacy, as Bob would learn which user’s key Alice seeks to validate. To mitigate this privacy concern, DKVE employs privacy-preserving cryptographic primitives: Oblivious Pseudorandom Functions (OPRFs) and Oblivious Key-Value Stores (OKVSs). We refer to Alice, who initiates the cross-validation process, as the querier q; Bob, who receives the cross-validation request, as the responder r; and Carol, whose key is being validated, as the target t from now on. The algorithm leveraging OPRF and OKVS is pre-sented in Algorithm 1 for the case in which μmal =0 (i.e., no malicious responders exist). The functions and notation used in Algorithm 1 are summarized in Appendix B. The algorithm comprises two functions: CROSS VAL QUERY NAIVE , which executes on the querier, and C ROSS VAL RESPOND , which executes on the respon-der. C ROSS VAL QUERY NAIVE accepts as input the re-sponder ( r) and a set of targets for cross-validation ( T ). Multiple targets are processed simultaneously rather than individually to leverage the efficiency of the batch OPRF protocol. We initially assume that μmal = 0, mean-ing all responders are honest. Under these condi-tions, the cross-validation process begins when the querier invokes CROSS VAL QUERY NAIVE , and the re-sponder receives the cross-validation request and executes CROSS VAL RESPOND . The querier inputs the set of target usernames ( T ) into the OPRF protocol. Both parties— querier and responder—then jointly execute the OPRF protocol. Consequently, the querier obtains the OPRF evaluations of the target usernames y (Line 4), while the responder obtains the PRF key k (Line 17). The responder subsequently applies the key k to compute the PRF for each (plaintext) username in their contact list (Line 18). Finally, the responder encodes their entire contact list into an OKVS object by calling OKVS.E NCODE , using the OPRF evaluations of usernames as “labels” and the corresponding public keys as “values” (Line 20). The responder sends the OKVS object to the querier (Line 21), who then decodes the object using the OPRF evaluations of target usernames as labels (Line 7). Since OKVS.D ECODE produces seemingly random bytes even when decoded with a label absent from the responder’s list, the querier cannot determine whether the responder actually possesses the target in their contact list from the output. To enable the querier to distinguish valid public keys from invalid ones (i.e., random bytes), the responder prefixes each public key with a fixed byte sequence τ
+
+(Line 19). The querier verifies whether each decoded value begins with the fixed prefix τ (Line 8). If the prefix is present, it is stripped, and the remaining portion is interpreted as the target’s valid public key. (Otherwise, this indicates that the target is not in the responder’s contact list.) The querier then compares this public key with the one obtained from the server (Line 9). If the keys match, the querier updates the target’s key status to 
+
+VALID ; otherwise, it is marked as INVALID . This process is repeated for all targets in the set, and its completion signifies the end of C ROSS VAL QUERY NAIVE .Due to the obliviousness properties of OPRF and OKVS, the following privacy guarantees hold in cross-validation:  
+
+> •
+
+Querier privacy: The responder learns no infor-mation about the querier’s specific targets (beyond 
+
+Algorithm 1 Cross-Validation (No SPRT) 
+
+Require: Querier q, responder r.
+
+Require: Querier’s contact list Cq = {(u, cpk qu, s u)}
+
+where u denotes a user identifier (user-name), cpk qu is a public key, and su ∈{UNKNOWN , VALID , INVALID }.
+
+Require: Responder’s contact list Cr = {(u, cpk qu, s u)}.
+
+Require: Fixed tag τ ∈ { 0, 1}ℓ used as a domain sepa-rator (payload prefix). 
+
+Require: Primitives: OPRF and OKVS. 
+
+Require: Notation: Users( C) ≜ { u : ( u, ∗, ∗) ∈ C } . 
+
+> 1:
+
+function CROSS VAL QUERY NAIVE (r, T ) ▷ Executed by querier; T is the target subset of usernames, r is the responder  
+
+> 2:
+
+Precondition: T̸ = ∅ ∧ T ⊆ Users( Cq ). 
+
+> 3:
+
+Ensure: set of tuples { (u, cpk qu, s u) : u ∈ T } 
+
+where su is updated key status  
+
+> 4:
+
+y ← OPRF.R ECEIVE (r, T ) ▷ y is a map 
+
+u 7 → yu 
+
+> 5:
+
+Sr ← RECEIVE (r) ▷ Receive OKVS object from responder  
+
+> 6:
+
+for all u ∈ T do  
+
+> 7:
+
+v ← OKVS.D ECODE (Sr , y[u])  
+
+> 8:
+
+if v = τ ∥ pk ′ then ▷ Valid format: tag prefix present  
+
+> 9:
+
+su ← VALID if pk ′ = cpk qu else 
+
+INVALID  
+
+> 10:
+
+else  
+
+> 11:
+
+su ← UNKNOWN ▷ User u not in responder’s contact list  
+
+> 12:
+
+end if  
+
+> 13:
+
+end for  
+
+> 14:
+
+return { (u, cpk qu, s u) : u ∈ T }  
+
+> 15:
+
+end function  
+
+> 16:
+
+function CROSS VAL RESPOND (q) ▷ Executed by responder; q is the querier  
+
+> 17:
+
+k ← OPRF.S END (q) 
+
+> 18:
+
+y ← OPRF.E VAL (k, Users( Cr )) ▷ u 7 → yu 
+
+> 19:
+
+M ← { y[u] 7 → (τ ∥ cpk qu) : ( u, cpk qu, ∗) ∈ C r } 
+
+> 20:
+
+S ← OKVS.E NCODE (M) 
+
+> 21:
+
+SEND (q, S) 
+
+> 22:
+
+end function 
+
+the query size) or the computed OPRF outputs, as these properties are guaranteed by OPRF oblivi-ousness.  
+
+> •
+
+Responder privacy: The querier gains no knowl-edge of the PRF key k (protected by OPRF obliv-iousness) and learns nothing about the responder’s contact list beyond the presence or absence of queried targets (ensured by OKVS obliviousness). However, the querier may be able to infer the size of the responder’s contact list. One may wonder why the OPRF evaluation (i.e., encrypted username) is used as a label in the OKVS encoding, rather than the plaintext username. The reason is to prevent a curious querier from performing a brute-force attack to discover the responder’s entire contact list. If the responder were to use plaintext usernames as OKVS labels, the querier could attempt to brute-force the contact list by testing all possible usernames. Details regarding OKVS brute-force attack prevention are presented in §5.6. 
+
+4.3. How Many Peers to Query? 
+
+In the previous section, we assumed every responder is honest. However, as discussed in §3.2, some responders may behave maliciously. Consequently, querying the same target across different responders can yield inconsistent responses. This raises critical questions: how many re-sponses should the querier collect from responders, and how should they determine whether the server-provided key is valid when responses conflict? To address this challenge, we employ the Sequential Probability Ratio Test (SPRT) . SPRT is based on the like-lihood ratio test, a well-established statistical method for hypothesis testing. The goal is to maintain both the false positive and false negative rates below predefined thresh-olds while minimizing the number of required queries. The SPRT algorithm is detailed in Appendix C. Assume the querier q wishes to validate cpk qt (from the key server). Let Hhon denote the hypothesis that 
+
+cpk qt = pk t, i.e., the server-provided key is correct and the server is honest . Let Hmal denote the hypothesis that 
+
+cpk qt̸ = pk t, i.e., the key is incorrect and the server is 
+
+malicious . Let Ematch and Emismatch represent the evidence that cpk qt matches or does not match the key obtained from the OKVS.D ECODE result, respectively. Let α and 
+
+β denote the predefined thresholds of false positive and false negative rates. The decision boundaries a and b for SPRT are computed as: 
+
+a = log β
+
+1 − α , b = log 1 − βα (1) Each iteration i (i.e., i-th responder) of SPRT proceeds as follows. The initial cumulative log-likelihood ratio (or “SLLR”) Σ0 is set to 0. The querier repeats the process below until a decision is reached or no more contacts remain to query: 1) The querier collects evidence Ei ∈{Ematch , E mismatch }.2) The querier updates the cumulative log-likelihood ratio Σi as: 
+
+Σi = Σ i−1 + log Pr( Ei | Hmal )Pr( Ei | Hhon ) (2) 3) If Σi ≥ b, the querier stops and concludes that the server is malicious. If Σi ≤ a, the querier stops and concludes that the server is honest. Otherwise (i.e., a < Σi < b ), the process continues to the next iteration. Note that Pr( Ematch | Hhon ), Pr( Ematch | Hmal ),
+
+Pr( Emismatch | Hhon ), and Pr( Emismatch | Hmal ) can be estimated as follows: 
+
+Pr( Ematch | Hhon ) = Pr( Emismatch | Hmal ) = 1 − μmal 
+
+Pr( Emismatch | Hhon ) = Pr( Ematch | Hmal ) = μmal 
+
+(3) By performing this process, the querier can determine whether the server is honest or malicious (i.e., whether the key is valid or not), while ensuring that both false positive and false negative rates remain below predefined thresholds. The updated cross-validation query function, which incorporates SPRT, is presented as CROSS VAL QUERY 
+
+in Algorithm 2 in Appendix D. The complete cross-validation procedure for a single target is detailed in Algorithm 3, which is in Appendix D. Fig. 1 illustrates the key validation process in DKVE .One limitation of DKVE is that when a newly joined user adds their first contact, the cross-validation process cannot be performed since no mutual contacts exist to query. In this case, the user should fall back to traditional methods such as OOB verification or KT to verify the key of the first contact. 
+
+4.3.1. α and β Selection. Setting α and β to small values reduces error rates but increases the protocol failure rate of 
+
+DKVE . This occurs because tighter error bounds require more SPRT evidences per decision, causing validation to fail when the querier exhausts available responders to query. Therefore, one should set α and β values to reasonable levels that balance error rates with the protocol success/failure rate of DKVE .
+
+α not only acts as a threshold for the false positive rate but also determines the frequency of required OOB and KT checks. Whenever DKVE raises an alarm that the server may be malicious, the user should double-check the authenticity of the server-provided key via OOB or KT mechanisms. Using DKVE alongside OOB and KT reduces the number of required OOB and KT checks to ap-proximately α (more precisely, “(protocol failure rate) +
+
+(protocol success rate) × α”) when the server is honest. According to our assumption that the server behaves hon-estly in most cases (due to the “reputation” assumption in §3.2.1), this significantly reduces the overall frequency of OOB and KT checks. However, as discussed earlier, setting α to an extremely small value may lead to high protocol failure rates, which may increase the number of required OOB and KT checks. 
+
+## 5. Security Analysis 
+
+This section analyzes various security aspects of 
+
+DKVE , including the sufficiency of its probabilistic guar-antees, resistance to Sybil attacks, handling of false posi-tives and negatives, implications of collusion, the realism of the μmal assumption, prevention of brute-force attacks on OKVS, and other potential security concerns. 
+
+5.1. Is 1 − β Sufficient? 
+
+Since DKVE employs a probabilistic approach, it can-not guarantee 100% detection of server misbehaviors. The probability of detecting a cheating server is 1 − β, where 
+
+β is the user-defined false negative rate. We claim that 
+
+setting β to an intuitively small value, such as 1% or 
+
+0.5% , is sufficient to deter the server from attempting to cheat. This deterrent effect relies on servers’ strong incentives to maintain their reputation and avoid detection, as outlined in our threat model in §3.2.1. If the server cheats, it will be detected with a high probability of 1−β,making the reputational risk of cheating prohibitively high Update likelihood ratio 4         
+
+> Fetch target's public key ( )1
+> Key/Messaging Server Querier ( )
+> While likelihood ratio is within pre-defined limits, repeat –with other responders
+> Receive 's encrypted contact list
+> 2
+> Compare target key ( ) from
+> with
+> 3
+> Responder 1 ( )
+> Other responders
+> 6
+> 25
+> 5
+> When likelihood ratio crosses the limit, mark as VALID or INVALID (protocol complete)
+
+Figure 1: Key validation process in DKVE . The target’s key received by the querier from the server ( pk ) is compared with the key received from Responder 1 ( pk ′). for rational servers. Consequently, servers are deterred from attempting to cheat in the first place. Exceptions to this deterrent model are discussed in §5.5. 
+
+5.2. Handling False Positives and Negatives 
+
+This section details how false positives and negatives are handled in DKVE .False Positives. A false positive occurs when the querier concludes that the key server is misbehaving even if the server is honest. This can happen when the querier receives incorrect keys from a sufficient number of mali-cious responders. However, before accusing the server of its misbehavior, the querier should perform OOB verifica-tion or use KT mechanisms to confirm the authenticity of the key and whether the server is truly misbehaving. If the key is verified to be correct, the querier can conclude that a false positive occurred and cancel the initial conclusion. Thus, false positives do not lead to incorrect accusations against an honest server. False Negatives. A false negative occurs when the server misbehaves but the querier fails to detect it. This scenario typically arises when the server colludes with a sufficient number of malicious responders to consistently provide the same incorrect key, thus suppressing any alarm from the querier. Unfortunately, queriers cannot identify when false negatives occur. As discussed in §5.1, the messaging service providers (or their key servers) have strong reputational incentives that make them unlikely to risk attacks with a 1−β detection probability under normal conditions. Nevertheless, if a server does launch such an attack and successfully deceives the querier, the deception will remain undetected. 
+
+5.3. Sybil Resistance 
+
+DKVE demonstrates resistance to Sybil attacks be-cause users typically add only known contacts (i.e., some-one who they already “know”) to their contact lists. Even if a malicious responder creates numerous accounts, it is unlikely that any single “normal” user will add any of these fabricated contacts. Therefore, while the global proportion of malicious users may increase, the fraction of malicious users within an individual user’s contact list is likely to remain bounded. However, a collusion remains a possibility. Multi-ple malicious contacts—potentially including the server— could collaborate to consistently return the same incorrect key to the querier. The effects of such collusions are examined in §5.4. 
+
+5.4. Collusion 
+
+In this section, we analyze collusion scenarios where the proportion of colluding users does not exceed μmal .(We will discuss cases where the proportion exceeds μmal 
+
+in §5.5.) As discussed in §5.3, DKVE is Sybil-resistant, and thus we assume that each service account represents a unique user. Here, we analyze two cases: Case 1: μmal responders colluding with each other but not with the server. Responders might engage in this behavior if they want the querier to falsely accuse the server of misbehaviors. These responders can deceive the querier into believing that their provided keys are correct while the server-provided key is incorrect. Consequently, the querier may raise a false alarm (false positive). As discussed in §5.2, the querier should verify through OOB verification or KT before accusing the server of misbe-haviors, preventing false accusations against the server. In other words, the server can be protected from false accusations. Case 2: μmal responders colluding with the server. When a group of responders colludes with the server, their objective is to convince the querier that the server-provided key is genuine; thus, the responders would pro-vide the same incorrect key as the server. In this scenario, the querier may incorrectly conclude that the server’s key is authentic and fail to detect the server’s misbehavior (false negative). As discussed in §5.2, queriers cannot detect false negatives. However, assuming that the number of malicious (colluding) responders is bounded by μmal ,the probability of detecting server misbehaviors remains at least 1 − β, which practically deters the server from attempting such attacks, as discussed in §5.1. 
+
+5.5. Is the μmal Assumption Realistic? 
+
+DKVE ’s security guarantees depend critically on the assumption that the proportion of malicious users remains below μmal . As individual responders have minimal incen-tives to provide incorrect keys without coordination, this assumption deems reasonable in practice. However, if a large number of users do coordinate with the server, the actual proportion of malicious re-sponders can exceed μmal for a given querier. In such cases, the server may be confident that it controls sufficient responders to avoid detection; consequently, the server may launch an attack and successfully deceive the querier without being detected. DKVE provides no mechanism to detect when the “ μmal assumption” is violated, and queriers cannot detect false negatives. This represents a fundamental limitation: DKVE ’s probabilistic approach works properly only when the threat model’s assumptions hold; however it offers no protection when the ratio of adversaries exceeds the μmal threshold due to collusion. 
+
+5.6. Brute-Force Attacks on OKVS 
+
+OKVS is an offline encoding/decoding mechanism rather than an interactive protocol. If usernames are di-rectly used as labels, a curious client can enumerate the entire contact list by exhaustively querying every possible username. This attack becomes practical when the names-pace is not large—for instance, in Signal where usernames are phone numbers. 
+
+DKVE prevents this attack by using OPRF evaluations of usernames as OKVS labels instead of plaintext user-names. Assuming the OPRF scheme is secure, it becomes computationally infeasible for the querier to guess valid OPRF outputs without querying the OPRF protocol. This means the querier must make OPRF queries to obtain candidate labels for OKVS decoding. The responder can impose rate limits on OPRF queries, thereby bounding the number of labels the querier can obtain for OKVS decoding. Although OPRF is “oblivious” and conceals the querier’s input, rate limiting remains feasible because the responder observes the querier’s input set size and execution frequency. Therefore, the responder can impose rate limits on OPRF queries (e.g., a fixed quota per time window). These limits bound the number of labels the querier can obtain, effectively preventing large-scale brute-force decoding of the OKVS. 
+
+5.7. Other Security Concerns 
+
+DKVE uses a fixed byte sequence τ as a prefix to dis-tinguish valid public keys from random values. However, if τ is too short, it may appear by chance as the prefix of a random value (i.e., output for a non-existent label). In such cases, the querier may obtain a mismatching evidence 
+
+Emismatch , potentially leading to an incorrect conclusion. If τ is n bits long, the probability of such a false prefix match is 2−n. A longer prefix reduces this probability but increases bandwidth costs, creating a trade-off between security and communication efficiency. In our proof-of-concept implementation (see §6.2.1), we set n = 56 (i.e., 7 bytes). 
+
+## 6. Evaluation 
+
+6.1. Simulation 
+
+We first conduct simulations of DKVE to evaluate its effectiveness using real-world datasets. 
+
+6.1.1. Settings. We use three datasets for simulations: 
+
+facebook , pokec [19], and vk . Each dataset was collected from Facebook , Pokec , and VKontakte social networks, respectively. We interpret each dataset as a 
+
+directed graph G = ( V, E). In facebook and vk , the friend relationship is mutual, so we treat each undirected edge as two directed edges. Appendix E provides the details and analysis of each dataset. The simulation takes α, β, μmal , and σmal as input parameters. Here, σmal is the probability that the key server provides a false public key upon receiving a key request. We set α = 10 −3, β = 10 −2, μmal = 0 .05 ,and σmal = 0 .01 . We additionally run experiments with 
+
+μmal = 0 .1 and μmal = 0 .2 for the vk dataset to observe the effects of different μmal values. Further details about the simulation settings and ratio-nale for parameter selections are included in Appendix F. Simulation results with different α and β values are also included in Appendix F.3. 
+
+6.1.2. Numbers of SPRT Iterations & Queries. We run each simulation 5 times and record the average number of SPRT iterations ( nSPRT ) as well as the average numbers of queries ( nunbatched  
+
+> q
+
+and nbatched  
+
+> q
+
+) required for the protocol to succeed. The results when μmal = 0 .05 are shown in Table 2a in the facebook , pokec , and vk columns. (In this and the subsequent section, we analyze only when 
+
+μmal = 0 .05 . Thus, ignore the “ vk (0.1)” and “ vk (0.2)” columns for now.) In the simulation, we consider two methods of counting queries per edge: batched query count (nbatched  
+
+> q
+
+) and unbatched query count (nunbatched  
+
+> q
+
+). In the batched query count, each query (from a querier to a responder) is averaged by the number of targets in the batch. Specifically, for a batched cross-validation query with target set T , the count for each edge (q, t )
+
+in the batch is incremented by 1/|T | . In contrast, in the unbatched query count, the count for each edge is incremented by 1. We observe that when the server is honest, the average number of required SPRT evidences (equivalent to nSPRT )is approximately 2.2. In contrast, when the server is malicious, the average number of required evidences is approximately 3.3. This disparity in evidence requirements stems from the imbalance between α and β.The unbatched query counts in pokec and vk are significantly larger than those of facebook . This occurs because pokec and vk include a substantial number of 
+
+private users . The simulation includes private users as re-sponders, for whom we lack complete friend lists. 4 Private users account for 33.8% in pokec and 53.9% in vk ; see Appendix E. The batched query counts are significantly smaller than the corresponding unbatched query counts (7–60 ×), confirming that performing OPRF queries and OKVS evaluations in batches is crucial for efficiency. Query counts for pokec and vk would improve if we had complete friend lists of all private users, which constitute a significant portion of the datasets. 
+
+6.1.3. Error/Failure Rates. We show the average er-ror and (protocol) failure rates in Table 2b, in columns 
+
+facebook , pokec , and vk . An error refers to a case where the protocol completes successfully, but the out-come does not match the ground truth (i.e., the querier reaches an incorrect conclusion about the validity of the server-provided key). This includes false positive and false negative errors. A false positive occurs when the server is 
+
+> 4. Private users do not publicize their contact lists, and we can only obtain partial friend lists of them via their public friends; which has a negative impact on the performance evaluation.
+
+TABLE 2: Simulation results of DKVE on three datasets ( facebook , pokec , vk ) with α = 10 −3, β = 10 −2,
+
+σmal = 0 .01 . Configuration columns indicate dataset and μmal value in format “ dataset (μmal )”; empty μmal field indicates μmal = 0 .05 .
+
+(a) Average number of SPRT iterations ( nSPRT ) and queries required for successful protocol completion. Query counts use batched ( nbatched  
+
+> q
+
+) and unbatched ( nunbatched  
+
+> q
+
+) methods.                                                
+
+> Server status Metric Configuration
+> facebook pokec vk vk (0.1) vk (0.2) Honest (\pk (q,t )=pk t)
+> nSPRT 2.20 2.13 2.22 3.74 6.55
+> nunbatched
+> q6.83 33.48 81.23 118.84 173.47
+> nbatched
+> q0.41 0.56 8.65 9.22 9.41 Malicious (\pk (q,t )=pk mal
+> t)
+> nSPRT 3.28 3.19 3.31 4.96 8.12
+> nunbatched
+> q9.36 41.26 111.37 150.73 194.64
+> nbatched
+> q0.78 0.74 14.83 12.56 11.03
+
+(b) Average error and (protocol) failure rates across simulations. Observed error rates remain below expected thresholds ( α = 0 .001 , β = 0 .01 ) in all cases.                              
+
+> Metric Configuration
+> facebook pokec vk vk (0.1) vk (0.2) False positive rate ( ˆα)0.0002 0.0001 0.0001 0.0002 0.0009 False negative rate ( ˆβ)0.0034 0.0014 0.0029 0.0012 0.0035 Failure rate (server honest) 0.0133 0.5227 0.0184 0.0327 0.0579 Failure rate (server malicious) 0.0268 0.6295 0.0289 0.0449 0.0712
+
+honest, but the querier’s validation incorrectly identifies it as malicious. Conversely, a false negative occurs when the server is malicious, but the validation mistakenly concludes it is honest. “Error rates” in the section title refers to false positive and negative rates. A (protocol) failure occurs when the protocol cannot reach a conclusion due to insufficient evidence (i.e., the querier has too few contacts). Across all runs, the observed false positive and neg-ative rates (respectively ˆα, ˆβ) are below the predefined thresholds ( α = 10 −3, β = 10 −2). Protocol failure rates when the server is honest are lower than failure rates when the server is malicious across all datasets. This difference is predictable: when the server is honest, the number of required evidences ( nSPRT ) is smaller, resulting in lower failure rates. Conversely, when the server is malicious, 
+
+nSPRT increases, raising the likelihood of failures. We observe protocol success rates exceeding 98.1% when the server is honest for both facebook and vk .However, for pokec , the protocol success rate is 52.3%, which is significantly lower. We attribute this to the weak-tie nature of pokec , as demonstrated in Appendix E. The analysis shows that the “number of cross-validating friends” in pokec is notably low with its average being only 3. Given these dataset characteristics, the low proto-col success rate is not surprising. An important consideration is that pokec and vk 
+
+include a substantial number of private users who do not share their friend lists. If complete friend lists of private users were available, the protocol success rates for simu-lations on pokec and vk would improve significantly. 
+
+facebook and vk achieve protocol success rates of approximately 97.2% when the server acts maliciously .Given the server’s incentive to maintain its reputation (see §3.2), such protocol success rates are acceptable. Since a cheating server is detected with probability 97 .2% ×
+
+(1 − ˆβ) ≈ 96% , DKVE can effectively deter server misbehaviors. 
+
+6.1.4. Effect of μmal . The selection of the default value 
+
+μmal = 0 .05 is two-fold. First, as DKVE is Sybil-resistant (see §5.3), the ratio of malicious users is not likely high. Next, each responder has virtually no incentive to attack the querier (without collusion). That is, without collusion, the proportion of malicious responders should remain sufficiently small. Therefore, we can think of situations where μmal is high as collusion situations. In this section, we assume situations where μmal is relatively high due to the collusion between responders and the server. We run simulations for μmal = 0 .1 and 
+
+μmal = 0 .2 on vk .5 Columns “ vk (0.1)” and “ vk (0.2)” in Tables 2a and 2b show the simulation results. Obviously, as μmal increases, nSPRT also increases. False positive and negative rates remain below the predefined thresholds for the μmal values. Meanwhile, protocol failure rates increase as μmal values grow. This demonstrates that elevated μmal 
+
+leads to reduced usability of DKVE as the number of required evidences increases. 
+
+6.2. Cost Evaluation 
+
+6.2.1. Proof-of-Concept (PoC) Code. Next, we evaluate the runtime cost of DKVE . To this end, we implement 
+
+DKVE in Python and C++, integrated with the Matrix protocol [20] 6. To emulate a centralized messaging ser-vice, we disable Matrix ’s federation feature. We use the             
+
+> 5. Note that the simulation code already tests the worst case where all μmal users and the server collude; no additional code modifications are needed. 6. Although the source code for the Signal client/server is publicly available, hosting a Signal server on-premise is complex; thus we use
+> Matrix instead. Matrix employs the Olm cryptographic protocol for E2EE messaging [21], which is based on the triple Diffie-Hellman (3DH) handshake and the Double Ratchet algorithm [22], similar to the Signal protocol .
+
+matrix-nio [23] Python SDK to implement clients. Messages smaller than 40 KB are sent as standard Matrix 
+
+messages. If a message exceeds 40 KB, it is sent as an encrypted attachment due to Matrix ’s event size limit. We use the OPRF and OKVS implementations in 
+
+volePSI library [24], which implements [25] and [26]. We enable the malicious security option for OPRF to align with our threat model in §3.2. The length of the prefix τ
+
+is set to 7 bytes. To populate contact lists, we use randomly generated phone numbers as usernames and assign randomly gener-ated raw X25519 public keys. For simplicity, each user is assumed to have a single public key, and their username is a phone number. 7 The implementation artifacts will be made available in a future version. 
+
+6.2.2. Experiment Settings. We host the Matrix server using the Synapse [27] Docker image provided by Ele-ment Inc. [28], deployed on an AWS t3.xlarge VM instance. The instance features an x86_64 architecture, 4 vCPUs, and 16 GiB of memory. The server is located in Stockholm, Sweden. The PoC client code runs on two separate VMs to simulate two communicating peers. To emulate mobile-like environments, we use AWS t4g.large instances, which are based on the ARM64 architecture and provide 2 vCPUs and 8 GiB of memory. The client instances are located in Seoul, South Korea. 
+
+6.2.3. Delay. We first measure the delay of a single DKVE cross-validation query and analyze its computational over-head. We define this measurement as the elapsed time from when the querier sends the initial message to a responder until the querier completes the comparison be-tween the decoded value and the server-provided public key. Fig. 2a shows the evaluation results. The total delay of C ROSS VAL QUERY is 9.36 seconds when |T | = 16 and 
+
+|C r |= 100 . We observe that network delay accounts for more than 90% of the total delay. The extended network latency is primarily due to requiring 9–10 client-to-server round-trip times (RTTs) 8, for OPRF protocol execution. Network latency also includes high transmission delay due to the large payload size (see §6.2.4) and message encryption/decryption time. Here, we include only DKVE -related tasks—mainly OPRF and OKVS processing—in computational delay, while Matrix -specific operations are included in the network delay. To measure the delay of querying multiple respon-ders, we conducted an additional experiment with parallel execution of five queries (to five responders). It takes 22.86 seconds to complete five parallel queries. Accord-ingly, the expected delay to validate a single key is given by 22 .86 × ⌈ nunbatched  
+
+> q
+
+/5⌉ seconds, where nunbatched 
+
+> q
+
+is the number of required queries for successful cross-validation (i.e., protocol execution) of a single key. We calculated the average value of 22 .86 ×⌈ nunbatched  
+
+> q
+
+/5⌉ for            
+
+> 7. In Matrix ,ausername follows the format
+> @user_id:homeserver.url ,and each user maintains multiple Curve25519 identity keys (one per device). 8. It would take 4–5 RTTs if the querier and responder communicated directly, but requires twice as many client-to-server RTTs because they communicate through an intermediary server.
+
+the facebook 9 dataset, which resulted in 38.55 seconds. This means that if we can run five queries in parallel, the average time required to validate a key under this setup is 38.55 seconds. We believe the delays of DKVE operations are ac-ceptable for background operations, as users can continue using their messaging application while key validation completes in the background. Fig. 2b shows the processing delay of CROSS VAL QUERY , broken down by computational tasks. In all scenarios, OPRF computations are the most time-consuming step for both the querier and the responder. When |T | and |C r | are small, OPRF computations dominate the overall processing delay. As |T | increases, the cost of OPRF computations also increases but converges. This occurs because the OPRF protocol used in the PoC is based on a one-time vector OLE (VOLE) construction, which is optimized for large input sizes. Since the typical OPRF input size in DKVE 
+
+is relatively small for messaging applications, another OPRF protocol optimized for small inputs would be more suitable. Similarly, as |C r | grows, the cost of OKVS encoding by the responder increases. 
+
+6.2.4. Bandwidth Cost. We then measure the bandwidth consumption of DKVE by measuring the total size of the application-layer payload. Cost for a single query. We obtain the following bandwidth cost for a single C ROSS VAL QUERY execution (see Appendix G for details):  
+
+> •
+
+Querier-to-responder: 550 KB (constant)  
+
+> •
+
+Responder-to-querier: 0.0521 × |C r |+81 .76 KB We observe that the querier-to-responder traffic is notably higher than the responder-to-querier traffic. The querier, who benefits from the operation, bears higher net-work costs by sending more data than received compared to the responder. Given that most home networks and mobile devices have greater download bandwidth capacity than upload capacity, this asymmetry allows responders to participate in DKVE with reduced overhead. Cost for validating a key. Next, we calculate the bandwidth cost of validating a single key by making multiple cross-validation queries. For this calculation, we assume that |C r |= 100 and |nunbatched  
+
+> q
+
+|= 6 .83 , based on the simulation results for facebook in §6.1.2. The average bandwidth consumption for each querier is:  
+
+> •
+
+Upload: 6.83 × 550 KB = 3.76 MB  
+
+> •
+
+Download: 6.83 × (0 .0521 × 100 + 81 .76) KB = 594 KB Each responder , on average, generates traffic:  
+
+> •
+
+Upload: 0.0521 × 100 + 81 .76 = 86 .97 KB  
+
+> •
+
+Download: 550 KB We claim that DKVE ’s bandwidth cost is acceptable for modern mobile networks and falls well within practical limits.           
+
+> 9. We choose facebook over pokec and vk because pokec and
+> vk include a substantial number of private users with undisclosed friend lists, which significantly inflate the query counts. 8428.57
+> 9533.33
+> 9155.83
+> 9k
+> 9.5k
+> 10k
+> 10.5k
+> 11k
+> 934.15 985.26
+> 1612.13
+> 0
+> 500
+> 1k
+> 1.5k
+> 2k
+> Delay Type
+> Network
+> Processing
+> Delay of CrossValQuery
+> Delay (ms)
+
+(a) Completion time of C ROSS VAL QUERY for dif-ferent (|T | , |C r |) pairs. 418  427  426                             
+
+> 1046
+> 1271 1262
+> 492 498 493
+> 1310
+> 1536 1534
+> 12
+> 7
+> 6
+> 9
+> 13
+> 12
+> 113
+> 28
+> 54 53
+> 116 256 4096 65536 1048576
+> 0
+> 500
+> 1000
+> 1500
+> 2000
+> 2500
+> 3000
+> 423 419 415 416 415
+> 493 495 490 497 498
+> 81
+> 378
+> 628 658 638
+> 1
+> 1
+> 122
+> 1000 5000 9000 13000 17000
+> Computation Step
+> Querier
+> OPRF
+> OKVS.Decode
+> Responder
+> OPRF
+> OKVS.Encode
+> CrossValQuery Processing (Computation) Delay
+> Delay (ms)
+
+(b) Processing delay of DKVE CROSS VAL QUERY operation as |T | or |C r | varies. 
+
+Figure 2: Delay measurements for C ROSS VAL QUERY operation in DKVE .
+
+## 7. Discussion 
+
+7.1. Handling Key Updates 
+
+DKVE is vulnerable to misinterpretation when the target’s public key has been recently updated. For instance, if the querier retrieves the updated key from the key server but the responder still holds the target’s previous key, the querier may incorrectly suspect that the server has returned a tampered key. A straightforward mitigation is for the querier to store the target’s previous keys and ignore responses containing outdated ones. Notice that this approach requires queriers to maintain storage for old key versions, or it may suffer from a “no key” case (i.e., the querier simply didn’t have the target in their contact list in that past time point). For this, DKVE is extended to make the server store (username , version ∥ public key ) instead of 
+
+(username , public key ). Unlike KT, the server in DKVE 
+
+maintains only the current version of each key. When Alice queries Bob’s key, the server responds with a 3-tuple: Bob’s key, its version number, and the server’s signature over: 
+
+Bob username ∥ version ∥ public key ∥ Alice username .
+
+Alice verifies the signature to confirm its authenticity. Alice stores this 3-tuple. When she later responds to a cross-validation request from her contact as a responder, she encodes and sends this tuple as an OKVS entry (instead of just the public key). The querier (or the contact) verifies the signature to confirm that the key was sent legitimately from the server. Suppose the querier requests Bob’s public key from both the server and Alice (the responder). The querier then compares the version numbers of the two keys.  
+
+> •
+
+If the versions match, the response is accepted.  
+
+> •
+
+If the responder’s version is older, the response is ignored.  
+
+> •
+
+If the responder’s version is newer, the querier suspects the server has provided an outdated key. (It will fall back to OOB or KT.) 
+
+7.2. Protocol Availability 
+
+DKVE is an interactive protocol between a querier and multiple responders, raising availability concerns since the fundamental assumption of E2EE messaging services is that users may go offline. However, since DKVE uses only the current user’s contact list as an input (for both querier and responder) and requires no manual intervention, it can operate seamlessly in the background as part of the mes-saging application. Consequently, a responder can answer a querier’s request as long as their device remains powered on and connected to the Internet. If a responder does not reply, the querier can simply select another responder and retry the cross-validation later if necessary. Although evaluating battery consumption on mobile devices remains future work, the availability issue is not important. 
+
+7.3. Privacy 
+
+While DKVE employs OPRF and OKVS to preserve query privacy, several privacy concerns remain. First, the responder inevitably learns that the querier has added them to their contact list. This may be undesirable, as the querier might wish to keep their contact selections private. Second, the querier could attempt to infer the intersec-tion of their contact list with the responder’s by submitting their entire contact list as the OPRF input set. Even if the responder enforces a limit on the OPRF input size to prevent brute-force queries, the querier can still test many targets up to the limit. To mitigate this, the responder should carefully select the maximum allowed input size and apply rate-limiting to queries. Third, the querier may estimate the size of the re-sponder’s contact list by analyzing the encoded OKVS object, whose size grows approximately linearly with the number of encoded key-value pairs. To reduce this leakage, the responder can add dummy key-value pairs when constructing the OKVS object. The more dummy pairs added, the more difficult it becomes for the querier to infer the actual list size. However, this also increases the OKVS object size and corresponding communication overhead. 7.4. Limitations 
+
+While DKVE provides a practical approach to key validation through social graphs, several limitations need to be discussed: First, DKVE faces the traditional bootstrapping prob-lem: the system cannot validate keys when users lack mutual contacts with their intended targets. This is partic-ularly problematic for new users adding their first contact, who must rely on traditional OOB verification or KT queries. Second, DKVE has limited effectiveness on social net-works dominated by weak ties . As demonstrated in §6.1.3, our simulations reveal that DKVE performs poorly on networks characterized by weak social ties. For example, the pokec dataset—which includes many commercial accounts and unidirectional “following” relationships— achieves only a 52.3% protocol success rate when the server is honest, compared to over 98% for facebook 
+
+and vk . This suggests that DKVE is unsuitable for plat-forms where users primarily maintain weak connections rather than strong social ties. Third, as discussed in §5.2, DKVE cannot recover from false negative errors. Although our threat model as-sumes that a server’s concern for reputation deters attacks that would be detected with high probability (1 − β), any successful attack within the β probability window remains permanently undetected. Finally, as discussed in §5.5, DKVE is vulnerable to collusion attacks that violate its core assumption about the fraction of malicious responders (i.e., μmal ). Under typical scenarios this assumption holds; however, coor-dinated collusion attacks break this foundational premise and undermine the protocol’s security guarantees. 
+
+## 8. Future Work 
+
+There are several promising directions for extending and improving DKVE . First, the current implementation uses an OPRF protocol from [24] that is optimized for large batches. Future work should investigate alternative OPRF protocols specifically designed for small input sizes, which are more suitable for DKVE .Second, we plan to explore the design of alternative key directory formats. Since DKVE reduces the frequency of KT queries, it enables investigating alternative KT directory formats that prioritize storage efficiency over query processing delays, although such alternatives are not explored in this work. An alternative directory could achieve orders-of-magnitude reductions in storage costs at the expense of higher query processing latency while preserving the same cryptographic security guarantees as traditional Merkle tree-based directories. Potential ap-proaches include RSA accumulator-based designs such as [9]. Finally, a comprehensive analysis of battery consump-tion should be conducted. Because DKVE is designed to run continuously in the background on mobile devices, evaluating its impact on a battery life is critical for as-sessing its practical applicability. 
+
+## 9. Related Work 
+
+9.1. Key Authentication in E2EE Messaging 
+
+Out-of-Band (OOB) Verification. Shinrvanian et al. [29] show that out-of-band key verification methods, such as Signal ’s safety numbers and WhatsApp ’s security codes, suffer from poor usability, especially in settings where two users are not in proximity. Key Transparency (KT) Systems. CONIKS [4] pi-oneered cryptographically verifiable key directories us-ing Merkle trees and consistency proofs. However, its storage requirements scale linearly with epochs, making deployment impractical for billion-user systems. SEEM-less [5] and Parakeet [6] reduce storage to scale with key updates rather than epochs. Recent systems optimize various aspects: OPTIKS [7] halves storage requirements compared to Parakeet through improved data structures, while ELEKTRA [30] addresses multi-device scenarios with formal security proofs. 
+
+9.2. Social Graph-Based Security 
+
+PGP’s web of trust (WoT) represents an early attempt at social key validation. WoT allows users to sign each other’s keys, creating a decentralized trust network. How-ever, the WoT has seen limited practical participation and deployment—only a small subset of keys can fully benefit from it—and the model is not user-friendly. Ul-rich et al. [31] analyze WoT structure, verifiability, and robustness, while Barenghi et al. [32] examine security weaknesses that can undermine WoT assurances. 
+
+Trusted Introductions (TI) [33] has conceptual simi-larities to our work: it leverages social contacts for key verification. TI proposes forwarding identity verifications across already-verified channels in Signal via a mutual friend (or the “introducer”). However, TI and DKVE 
+
+are fundamentally different in their goals; TI proposes a usability/UX improvement to facilitate out-of-band key verification through mutual friends, while DKVE is a cryp-tographic protocol for privacy-preserving key validation using social contacts. 
+
+9.3. OPRF and OKVS 
+
+Oblivious Pseudorandom Functions (OPRFs). OPRFs have been widely studied as a primitive for pri-vate set intersection (PSI), password hardening, contact discovery, and more. Casacuberta et al. [34] present a systematization of OPRF constructions, classifying them into families and surveying their applications. RFC 9497 [35] specifies interoperable OPRF and VOPRF (veri-fiable OPRF) protocols instantiated in standard prime-order groups, including elliptic curves. Tyagi et al. [36] construct a partially-oblivious PRF (allowing a public input) without using expensive pairings, enabling new applications like Privacy Pass and OPAQUE with minimal overhead. The PoC implementation of our protocol builds on the OPRF and OKVS constructions from [25] and [26]. The first work, VOLE-PSI [25], leverages a batched OPRF built from vector oblivious linear evaluation (VOLE) to achieve state-of-the-art efficiency in PSI. A follow-up work, [26], improves the VOLE performance for OPRF and PSI protocols in [25]. It also enhances the compu-tation and communication efficiency of the OKVS data structure used in [25]. Oblivious Key-Value Stores (OKVSs). Garimella et al. [8] first introduced the OKVS concept, showing it can significantly reduce the communication in PSI by combining hashing with secret-sharing techniques. Follow-up studies improved OKVS efficiency and utility. Notably, Bienstock et al. [37] construct a near-optimal OKVS with fast encoding/decoding, enabling state-of-the-art PSI with lower bandwidth and supporting volume-hiding encrypted multi-maps with less storage and much faster queries than prior designs, improving [8], [26]. 
+
+9.4. Alternative Authenticated Data Structures 
+
+DKVE effectively reduces the rate of KT queries by orders, enabling to use alternative KT directory formats that prioritize storage efficiency over query-processing performance. An RSA accumulator is such an alternative. RSA accumulators provide constant-size set representa-tions with membership proofs, offering potential storage improvements over Merkle trees. Kemmoe et al. [9] elim-inate prime generation requirements, while Baldimtsi et al. [10] introduce oblivious variants preserving privacy. 
+
+## 10. Conclusion 
+
+This paper presents DKVE , a protocol that leverages social graphs to cross-validate public keys in end-to-end encrypted messaging systems. By enabling users to verify keys through mutual contacts while preserving privacy via OPRF and OKVS, DKVE addresses the limitations of (i) highly trustworthy but non-scalable out-of-band key verification and (ii) scalable but storage-intensive key transparency systems. Our evaluation demonstrates that DKVE achieves de-tection rates exceeding 97% against key substitution at-tacks in strong-to-moderate-tie social networks, while maintaining false positive rates below 0.1% and false negative rates below 0.3%. Our proof-of-concept imple-mentation confirms that a key validation completes within acceptable background processing time and bandwidth cost on commodity hardware. 
+
+DKVE ’s primary contribution is not replacing ex-isting key authentication methods, but rather reducing their required frequency by approximately two orders of magnitude. This dramatic reduction enables fundamental architectural transformations in key transparency systems: directories can transition to low-cost storage solutions or adopt space-efficient data structures that trade storage for higher query processing costs. By augmenting rather than replacing existing methods, DKVE provides a practical pathway to scalable key authentication that avoids both prohibitive server-side storage requirements and excessive manual intervention. 
+
+## Acknowledgment 
+
+The authors employed generative AI tools to edit the text and fix typos and grammatical mistakes. 
+
+## References 
+
+[1] Signal, “Signal Messenger: Speak Freely,” 2025. [Online]. Available: https://signal.org/ [2] WhatsApp LLC, “WhatsApp | Secure and Reliable Free Private Messaging and Calling,” 2025. [Online]. Available: https://www.whatsapp.com [3] Telegram, “Telegram – a new era of messaging,” 2025. [Online]. Available: https://telegram.org/ [4] M. S. Melara, A. Blankstein, J. Bonneau, E. W. Felten, and M. J. Freedman, “CONIKS: Bringing key transparency to end users,” in 24th USENIX Security Symposium (USENIX Security 15) . Washington, D.C.: USENIX Association, Aug. 2015, pp. 383–398. [Online]. Available: https://www.usenix.org/conference/ usenixsecurity15/technical-sessions/presentation/melara [5] M. Chase, A. Deshpande, E. Ghosh, and H. Malvai, “SEEMless: Secure End-to-End Encrypted Messaging with less Trust,” in 
+
+Proceedings of the 2019 ACM SIGSAC Conference on Computer and Communications Security , ser. CCS ’19. New York, NY, USA: Association for Computing Machinery, Nov. 2019, pp. 1639–1656. [Online]. Available: https://dl.acm.org/doi/10.1145/ 3319535.3363202 [6] H. Malvai, L. Kokoris-Kogias, A. Sonnino, E. Ghosh, E. Ozt¨ urk, K. Lewi, and S. Lawlor, “Parakeet: Practical Key Transparency for End-to-End Encrypted Messaging,” in 
+
+Proceedings 2023 Network and Distributed System Security Symposium . San Diego, CA, USA: Internet Society, 2023. [Online]. Available: https://www.ndss-symposium.org/wp-content/ uploads/2023/02/ndss2023 f545 paper.pdf [7] J. Len, M. Chase, E. Ghosh, K. Laine, and R. C. Moreno, “OPTIKS: An optimized key transparency system,” in 33rd USENIX Security Symposium (USENIX Security 24) .Philadelphia, PA: USENIX Association, Aug. 2024, pp. 4355– 4372. [Online]. Available: https://www.usenix.org/conference/ usenixsecurity24/presentation/len [8] G. Garimella, B. Pinkas, M. Rosulek, N. Trieu, and A. Yanai, “Oblivious Key-Value Stores and Amplification for Private Set Intersection,” in Advances in Cryptology – CRYPTO 2021: 41st Annual International Cryptology Conference, CRYPTO 2021, Virtual Event, August 16–20, 2021, Proceedings, Part II . Berlin, Heidelberg: Springer-Verlag, Aug. 2021, pp. 395–425. [Online]. Available: https://doi.org/10.1007/978-3-030-84245-1 14 [9] V. Y. Kemmoe and A. Lysyanskaya, “RSA-Based Dynamic Accumulator without Hashing into Primes,” in Proceedings of the 2024 on ACM SIGSAC Conference on Computer and Communications Security , ser. CCS ’24. New York, NY, USA: Association for Computing Machinery, Dec. 2024, pp. 4271– 4285. [Online]. Available: https://dl.acm.org/doi/10.1145/3658644. 3690199 [10] F. Baldimtsi, I. Karantaidou, and S. Raghuraman, “Oblivious Accumulators,” in Public-Key Cryptography – PKC 2024: 27th IACR International Conference on Practice and Theory of Public-Key Cryptography, Sydney, NSW, Australia, April 15–17, 2024, Proceedings, Part II . Berlin, Heidelberg: Springer-Verlag, Apr. 2024, pp. 99–131. [Online]. Available: https: //doi.org/10.1007/978-3-031-57722-2 4 [11] Signal, “Documentation,” 2025. [Online]. Available: https://signal. org/docs/ [12] M. Marlinspike and T. Perrin, “Specifications >> The X3DH Key Agreement Protocol,” Nov. 2016. [Online]. Available: https://signal.org/docs/specifications/x3dh/ [13] Trevor Perrin and Moxie Marlinspike, “Specifications >> The Double Ratchet Algorithm,” Nov. 2016. [Online]. Available: https://signal.org/docs/specifications/doubleratchet/ [14] Meta, “Messenger,” 2025. [Online]. Available: https://www. messenger.com/ [15] M. Alatawi and N. Saxena, “SoK: An analysis of end-to-end encryption and authentication ceremonies in secure messaging systems,” in Proceedings of the 16th ACM Conference on Security and Privacy in Wireless and Mobile Networks , ser. WiSec ’23. Guildford, United Kingdom and New York, NY, USA: Association for Computing Machinery, 2023, pp. 187–201. [Online]. Available: https://doi.org/10.1145/3558482.3581773 [16] Moxie Marlinspike, “Safety number updates,” Nov. 2016. [Online]. Available: https://signal.org/blog/safety-number-updates/ [17] Sean Lawlor and Kevin Lewi, “Deploying key transparency at WhatsApp,” Apr. 2023. [Online]. Available: https://engineering.fb. com/2023/04/13/security/whatsapp-key-transparency/ [18] Proton AG, “What is Key Transparency?” 2025. [Online]. Available: https://proton.me/support/key-transparency [19] J. Leskovec and A. Krevl, “SNAP Datasets: Stanford large network dataset collection,” Jun. 2014. [Online]. Available: http://snap.stanford.edu/data [20] The Matrix.org Foundation, “Matrix.org,” 2025. [Online]. Available: https://matrix.org/ [21] ——, “Matrix-org/vodozemac,” The Matrix.org Foundation, Feb. 2025. [Online]. Available: https://github.com/matrix-org/ vodozemac [22] ——, “Docs/olm.md · master · matrix-org / Olm · GitLab,” Nov. 2019. [Online]. Available: https://gitlab.matrix.org/matrix-org/olm/ -/blob/master/docs/olm.md [23] Damir Jeli´ c, “Matrix-nio/matrix-nio,” matrix-nio, Jan. 2025. [Online]. Available: https://github.com/matrix-nio/matrix-nio [24] Visa Research, “Visa-Research/volepsi,” Visa-Research, Mar. 2025. [Online]. Available: https://github.com/Visa-Research/volepsi [25] P. Rindal and P. Schoppmann, “VOLE-PSI: Fast OPRF and circuit-PSI from vector-OLE,” in Advances in Cryptology –EUROCRYPT 2021: 40th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, October 17–21, 2021, Proceedings, Part II .Berlin, Heidelberg: Springer-Verlag, 2021, pp. 901–930. [Online]. Available: https://doi.org/10.1007/978-3-030-77886-6 31 [26] S. Raghuraman and P. Rindal, “Blazing fast PSI from improved OKVS and subfield VOLE,” in Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security , ser. Ccs ’22. New York, NY, USA: Association for Computing Machinery, 2022, pp. 2505–2517. [Online]. Available: https://doi.org/10.1145/3548606.3560658 [27] Element, “Element-hq/synapse,” Element, Feb. 2025. [Online]. Available: https://github.com/element-hq/synapse [28] ——, “Element | Secure collaboration and messaging,” 2025. [Online]. Available: https://element.io/ [29] M. Shirvanian, N. Saxena, and J. J. George, “On the pitfalls of end-to-end encrypted communications: A study of remote key-fingerprint verification,” in Proceedings of the 33rd Annual Computer Security Applications Conference , ser. Acsac ’17. New York, NY, USA: Association for Computing Machinery, 2017, pp. 499–511. [Online]. Available: https: //doi.org/10.1145/3134600.3134610 [30] J. Len, M. Chase, E. Ghosh, D. Jost, B. Kesavan, and A. Marcedone, “ELEKTRA: Efficient lightweight multi-dEvice key transparency,” in Proceedings of the 2023 ACM SIGSAC Conference on Computer and Communications Security , ser. Ccs ’23. New York, NY, USA: Association for Computing Machinery, 2023, pp. 2915–2929. [Online]. Available: https: //doi.org/10.1145/3576915.3623161 [31] A. Ulrich, R. Holz, P. Hauck, and G. Carle, “Investigating the OpenPGP Web of Trust,” in Computer Security – ESORICS 2011 ,V. Atluri and C. Diaz, Eds. Berlin, Heidelberg: Springer, 2011, pp. 489–507. [32] A. Barenghi, A. Di Federico, G. Pelosi, and S. Sanfilippo, “Challenging the Trustworthiness of PGP: Is the Web-of-Trust Tear-Proof?” in Computer Security – ESORICS 2015: 20th European Symposium on Research in Computer Security, Vienna, Austria, September 21-25, 2015, Proceedings, Part I . Berlin, Heidelberg: Springer-Verlag, Sep. 2015, pp. 429–446. [Online]. Available: https://doi.org/10.1007/978-3-319-24174-6 22 [33] C. Gloor and A. Perrig, “Trusted introductions for secure messaging,” in Security Protocols XXVIII: 28th International Workshop, Cambridge, UK, March 27–28, 2023, Revised Selected Papers . Berlin, Heidelberg: Springer-Verlag, 2023, pp. 123–135. [Online]. Available: https://doi.org/10.1007/978-3-031-43033-6 13 [34] S. Casacuberta, J. Hesse, and A. Lehmann, “SoK: Oblivious Pseudorandom Functions,” in 2022 IEEE 7th European Symposium on Security and Privacy (EuroS&P) , Jun. 2022, pp. 625–646. [Online]. Available: https://ieeexplore.ieee.org/document/9797365 [35] A. Davidson, A. Faz-Hernandez, N. Sullivan, and C. A. Wood, “Oblivious pseudorandom functions (oprfs) using prime-order groups,” RFC 9497, Dec. 2023. [Online]. Available: https://www.rfc-editor.org/info/rfc9497 [36] N. Tyagi, S. Celi, T. Ristenpart, N. Sullivan, S. Tessaro, and C. A. Wood, “A fast and simple partially oblivious PRF, with applications,” in Advances in Cryptology - EUROCRYPT 2022 - 41st Annual International Conference on the Theory and Applications of Cryptographic Techniques, Trondheim, Norway, May 30 - June 3, 2022, Proceedings, Part II , ser. Lecture Notes in Computer Science, O. Dunkelman and S. Dziembowski, Eds., vol. 13276. Springer, 2022, pp. 674–705. [Online]. Available: https://doi.org/10.1007/978-3-031-07085-3 23 [37] A. Bienstock, S. Patel, J. Y. Seo, and K. Yeo, “Near-optimal oblivious key-value stores for efficient PSI, PSU and volume-hiding multi-maps,” in Proceedings of the 32nd USENIX Conference on Security Symposium , ser. SEC ’23. USA: USENIX Association, Aug. 2023, pp. 301–318. [38] Meta, “Facebook/akd,” Jan. 2025. [Online]. Available: https: //github.com/facebook/akd [39] I. Mehta, “WhatsApp now has more than 3 billion users a month,” May 2025. [Online]. Available: https://techcrunch.com/2025/05/ 01/whatsapp-now-has-more-than-3-billion-users/ [40] ——, “Telegram founder Pavel Durov says app now has 1B users, calls WhatsApp a ’cheap, watered down imitation’,” Mar. 2025. [Online]. Available: https://techcrunch.com/2025/03/19/ telegram-founder-pavel-durov-says-app-now-has-1b-users-calls-whatsapp-a-cheap [41] Tom Gerken, “What is messaging app Signal and how secure is it?” Apr. 2025. [Online]. Available: https://www.bbc.com/news/ articles/c1kjd091019o [42] J. McAuley and J. Leskovec, “Learning to discover social circles in ego networks,” in Proceedings of the 26th International Confer-ence on Neural Information Processing Systems - Volume 1 , ser. NIPS’12, vol. 1. Red Hook, NY, USA: Curran Associates Inc., Dec. 2012, pp. 539–547. [43] L. Takac and M. Zabovsky, “Data analysis in public social net-works,” in International Scientific Conference & International Workshop Present Day Trends of Innovations , Lomza, Poland, May 2012. [44] VK Social Network, “API,” 2025. [Online]. Available: https: //dev.vk.com/en/reference 
+
+## Appendix A. 
+
+## AKD Storage Cost 
+
+In this section, we evaluate the server-side storage cost of AKD [38], a key transparency implementation based on SEEMless [5] and Parakeet [6]. We write a small program that inserts x unique key-value pairs into the 
+
+AKD directory and measure the heap memory usage of the program. Each label (key) is a randomly generated phone number, and each value is a 32-byte fixed-length sequence (equal to the size of a raw X25519 public key). Fig. 3 shows the result. As expected, the storage cost grows linearly with the number of inserted entries. The linear regression result is as follows ( x is the number of data inserted, and y is the storage cost): 
+
+y = 6 .715 x − 159 .9 KB In real-world deployments, AKD must store the previ-ous versions of keys, and its theoretical storage cost grows linearly with the total number of key updates . A typical user may update their key multiple times (e.g., due to 10 3 10 4 10 5 10 6
+
+> Number of Data Inserted
+> 10 7
+> 10 8
+> 10 9
+> Storage Cost (bytes)
+> AKD Storage Cost
+
+Figure 3: AKD storage cost evaluation results. Storage cost (bytes) versus number of inserted entries. TABLE 3: Estimated AKD storage costs for popular messaging services assuming four key versions per user. “MAUs” denotes monthly active users.              
+
+> Service MAUs Storage Cost
+> WhatsApp ∼3billion [39] 80.6 TB
+> Telegram ∼1billion [40] 26.9 TB
+> Signal ∼40 –70 million [41] 1.1–1.9 TB
+
+device changes or application re-installs). Assuming each user has four versions stored in the AKD directory, the practical storage cost of AKD considering the number of monthly active users (MAUs) in popular messaging services is shown in Table 3. The storage cost of AKD is substantial, especially for popular messaging services like 
+
+WhatsApp and Telegram , which have billions of users. 
+
+## Appendix B. Algorithm Notations 
+
+This section provides a summary of API semantics and notations used by algorithms in this paper. 
+
+B.1. API Semantics 
+
+B.1.1. OPRF (Oblivious Pseudorandom Function).  
+
+> •
+
+OPRF.R ECEIVE (r, T ) : The client-side API for OPRF (see §2.3.1), executed by the querier . T is the OPRF input set (i.e., a set of target usernames). 
+
+r is the responder against whom the OPRF proto-col is executed.  
+
+> •
+
+OPRF.S END (q): The server-side API for OPRF, executed by the responder . It listens for a querier q
+
+to initiate an OPRF session and executes the OPRF protocol. Consequently, it derives a key k and returns k to local context for use in OPRF.E VAL ;it does not reveal k to the querier.  
+
+> •
+
+OPRF.E VAL (k, U ): Deterministically computes 
+
+yu = P RF k(u) for each u ∈ U under the key 
+
+k previously derived by OPRF.S END and returns the mapping u 7 → yu; for the same k and u, the output is identical across calls. Note that OPRF.R ECEIVE and OPRF.S END include transport functionality, similar to S END and R ECEIVE in §B.1.3, to send and receive messages between the querier and responder. 
+
+B.1.2. OKVS (Oblivious Key-Value Store).  
+
+> •
+
+OKVS.E NCODE (M): Corresponds to the En-code function in §2.3.2. It takes a map as input instead of a set of key-value pairs, in contrast to 
+
+Encode . It outputs the encoded OKVS object S,or ⊥ with statistically small probability.  
+
+> •
+
+OKVS.D ECODE (S, y ): Corresponds to the De-code function in §2.3.2. It takes an encoded OKVS object S and a key y as input, and returns the value v associated with y in S, or a random value if y is not present in S.
+
+B.1.3. General Transport Primitives.  
+
+> •
+
+SEND (q, S): General transport primitive to post a payload to the peer. It is invoked by the responder 
+
+to send the encoded OKVS object S to the querier 
+
+q. 
+
+> •
+
+RECEIVE (r): General transport primitive to re-ceive a payload from the peer. It is invoked by the querier to receive the encoded OKVS object from the responder r.
+
+B.1.4. SPRT (Sequential Probability Ratio Test).  
+
+> •
+
+SPRT (α, β, μ mal , Σu, e): This function imple-ments the SPRT algorithm as described in §4.3. 
+
+Input parameters: α, β, μmal , the current SLLR (cumulative log-likelihood ratio) Σu for a user u, and the observed evidence e (either Ematch 
+
+or Emismatch ). 
+
+Return value: A tuple (Σ ′
+
+> u
+
+, δ ).
+
+Σ′ 
+
+> u
+
+is the updated SLLR, and δ ∈{VALID , INVALID , UNKNOWN } is the conclusion. Note that UNKNOWN is returned if the SPRT test is inconclusive, indicating that the evidence is insufficient to make a decision. 
+
+## Appendix C. Sequential Probability Ratio Test (SPRT) 
+
+The sequential probability ratio test (SPRT) is a statis-tical method for hypothesis testing in a sequential setting. Unlike fixed-sample tests, which require a pre-specified number of observations, SPRT evaluates data as it is collected and may reach a decision earlier, potentially reducing the number of required samples. SPRT is used to distinguish between two simple hy-potheses: 
+
+H0 : θ = θ0 versus H1 : θ = θ1,
+
+where θ is a parameter governing the distribution of the observations. As data points x1, x 2, . . . , x n are observed sequentially, the likelihood ratio is computed at each step: 
+
+Λn =
+
+> n
+
+Y
+
+> i=1
+
+f (xi; θ1)
+
+f (xi; θ0) ,
+
+or, equivalently, in logarithmic form: 
+
+log Λ n =
+
+> n
+
+X
+
+> i=1
+
+log 
+
+ f (xi; θ1)
+
+f (xi; θ0)
+
+
+
+,where f (xi; θ) is the probability density or mass func-tion under parameter θ.The decision rule is defined as follows:  
+
+> •
+
+If log Λ n ≥ a, accept H1 
+
+> •
+
+If log Λ n ≤ b, accept H0 
+
+> •
+
+If b < log Λ n < a , continue sampling The thresholds a and b are determined by the required error probabilities: 
+
+a = log 1 − βα , b = log β
+
+1 − α ,
+
+where α is the maximum acceptable Type I error (false positive rate), and β is the maximum acceptable Type II error (false negative rate). 
+
+## Appendix D. Full Cross-Validation Pseudocode 
+
+Algorithm 2 presents the pseudocode for the CROSS VAL QUERY function integrating SPRT. Reference for API semantics and notations can be found in Ap-pendix B. Algorithm 3 presents the complete cross-validation procedure triggered when a contact’s key is changed or a new contact is added. To fully leverage batch query-ing, the querier sends queries not only for the new or updated contact but also for existing contacts whose keys remain unverified. To avoid collecting duplicate pieces of evidence, the querier maintains a record of respon-ders that have already contributed evidence for specific targets and excludes them from subsequent queries. In ONCONTACT ADD , when a new contact is successfully validated, the querier invokes C ROSS VAL QUERY once for the remaining unverified targets, using the newly validated contact as a responder (Lines 21–24). This approach is based on the possibility that the new contact may have any targets in their contact list and thus may be able to provide new evidence for previously unverified targets. 
+
+## Appendix E. Analyses of Social Datasets 
+
+TABLE 4: Statistics of social datasets used in simulation. Average ( Avg. ) metrics rounded to nearest integer. Friend counts computed only for users with public profiles.                            
+
+> Metric facebook pokec vk
+> # of users 4,039 1,632 ,803 50 ,000
+> # of users w/ public profiles 4,039 1,080 ,278 23 ,061
+> # of friends per user
+> Avg. 123 24 984
+> Median 95 12 528
+> Q1 49 4205
+> # of cross-validating friends
+> Avg. 48 325
+> Median 41 16
+> Q1 19 02
+
+In our simulation, we use three types of social datasets: facebook , pokec , and vk . The facebook 
+
+and pokec datasets are from the Stanford Large Network Dataset Collection [19]. However, both were collected 
+
+Algorithm 2 Cross-Validation (with SPRT) 
+
+Require: Querier q, responder r.
+
+Require: α, β, μ mal ∈ (0 , 1) 
+
+Require: Querier’s contact list Cq =
+
+{(u, cpk qu, s u, Prog u)} where u is a username, cpk qu apublic key, su ∈ { UNKNOWN , VALID , INVALID },and Prog u = (Σ u, EvUsers u) with Σu ∈ R the running SLLR and EvUsers u a set of responders who contributed evidence. 
+
+Require: Fixed tag τ ∈ { 0, 1}ℓ used as a domain sepa-rator (payload prefix). 
+
+Require: Primitives: OPRF and OKVS. 
+
+Require: Notation: Users( C) ≜ { u : ( u, ∗, ∗, ∗) ∈ C } . 
+
+> 1:
+
+function CROSS VAL QUERY (r, T ) ▷ Executed by querier; T is the target subset of usernames, r is the responder  
+
+> 2:
+
+Precondition: T̸ = ∅ ∧ T ⊆ Users( Cq ). 
+
+> 3:
+
+Ensure: set of usernames W ⊆ T that have been finalized (verified) this round  
+
+> 4:
+
+y ← OPRF.R ECEIVE (r, T ) ▷ y is a map 
+
+u 7 → yu 
+
+> 5:
+
+Sr ← RECEIVE (r) ▷ OKVS object from r 
+
+> 6:
+
+W ← ∅ ▷ finalized users this round  
+
+> 7:
+
+for all u ∈ T do  
+
+> 8:
+
+if r ∈ EvUsers u then continue  
+
+> 9:
+
+end if  
+
+> 10:
+
+v ← OKVS.D ECODE (Sr , y[u]) ▷v ∈ { 0, 1}∗ 
+
+> 11:
+
+if v = τ ∥ pk ′ then ▷ tagged payload, valid entry  
+
+> 12:
+
+e ← Ematch if pk ′ =
+
+cpk qu else Emismatch  
+
+> 13:
+
+EvUsers u ← EvUsers u ∪ { r} 
+
+> 14:
+
+(Σ ′
+
+> u
+
+, δ ) ← SPRT (α, β, μ mal , Σu, e ) 
+
+> 15:
+
+Σu ← Σ′ 
+
+> u
+
+▷ update SLLR  
+
+> 16:
+
+if δ ∈ { VALID , INVALID } then  
+
+> 17:
+
+if δ = INVALID then raise alarm ▷
+
+server may be malicious  
+
+> 18:
+
+end if  
+
+> 19:
+
+su ← δ 
+
+> 20:
+
+W ← W ∪ { u} 
+
+> 21:
+
+end if  
+
+> 22:
+
+else  
+
+> 23:
+
+su ← UNKNOWN ▷ no entry for this username  
+
+> 24:
+
+end if  
+
+> 25:
+
+end for  
+
+> 26:
+
+return W 
+
+> 27:
+
+end function  
+
+> 28:
+
+function CROSS VAL RESPOND (q) ▷ Executed by responder; q is the querier  
+
+> 29:
+
+Same as Algorithm 1  
+
+> 30:
+
+end function Algorithm 3 Full Cross-Validation Process 
+
+Require: Querier’s contact list Cq =
+
+{(u, cpk qu, s u, Prog u)}
+
+where su ∈ { UNVERIFIED , VALID , INVALID } and 
+
+Prog u = (Σ u, EvUsers u) with Σu ∈ R (running SLLR) and EvUsers u ⊆ Users( Cq ).
+
+Require: Notation: Users( Cq ) ≜ { u : ( u, ∗, ∗, ∗) ∈ C q }. 
+
+> 1:
+
+function ONKEY CHANGE (u) ▷ executed by the querier; u is the contact whose key changed  
+
+> 2:
+
+Precondition: u ∈ Users( Cq ) 
+
+> 3:
+
+Ensure: true if u is validated (verified) by this process, else false  
+
+> 4:
+
+su ← UNVERIFIED  
+
+> 5:
+
+Σu ← 0 
+
+> 6:
+
+EvUsers u ← ∅  
+
+> 7:
+
+for all r ∈ SHUFFLE (Users( Cq ) \ { u}) do  
+
+> 8:
+
+Tr ← { v ∈ Users( Cq ) \ { r, u } : sv =
+
+UNVERIFIED ∧ r / ∈ EvUsers v } 
+
+> 9:
+
+Tr ← T r ∪ { u} 
+
+> 10:
+
+W ← CROSS VAL QUERY (r, Tr ) ▷ W: users finalized this round  
+
+> 11:
+
+if u ∈ W then  
+
+> 12:
+
+return true  
+
+> 13:
+
+end if  
+
+> 14:
+
+end for  
+
+> 15:
+
+return false  
+
+> 16:
+
+end function  
+
+> 17:
+
+function ONCONTACT ADD (u) 
+
+> 18:
+
+Precondition: u ∈ Users( Cq ) 
+
+> 19:
+
+Ensure: true if u is validated (verified) by this process, else false  
+
+> 20:
+
+b ← ONKEY CHANGE (u) ▷ b is true if u has been validated  
+
+> 21:
+
+if su = VALID then  
+
+> 22:
+
+T ← { v ∈ Users( Cq ) \ { u} : sv =
+
+UNVERIFIED } 
+
+> 23:
+
+CROSS VAL QUERY (u, T ) ▷ use u as responder to help validate others  
+
+> 24:
+
+end if  
+
+> 25:
+
+return b 
+
+> 26:
+
+end function 
+
+before 2012 and may not reflect the current structure of social networks. To address this limitation, we created the up-to-date vk dataset, collected from VKontakte , the largest social network in Russia. Table 4 summarizes the dataset statistics. A “ cross-validating friend ” in the metric “# of cross-validating friends” is defined as follows: given an edge (q, t ) ∈ E, a querier’s friend or responder r
+
+is a cross-validating friend for the edge if and only if 
+
+{(q, r ), (r, t )} ⊂ E .Data Collection Method. facebook was col-lected by surveying 10 Facebook users, who manually labeled the social circles to which each of their friends belonged [42]. While the dataset includes friend relation-ships among all surveyed users, the collection method beyond the survey is not clearly described. pokec was collected by crawling Pokec , the largest social network in Slovakia, using a breadth-first search (BFS) approach [43]. The dataset includes all existing Pokec users as of 2011. For vk , we used the official VKontakte API [44] to crawl friend lists of public users. We attempted to crawl 50 ,000 
+
+users, of which 23 ,061 had public friend lists. Starting from a randomly selected user, we applied BFS to collect friend lists until reaching 50 ,000 attempted users. Since the VKontakte API provides only mutual friend lists (not unidirectional follow lists), our dataset includes only mu-tual friendships. Public/Private Profiles. Facebook allows users to set their friend lists as public or private, but [42] does not specify how private lists were handled. We therefore assume that all users in facebook have public friend lists (this may underestimate the performance of DKVE 
+
+but will not overestimate it). In pokec , the public/private status of each profile’s friend list is explicitly recorded. Similarly, VKontakte allows users to choose public or private settings. We observe significant proportions of private profiles in pokec (33.8%) and vk (53.9%). While it is impossible to view the complete friend list of a private profile in VKontakte , if another public user is friends with a private profile, we can still observe that the two users are friends. Therefore, we collected friend lists of public users in VKontakte , and for private users, we constructed partial friend lists by including only public friends. Similarly, for pokec , we observe that private profiles’ friend relationships with public profiles are included in the dataset. Therefore, we employ the same approach as for vk .For simulations using pokec and vk , we used only public profiles as queriers , since complete friend lists of private profiles cannot be retrieved. We include only public profiles as targets as well. This is because if a target is private, we cannot count relationships where both the target and responder are private and friends, which severely degrades the simulation results. For responders ,we include both public and private profiles to fully utilize the available information (including partial friend lists of private profiles). Relationship Tie Strength. The facebook dataset reflects strong ties, as it was constructed by asking users to label their real-world social circles. VKontakte is also known to capture real-world relationships. However, given that over 50% of users in our dataset have private profiles—which are more likely to represent real-world accounts with strong ties—the collected vk dataset may lean towards weaker ties relative to the actual VKontakte 
+
+network. Similarly, public “influencer accounts” may have caused the dataset to overrepresent weaker ties. According to [43], the most connected accounts on pokec are com-mercial accounts, and the average user has approximately 22 friends. Considering that the overall average is 24 ,the share of weak ties from commercial accounts is non-negligible. Furthermore, since Pokec supports unidirec-tional following, the dataset likely emphasizes weak ties more than facebook .The “# of cross-validating friends” in Table 4 can be interpreted as an indicator of overall tie strength. As expected, we observe the ordering: facebook > vk >
+
+pokec .Appendix F. Simulation Settings 
+
+F.1. Simulation Overview 
+
+For each simulation iteration, we select a querier and simulate a situation where “all the other users have already joined, and the querier is now joining the system and has just added all of their contacts.” All others are assumed to have already completed key validations of their contacts (i.e., there are no honest but compromised contacts). The querier performs batch cross-validation to validate the public keys of all their contacts, and we record the number of SPRT iterations and queries required for each key validation. We repeat this process for every user in the dataset as a querier. For a querier q, a genuine or incorrect (malicious) public key is assigned to each of their contacts according to the server’s behavior. Let the contact v’s genuine public key be pk v , and let the malicious public key (i.e., the key that the server wants the querier to accept) be pk mal  
+
+> v
+
+. Then the assigned key cpk qv is determined based on the following distribution: 
+
+Pr 
+
+cpk qv = pk v
+
+
+
+= 1 − σmal (4) 
+
+Pr 
+
+cpk qv = pk mal 
+
+> v
+
+
+
+= σmal (5) We simulate the worst-case scenario in which all the malicious responders in q’s contact list collude with the server. In this setting, q receives the same value (i.e., pk mal  
+
+> v
+
+) from both the server and all the malicious responders. We use only public profiles in the datasets (i.e., users with public friend lists) as queriers and targets as mentioned in Appendix E. We use all users (both public and private) as responders. The pseudocode for the simulation program is provided in Algorithm 4. We omit the cryptographic details from the original DKVE 
+
+algorithm and optimize it to evaluate a complete system involving over a million users. 
+
+F.2. Parameter Selection 
+
+This section describes the rationale for selecting the parameters α, β, and σmal used in the simulation. 
+
+F.2.1. Selection of α and β. We conducted preliminary simulations with various α and β values to determine optimal settings. As a result, we found that a combination of α = 10 −3 and β = 10 −2 yields a favorable balance between usability (i.e., high protocol success rate) and security (i.e., acceptable error rates). Therefore, we use these values as defaults for our evaluation. Simulation results with different α and β values are included in Appendix F.3. 
+
+F.2.2. Selection of σmal . Given our threat model in §3.2.1, the server is assumed to be reputation-conscious and unwilling to perform attacks if they can be easily detected. Therefore, we set σmal = 0 .01 , implying that the server is expected to behave honestly in most cases. 
+
+Algorithm 4 Simulation Pseudocode of Cross-Validation 
+
+Require: Directed contact graph G = ( V, E)
+
+Require: Privacy predicate Private : V → { true , false } ▷
+
+Private (u) is true iff u has a private profile. 
+
+Require: True keys {pk v : v ∈ V} and malicious substi-tutes {pk mal  
+
+> v
+
+: v ∈ V} 
+
+Require: α, β, μ mal , σ mal ∈ (0 , 1)  
+
+> 1:
+
+Enums: UNVERIFIED , VALID , INVALID ; evidence: 
+
+e ∈ { Ematch , E mismatch } 
+
+> 2:
+
+Notation: BERNOULLI (p) returns 1 with probability 
+
+p and 0 otherwise.  
+
+> 3:
+
+Notation: dom( M) : { t ∈ V : t 7 → a ∈ M } is the domain of map M. 
+
+> 4:
+
+for all q ∈ V do ▷ querier  
+
+> 5:
+
+if Private (q) = true then continue  
+
+> 6:
+
+end if  
+
+> 7:
+
+for all v ∈ { v : ( q, v ) ∈ E } do ▷ contacts of q 
+
+> 8:
+
+if Private (v) = true then continue  
+
+> 9:
+
+end if  
+
+> 10:
+
+B(q,v ) ← BERNOULLI (σmal ) ▷ server corrupt on edge (q, v )? 
+
+> 11:
+
+cpk qv ←
+
+(
+
+pk mal  
+
+> v
+
+if B(q,v ) = 1 
+
+pk v otherwise  
+
+> 12:
+
+Σ(q,v ) ← 0; KeyStatus (q,v ) ←
+
+UNVERIFIED  
+
+> 13:
+
+end for  
+
+> 14:
+
+for all r ∈ { v : ( q, v ) ∈ E } do ▷ responders adjacent to q 
+
+> 15:
+
+T ← { t ∈ V \ { r} | (q, t ) ∈ E ∧ Private (t) = 
+
+false ∧ KeyStatus (q,t ) = UNVERIFIED } 
+
+> 16:
+
+M(q,r ) ← BERNOULLI (μmal ) ▷ r malicious for this interaction?  
+
+> 17:
+
+if M(q,r ) = 0 then ▷ honest responder  
+
+> 18:
+
+A(q,r ) ← { t 7 → pk t : ( r, t ) ∈ E }  
+
+> 19:
+
+else ▷ malicious responder  
+
+> 20:
+
+A(q,r ) ← { t 7 → pk mal  
+
+> t
+
+: ( r, t ) ∈ E }  
+
+> 21:
+
+end if  
+
+> 22:
+
+for all t ∈ T do  
+
+> 23:
+
+if t ∈ dom( A(q,r )) then  
+
+> 24:
+
+a ← A(q,r )[t] ▷ key for t advertised by r to q 
+
+> 25:
+
+e ← Ematch if cpk qt = a else Emismatch  
+
+> 26:
+
+(Σ (q,t ), δ ) ←
+
+SPRT (α, β, μ mal , Σ(q,t ), e ) 
+
+> 27:
+
+if δ ∈ { VALID , INVALID } then  
+
+> 28:
+
+KeyStatus (q,t ) ← δ 
+
+> 29:
+
+end if  
+
+> 30:
+
+end if  
+
+> 31:
+
+end for  
+
+> 32:
+
+end for  
+
+> 33:
+
+end for TABLE 5: Simulation results of DKVE on vk dataset with different (α, β ) pairs. Parameters: μmal = 0 .05 , σmal = 0 .01 .
+
+(a) Average number of SPRT iterations ( nSPRT ) and queries required for successful protocol completion. Query counts use batched ( nbatched  
+
+> q
+
+) and unbatched ( nunbatched  
+
+> q
+
+) methods.                                   
+
+> Server status Metric (α, β )(10 −3,10 −2)(10 −9,10 −2)(10 −3,10 −9)
+> Honest (\pk (q,t )=pk t)
+> nSPRT 2.22 2.22 8.87
+> nunbatched
+> q81.23 81.12 216.38
+> nbatched
+> q8.65 8.49 9.53 Malicious (\pk (q,t )=pk mal
+> t)
+> nSPRT 3.31 8.84 3.31
+> nunbatched
+> q111.37 212.46 107.19
+> nbatched
+> q14.83 32.48 4.34
+
+(b) Average error and (protocol) failure rates across simulations. Observed error rates remain below expected thresholds ( α, β ) in all cases.                     
+
+> Metric (α, β )(10 −3,10 −2)(10 −9,10 −2)(10 −3,10 −9)
+> False positive rate ( ˆα)0.0001 0.0000 0.0001 False negative rate ( ˆβ)0.0029 0.0022 0.0000 Failure rate (server honest) 0.0184 0.0184 0.0781 Failure rate (server malicious) 0.0289 0.0787 0.0291
+
+F.3. Effects of α and β
+
+Table 5 shows the simulation results of DKVE with different α and β values (with μmal = 0 .05 and σmal =0.01 ). We observe that when α decreases (from 10 −3
+
+to 10 −9), the number of SPRT iterations ( nSPRT ) and protocol failure rate increase significantly when the server is malicious . Conversely, when β decreases (from 10 −2
+
+to 10 −9), nSPRT and protocol failure rate increase sig-nificantly when the server is honest . We can speculate that these metrics for both honest and malicious cases will decrease if we reduce α and β simultaneously. These results suggest that error rates and usability of DKVE 
+
+exhibit a trade-off relationship, as discussed in §4.3.1. 
+
+## Appendix G. Bandwidth Cost Evaluation 
+
+Fig. 4 shows the bandwidth cost of a single execution of C ROSS VAL QUERY as we vary |T | (the number of targets) and |C r | (the size of the responder’s contact list). Fig. 4a demonstrates that the responder-to-querier pay-load size grows linearly with |C r | when |C r |< 8000 . This is expected since the size of the encoded OKVS object is generally linear in the number of label-value pairs. Linear regression yields: 
+
+y = 0 .0521 · |C r |+81 .76 KB ,
+
+where y is the total responder-to-querier payload size. In contrast, the querier-to-responder payload size remains constant around 557.79 KB, as |C r | only affects the size of the OKVS object, which is transmitted in the opposite direction. Fig. 4b shows that the querier-to-responder bandwidth remains nearly constant at 550 KB when |T | < 1000 ,increases linearly afterward, and plateaus beyond |T | >
+
+10000 . Since |T |≤ |C q |, and |C q | is usually small (e.g., fewer than 1000), the payload size can typically be con-sidered constant. The responder-to-querier bandwidth re-mains nearly constant around 80 KB for typical users. From these observations, the bandwidth cost of a 
+
+single CROSS VAL QUERY execution can be approximated as:  
+
+> •
+
+Querier to responder: 550 KB  
+
+> •
+
+Responder to querier: 0.0521 · |C r |+81 .76 KB 2000 4000 6000 8000 10000 12000     
+
+> Responder's Contact Length (| r|)
+> 150
+> 200
+> 250
+> 300
+> 350
+> 400
+> 450
+> 500
+> 550
+> Bandwidth Cost (KB)
+> Responder's Contact Length vs Bandwidth Cost (| | = 10)
+> Direction
+> Q→R
+> R→Q
+
+(a) Bandwidth cost with varying responder contact list sizes ( |C r |), with number of targets fixed at 10. 10 1 10 2 10 3 10 4 10 5 10 6
+
+> Number of Targets (| |)
+> 100
+> 200
+> 300
+> 400
+> 500
+> 600
+> 700
+> 800
+> Bandwidth Cost (KB)
+
+Number of Targets vs Bandwidth Cost (| r| = 50)     
+
+> Direction
+> Q→R
+> R→Q
+
+(b) Bandwidth cost with varying number of targets ( |T | ), with responder contact list size fixed at 50. 
+
+Figure 4: Bandwidth cost of DKVE versus number of targets and responder contact list size. Q → R and R → Q
+
+represent querier-to-responder and responder-to-querier communication, respectively.

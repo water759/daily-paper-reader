@@ -1,0 +1,385 @@
+Title: Semantic Leakage and Privacy Preservation in Relay-Assisted Semantic Communications
+
+URL Source: https://arxiv.org/pdf/2606.31973v1
+
+Published Time: Wed, 01 Jul 2026 01:38:52 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# Semantic Leakage and Privacy Preservation in Relay-Assisted Semantic Communications 
+
+Yalin E. Sagduyu 1, Tugba Erpek 1, Aylin Yener 2, and Sennur Ulukus 31Nexcepta, Gaithersburg, MD, USA 
+
+> 2
+
+The Ohio State University, Columbus, OH, USA 
+
+> 3
+
+University of Maryland, College Park, MD, USA 
+
+Abstract —Semantic communication (SemCom) has emerged as a promising paradigm in which the transmission of task-relevant information is prioritized over raw data, enabling efficient and robust communication under resource and channel constraints. In this paper, the privacy implications of relay-assisted SemCom systems are studied, where the intermediate relay node operates directly on learned latent representations. It is shown that the re-lay, even without access to source data, can reliably infer semantic meaning and reconstruct signals with performance comparable to that of the legitimate receiver, revealing a fundamental privacy vulnerability of semantic representations. To address this issue, an iterative adversarial training framework is proposed in which a strong, adaptively trained eavesdropper at the relay is explicitly accounted for. The proposed approach alternates between optimiz-ing the relay’s eavesdropping function and the legitimate system, resulting in representations that preserve semantic decoding performance at the intended receiver while degrading semantic inference at the relay. The semantic accuracy gap between the legitimate receiver and the eavesdropper is significantly enlarged across channel conditions. Importantly, this protection is achieved in a stealthy manner, with high reconstruction fidelity maintained while semantic leakage is selectively suppressed. 
+
+Index Terms —Semantic communications, semantic relaying, deep learning, untrusted relay, eavesdropping, privacy. 
+
+I. I NTRODUCTION 
+
+Conventional communication systems are designed to re-liably transmit bits, whereas semantic communication (Sem-Com) shifts the focus toward conveying task-relevant meaning [1], [2]. By leveraging deep neural networks (DNNs) to en-code and decode semantic representations, such systems can significantly improve robustness, compression efficiency, and adaptability to varying channel conditions [3]–[5]. 
+
+Relay-assisted communication is essential to extend cover-age, improve reliability, and overcome limitations of direct links between the source-destination pairs. Integrating relays into SemCom systems is therefore a natural extension, enabling cooperative transmission of learned representations [6]–[9]. When applied to SemCom, relays can operate directly on latent representations rather than decoded signals, allowing for flexible and efficient forwarding strategies. However, this architectural shift introduces a critical and largely unexplored privacy challenge . Unlike conventional re-lays that forward encoded bits without semantic interpretation, semantic relays inherently process representations that embed high-level information. As a result, an untrusted relay can act as an intelligent eavesdropper, capable of learning and inferring semantic meaning directly from the observed signals. Controlling this semantic leakage at intermediate nodes is a key challenge for SemCom. Security and privacy in SemCom have emerged as critical research directions, as the shift from bit-level transmission to representation-level encoding fundamentally changes the attack surface [10]–[12]. Unlike conventional systems, where confi-dentiality is enforced through bit-level encryption, SemCom embeds high-level information directly into transmitted rep-resentations, making them inherently vulnerable to inference attacks. Privacy-preserving methods based on adversarial per-turbations, representation obfuscation, and multi-task learning have been investigated [13]–[15]. However, these methods fo-cus on point-to-point settings and do not consider intermediate nodes. In relay-assisted systems, the relay observes a highly informative latent representation and can act as a powerful, learnable eavesdropper, exposing major privacy threats. Fig. 1 illustrates relay-assisted SemCom, where cooperative relaying improves semantic delivery while an untrusted relay introduces semantic privacy vulnerabilities. In this paper, we study privacy preservation in relay-assisted SemCom, where the relay is modeled as a strong, learnable eavesdropper operating on latent representations. We first show that the relay effectively infers semantic meaning from its observations, revealing a significant privacy risk. Specifically, the relay can be trained to achieve semantic classification and reconstruction performance comparable to that of the legitimate receiver, even under compressed representations. This reveals a key SemCom vulnerability where robustness to channel impairments facili-tates semantic leakage .Conventional physical-layer security methods such as trans-mit power control and source-side artificial noise injection have fundamental limitations in relay-assisted SemCom because the relay observes a stronger first-hop semantic representation than the destination and can therefore still reliably infer seman-tic information. To address the privacy challenge introduced by the untrusted relay, we propose an iterative adversarial training framework that explicitly models the relay as an                        
+
+> arXiv:2606.31973v1 [cs.NI] 30 Jun 2026 Relay -Assisted
+> Semantic
+> Communications
+> Source Destination
+> Relay
+> Privacy Vulnerability at Untrusted Relay
+> •Untrusted relay
+> •Semantic information leakage
+> •Inference of task -relevant meaning
+> Training
+> •Semantic representation
+> learning
+> •Relay -assisted cooperative
+> transmission
+> Protection via Adversarial Training
+> •Preserve destination performance
+> •Reduce semantic leakage at relay
+> D
+> e
+> e
+> p
+> L
+> e
+> a
+> rnin
+> g
+> •Cooperative transmission of semantic information
+> •Semantic encoders and decoders at source, destination, and relay
+> •Learned latent representations
+> •Enhanced coverage and fidelity of semantic information delivery
+> Multi -task learning
+> •Optimize classification
+> •Optimize reconstruction
+> •Optimize privacy Fig. 1: Relay-assisted SemCom with privacy vulnerability and protection.
+
+adaptive eavesdropper. The idea is to alternate between training the eavesdropper to maximize its inference capability and training the legitimate system to degrade the eavesdropper’s performance while preserving its own utility. This leads to a selectively informative representation that preserves semantic accuracy at the intended receiver while degrading semantic separability at the relay. The resulting protection is inherently stealthy, suppressing semantic leakage without introducing noticeable degradation in reconstruction fidelity. The remainder of the paper is organized as follows. Sec. II presents the relay-assisted SemCom design and its privacy vulnerability. Sec. III introduces the iterative adversarial frame-work for privacy protection. Sec. IV concludes the paper. II. S EMANTIC COMMUNICATIONS WITH AN 
+
+EAVESDROPPING RELAY 
+
+A. Relay-Assisted Semantic Communication System Model 
+
+We consider a relay-assisted SemCom system with a source communicating with a destination through the assistance of a relay, as shown in Fig. 2. Let s denote the input data sample, i.e., an image with pixel values normalized to [0 , 1] , with C
+
+channels, height H, and width W . For the CIFAR-10 dataset considered here, C = 3 , H = 32 , and W = 32 . Let l denote the associated semantic label. There are L = 10 classes for CIFAR-10. The transmitter maps the input sample s into a complex-valued transmitted latent signal x of length N , where 
+
+N denotes the number of complex channel uses and controls the semantic bandwidth/compression ratio. In implementation, this signal is represented using a real-valued tensor with two channels and length N , corresponding to its in-phase and quadrature components, which together form the equivalent complex-valued representation. The input sample s is processed by the encoder DNN (parameterized by θA) as fθA (s). The output signal x is normalized per sample to satisfy a unit average transmit power constraint. The encoder fθA is a convolutional neural network that extracts hierarchical spatial features and compresses them into a latent representation using two convolutional stages. The Relay    
+
+> Encoder
+> Semantic Decoder
+> Reconstruction
+> Decoder
+> Encoder
+> Source
+> sample 𝐬
+> label 𝑙
+> 𝐱
+> 𝐲 𝐑 Destination
+> መ𝑙
+> ො𝒔
+> Semantic
+> Decoder
+> Reconstruction
+> Decoder
+> 𝒙 𝐑
+> 𝐲 𝐃
+> (𝟏 )
+> 𝐲 𝐃
+> (𝟐 )
+> መ𝑙
+> ො𝒔
+> Eavesdropping
+> Relaying
+> Fig. 2: System model of semantic relay communications.
+
+first stage applies two 3 × 3 convolutions mapping C → 64 →
+
+64 , each followed by batch normalization and ReLU, then a 
+
+2×2 max-pooling layer (stride 2) and dropout with probability 
+
+0.25 . The second stage applies two 3×3 convolutions mapping 
+
+64 → 128 → 128 , again followed by batch normalization and ReLU, then a 2 × 2 max-pooling layer (stride 2) and dropout with probability 0.25 . The resulting feature tensor has size 128 × (H/ 4) × (W/ 4) (for CIFAR-10: 128 × 8 × 8), which is flattened and passed through fully connected layers 
+
+128( H/ 4)( W/ 4) → 1024 → 2N with ReLU activation. The output is reshaped into a two-channel signal representing the real and imaginary parts of x; for N = 256 , this corresponds to 512 real-valued components. The wireless channel is modeled as block Rayleigh fading with additive white Gaussian noise (AWGN). For any trans-mitted signal x, the received signal is given by y = hx + n,where the channel coefficient h is a complex scalar that remains constant across the N symbols of a given sample, n denotes the noise, and y, x, and n are complex-valued signals of length 
+
+N .In relay-assisted operation, communication proceeds in two phases. 1) In the first phase, the source transmits x, and the destina-tion and relay receive signals y(1)  
+
+> D
+
+and y(1)  
+
+> R
+
+, respectively. 2) In the second phase, the relay processes y(1)  
+
+> R
+
+through the mapping gθR (·) and transmits xR, and the destination re-ceives the second-phase signal y(2)  
+
+> D
+
+. The destination then forms the joint observation yD by concatenating y(1) 
+
+> D
+
+and y(2)  
+
+> D
+
+, resulting in a representation whose dimension is twice that of each individual phase observation. The relay mapping gθR maps a latent signal to another one of the same length without reconstructing the input sequence. The relay is implemented as a one-dimensional convolutional residual network that preserves the sequential structure of the signal-level latent representation. The input is treated as a two-channel sequence of length N , and an initial 1D convolution (kernel size 3, padding 1) maps 2 channels to 128 channels. Two residual blocks follow, each consisting of two 1D convo-lutional layers (kernel size 3, padding 1, 128 channels) with ReLU activations and identity skip connections. A final 1D convolution (kernel size 3, padding 1) maps the representation back to 2 channels. The relay output is normalized per sample to satisfy the transmit power constraint. At the receiver, the destination applies two decoders to the joint observation yD . The reconstruction decoder drec 
+
+> θD
+
+maps the received signal to a reconstructed image ˆs. Inter-nally, the input is represented in real form and flattened to dimension 4N , then passed through fully connected layers 
+
+4N → 1024 → 256( H/ 4)( W/ 4) . The output is reshaped into a tensor of size 256 × (H/ 4) × (W/ 4) , followed by two transposed convolution layers with kernel size 4, stride 2, and padding 1, mapping 256 → 128 → 64 channels, each followed by batch normalization and ReLU. A final 3 × 3
+
+convolution maps 64 channels to C, and a sigmoid activation produces ˆs. The classification decoder dcls  
+
+> θD
+
+maps the same input to semantic prediction logits zD over L classes. It consists of fully connected layers 4N → 512 → 256 → L, with ReLU activations and dropout with probability 0.5 after the first two layers. The predicted label ˆlD corresponds to the class associated with the maximum component of zD .
+
+B. Training of Legitimate SemCom Relay System 
+
+SemCom is trained in two stages. In Stage 1, the parame-ters (θA, θ R, θ rec  
+
+> D
+
+, θ cls  
+
+> D
+
+) are jointly optimized using a weighted objective that combines reconstruction fidelity and semantic classification performance. The overall loss consists of four terms weighted by λrec , λssim , λpsnr , and λce .1) The first term is the mean squared error (MSE), de-noted as MSE(ˆ s, s), which measures the average squared difference between the reconstructed sample ˆs and the original sample s over all image elements. Lower MSE indicates improved reconstruction fidelity. 2) The second term is the structural similarity index, de-noted as SSIM(ˆ s, s), which evaluates perceptual simi-larity between ˆs and s by comparing their luminance, contrast, and structural consistency. Since higher SSIM values correspond to better perceptual similarity, the optimization minimizes 1 − SSIM(ˆ s, s).3) The third term is the peak signal-to-noise ratio, denoted as PSNR(ˆ s, s), which measures reconstruction quality in decibels based on the reconstruction error. Larger PSNR indicates improved reconstruction quality. The optimiza-tion objective therefore encourages higher PSNR values during training. 4) The fourth term is the categorical cross-entropy loss, denoted as LCE (zD , l ), where zD represents the se-mantic prediction logits at the destination and l denotes the ground-truth semantic label. This term measures the semantic classification error and encourages accurate semantic inference at the receiver. For performance evaluation, weights for loss terms are selected as λrec = 5 , λssim = 2 , λpsnr = 1 , and λce = 1 . The MSE term enforces pixel-wise fidelity and stabilizes optimization, while the PSNR term introduces a logarithmic sensitivity to reconstruction error that emphasizes improvements in high-fidelity regimes. The SSIM term further promotes structural consistency in the reconstructed images. 
+
+C. Eavesdropping Relay Model 
+
+The relay simultaneously acts as a forwarding node for cooperative communication and as an untrusted eavesdropper that attempts semantic inference from its received observation. In Stage 2 of SemCom training, the legitimate system is frozen. The first-phase relay observation, denoted by y(1)  
+
+> R
+
+, is a complex-valued signal of length N . This observation serves as the input yE to the relay’s eavesdropping function and is processed through the relay’s reconstruction and classification decoders for semantic eavesdropping, as shown in Fig. 2. The reconstruction decoder drec  
+
+> θE
+
+follows the same architectural structure as the destination’s reconstruction decoder but oper-ates on a latent signal of length N . The classification decoder 
+
+dcls  
+
+> θE
+
+produces semantic prediction logits zE over the L classes using fully connected layers of dimensions 2N → 512 →
+
+256 → L, with ReLU activations and dropout with probability 
+
+0.5 applied after the first two layers. The eavesdropping relay is trained using a joint loss function that considers both semantic inference performance and signal reconstruction quality. The first component is a reconstruction loss weighted by λE, rec , which measures the squared difference between the reconstructed sample ˆsE and the original sample 
+
+s. Here, ˆsE , generated as drec  
+
+> θE
+
+(yE ), denotes the reconstruction produced by the eavesdropper reconstruction decoder from the received observation yE . Minimizing this term encourages the eavesdropper to accurately reconstruct the transmitted sam-ple. The second component is a semantic classification loss weighted by λE, cls , given by the categorical cross-entropy loss 
+
+LCE (zE , l ), where zE represents the semantic prediction logits generated by the eavesdropper and l denotes the ground-truth semantic label. Minimizing this term improves the semantic classification capability of the eavesdropper. For performance evaluation, the reconstruction and semantic classification losses are weighted by λE, rec = 1 and λE, cls = 1 , respectively, giving equal importance to reconstruction fidelity and semantic inference performance during eavesdropper training. Only the parameters (θrec  
+
+> E
+
+, θ cls  
+
+> E
+
+) are optimized in this stage. 
+
+D. Relay-assisted SemCom Performance and Eavesdropping Vulnerability 
+
+For performance evaluation, training and evaluation are performed on NVIDIA RTX PRO 6000 Blackwell GPUs using batch size 128, learning rate 10 −3, and 1000 training epochs for each stage. The source encoder, destination decoder system, forwarding relay, and relay-eavesdropper model contain 9.2M, 19.8M, 0.2M, and 18.8M parameters for N = 256 , and 8.7M, 18.0M, 0.2M, and 17.9M parameters for N = 32 . The channel is modeled as Rayleigh fading with AWGN under varying SNR conditions. In this framework, the encoder learns a semantically informative latent representation x. Since no privacy constraint is imposed during Stage 1, the relay observation yE retains sufficient semantic information, enabling the relay to learn both reconstruction and classification mappings that can achieve performance comparable to that of the legitimate receiver. We evaluate the SemCom system across a range of channel conditions, with performance illustrated in terms of semantic classification accuracy, PSNR, and SSIM for both the legiti-mate receiver (destination) and the eavesdropper (relay). The corresponding trends are shown in Fig. 3, where each subfigure depicts one metric as a function of the signal-to-noise ratio (SNR) for two latent dimensions, N = 256 and N = 32 .The semantic classification accuracy in Fig. 3(a) increases with SNR, reflecting improved performance under favorable channel conditions. This trend holds for both latent dimen-sions. Increasing the latent dimension from N = 32 to 
+
+256 improves performance for both the destination and relay, as higher-dimensional representations preserve more semantic information. Even at N = 32 , the system maintains reasonable accuracy across SNR values, indicating effective semantic transmission under strong compression. In both cases, the relay’s accuracy closely tracks and occasionally exceeds that of the destination because it does not experience the second-hop impairment, directly observes the first-hop representation, and operates on representations that are not optimized to distinguish legitimate from unintended receivers. The reconstruction performance, measured by PSNR in Fig. 3(b), follows a similar trend, increasing monotonically with SNR for both receivers and both values of N . A larger la-tent dimension yields consistently better reconstruction quality, reflecting increased representational capacity. However, the gap between N = 32 and N = 256 remains moderate, indicating that even compact representations preserve a substantial portion of the signal structure. Notably, the PSNR performance for the destination and relay remains closely aligned across both values of N , showing that the relay retains access to high-fidelity reconstruction even at lower dimensions. The SSIM results in Fig. 3(c) show a similar trend. SSIM increases with SNR and latent dimensions, reflecting improved preservation of perceptual structures such as edges and tex-tures. While N = 256 yields higher SSIM overall, performance at N = 32 remains strong, indicating that perceptual quality is preserved under aggressive dimensionality reduction. The relay’s SSIM closely tracks that of the destination across all conditions, confirming that perceptual information is largely preserved in the relay observation. Taken together, Fig. 3 shows that increasing the latent dimension improves both semantic and reconstruction perfor-mance, while even reduced dimensions maintain reasonable performance. The close alignment between the destination and relay across all metrics indicates that semantic and structural information remain readily accessible at the relay. This exposes a fundamental vulnerability of SemCom, namely that reducing the representation size alone does not prevent semantic leakage. Even compressed representations retain sufficient information for unintended receivers to recover semantic meaning and signal structure, motivating the need for privacy-aware mech-anisms such as adversarial training. Conventional physical-layer security schemes such as trans-mit power control and source-side artificial noise injection do not provide effective privacy protection in relay-assisted SemCom. Since the relay observes a stronger first-hop signal than the destination, these methods degrade both receivers without selectively suppressing relay inference and therefore do not help increase the destination-relay semantic accuracy gap, as also confirmed by our performance evaluation. This highlights the need for privacy-aware representation learning in relay-assisted SemCom. III. I TERATIVE ADVERSARIAL TRAINING FOR PROTECTION AGAINST UNTRUSTED RELAY 
+
+A. Alternating Adversarial Optimization 
+
+To mitigate semantic leakage, an iterative adversarial train-ing framework is introduced in which the legitimate Source-Relay-Destination (SRD) system and the eavesdropper (relay) are updated in an alternating manner. The procedure follows a sequential min-max update rule, where the relay is first trained against a fixed SRD system, and then SRD is updated against a fixed relay. This alternating process is repeated throughout training. Let Θ denote the parameters of the legitimate SRD system, including the source, forwarding relay, and destination, and let Φ, consisting of θrec  
+
+> E
+
+and θcls  
+
+> E
+
+, denote the parameters of the eavesdropping function at the relay (as introduced in Stage 2), corresponding to its reconstruction and classification networks. At iteration t, the training consists of two steps. 1) In the first step of iterative optimization, the SRD pa-rameters, denoted by Θ, are held fixed while the eaves-dropping relay parameters, denoted by Φ, are updated to minimize the relay’s own inference loss. At iteration 
+
+t, the relay parameters are updated from Φ(t) to Φ(t+1) 
+
+by minimizing the eavesdropping objective LE (Θ (t), Φ) .The eavesdropping loss consists of two components. a) The first component is a reconstruction loss weighted by λE, rec , which measures the fidelity of the reconstructed sample ˆsE relative to the original sample s. Minimizing this term encourages the relay to improve its reconstruction capability, enabling evaluation of stealthy protection. b) The second component is the categorical cross-entropy loss weighted by λE, cls , denoted as 
+
+LCE (zE , l ), where zE represents the semantic pre-diction logits generated by the eavesdropping relay and l denotes the ground-truth semantic label. Min-imizing this term improves the semantic classifica-tion capability of the eavesdropping relay. Together, these two terms define the eavesdropping loss 
+
+LE (Θ , Φ) and enable the relay to optimize both seman-tic inference and reconstruction fidelity while the SRD model remains fixed. In practice, the semantic classifica-tion term dominates, reflecting the goal of maximizing the relay’s inference capability. This step ensures that the relay acts as a strong adaptive adversary for the current latent representation. −9 −6 −3 0 3 6 9                            
+
+> SNR
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Semantic Accuracy
+> Destination, N=256
+> Relay, N=256
+> Destination, N=32
+> Relay, N=32 (a) Semantic accuracy. −9 −6 −3 0369
+> SNR
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> 12
+> 14
+> 16
+> 18
+> 20
+> 22
+> PSNR
+> Destination, N=256
+> Relay, N=256
+> Destination, N=32
+> Relay, N=32 (b) PSNR. −9 −6 −3 0369
+> SNR
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> SSIM
+> Destination, N=256
+> Relay, N=256
+> Destination, N=32
+> Relay, N=32 (c) SSIM. Fig. 3: Performance (semantic accuracy, PSNR, and SSIM) of the destination and eavesdropping relay across SNR for different latent dimensions N.
+
+2) In the second step of iterative optimization, the eaves-dropping function of the relay is held fixed while the SRD system parameters, denoted by Θ, are updated using an adversarially augmented training objective. At iteration t, the SRD parameters are updated from Θ(t)
+
+to Θ(t+1) by minimizing an adversarially augmented objective consisting of the legitimate loss LSRD (Θ) and an adversarial penalty term based on the relay’s semantic classification loss. a) The first component, denoted by LSRD (Θ) , rep-resents the standard training loss of the legiti-mate SRD communication system and combines reconstruction fidelity and semantic classification objectives for the intended receiver. b) The second component is proportional to the eaves-dropping relay’s semantic classification loss, de-noted as LCE (zE , l ), where zE represents the se-mantic prediction logits generated by the relay and 
+
+l denotes the ground-truth semantic label. This term is weighted by the positive coefficient γeve , which controls the strength of the adversarial penalty. Because the relay’s semantic classification loss is sub-tracted from the legitimate objective, the SRD system is encouraged to increase the relay’s classification error and reduce its ability to infer semantic labels from the transmitted signal. At the same time, it continues optimizing the legitimate communication objective to preserve reliable semantic inference and reconstruction at the destination, thereby improving privacy while main-taining communication performance. This alternating update induces a competitive dynamic be-tween SRD and the relay. The relay continuously improves its ability to extract semantic information from the relay observa-tion by minimizing LE , while SRD adapts by reshaping the transmitted representation to increase the relay’s classification error while maintaining its own performance. 
+
+B. Gradient-Based Training Dynamics 
+
+At the gradient-update level, the optimization proceeds by alternately updating the eavesdropping relay parameters Φ and the SRD system parameters Θ using gradient descent. The relay parameters Φ are updated using the gradient of the eavesdropping loss LE (Θ , Φ) with respect to Φ. The update step is scaled by the learning rate ηE , which controls the adaptation rate of the eavesdropping relay during training. This update encourages the relay to improve both semantic inference accuracy and reconstruction quality. The SRD system parameters Θ are updated using the gradi-ent of an adversarially augmented objective consisting of the legitimate communication loss LSRD (Θ) and the adversarial semantic classification term weighted by γeve . The update step is scaled by the learning rate ηM , which controls the adaptation rate of the SRD system. Because the eavesdropping semantic classification loss LCE (zE , l ) is subtracted from the legitimate objective, the gradient update encourages the SRD system to increase the relay’s semantic classification error while still maintaining reliable semantic inference and reconstruction performance for the intended receiver. This alternating optimization reduces the relay’s semantic inference capability. Importantly, the adversarial term in the SRD update acts only on the relay’s semantic classification loss, rather than its full reconstruction objective. As a result, the training process specifically targets the degradation of semantic inference at the relay, without explicitly suppressing reconstruction quality. This design aligns with the primary goal of enlarging the semantic accuracy gap between the destination and the relay. Overall, the iterative framework performs alternating adver-sarial optimization in which the relay adapts to the current transmission strategy while SRD counter-adapts to reduce semantic leakage. Through repeated updates, the learned rep-resentation remains discriminative for the legitimate receiver while becoming less separable for the eavesdropper, thereby widening the destination-relay semantic accuracy gap. 
+
+C. Learning Dynamics and Semantic Accuracy Gap 
+
+Next, we evaluate the effectiveness of the proposed itera-tive adversarial training framework in improving resistance to eavesdropping. The results are presented for multiple channel conditions, with performance illustrated as a function of the weight assigned to the eavesdropping protection loss, denoted 0 200 400 600 800 1000     
+
+> Number of Training Epochs
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Semantic Accuracy
+> Destination
+> Relay
+> Destination-Relay Gap Fig. 4: Evolution of semantic accuracy at the destination and the relay during iterative adversarial training when SNR = 6dB and γeve = 5 .
+
+by γeve .We adopt N = 256 for the results in this section. Both the SRD system and the eavesdropping relay are trained using the Adam optimizer with learning rates ηM = ηE = 10 −3. We report the semantic classification accuracy at the destination, the semantic accuracy at the eavesdropping relay, and the resulting destination-relay accuracy gap. We first examine the temporal evolution of the adversarial training process. Fig. 4 shows the semantic accuracy at the des-tination and the relay over training epochs for a representative setting with SNR = 6 dB and a moderate adversarial weight 
+
+γeve = 5 . At the early stages of training, the destination and the relay exhibit similar performance, reflecting the absence of adversarial separation in the initial learned representation. As training progresses, a clear divergence emerges: the relay’s accuracy gradually decreases while the destination’s accuracy stabilizes at a higher level. This behavior reflects the alternating training mechanism in which the relay improves inference capability while the legitimate system suppresses relay pre-dictions. Over successive iterations, this interaction widens the semantic accuracy gap between the destination and the relay. The convergence pattern in Fig. 4 indicates a stable equilibrium where the destination maintains high accuracy while the relay’s capability is suppressed, demonstrating that the adversarial objective progressively reshapes the latent representation to reduce semantic leakage. We next examine the effect of the adversarial loss weight 
+
+γeve across different channel conditions. As shown in Fig. 5, when γeve = 0 , corresponding to the non-adversarial baseline, the semantic accuracy at the destination and the relay are nearly identical. This indicates negligible protection against eaves-dropping and confirms that, without adversarial training, the learned representation is equally informative to both receivers (namely, the destination and the relay). As γeve increases, a clear destination-relay separation emerges across all SNRs. The relay’s semantic accuracy decreases significantly, while the destination remains stable initially. This shows that adversarial loss reduces semantic sep-arability at the relay, degrading the relay’s inference capability while preserving representation utility for the destination.                  
+
+> TABLE I: Destination-relay reconstruction quality gap. SNR (dB) PSNR Difference (dB) SSIM Difference Max Avg Max Avg -6 0.38 0.24 0.018 0.008 00.54 0.28 0.014 0.007 60.34 0.23 0.010 0.008
+
+At moderate values of γeve , the destination-relay accuracy gap reaches its maximum, corresponding to an effective trade-off between utility and privacy. In this regime, strong protection is achieved with only limited degradation in the destination’s performance. The consistency of this behavior across SNR conditions suggests that adversarial training is robust and effective in controlling semantic leakage. As γeve increases further, the destination’s accuracy begins to degrade more noticeably, while the accuracy gap saturates or slightly decreases. This indicates that excessively strong adversarial pressure distorts the latent representation, affecting both receivers and reducing overall semantic discriminability rather than selectively suppressing the relay. SNR also affects these trends. At higher SNR, the destination remains stable across a wider range of γeve , yielding a larger accuracy gap. At lower SNR, the system becomes more sensi-tive to adversarial representation shaping, and the destination’s accuracy degrades more rapidly as γeve increases. Nevertheless, meaningful destination-relay separation is still achieved. Overall, the results demonstrate that the proposed itera-tive adversarial training framework effectively enlarges the destination-relay semantic accuracy gap both over training time and as a function of the adversarial loss weight. The framework enables controlled navigation of the privacy-utility trade-off, achieving strong semantic protection while preserving perfor-mance along the legitimate communication path. 
+
+D. Reconstruction Quality 
+
+In addition to semantic accuracy, we evaluate the impact of the adversarial training on reconstruction quality at both destination and relay. While the iterative framework is designed to enlarge the semantic accuracy gap, an important question is whether this degradation at the relay is accompanied by noticeable distortion in the reconstructed sample. To quantify this, we measure the difference between the destination and the relay in terms of PSNR and SSIM across SNR conditions. The results in Table I show that the difference in recon-struction quality between the destination and the relay remains consistently small across all SNR values. Both the maximum and average PSNR differences are limited, indicating that the relay is still able to reconstruct the input sample with fidelity comparable to that of the destination. Similarly, the SSIM differences remain very small, confirming that perceptual structural similarity is largely preserved at the relay. These results demonstrate stealthy protection, where the relay’s semantic accuracy is degraded while reconstruction quality remains largely intact. Thus, the relay observes struc-turally consistent signals but fails to infer their semantic 0 1 2 5 10 15 20 
+
+> Weight of Eavesdropping Protection Loss
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Semantic Accuracy
+> Destination
+> Relay
+> Destination-Relay Gap
+
+(a) SNR = −6 dB. 0 1 2 5 10 15 20  
+
+> Weight of Eavesdropping Protection Loss
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Semantic Accuracy
+> Destination
+> Relay
+> Destination-Relay Gap
+
+(b) SNR = 0 dB. 0 1 2 5 10 15 20  
+
+> Weight of Eavesdropping Protection Loss
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Semantic Accuracy
+> Destination
+> Relay
+> Destination-Relay Gap
+
+(c) SNR = 6 dB. Fig. 5: Effect of adversarial loss weight γeve on semantic accuracy at the destination and the relay, and the resulting accuracy gap. 
+
+content, achieving semantic-specific degradation without no-ticeable signal distortion. Overall, a large semantic accuracy gap with minimal reconstruction difference indicates effective selective information hiding. IV. C ONCLUSION 
+
+This paper addressed the privacy implications of relay-assisted SemCom and showed that relay nodes can act as capable eavesdroppers, extracting semantic meaning from transmitted latent representations. We first demonstrated that the relay can achieve semantic inference and reconstruction performance comparable to that of the legitimate receiver, revealing a fundamental vulnerability. To mitigate this issue, we proposed an iterative adversarial training framework that explicitly accounts for a strong adaptive eavesdropper. By alternating between optimizing the legitimate system and the eavesdropper, the framework learns representations that pre-serve utility at the intended receiver while degrading semantic inference at the relay. This significantly enlarges the semantic accuracy gap across channel conditions while maintaining high reconstruction fidelity. The protection is achieved in a stealthy manner, selectively suppressing semantic information without noticeable signal distortion. These findings highlight the privacy risks of semantic relays and the need for privacy-aware training in relay-assisted SemCom systems. Future research directions include (i) extending relay-assisted SemCom to multi-relay, multi-hop, and multi-user networks to study semantic leakage in distributed cooperative architectures, (ii) developing cross-layer privacy-aware Sem-Com designs that jointly optimize routing, scheduling, relay selection, and semantic resource allocation while accounting for leakage across communication paths, and (iii) extending the framework to decentralized and federated semantic learning settings where privacy leakage may arise through shared model updates and latent representations. REFERENCES [1] B. Guler and A. Yener, “Semantic index assignment,” in IEEE In-ternational Conference on Pervasive Computing and Communication Workshops (PERCOM WORKSHOPS) , 2014. [2] D. G¨ und¨ uz, Z. Qin, I. E. Aguerri, H. S. Dhillon, Z. Yang, A. Yener, K. K. Wong, and C.-B. Chae, “Beyond transmitting bits: Context, semantics, and task-oriented communications,” IEEE Journal on Selected Areas in Communications , vol. 41, no. 1, pp. 5–41, 2023. [3] D. Huang, F. Gao, X. Tao, Q. Du, and J. Lu, “Toward semantic communications: Deep learning-based image semantic coding,” IEEE Journal on Selected Areas in Communications , vol. 41, no. 1, pp. 55–71, 2022. [4] H. Xie, Z. Qin, G. Y. Li, and B.-H. Juang, “Deep learning enabled seman-tic communication systems,” IEEE Transactions on Signal Processing ,vol. 69, pp. 2663–2675, 2021. [5] Y. E. Sagduyu, T. Erpek, A. Yener, and S. Ulukus, “Will 6G be semantic communications? Opportunities and challenges from task oriented and secure communications to integrated sensing,” IEEE Network , vol. 38, no. 6, pp. 72–80, 2024. [6] W. Lin, Y. Yan, L. Li, Z. Han, and T. Matsumoto, “Semantic-forward relaying: A novel framework toward 6G cooperative communications,” 
+
+IEEE Communications Letters , vol. 28, no. 3, pp. 518–522, 2024. [7] E. Arda, E. Kutay, and A. Yener, “Semantic forwarding for next gener-ation relay networks,” in IEEE Conference on Information Sciences and Systems (CISS) , 2024. [8] J. Guo, H. Chen, B. Song, Y. Chi, C. Yuen, F. R. Yu, G. Y. Li, and D. Niyato, “Distributed task-oriented communication networks with multimodal semantic relay and edge intelligence,” IEEE Communications Magazine , vol. 62, no. 6, pp. 82–89, 2024. [9] X. Luo, B. Yin, Z. Chen, B. Xia, and J. Wang, “Autoencoder-based semantic communication systems with relay channels,” in IEEE Interna-tional Conference on Communications (ICC) Workshops , 2022. [10] Y. E. Sagduyu, T. Erpek, S. Ulukus, and A. Yener, “Is semantic communication secure? A tale of multi-domain adversarial attacks,” IEEE Communications Magazine , vol. 61, no. 11, pp. 50–55, 2023. [11] Y. E. Sagduyu, S. Ulukus, and A. Yener, “Task-oriented communications for nextG: End-to-end deep learning and AI security aspects,” IEEE Wireless Communications , vol. 30, no. 3, pp. 52–60, 2023. [12] Z. Yang, M. Chen, G. Li, Y. Yang, and Z. Zhang, “Secure semantic communications: Fundamentals and challenges,” IEEE Network , vol. 38, no. 6, pp. 513–520, 2024. [13] X. Liu, G. Nan, Q. Cui, Z. Li, P. Liu, Z. Xing, H. Mu, X. Tao, and T. Q. Quek, “Semprotector: A unified framework for semantic protection in deep learning-based semantic communication systems,” 
+
+IEEE Communications Magazine , vol. 61, no. 11, pp. 56–62, 2023. [14] X. Luo, Z. Chen, M. Tao, and F. Yang, “Encrypted semantic com-munication using adversarial training for privacy preserving,” IEEE Communications Letters , vol. 27, no. 6, pp. 1486–1490, 2023. [15] Y. Wang, S. Guo, Y. Deng, H. Zhang, and Y. Fang, “Privacy-preserving task-oriented semantic communications against model inversion attacks,” 
+
+IEEE Transactions on Wireless Communications , vol. 23, no. 8, pp. 10 150–10 165, 2024.
