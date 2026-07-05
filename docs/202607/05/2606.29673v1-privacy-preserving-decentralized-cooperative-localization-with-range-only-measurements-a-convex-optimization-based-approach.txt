@@ -1,0 +1,508 @@
+Title: Privacy-Preserving Decentralized Cooperative Localization with Range-Only Measurements: A Convex Optimization Based Approach
+
+URL Source: https://arxiv.org/pdf/2606.29673v1
+
+Published Time: Tue, 30 Jun 2026 01:51:04 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Privacy-Preserving Decentralized Cooperative Localization with Range-Only Measurements: A Convex Optimization Based Approach 
+
+Nitesh Kumar 1, Reyshwanth Ganeshan 1, Sixu Li 2,∗, Sivakumar Rathinam 1,3 and Swaroop Darbha 1
+
+Abstract — Cooperative localization using range-based mea-surements is critical for multi-robot systems operating in GPS-denied and unstructured environments. However, traditional cooperative approaches require sharing explicit spatial coordi-nates across the network, presenting a severe security vulnera-bility in privacy-sensitive missions. While recent literature has explored privacy-preserving alternatives, these methods typi-cally rely on accuracy-degrading noise injection or computa-tionally prohibitive cryptographic protocols. To overcome these limitations, we propose a novel, natively privacy-preserving De-centralized Cooperative Localization (DCL) framework based on convex optimization. Discarding probabilistic noise models, we assume strictly bounded measurement noise and formu-late the localization problem via Semi-Definite Programming (SDP) to compute a Maximum-Volume Inscribed Ellipsoid (MVE). Our approach introduces novel intersection-plane con-straints derived from landmark measurements to significantly tighten individual spatial bounds. To incorporate inter-robot range measurements securely, we uniquely decompose coupling constraints into localized Linear Matrix Inequalities (LMIs). Agents achieve fleet-wide spatial consensus by iteratively ex-changing only abstract dual variables, completely avoiding the transmission of explicit primal position estimates. Extensive 3D Monte Carlo simulations demonstrate that our DCL framework outperforms existing SDP-based localization method in accu-racy, while guaranteeing operational privacy and maintaining highly scalable, parallelizable computation. 
+
+I. I NTRODUCTION 
+
+The deployment of multi-robot systems in unstructured, GPS-denied environments, such as underwater, indoor, and subterranean domains, requires robust spatial awareness for safe, autonomous operations. In standard robotic naviga-tion architectures, high-frequency proprioceptive data—such as odometry and Inertial Measurement Unit (IMU) read-ings—are continuously fused with absolute position updates using recursive estimators like the Extended Kalman Filter (EKF) [1]. Just as GPS offers global reference points out-doors, range-based relative measurements can serve as an alternative source of absolute position correction in GPS-denied environments. Consequently, cooperative localiza-tion [2]–[4] allows teams of robots to leverage ubiqui-tous range sensors—such as underwater acoustic modems or Ultra-Wideband (UWB) radios—to fuse local sensor            
+
+> 1Department of Mechanical Engineering, Texas A&M University, College Station, TX 77843, USA
+
+niteshk@tamu.edu; reyshwanth@tamu.edu; srathinam@tamu.edu; dswaroop@tamu.edu  
+
+> 2Zachry Department of Civil & Environmental Engineering, Texas A&M University, College Station, TX 77843, USA
+
+sixuli@tamu.edu 
+
+> 3Computer Science & Engineering, Texas A&M University, College Station, TX 77843 USA
+> ∗Corresponding author: Sixu Li
+
+Fig. 1: Illustration of privacy-preserving decentralized coop-erative localization: robot swarms cooperating using range-based measurements, exchanging only anonymized penalty signals (dual variables) rather than positions. data with inter-robot measurements, generating the robust, divergence-free position estimates essential for long-term navigational stability [5]. However, as safety and security concerns become increas-ingly prominent [6]–[9], the issue of spatial privacy in these cooperative networks has emerged as a critical research frontier. Because traditional cooperative architectures rely on the continuous inter-robot communication of their estimated positions, they are inherently susceptible to information leakage [10]. Broadcasting explicit spatial coordinates al-lows adversaries to track fleet trajectories, creating severe privacy risks for sensitive operations like defense, resource extraction, and emerging civilian Urban Air Mobility (UAM) networks. Achieving high-accuracy, range-based cooperative local-ization without sacrificing each agent’s spatial privacy re-mains a significant, unresolved challenge. Consequently, 
+
+privacy-preserving range-based cooperative localization has emerged as a critical research area within robotics and sensor networks [11]–[14]. Existing algorithmic frameworks designed to address this challenge largely fall into two paradigms, each with notable limitations. Perturbation-based methods, such as geo-indistinguishability or differential pri-vacy [11], [12], achieve privacy by injecting artificial noise into the shared data, which inherently degrades overall esti-mation accuracy. Conversely, cryptography-based techniques employing homomorphic encryption or secret sharing [13], [14] preserve data fidelity but introduce severe computational and communication burdens that render them impractical for 
+
+> arXiv:2606.29673v1 [cs.RO] 29 Jun 2026
+
+real-time, resource-constrained swarms. Another major limitation is the reliance on specific noise models, typically assuming zero-mean Gaussian errors. Real-world phenomena, such as underwater acoustic ranging, routinely exhibit asymmetric and heavy-tailed noise due to multipath fading, non-line-of-sight (NLOS) conditions, or environmental effects [15]. In practice, it is often more tractable to bound the noise than to characterize its distri-bution [16], [17]. A distinguishing departure of this work from prior work is as follows: We assume strict bounds on the noise from range measurements. This mild and practical assumption enables us to construct deterministic, convex feasible sets, providing robustness against unpredictable anomalies. By bounding each robot’s feasible region with a Maximum-Volume Inscribed Ellipsoid (MVE), we explicitly quantify both the position and the localization uncertainty simulta-neously [15], [18]. Semi-Definite Programming (SDP) for-mulations yield [15] robust localization in the presence of bounded noise, but traditional SDP approaches require a central solver that collects all robots’ positions, creating both scalability bottlenecks and privacy risks. To overcome these barriers, we propose a novel, privacy-preserving decentralized SDP based framework. Our ap-proach enables robots to achieve accurate, secure fleet-wide localization consensus by exchanging only local resource matrices and associated dual variables [19]—mathematical penalty signals that cannot be inverted to reveal positions. 
+
+No robot ever transmits its position estimate , completely bypassing the need for privacy-degrading noise or heavy cryptography. In summary, our main contributions are: 1) We introduce novel intersection-plane constraints, de-rived from measurements to landmark pairs, that sub-stantially tighten each agent’s feasible region. 2) We develop an iterative, decentralized SDP framework, in which only dual variables (not explicit positions) are exchanged, natively preserving agent privacy. 3) We deliver a comprehensive simulation framework benchmarking our decentralized SDP against both a centralized oracle and independent (non-cooperative) baselines, demonstrating near-centralized accuracy and robust, native privacy protection. II. P ROBLEM FORMULATION 
+
+Consider a system of N robots and M static landmarks embedded in R3. Let ri ∈ R3 denote the (unknown) position of robot i ∈ {1, . . . , N }, and let Bk ∈ R3 denote the (known) position of landmark k ∈ { 1, . . . , M }. For each robot i, let N A 
+
+> i
+
+⊆ { 1, . . . , M } and N R 
+
+> i
+
+⊆ { 1, . . . , N } denote the respective sets of static landmarks and neighboring robots that fall within its sensing range. 
+
+A. Robot–landmark Measurements 
+
+When robot i measures its range to landmark j, we model that the true distance lies within the measured distance interval: 
+
+ρij ≤ ∥ ri − Bj ∥ ≤ ¯ρij , j ∈ N A 
+
+> i
+
+, (1) where ρij and ¯ρij represent the lower and upper bounds, respectively. The upper bounds ¯ρij generate convex outer-sphere constraints. Conversely, the lower bounds ρij are uti-lized to construct planar constraints by leveraging the outer-sphere constraints from other landmarks, which effectively tightens the overall feasible set. 
+
+B. Robot–Robot Measurements 
+
+For a range measurement between robots i and ℓ, the true distance is less than the measured value 
+
+∥ri − rℓ∥ ≤ ρiℓ , ℓ ∈ N R 
+
+> i
+
+, (2) Although lower bounds for inter-robot measurements can also be obtained, our proposed formulation relies exclusively on the upper bounds to guarantee convexity. Geometrically, these bounds define convex inter-robot spherical regions. Because these pairwise geometric constraints are the primary source of coupling within the network, achieving decentral-ized cooperative localization requires decoupling them. To accomplish this, the constraints are reformulated into Linear Matrix Inequalities (LMIs) and subsequently decomposed into resource-based local constraints. 
+
+C. Objective 
+
+Given the set of known landmark positions Bj and the bounded range measurements, the primary objective of this cooperative localization problem is to estimate the unknown 3D coordinates ri ∈ R3 and their corresponding shape matrix Pi for all robots i ∈ {1, . . . , N }. Conceptually, this is analogous to fitting a Maximum Volume Ellipsoid (MVE) within the bounded feasible region defined by the sensor measurements. In this framework, the center of the ellipsoid, denoted as rci , serves as the position estimate. Meanwhile, the optimized matrix Pi bounds the ellipsoid’s volume, explicitly quantifying the spatial confidence of this estimate and serving as a direct mathematical analogue to the measurement covariance matrix provided by a standard GPS receiver. Consequently, this joint estimate ( rci , Pi) can be seamlessly utilized in downstream filtering pipelines to fuse with high-rate proprioceptive sensors (e.g., odometry or IMUs), acting as the absolute position correction mechanism in GPS-denied environments just as a GPS would. Mathematically, let Ei denote the ellipsoid parameterized by its center rci and shape matrix Pi, formally defined as: 
+
+Ei = r ∈ R3 r = Piu + rci , ∥u∥ ≤ 1 , (3) where u ∈ R3 is a bounded unit vector. Because the volume of the ellipsoid is proportional to det( Pi), we minimized 
+
+− log det( Pi) to find the position estimate. This entails solving the following optimization problem: 
+
+min  
+
+> {rci,Pi}Ni=1
+> N
+
+X
+
+> i=1
+
+− log det( Pi)
+
+s.t. ∀i ∈ { 1, . . . , N },
+
+Ei ⊆
+
+(
+
+r ∈ R3 ρij ≤ ∥ r − Bj ∥ ≤ ¯ρij , ∀j ∈ N A
+
+> i
+
+∥rci − rcℓ ∥ ≤ ρiℓ , ∀ℓ ∈ N R
+
+> i
+
+)
+
+.Furthermore, to address the spatial privacy requirements of sensitive operations, this optimizing problem must be solved in a fully decentralized manner. Rather than relying on a central server, each robot i must estimate its own position 
+
+rci through local computation and restricted information exchange with its neighbors ℓ ∈ N R 
+
+> i
+
+, ensuring that its explicit spatial coordinates are never directly broadcasted. III. C ONSTRUCTION OF THE SPATIAL FEASIBLE REGION 
+
+In this section, we mathematically define the spatial region where each robot can potentially be located based on its sensor measurements. We build this feasible region in three progressive steps. First, we establish basic spherical regions using upper-bound range measurements from known land-marks. Second, we geometrically tighten these bounds by exploiting the lower-bound range measurements from those same landmarks. Finally, we enable cooperative localization by linking the fleet together using upper-bound inter-vehicle distance measurements. To guarantee that our localization algorithm can solve this problem efficiently, we formulate all of these spatial restrictions as convex Linear Matrix Inequalities (LMIs). 
+
+A. Spherical Upper Bounds from Landmark Measurements 
+
+To construct the fundamental feasible region for each robot, we first evaluate the upper bounds of the range mea-surements obtained from the static landmarks. Geometrically, each upper-bound measurement ¯ρij defines a convex outer-sphere centered at the known landmark position Bj . The true position of robot i must logically reside within the intersection of these spherical regions (refer to Figure 2). We formally define this feasible region as: 
+
+Ii = \ 
+
+> j∈N A
+> i
+
+r ∈ R3 ∥r − Bj ∥ ≤ ¯ρij , (4) 
+
+Fig. 2: Feasible region formed by the intersection of upper bound ( ¯ρij ) range measurements from landmarks. Our optimization objective is to inscribe the estimated uncertainty ellipsoid Ei entirely within this feasible space. Rather than grappling with the complex, composite geometry of Ii directly, we enforce containment on a per-landmark basis. Because enclosing an ellipsoid inside a sphere mathe-matically requires bounding one quadratic form by another, we apply the S-procedure and Schur complement [15], [18]. This allows us to reformulate the continuous spatial condition (Ei ⊆ {∥ ri − Bj ∥ ≤ ¯ρij }) into a highly tractable Linear Matrix Inequality (LMI): 
+
+¯ρij − λij (rci − Bj )⊤ 0rci − Bj ¯ρij I3 Pi
+
+0 Pi λij I3
+
+ ⪰ 0, ∃ λij ≥ 0. (5) Enforcing (5) for a single landmark ensures the ellipsoid remains within that specific sphere. Therefore, simultane-ously enforcing this LMI for all available landmarks ( ∀j ∈N Ai ) guarantees that Ei is perfectly inscribed within the intersection Ii.
+
+B. Feasible Region Tightening via Intersection Planes 
+
+While the previous section established a baseline fea-sible region using upper-bound range measurements, we can significantly tighten this space by leveraging lower-bound measurements ( ρij ). These lower bounds naturally define exclusion zones—regions falling within the minimum separation distance of a landmark where the robot logically cannot reside. Since the exact feasible region defined by these bounds is inherently non-convex, we propose a convex relaxation utilizing intersection-plane constraints. 
+
+Fig. 3: Representation of the intersection plane constraint formed by measurements from two distinct landmarks. 
+
+1) Intersection-plane Constraints: Consider a scenario where robot i processes measurements to two distinct land-marks, subjecting its spatial coordinate ri to a lower-bound constraint with respect to landmark Bj (∥ri − Bj ∥ ≥ ρij )and an upper-bound constraint with respect to landmark Bk
+
+(∥ri − Bk∥ ≤ ¯ρik ). Geometrically, the feasible location of robot i is con-strained to lie outside the lower-bound exclusion sphere centered at Bj , and inside the upper-bound bounding sphere centered at Bk (Figure 3). However, the boundary where these two spherical surfaces meet naturally defines an intersection plane . By calculating this plane and using it as a linear cut against the outer bounding sphere, we cleanly slice away the non-convex exclusion zone. 
+
+2) Derivation of the Intersection Plane: Consider the squared-distance inequalities: 
+
+∥ri − Bj ∥2 ≥ ρ2 
+
+> ij
+
+, (6) 
+
+∥ri − Bk∥2 ≤ ¯ρ2
+
+> ik
+
+. (7) Expanding both: 
+
+∥ri∥2 − 2B⊤ 
+
+> j
+
+ri + ∥Bj ∥2 ≥ ρ2 
+
+> ij
+
+, (8) 
+
+∥ri∥2 − 2B⊤ 
+
+> k
+
+ri + ∥Bk∥2 ≤ ¯ρ2
+
+> ik
+
+. (9) Subtracting (8) from (9) yields 
+
+2( Bj − Bk)⊤ri ≤ ¯ρ2 
+
+> ik
+
+− ρ2 
+
+> ij
+
++ ∥Bj ∥2 − ∥ Bk∥2. (10) The above inequality represents the intersection-plane con-straint. Defining the normal vector and offset as 
+
+njk ≜ Bj − Bk, (11) 
+
+γjk ≜ 12
+
+
+
+¯ρ2 
+
+> ik
+
+− ρ2 
+
+> ij
+
++ ∥Bj ∥2 − ∥ Bk∥2
+
+, (12) the intersection-plane constraint becomes 
+
+n⊤
+
+> jk
+
+ri ≤ γ. (13) Thus, the feasible region for robot i is restricted to the half-space defined by the plane {r ∈ R3 | n⊤
+
+> jk
+
+r = γjk } and the inequality n⊤
+
+> jk
+
+ri ≤ γjk .
+
+3) Conditions for Valid Intersection: The two spheres must intersect (or be tangent) in order for this plane to define a meaningful restriction. Let djk = ∥Bk − Bj ∥ be the distance between landmark centers. A non-empty intersection requires 
+
+|ρij − ¯ρik | ≤ djk ≤ ρij + ¯ ρik . (14) We utilize this requirement to formulate Pi, defined as the set of all valid landmark pairs (j, k ) available to robot i. A pair is included in Pi if and only if the robot possesses a lower-bound measurement to landmark Bj , an upper-bound measurement to landmark Bk, and their resulting spheres satisfy the intersection condition in (14). Constructing this set is computationally vital, as it filters out redundant measure-ments and explicitly isolates the pairs that actively tighten the feasible region. 
+
+4) Semidefinite Formulation of Plane Constraints: We now embed the intersection-plane constraint into the ellip-soidal localization framework. Recall that the ellipsoid for robot i is Ei with center rci and shape matrix Pi ⪰ 0. The plane constraint n⊤
+
+> jk
+
+ri ≤ γjk is enforced for all ri ∈ E i by requiring that the entire ellipsoid lies in the half-space: 
+
+n⊤
+
+> jk
+
+(Piu + rci ) ≤ γjk ∀ u : ∥u∥ ≤ 1, (15) 
+
+⇐⇒ n⊤
+
+> jk
+
+Piu ≤ γjk − n⊤
+
+> jk
+
+rci ∀ u : ∥u∥ ≤ 1, (16) 
+
+⇐⇒ ∥ P⊤ 
+
+> i
+
+njk ∥ ≤ γjk − n⊤
+
+> jk
+
+rci . (17) By applying the Schur complement, this constraint can be equivalently expressed as the following Linear Matrix Inequality (LMI): 
+
+γjk − n⊤
+
+> jk
+
+rci n⊤
+
+> jk
+
+Pi
+
+P⊤ 
+
+> i
+
+njk (γjk − n⊤
+
+> jk
+
+rci )I3
+
+
+
+⪰ 0. (18) 
+
+C. Enabling Cooperation via Inter-Robot Coupling 
+
+Building upon the tightened, landmark-based feasible re-gions, we now integrate inter-robot range measurements ( ρiℓ )as spatial coupling constraints to enable true cooperative localization. Suppose robots i and ℓ are connected by an outer bound on their distance, denoted by ρiℓ . We require 
+
+ρiℓ ≥ ∥ rci − rcℓ ∥, (19) where rci and rcℓ denote the (center) position variables of the ellipsoids for robots i and ℓ, respectively. Squaring both sides gives 
+
+ρ2 
+
+> iℓ
+
+− (rci − rcℓ )⊤(rci − rcℓ ) ≥ 0. (20) By the Schur complement, this is equivalent to the LMI 
+
+ ρiℓ (rci − rcℓ )⊤
+
+rci − rcℓ ρiℓ I3
+
+
+
+⪰ 0. (21) This transformation provides a standard, strictly convex representation of the inter-robot coupling constraints. Note that the ordering of the indices i and ℓ is arbitrary; swap-ping them merely negates the off-diagonal block in (21), which preserves the matrix’s positive semidefiniteness and identically recovers the squared distance bound in (20). IV. T HE PRIVACY -P RESERVING DECENTRALIZED 
+
+COOPERATIVE LOCALIZATION METHOD 
+
+This section presents the core mathematical architecture of our privacy-preserving localization method. To provide a rigorous benchmark for our approach, we begin by defining a Centralized Oracle (CO) that jointly estimates the Maximum-Volume Inscribed Ellipsoids (MVE) for the entire fleet using globally aggregated data. Recognizing the severe scalability and privacy limitations of such an architecture, we then formulate our Decentralized Cooperative Localization (DCL) framework. We detail how the centralized optimization problem is systematically decomposed into localized Semi-Definite Programs (SDPs), allowing the fleet to cooperatively refine their spatial bounds through a strictly anonymized dual-variable consensus protocol. A. Centralized Oracle (CO) 
+
+Representing the theoretical optimal baseline for our net-work, this approach utilizes an SDP to jointly estimate the positions and uncertainty ellipsoids for all robots simultane-ously. By aggregating all available data at a central node, this formulation comprehensively incorporates the upper-bound spherical constraints (5), the intersection-plane constraints (18), and the inter-robot coupling constraints (21). The optimization problem is: 
+
+min  
+
+> {rci,Pi⪰0}
+> N
+
+X
+
+> i=1
+
+− log det( Pi) (22) s.t. (5) , ∀i, ∀j ∈ N Ai , (23) (18) , ∀i, ∀(j, k ) ∈ P i, (24) (21) , ∀(i, ℓ ) ∈ E . (25) Here, E denotes the set of all robot pairs (i, ℓ ) that are within mutual sensing range. Because the optimization solver has simultaneous access to the entire network’s state vari-ables, this centralized SDP provides the optimal performance benchmark for our comparative analysis. However, deploying this centralized architecture in real-world scenarios relies on a single computational hub to continuously aggregate raw telemetry and broadcast optimized solutions, raising severe scalability and privacy concerns. 
+
+B. Decentralized Cooperative Localization (DCL) 
+
+This approach represents our proposed privacy-preserving formulation. The iterative decentralized architecture mirrors the mathematical rigor of the centralized formulation but intentionally splits the inter-robot dependencies to enable local computation and restricted neighbor-to-neighbor com-munication. To handle inter-robot spatial relationships without vio-lating privacy, the global coupling constraint (21) must be explicitly decomposed so that explicit spatial coordinates ( rci )are never broadcasted. By introducing an auxiliary matrix variable Riℓ = Rℓi ∈ R4×4 and Miℓ (rci ) = 
+
+ρiℓ 2rci ⊤
+
+2rci ρiℓ I3
+
+
+
+,we reformulate the coupling into two independent local constraints: (
+
+Miℓ (rci ) + Riℓ ⪰ 0, if i < ℓ, 
+
+Miℓ (−rci ) − R iℓ ⪰ 0, if i > ℓ, (26) 
+
+(
+
+Miℓ (−rcℓ ) − R ℓi ⪰ 0 if i < ℓ, 
+
+Miℓ (rcℓ ) + Rℓi ⪰ 0 if i > ℓ. (27) Algebraically summing (26) and (27) recovers the original coupling constraint. Consequently, this formulation serves as a sufficient decomposition of (21). The indexing conditions (i < ℓ versus i > ℓ ) serve as a strict symmetry-breaking mechanism for the undirected communication edges. By enforcing a lexicographical order, we ensure that one robot along the edge incorporates the shared resource matrix Riℓ 
+
+with a positive sign, while its neighbor incorporates it with a negative sign. At each iteration, robot i solves the following local SDP: 
+
+min  
+
+> rci,Pi
+
+− log det( Pi) (28) s.t. (5) , ∀j ∈ N Ai , (29) (18) , ∀(j, k ) ∈ P i, (30) (26) , ∀ℓ ∈ N Ri (31) After solving the local SDP, robot i:1) Exchanges its dual variable matrix Λiℓ corresponding to equations (31) with its neighbors ℓ ∈ N Ri .2) Updates the shared matrices Riℓ using a step size α:
+
+(
+
+Riℓ ← R iℓ − α(Λ iℓ − Λℓi ), if i < ℓ 
+
+Riℓ ← R iℓ + α(Λ iℓ − Λℓi ), if i > ℓ , ∀ℓ ∈ N Ri .
+
+(32) By initializing the system such that Riℓ = Rℓi , the complementary signs in the update rule (32) guarantee that the shared matrices remain perfectly consistent across the two robots for all future iterations. Theoretically, while summing the split constraints (26) and (27) algebraically recovers the original coupled constraint (21), demanding the existence of this specific auxiliary matrix Riℓ mathematically restricts the optimization space. Consequently, this decoupled formulation acts as a sufficient condition, firmly establishing the Centralized Oracle as a strict theoretical lower bound. 
+
+Crucially, this specific decomposition enables a strictly privacy-preserving framework. Instead of broadcasting sensi-tive positional data, robots solve localized SDPs and achieve consensus on Riℓ solely by sharing abstract dual variables. With each successive iterative update step, the DCL algo-rithm systematically closes the optimality gap introduced by this sufficient condition, driving the network toward the true centralized benchmark while maintaining strict spatial privacy. C. Theoretical Justification via Subgradient Primal Decom-position 
+
+This subsection mathematically validates the DCL frame-work. We first define the localized value functions to con-struct a global master problem. We then correlate this master problem to the Centralized Oracle (CO) and demonstrate how subgradient descent systematically utilizes local com-putations to drive the decentralized network toward the centralized theoretical lower bound. 
+
+1) Local Value Functions and the Global Master Problem: 
+
+To decouple the network, we fix the collection of edge matrices incident to robot i as Ri := {R iℓ }ℓ∈N Ri . We define the optimal local cost (value function) for each robot as: 
+
+ϕi(Ri) := min   
+
+> rci,Pi⪰0
+
+− log det( Pi) (33) subject to all local constraints (29), (30), and the split coupling limits (31). From these independent local subproblems, the network-level optimization can be cleanly reconstructed as the global 
+
+master problem :
+
+min 
+
+> {R iℓ }(i,ℓ )∈E
+
+Φ( R) := 
+
+> N
+
+X
+
+> i=1
+
+ϕi(Ri). (34) 
+
+2) Correlating the Master Problem to the Centralized Oracle (CO): The global master problem and the Centralized Oracle (CO) share the exact same global objective func-tion. Furthermore, the master problem strictly preserves all absolute landmark measurement constraints ((23) and (24)) exactly as they appear in the CO. The formulations differ only in their treatment of inter-robot spatial relationships. Rather than enforcing the original relative coupling (25) found in the CO, the global master problem relies on the split constraints (26) and (27) for all edges (i, ℓ ) ∈ E . Enforced via a lexicographical ordering ( i < ℓ), these split constraints act as a strict sufficient condition for the original coupling (25). Because the only structural difference is the introduction of the auxiliary matrix Riℓ , the global master problem inher-ently imposes an extra restriction on the optimization space. Consequently, while the objectives and local constraints are identical, this restricted feasible space makes the global master problem a conservative approximation, establishing the CO as its strict theoretical lower bound. 
+
+3) Closing the Optimality Gap via Subgradient Descent: 
+
+To systematically drive the decentralized network toward the theoretical performance limit of the CO, the algorithm must iteratively minimize the master objective Φ( R). We achieve this via subgradient descent, where solving the localized sub-problems directly yields the exact mathematical components needed to formulate the subgradient for the global master problem. Consider an edge (i, ℓ ) ∈ E with i < ℓ . Let Λiℓ be the optimal dual multiplier of robot i’s edge constraint in its local SDP ( ϕi(Ri)), and let Λℓi be the corresponding optimal dual multiplier in robot ℓ’s local SDP ( ϕℓ(Rℓ)). Under Slater’s condition for each local SDP—which natu-rally holds because our bounded measurement noise ensures the robot’s true physical position resides in the strictly feasible interior—strong duality applies. For any perturbation 
+
+∆ of Riℓ , evaluating the optimal local costs using their Lagrangian duals yields: 
+
+ϕi(Riℓ + ∆) ≥ ϕi(Riℓ ) + ⟨Λiℓ , ∆⟩,ϕℓ(Riℓ + ∆) ≥ ϕℓ(Riℓ ) − ⟨ Λℓi , ∆⟩, (35) where the minus sign in the second inequality occurs because 
+
+Riℓ enters robot ℓ’s constraint with the opposite sign (cf. (27)). Thus, from (35), the local duals act as the subgradients of the local value functions: Λiℓ ∈ ∂Riℓ ϕi and −Λℓi ∈ ∂Riℓ ϕℓ.Because the global master objective is additively separable (Φ = P 
+
+> i
+
+ϕi), summing these locally derived components gives the exact subgradient for the global master problem: 
+
+Λiℓ − Λℓi ∈ ∂Riℓ Φ( R), ∀(i, ℓ ) ∈ E , i < ℓ. (36) 
+
+4) The DCL Primal Update: Executing a subgradient descent step on the master problem (34) using the derived subgradient (36) yields: 
+
+R(t+1)  
+
+> iℓ
+
+= R(t) 
+
+> iℓ
+
+− αt
+
+
+
+Λ(t) 
+
+> iℓ
+
+− Λ(t)
+
+> ℓi
+
+
+
+, ∀(i, ℓ ) ∈ E , i < ℓ, 
+
+(37) which is exactly the DCL primal update stated previously. The identical derivation holds symmetrically for the case when i > ℓ . Through these iterative dual-variable exchanges, the network systematically traverses the subgradient, con-tinuously shrinking the optimality gap introduced by the sufficient condition. V. S IMULATION RESULTS 
+
+All optimization-based methods were implemented in Julia using JuMP for model formulation and MOSEK as the SDP solver. We evaluate our approaches through extensive 3D Monte Carlo simulations. The primary goal of these evalu-ations is to demonstrate that our proposed DCL framework generates highly accurate, divergence-free absolute position estimates. 
+
+A. Baselines 
+
+To rigorously evaluate our proposed DCL framework, we establish the following two baseline methods. 
+
+1) Spherical Bounds (SB): This baseline approach, adopted from [15], relies exclusively on the upper-bound spherical constraints (5) derived from landmark measure-ments. For robot i, we solve: 
+
+min    
+
+> rci,Pi⪰0
+
+− log det Pi
+
+s.t. (5) , ∀j ∈ N Ai .
+
+2) Spherical Bounds and Planar Bounds (SB+PB): 
+
+This intermediate formulation incorporates both the upper-bound spherical constraints (5) and the intersection-plane constraints (18) derived from static landmarks. For a given robot i, the localized SDP is formulated as: 
+
+min    
+
+> rci,Pi⪰0
+
+− log det Pi
+
+s.t. (5) , ∀j ∈ N Ai , and (18) ∀(j, k ) ∈ P i.
+
+B. Simulation Setup 
+
+We simulate a network of N = 10 mobile robots and M
+
+static landmarks ( 15 ≤ M ≤ 20 ). Each robot is equipped with a sensor capable of a maximum range of Rs = 50 m .To mirror realistic sensing conditions, we construct the actual range measurements acquired by the robots by corrupting the ground-truth Euclidean distances with maximum additive noise margins. Specifically, the robots process the upper-bound measurement ¯ρij and lower-bound measurement ρij 
+
+to each landmark, as well as the upper bound inter-robot distance measurement ρiℓ to each neighbor, generated as follows: 
+
+¯ρij = dij + σo, ρij = dij − σi, ρiℓ = diℓ + σc.Here, dij and diℓ are the ground-truth distances to landmark j
+
+and robot ℓ, and σo = σi = σc = 0 .2 represent the predefined additive noise margins, respectively. We evaluate performance across 100 random trials, mea-suring the absolute position error ei = ∥rci − r∗ 
+
+> i
+
+∥2 and the total computation time. Between trials, the positions of both the landmarks and robots are randomized, subject to a connectivity constraint ensuring that each robot connects to at least three neighbors ( |N Ri | ≥ 3, ∀i). 
+
+C. Results 
+
+Fig. 4 illustrates a representative simulation topology featuring randomly distributed landmarks and dense inter-robot connectivity. The corresponding position estimates, shown in Fig. 5, highlight the progressive accuracy improve-ments achieved by our proposed formulations. While the standard spherical baseline (Fig. 5a) suffers from pronounced displacement errors, incorporating local intersection-plane bounds significantly reduces these inaccuracies (Fig. 5b). However, in this uncoupled formulation, robots with in-sufficient local landmark measurements still exhibit severe localization uncertainty. By leveraging inter-robot coupling constraints, our proposed Decentralized Cooperative Local-ization method (Fig. 5c) effectively compensates for this sparse local data. It tightly bounds the true positions, success-fully correcting the estimates of previously uncertain robots, and virtually closes the performance gap with the centralized oracle (Fig. 5d). 
+
+Fig. 4: Representative network topology. This qualitative performance improvement is further sub-stantiated quantitatively by the error distribution across the 100 randomized trials (Fig. 6). While the isolated addition of intersection planes provides a clear, measurable benefit over the standard spherical baseline, the proposed Decentralized Cooperative Localization (DCL) method systematically min-imizes the residual localization error. By leveraging inter-robot spatial coupling, DCL enhances network-wide accu-racy, enabling robots with poor landmark visibility to itera-tively correct their position estimates using relative distance data from well-localized peers. Consequently, the empirical Cumulative Distribution Function (CDF) of the positioning    
+
+> (a) Spherical Bounds (Baseline method)
+> (b) Spherical Bounds + Planar Bounds
+> (c) Decentralized Cooperative Localization (d) Centralized Oracle
+
+Fig. 5: Estimates vs True Position error (Fig. 7a) demonstrates the robust effectiveness of the proposed methodology, confirming a significantly higher probability of bounding the error within stringent operational tolerances. The DCL results presented herein were obtained using 
+
+K = 5 consensus iterations with a parameter setting of 
+
+α = 15 , yielding a highly efficient average computation time of 0.145 s (Figure 7b). In our decentralized implementation, we initialize the shared resource matrices ( Riℓ ) with zero matrices before the first communication round. Because the network lacks initial consensus, starting from this zero-state can make the local Semi-Definite Programs (SDPs) overly restrictive and mathematically infeasible right at the start. To guarantee the solver always finds a valid solution, we introduce non-negative local slack variables directly into the inter-robot range measurements. By essentially adding a temporary flexible buffer to the measured distances, these variables relax the rigid spatial constraints just enough to safely bootstrap the optimization process. While increasing the number of iterations improves localization accuracy, it inherently incurs a higher computational latency. Similarly, tuning the step size α dictates convergence dynamics: lower values guarantee stability at the cost of speed, whereas higher values accelerate updates but risk overshooting. Together, these parameters establish a clear, tunable trade-off between precision and real-time applicability, enabling the network to dynamically adapt to specific operational requirements. VI. C ONCLUSION 
+
+In this paper, we presented a robust, privacy-preserving framework for Decentralized Cooperative Localization (a) Comparison between SB and SB + PB 
+
+(b) Comparison between DCL and CO 
+
+Fig. 6: Error distribution for 4 methods (100 trials). 
+
+(a) Error CDF reveals that DCL achieves CO-quality solutions while maintaining privacy. 
+
+(b) Computation time analysis shows that the proposed DCL method remains practical. 
+
+Fig. 7: Error and computational efficiency comparison. (DCL) using range-only measurements. By discarding prob-abilistic noise models in favor of strictly bounded noise, we framed the localization problem as a convex Semi-Definite Programming (SDP) problem. The simulation results validate several key advantages of our framework. First, embedding geometric intersection-plane constraints immediately tightens feasible sets, improv-ing even the baseline decentralized SDP. Second, exchanging dual variables effectively propagates positional corrections across the fleet without ever communicating sensitive coordi-nate data, inherently preserving operational privacy. Finally, because the local SDP dimensions rely solely on neighbor count rather than total fleet size, the proposed architecture scales favorably to massive robotic deployments. Future work will focus on transitioning this framework from simulation to physical multi-robot hardware. Specifi-cally, the integration of DCL outputs into standard Extended Kalman Filter (EKF) pipelines to fuse with high-rate pro-prioceptive sensors is planned. By providing robust, glob-ally guaranteed correction anchors, the proposed privacy-preserving framework can serve as a direct, highly reliable substitute for GPS in unstructured and fully GPS-denied environments. Additionally, this EKF integration will resolve the vulnerabilities associated with high-speed motion and asynchronous communication. By relying on proprioceptive sensors for continuous high-rate tracking, the DCL consensus can function as a delayed absolute position update, ensuring stable localization without risking solver divergence from stale dual variables. REFERENCES [1] T. Moore and D. Stouch, “A generalized extended kalman filter imple-mentation for the robot operating system,” in Intelligent Autonomous Systems 13: Proceedings of the 13th International Conference IAS-13 .Springer, 2015, pp. 335–348. [2] S. I. Roumeliotis and G. A. Bekey, “Distributed multirobot localiza-tion,” IEEE transactions on robotics and automation , vol. 18, no. 5, pp. 781–795, 2002. [3] D. Fox, W. Burgard, H. Kruppa, and S. Thrun, “A probabilistic ap-proach to collaborative multi-robot localization,” Autonomous robots ,vol. 8, no. 3, pp. 325–344, 2000. [4] P.-Y. Lajoie, B. Ramtoula, F. Wu, and G. Beltrame, “Towards collabo-rative simultaneous localization and mapping: a survey of the current research landscape,” Field Robotics , vol. 2, pp. 971–1000, 2022. [5] J. Gonz´ alez-Garc´ ıa, A. G´ omez-Espinosa, E. Cuan-Urquizo, L. G. Garc´ ıa-Valdovinos, T. Salgado-Jim´ enez, and J. A. Escobedo Cabello, “Autonomous underwater vehicles: Localization, navigation, and com-munication for collaborative missions,” Applied Sciences , vol. 10, no. 4, p. 1256, 2020. [6] Y. Sartayeva and H. C. Chan, “A survey on indoor positioning security and privacy,” Computers &Security , vol. 131, p. 103293, 2023. [Online]. Available: https://www.sciencedirect.com/science/article/pii/S0167404823002031 [7] H. Li, Y. He, X. Cheng, H. Zhu, and L. Sun, “Security and privacy in localization for underwater sensor networks,” IEEE Communications Magazine , vol. 53, no. 11, pp. 56–62, 2015. [8] T. Denning, C. Matuszek, K. Koscher, J. R. Smith, and T. Kohno, “A spotlight on security and privacy risks with future household robots: attacks and lessons,” in Proceedings of the 11th international conference on Ubiquitous computing , 2009, pp. 105–114. [9] S. O. Oruma, Y. Z. Ayele, F. Sechi, and H. Rødsethol, “Security aspects of social robots in public spaces: a systematic mapping study,” Sensors ,vol. 23, no. 19, p. 8056, 2023. [10] C. Tang, D. Barradas, U. Hengartner, and Y. Hu, “On the feasibility of fingerprinting collaborative robot network traffic,” in International Conference on Availability, Reliability and Security . Springer, 2025, pp. 95–117. [11] D. Yu, X. Shi, L. Chai, W.-A. Zhang, and J. Chen, “Balancing localiza-tion accuracy and location privacy in mobile cooperative localization,” 
+
+IEEE Transactions on Signal Processing , vol. 71, pp. 2804–2818, 2023. [12] R. Chandra Shit, S. Sharma, P. Watters, K. Yelamarthi, B. Prad-han, R. Davison, G. Morgan, and D. Puthal, “Privacy-preserving cooperative localization in vehicular edge computing infrastructure,” 
+
+Concurrency and Computation: Practice and Experience , vol. 34, no. 14, p. e5827, 2022. [13] Y. Le, S. Wang, R. Lei, and H. Yao, “Privacy preserving in range-based cooperative indoor localization,” IEEE Signal Processing Letters ,2025. [14] Y. Zhu, Y. Qiu, J. Wang, J. Hu, F. Yan, and S. Zhao, “Protecting po-sition privacy in range-based crowdsourcing cooperative localization,” 
+
+IEEE Transactions on Network Science and Engineering , vol. 11, no. 1, pp. 1136–1150, 2024. [15] S. K. K. Hari, K. Sundar, J. Braga, J. Teixeira, S. Darbha, and J. Sousa, “Robust underwater vehicle pose estimation via convex optimization using range-only remote sensing data,” Remote Sensing , vol. 17, no. 15, 2025. [Online]. Available: https://www.mdpi.com/2072-4292/17/15/2637 [16] A. N. Angelopoulos and S. Bates, “A gentle introduction to conformal prediction and distribution-free uncertainty quantification,” 2022. [Online]. Available: https://arxiv.org/abs/2107.07511 [17] Y. Tang, J.-B. Lasserre, and H. Yang, “Uncertainty quantification of set-membership estimation in control and perception: Revisiting the minimum enclosing ellipsoid,” in 6th Annual Learning for Dynamics & Control Conference . PMLR, 2024, pp. 286–298. [18] S. Boyd and L. Vandenberghe, Convex optimization . Cambridge university press, 2004. [19] S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein, “Distributed optimization and statistical learning via the alternating direction method of multipliers,” Foundations and Trends® in Machine learn-ing , vol. 3, no. 1, pp. 1–122, 2011.
