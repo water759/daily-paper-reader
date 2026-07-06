@@ -6,71 +6,62 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-05
-- 运行时间：2026-07-05 20:42:53 UTC
+- 最新运行日期：2026-07-06
+- 运行时间：2026-07-06 20:56:14 UTC
 - 运行状态：成功
-- 本次总论文数：17
-- 精读区：6
+- 本次总论文数：14
+- 精读区：3
 - 速读区：11
 
 ### 今日简报（AI）
-今日精选17篇论文，精读6篇主攻LLM安全与隐私保护两大方向。最值得看的是《Cognitive Firewall》的零信任多门框架和隐私计算新方案。建议普通读者优先关注LLM安全领域，理解零信任架构在AI系统中的前沿应用。
-- 详情：[/202607/05/README](/202607/05/README)
+今日重点研究RAG系统黑盒攻击劫持推理与持久状态AI分布式攻击两篇高分论文。最值得关注的安全隐患：KidnapRAG可操纵检索增强生成推理，分布式攻击威胁持久状态AI控制。建议普通读者优先阅读"Always-On Agents"综述，了解LLM持久记忆与治理的基础概念。
+- 详情：[/202607/06/README](/202607/06/README)
 
 ### 精读区论文标签
-1. [Cognitive Firewall: A Proactive, Zero-Trust, Multi-Gate Framework for LLM Safety](/202607/05/2607.01277v1-cognitive-firewall-a-proactive-zero-trust-multi-gate-framework-for-llm-safety)  
+1. [KidnapRAG: A Black-Box Attack for Hijacking Reasoning in Agentic Retrieval-Augmented Generation Systems](/202607/06/2607.00422v1-kidnaprag-a-black-box-attack-for-hijacking-reasoning-in-agentic-retrieval-augmented-generation-systems)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：针对大语言模型多轮攻击的主动零信任安全框架
-2. [Privacy-Preserving and Verifiable Approximate Distributed Coded Computing](/202607/05/2607.02187v1-privacy-preserving-and-verifiable-approximate-distributed-coded-computing)  
+   evidence：针对Agentic RAG系统的黑盒投毒攻击，劫持推理过程，构成安全威胁
+2. [Distributed Attacks in Persistent-State AI Control](/202607/06/2607.02514v1-distributed-attacks-in-persistent-state-ai-control)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：隐私保护分布式学习框架
-3. [Why Trust Your Agent? Empirical Security Gains from TRiSM-Guided Agentic Workflows in Healthcare](/202607/05/2606.28666v1-why-trust-your-agent-empirical-security-gains-from-trism-guided-agentic-workflows-in-healthcare)  
+   evidence：持久状态AI控制中的分布式攻击
+3. [Beyond Wireless Security: Covert Communications in Large Language Model-enabled Edge Networks](/202607/06/2606.31016v1-beyond-wireless-security-covert-communications-in-large-language-model-enabled-edge-networks)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：AI信任风险与安全管理应用于代理工作流
-4. [Secure-CHG: A Comprehensive Framework for Robust and Fair Federated Learning via Hybrid Defense and Contribution-Aware Trust](/202607/05/2606.31066v1-secure-chg-a-comprehensive-framework-for-robust-and-fair-federated-learning-via-hybrid-defense-and-contribution-aware-trust)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：联邦学习中的混合后门攻击防御方法
-5. [SoK: Attack and Defense Landscape of Mobile On-device AI Systems](/202607/05/2607.00362v1-sok-attack-and-defense-landscape-of-mobile-on-device-ai-systems)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：移动设备AI系统攻防态势
-6. [Detecting Adversarial Evasion Attacks Against Autoencoder-Based Network Intrusion Detection Systems](/202607/05/2607.01194v1-detecting-adversarial-evasion-attacks-against-autoencoder-based-network-intrusion-detection-systems)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：检测针对自编码器网络入侵检测系统的对抗性规避攻击
+   evidence：大语言模型赋能边缘网络的安全威胁与防御
 
 ### 速读区论文标签
-1. [Forensic-Oriented Intrusion Detection Using Synthetic Network Traffic Data and Explainable Artificial Intelligence](/202607/05/2607.00763v1-forensic-oriented-intrusion-detection-using-synthetic-network-traffic-data-and-explainable-artificial-intelligence)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：面向取证的可解释AI入侵检测
-2. [Toward a Unified Security and Privacy Framework for AI-Native 6G Networks](/202607/05/2607.01019v1-toward-a-unified-security-and-privacy-framework-for-ai-native-6g-networks)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：AI原生6G网络安全与隐私综合调查
-3. [Generative AI and Federated Learning for Intrusion Detection Systems: A Survey](/202607/05/2607.01305v1-generative-ai-and-federated-learning-for-intrusion-detection-systems-a-survey)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：生成式AI和联邦学习在入侵检测中的应用综述，直接针对AI安全威胁与防御
-4. [Beyond Gradient-Based Attacks: Adversarial Robustness and Explainability Stability in Cybersecurity Classifiers](/202607/05/2607.01679v1-beyond-gradient-based-attacks-adversarial-robustness-and-explainability-stability-in-cybersecurity-classifiers)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：网络安全分类器的对抗攻击与鲁棒性
-5. [Formal Security Analysis of Agent Protocol Composition](/202607/05/2606.28690v1-formal-security-analysis-of-agent-protocol-composition)  
+1. [As We May Search](/202607/06/2606.29652v1-as-we-may-search)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：AI智能体协议的形式化安全分析
-6. [Privacy-Aware State Estimation: From Coarse to Precise Privacy Protection](/202607/05/2606.29412v1-privacy-aware-state-estimation-from-coarse-to-precise-privacy-protection)  
+   evidence：本地优先信息检索保护隐私，避免发送敏感数据到远程服务器
+2. [Always-OnAgents:A Survey of Persistent Memory, State, and Governance in LLMAgents](/202607/06/2606.30306v1-always-onagentsa-survey-of-persistent-memory-state-and-governance-in-llmagents)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：状态估计中的隐私保护与加密方案
-7. [GoodDiffusion: Proactive Copyright Protection for Diffusion Bridge Models via Learnable Sample-specific Signatures](/202607/05/2606.29759v1-gooddiffusion-proactive-copyright-protection-for-diffusion-bridge-models-via-learnable-sample-specific-signatures)  
+   evidence：LLM代理持久状态综述，包括凭证、权限、来源和审计记录，涉及安全治理
+3. [An AI-Based Solution for Secure Service Provisioning in IoT](/202607/06/2606.30701v1-an-ai-based-solution-for-secure-service-provisioning-in-iot)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：基于可学习签名的扩散模型主动版权保护，属于AI安全
-8. [Behavioral Governance for Autonomous AI Agents: The AgentBound Framework](/202607/05/2606.30970v2-behavioral-governance-for-autonomous-ai-agents-the-agentbound-framework)  
+   evidence：基于AI的物联网服务配置中的认证与授权
+4. [Robust Text Watermarking for Large Language Models via Dual Semantic Embeddings](/202607/06/2606.31602v1-robust-text-watermarking-for-large-language-models-via-dual-semantic-embeddings)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：自主AI代理的行为治理与身份联合
-9. [Fog Computing and Large Language Models: A vision for the mutual beneficiaries](/202607/05/2606.29483v1-fog-computing-and-large-language-models-a-vision-for-the-mutual-beneficiaries)  
+   evidence：LLM鲁棒水印作为防御手段
+5. [Decoupling Trust in Byzantine CRDTs: Fine-grained Post-Compromise Handling without Breaking Causality](/202607/06/2606.31759v2-decoupling-trust-in-byzantine-crdts-fine-grained-post-compromise-handling-without-breaking-causality)  
+   标签：评分：7.0/10、query:sec-cloud-ai
+   evidence：针对拜占庭分布式系统中的信任与安全，与分布式云计算安全相关
+6. [Federated Sovereign Transport Protocol (FSTP): Verifiable Coordination Without Disclosure](/202607/06/2607.00213v1-federated-sovereign-transport-protocol-fstp-verifiable-coordination-without-disclosure)  
+   标签：评分：7.0/10、query:sec-cloud-ai
+   evidence：通过协议级数据隔离实现隐私保护
+7. [Multi-Level Distributional Entropy for Explainable Network Intrusion Detection](/202607/06/2606.29797v1-multi-level-distributional-entropy-for-explainable-network-intrusion-detection)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：雾计算作为分布式云架构，解决云中心化问题
-10. [Privacy-Preserving Decentralized Cooperative Localization with Range-Only Measurements: A Convex Optimization Based Approach](/202607/05/2606.29673v1-privacy-preserving-decentralized-cooperative-localization-with-range-only-measurements-a-convex-optimization-based-approach)  
+   evidence：网络入侵检测方法用于云安全
+8. [A Hybrid Framework For Crypto-Ransomware Detection In Enterprise Shared Storage](/202607/06/2606.30586v1-a-hybrid-framework-for-crypto-ransomware-detection-in-enterprise-shared-storage)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：基于凸优化的隐私保护分布式协同定位
-11. [Spandana: Reconciling Strict SLOs with Low Cost under Fine-Grained Load Fluctuations](/202607/05/2606.30533v1-spandana-reconciling-strict-slos-with-low-cost-under-fine-grained-load-fluctuations)  
+   evidence：企业共享存储中加密勒索软件检测的混合框架，应对云安全挑战
+9. [Authentication in Quantum Networks](/202607/06/2606.30636v1-authentication-in-quantum-networks)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：云架构应对负载波动的SLO与成本平衡
+   evidence：量子网络认证综述，涵盖身份认证和密钥分发
+10. [Protecting Futures against Silent Data Corruption -- Efficient Task Replication for Dynamic Data Dependencies](/202607/06/2606.30771v1-protecting-futures-against-silent-data-corruption----efficient-task-replication-for-dynamic-data-dependencies)  
+   标签：评分：6.0/10、query:sec-cloud-ai
+   evidence：分布式计算中动态依赖的任务复制方法
+11. [Decoupling Trust in Byzantine CRDTs: Fine-grained Post-Compromise Handling without Breaking Causality](/202607/06/2606.31759v1-decoupling-trust-in-byzantine-crdts-fine-grained-post-compromise-handling-without-breaking-causality)  
+   标签：评分：6.0/10、query:sec-cloud-ai
+   evidence：拜占庭容错与云安全挑战相关
 
 
 <div class="dpr-home-promo-card">

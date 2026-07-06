@@ -1,0 +1,550 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-06T20:46:42.864607+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 3,
+    "deep_cap": 6,
+    "deep_selected": 3,
+    "quick_candidates": 17,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2607.00422v1",
+      "source": "arxiv",
+      "title": "KidnapRAG: A Black-Box Attack for Hijacking Reasoning in Agentic Retrieval-Augmented Generation Systems",
+      "abstract": "Retrieval-Augmented Generation (RAG) systems are vulnerable to poisoning attacks that inject malicious documents into the retrieval process to manipulate model outputs. Recent Agentic RAG systems are more robust to such attacks because they iteratively perform retrieval and reasoning, allowing them to ignore weakly relevant poisoned documents and preserve the reasoning chain induced by the user query. However, existing attacks on Agentic RAG systems often assume white-box access to system prompts, reasoning traces, retrievers, or model parameters, limiting their applicability in realistic settings. In this paper, we study black-box poisoning attacks against Agentic RAG systems, where the attacker can only publish externally retrievable poisoned documents. We propose KidnapRAG, a sequential poisoning attack that hijacks the agent's multi-step reasoning chain using three role-specific documents: Bait, Chain-Link, and Mal-Ins, which attract initial retrieval, induce query reformulation, and provide attacker-controlled evidence, respectively. Experiments across multiple Agentic RAG frameworks, LLM backbones, and benchmarks show that KidnapRAG consistently outperforms existing poisoning baselines under black-box conditions. Further analyses show that KidnapRAG progressively weakens the original retrieval intent, redirects retrieval behavior, and increases reliance on attacker-controlled evidence. Our code is publicly available at https://github.com/chanwoochoi316/KidnapRAG.",
+      "authors": [
+        "Chanwoo Choi",
+        "Euntae Kim",
+        "Kyuho Lee",
+        "Youngsam Chun",
+        "Jinhee Jeong",
+        "Eunmi Kim",
+        "Myunggyo Oh",
+        "Junseo Jang",
+        "Buru Chang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-01T04:32:17+00:00",
+      "link": "https://arxiv.org/pdf/2607.00422v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Black-box poisoning attack on Agentic RAG systems, hijacking reasoning for security threat",
+      "llm_evidence_cn": "针对Agentic RAG系统的黑盒投毒攻击，劫持推理过程，构成安全威胁",
+      "llm_evidence": "针对Agentic RAG系统的黑盒投毒攻击，劫持推理过程，构成安全威胁",
+      "canonical_evidence": "针对Agentic RAG系统的黑盒投毒攻击，劫持推理过程，构成安全威胁",
+      "llm_tldr_en": "Proposes KidnapRAG, a black-box poisoning attack that hijacks reasoning in Agentic RAG systems by publishing malicious documents, without requiring white-box access.",
+      "llm_tldr_cn": "现有对Agentic RAG系统的投毒攻击往往假设白盒访问。本文提出KidnapRAG黑盒攻击，攻击者仅需发布外部恶意文档即可劫持系统的推理链。实验成功操纵了多个Agentic RAG系统的输出。该工作揭示了Agentic RAG系统的安全漏洞，强调需要更鲁棒的防御措施。",
+      "llm_tldr": "现有对Agentic RAG系统的投毒攻击往往假设白盒访问。本文提出KidnapRAG黑盒攻击，攻击者仅需发布外部恶意文档即可劫持系统的推理链。实验成功操纵了多个Agentic RAG系统的输出。该工作揭示了Agentic RAG系统的安全漏洞，强调需要更鲁棒的防御措施。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.02514v1",
+      "source": "arxiv",
+      "title": "Distributed Attacks in Persistent-State AI Control",
+      "abstract": "As AI coding agents become more autonomous, they increasingly ship code iteratively, with the codebase persisting across sessions. This persistence creates a new attack surface: a misaligned or prompt-injected agent can distribute attacks across pull requests (PRs) and time its payload for the PR with the best natural cover. To study the resulting dynamics, we introduce Iterative VibeCoding, a setting for AI control, the study of safely deploying capable but potentially untrusted AI. In Iterative VibeCoding, a coding agent builds software over a sequence of PRs in a persistent codebase while pursuing a covert side task. Our benchmark includes two task families: CLI tools and Flask web services, across 20 total task variations. We use Claude Sonnet 4.5 as the attack agent and GPT-4o as the monitor. We compare gradual attacks, which distribute the side task across PRs, against non-gradual attacks concentrated in a single PR. No single monitor is robust to both: which strategy evades best (success while evading the monitor) depends on the monitor type, so a defender cannot close off both gradual and non-gradual attacks with any one monitor. High evasion (>= 65%) generalizes across model attack agent backends (Sonnet 4.5, Gemini 3.1 Pro, Kimi K2.5), confirming this is a property of the persistent-state attack surface rather than a single model's capability. Evasion also remains high across state-of-the-art monitor models and the gap between gradual and non-gradual evasion widens for more capable models. We introduce a stateful link-tracker monitor that tracks suspicious buildup across PRs. On both task families, it detects gradual attacks substantially better than diff monitors that merely see more accumulated history. Combining this stronger monitor with trajectory monitors in a four-monitor ensemble reduces gradual-attack evasion from 93% under the weakest standard diff monitor to 47%.",
+      "authors": [
+        "Josh Hills",
+        "Ida Caspary",
+        "Asa Cooper Stickland"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-02T17:59:56+00:00",
+      "link": "https://arxiv.org/pdf/2607.02514v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "distributed attacks in persistent-state AI control",
+      "llm_evidence_cn": "持久状态AI控制中的分布式攻击",
+      "llm_evidence": "持久状态AI控制中的分布式攻击",
+      "canonical_evidence": "持久状态AI控制中的分布式攻击",
+      "llm_tldr_en": "Introduces Iterative VibeCoding benchmark to study distributed attacks across pull requests in persistent AI coding agents, targeting AI security.",
+      "llm_tldr_cn": "自主AI编码代理在持续编码过程中，可能通过多个拉取请求（PR）分布恶意代码，产生新的攻击面。本文定义并建模了持久状态AI控制中的分布式攻击，提出Iterative VibeCoding基准测试，包含CLI工具和Web服务两种任务，揭示了AI控制中的安全威胁。该工作为AI安全防御提供了重要测试场景。",
+      "llm_tldr": "自主AI编码代理在持续编码过程中，可能通过多个拉取请求（PR）分布恶意代码，产生新的攻击面。本文定义并建模了持久状态AI控制中的分布式攻击，提出Iterative VibeCoding基准测试，包含CLI工具和Web服务两种任务，揭示了AI控制中的安全威胁。该工作为AI安全防御提供了重要测试场景。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2606.31016v1",
+      "source": "arxiv",
+      "title": "Beyond Wireless Security: Covert Communications in Large Language Model-enabled Edge Networks",
+      "abstract": "Large language model (LLM)-enabled edge networks (LLMENs) offer mobile users high-quality and low-latency AI-generated content services in the 6G era. However, unlike typical edge networks, LLMENs present unique security challenges due to the inherent complexity of LLMs, their high computational overhead, and continuous interactions with users. Specifically, both frequent user interactions (i.e., queries and responses) over wireless channels and potential electromagnetic information leakage from intensive LLM computations make LLMENs susceptible to various security threats, such as eavesdropping, jamming, prompt poisoning, and prompt injection attacks. Since existing countermeasures against these attacks often incur prohibitive overhead, developing holistic, efficient, and secure privacy protections for LLMENs is crucial. This article first reviews the vulnerabilities of LLMENs, outlines various attacks, and analyzes the drawbacks of existing countermeasures. To overcome these limitations, we propose a covert communications (CC) and computations approach to enhance both the overall security and efficiency of LLMENs. Furthermore, various supplementary solutions are developed to improve the covertness of this framework. Finally, our approach is further evaluated through a case study where the total latency is minimized under stringent communication and computational security requirements. Numerical results demonstrate the proposed approach's effectiveness in enhancing both privacy protection and the execution efficiency of LLM tasks.",
+      "authors": [
+        "Yuanai Xie",
+        "Jiaxin Chen",
+        "Zhaozhi Liu"
+      ],
+      "primary_category": "cs.NI",
+      "categories": [
+        "cs.NI"
+      ],
+      "published": "2026-06-30T01:07:39+00:00",
+      "link": "https://arxiv.org/pdf/2606.31016v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Security threats and defenses for LLM-enabled edge networks",
+      "llm_evidence_cn": "大语言模型赋能边缘网络的安全威胁与防御",
+      "llm_evidence": "大语言模型赋能边缘网络的安全威胁与防御",
+      "canonical_evidence": "大语言模型赋能边缘网络的安全威胁与防御",
+      "llm_tldr_en": "Identifies security threats (eavesdropping, prompt poisoning) in LLM-enabled edge networks and proposes covert communication as a defense mechanism.",
+      "llm_tldr_cn": "本文分析了LLM赋能边缘网络面临的安全威胁，包括窃听、提示注入和电磁泄漏，并建议通过隐蔽通信来增强防护。研究揭示了现有防御的高开销问题，为6G时代的AI安全提供了新视角。",
+      "llm_tldr": "本文分析了LLM赋能边缘网络面临的安全威胁，包括窃听、提示注入和电磁泄漏，并建议通过隐蔽通信来增强防护。研究揭示了现有防御的高开销问题，为6G时代的AI安全提供了新视角。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2606.29652v1",
+      "source": "arxiv",
+      "title": "As We May Search",
+      "abstract": "The sensitive information in personal documents, legal files, and medical records is among the most valuable things to search, yet current retrieval-augmented generation systems still require sending content to remote servers. We propose local-first IR, a design philosophy where indexes, models, and inference reside on user devices, treating remote services as optional. This paper makes four contributions: (1) a framework organizing retrieval architectures along three dimensions: privacy and control, capability, and accessibility, (2) experiments on consumer hardware across five benchmarks, scaling from 1K to 1M documents with dense retrieval, BM25, and hybrid fusion. Dense retrieval keeps over 91% nDCG@10 up to 100K documents, with approximate HNSW indexes extending this to 1M with only 2% quality loss; a 7B local language model reaches within 4 points of a cloud baseline on answer quality, (3) competing perspectives for and against local-first IR, informed by experimental evidence, and (4) a research agenda identifying open problems. The real tradeoff is scope rather than quality: what matters is what you can search, not how well you can search it.",
+      "authors": [
+        "Saber Zerhoudi",
+        "Adam Roegiest",
+        "Jelena Mitrovic",
+        "Michael Granitzer"
+      ],
+      "primary_category": "cs.IR",
+      "categories": [
+        "cs.IR"
+      ],
+      "published": "2026-06-28T23:46:29+00:00",
+      "link": "https://arxiv.org/pdf/2606.29652v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Local-first IR for privacy preservation, avoiding sending sensitive data to remote servers",
+      "llm_evidence_cn": "本地优先信息检索保护隐私，避免发送敏感数据到远程服务器",
+      "llm_evidence": "本地优先信息检索保护隐私，避免发送敏感数据到远程服务器",
+      "canonical_evidence": "本地优先信息检索保护隐私，避免发送敏感数据到远程服务器",
+      "llm_tldr_en": "Proposes local-first IR design philosophy for privacy-sensitive search, keeping models and indexes on-device, achieving high nDCG with dense retrieval up to 1M documents.",
+      "llm_tldr_cn": "当前RAG系统需将内容发送至远程服务器，存在隐私风险。本文提出本地优先信息检索设计，将索引、模型和推理全都运行在用户设备上，将远程服务视为可选。实验表明稠密检索在10万文档上保持91% nDCG@10，使用近似HNSW索引可扩展到百万文档仅损失2%质量。该工作为隐私保护搜索提供了可行的本地方案。",
+      "llm_tldr": "当前RAG系统需将内容发送至远程服务器，存在隐私风险。本文提出本地优先信息检索设计，将索引、模型和推理全都运行在用户设备上，将远程服务视为可选。实验表明稠密检索在10万文档上保持91% nDCG@10，使用近似HNSW索引可扩展到百万文档仅损失2%质量。该工作为隐私保护搜索提供了可行的本地方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.29797v1",
+      "source": "arxiv",
+      "title": "Multi-Level Distributional Entropy for Explainable Network Intrusion Detection",
+      "abstract": "Machine learning network intrusion detection systems (IDS) rely on aggregate flow statistics that discard distributional structure, while established entropy measures require raw packet sequences unavailable in pre-aggregated flow datasets. We propose Multi-Level Distributional Entropy (MDE), an analytical framework that derives interpretable entropy features directly from flow-level summary statistics at three levels: within-flow Gaussian differential entropy, cross-directional Jensen-Shannon divergence (JSD), and Transmission Control Protocol (TCP) flag-pattern Shannon entropy, without raw packet access or training data. Across four benchmarks (NSL-KDD, CICIDS-2017, CICIDS-2018, UNSW-NB15) under a leakage-free fold-local pipeline, entropy-only features achieve weighted F1 of 0.708-0.989, matching conventional features without degrading performance. Full operational metric reporting then exposes failure modes that aggregate F1 conceals. On CICIDS-2018, F1=0.74 hides a detection rate (DR) of 0.48, and on held-out attack families F1 exceeds 0.998 while DR falls to zero. Under temporal shift, a pseudo-live replay of 703K flows reveals a threshold-ranking divergence in which score ranking is preserved (AUC=0.87) but fixed thresholds collapse (DR=0.082) and recalibration offers no recovery. SHapley Additive exPlanations (SHAP) fold-stability analysis (Spearman rho=0.80-0.95) confirms that entropy attributions are reproducible and domain-coherent across heterogeneous environments.",
+      "authors": [
+        "Mohamed Aly Bouke",
+        "Md Shohel Sayeed",
+        "Swee-Huay Heng",
+        "Azizol Abdullah",
+        "Mohamed Othman"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-06-29T05:19:21+00:00",
+      "link": "https://arxiv.org/pdf/2606.29797v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Network intrusion detection method for cloud security",
+      "llm_evidence_cn": "网络入侵检测方法用于云安全",
+      "llm_evidence": "网络入侵检测方法用于云安全",
+      "canonical_evidence": "网络入侵检测方法用于云安全",
+      "llm_tldr_en": "Proposes Multi-Level Distributional Entropy (MDE) for interpretable intrusion detection from flow-level statistics, achieving competitive performance without raw packets.",
+      "llm_tldr_cn": "针对传统入侵检测系统依赖原始数据包或聚合统计的局限，本文提出多级分布熵（MDE）框架，直接从流级摘要统计中提取可解释的熵特征，在四个基准测试上无需训练数据即达到有竞争力的检测性能，为云环境中的网络入侵检测提供了一种简洁高效的方法。",
+      "llm_tldr": "针对传统入侵检测系统依赖原始数据包或聚合统计的局限，本文提出多级分布熵（MDE）框架，直接从流级摘要统计中提取可解释的熵特征，在四个基准测试上无需训练数据即达到有竞争力的检测性能，为云环境中的网络入侵检测提供了一种简洁高效的方法。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2606.30306v1",
+      "source": "arxiv",
+      "title": "Always-OnAgents:A Survey of Persistent Memory, State, and Governance in LLMAgents",
+      "abstract": "Always-on agents are systems whose future behavior depends on durable state accumulated across earlier interactions. We treat them as persistent-state systems: the operative system includes retrievable memories, but also task ledgers, permissions, credentials, commitments, provenance and audit records, shared state, trigger conditions, and externally committed effects linked to those records. The survey reads the literature through six diagnostic axes for each state item, authority, scope, mutability, provenance, recoverability, and actionability, and through a lifecycle in which state is written, validated, organized, retrieved, acted upon, updated, forgotten, audited, and sometimes rolled back. Across a 435-work coded corpus, treated as a scoped map rather than an exhaustive census, the literature concentrates more heavily on accumulating and retrieving state than on governing, recovering, or relinquishing it. We therefore introduce the Always-On Evaluation Protocol (AOEP-v0), a pilot evaluation contract that makes these governance requirements concrete by scoring state mutation and recovery obligations rather than answer quality alone. The resulting agenda connects always-on agents to databases, distributed systems, formal methods, capability security, and machine unlearning.",
+      "authors": [
+        "Tianyu Ding",
+        "Aditya Nannapaneni",
+        "Bingfan Liu",
+        "Ling Zhang"
+      ],
+      "primary_category": "cs.MA",
+      "categories": [
+        "cs.MA",
+        "cs.AI"
+      ],
+      "published": "2026-06-29T13:47:42+00:00",
+      "link": "https://arxiv.org/pdf/2606.30306v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Survey on persistent state including credentials, permissions, provenance, and audit records for LLM agents, addressing security governance",
+      "llm_evidence_cn": "LLM代理持久状态综述，包括凭证、权限、来源和审计记录，涉及安全治理",
+      "llm_evidence": "LLM代理持久状态综述，包括凭证、权限、来源和审计记录，涉及安全治理",
+      "canonical_evidence": "LLM代理持久状态综述，包括凭证、权限、来源和审计记录，涉及安全治理",
+      "llm_tldr_en": "A comprehensive survey of always-on LLM agents as persistent-state systems, analyzing state along six axes (authority, scope, etc.) and lifecycle, covering permissions, credentials, and audit for security.",
+      "llm_tldr_cn": "始终在线代理的行为依赖于跨交互积累的持久状态，包括记忆、任务账本、权限、凭证、审计记录等。本文通过六个诊断轴（权限、范围、可变性、来源、可恢复性、可行动性）和状态生命周期，对435篇文献进行编码综述。该工作为理解和管理AI代理中的安全状态提供了系统化视角。",
+      "llm_tldr": "始终在线代理的行为依赖于跨交互积累的持久状态，包括记忆、任务账本、权限、凭证、审计记录等。本文通过六个诊断轴（权限、范围、可变性、来源、可恢复性、可行动性）和状态生命周期，对435篇文献进行编码综述。该工作为理解和管理AI代理中的安全状态提供了系统化视角。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.30586v1",
+      "source": "arxiv",
+      "title": "A Hybrid Framework For Crypto-Ransomware Detection In Enterprise Shared Storage",
+      "abstract": "Most corporate workplace environments enforce policies and technical controls that limit the storage of sensitive data on client endpoints. Consequently, ransomware operators have evolved variants that expand their attack surface from local systems to network drives and shared storage resources. As traditional endpoint detection mechanisms focus primarily on local system behaviour, a compromised client can impact remote file servers, such as by encrypting shared data, without directly triggering behavioural changes on the servers themselves. In this paper, we propose a hybrid detection framework for detecting crypto-ransomware intrusion within integrated file server and client environments. The framework is based on a new technique referred to as Region of Interest (RoI) to analyse network traffic and extract Indicators of Compromise (IoCs). The IoC repository serves as an additional ruleset to enhance existing security tools such as EDRs and IDSs, while RoI-derived features are used to train an ML model to detect highly evasive variants. This study incorporates a broader set of ransomwares families and carefully selected benign behaviors based on domain expertise, ensuring coverage of common user actions that could interfere with ransomware detection. Beyond IoCs, which operate in a signature-based manner, our machine learning module achieves a detection precision of 99.64%, with a 0% false negative rate (FNR) and a minimal false positive rate (FPR). Furthermore, the proposed method enables early detection, identifying ransomware intrusions before significant damage occurs, achieving an accuracy of 99.44%.",
+      "authors": [
+        "Gervais Hatungimana",
+        "Abdun Naser Mahmood",
+        "Mohammad Jabed Morshed Chowdhury"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-06-29T17:30:51+00:00",
+      "link": "https://arxiv.org/pdf/2606.30586v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "hybrid framework for detecting crypto-ransomware in enterprise shared storage, addressing cloud security challenge",
+      "llm_evidence_cn": "企业共享存储中加密勒索软件检测的混合框架，应对云安全挑战",
+      "llm_evidence": "企业共享存储中加密勒索软件检测的混合框架，应对云安全挑战",
+      "canonical_evidence": "企业共享存储中加密勒索软件检测的混合框架，应对云安全挑战",
+      "llm_tldr_en": "Proposes a hybrid detection framework for crypto-ransomware targeting enterprise shared storage and file servers.",
+      "llm_tldr_cn": "论文针对企业中跨网络驱动器和共享存储的勒索软件攻击，提出一种混合检测框架。该框架集成文件服务器和客户端环境，基于新提出的技术检测加密勒索软件入侵，解决了传统端点检测无法覆盖远程文件服务器的问题。",
+      "llm_tldr": "论文针对企业中跨网络驱动器和共享存储的勒索软件攻击，提出一种混合检测框架。该框架集成文件服务器和客户端环境，基于新提出的技术检测加密勒索软件入侵，解决了传统端点检测无法覆盖远程文件服务器的问题。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2606.30701v1",
+      "source": "arxiv",
+      "title": "An AI-Based Solution for Secure Service Provisioning in IoT",
+      "abstract": "As the Internet of Things (IoT) continues its rapid expansion, the attack surface grows accordingly, with emerging threats targeting smart objects and their interactions. In this evolving landscape, securing service provisioning is crucial to ensure the proper functioning, security, and reliability of the IoT ecosystem. Service provisioning encompasses key tasks such as device registration, configuration, authentication, authorization, and software deployment, all of which are essential for seamless and secure IoT operations. In this paper, we present a comprehensive framework designed to select the most suitable smart objects to deliver a target service within a given IoT environment while also monitoring the behavior of the entities involved during the service provisioning phase. To achieve this, we employ a Deep Reinforcement Learning (DRL) approach in which an intelligent agent learns, through interaction with a complex, dynamic environment, how to adapt to changes while adhering to predefined security constraints. For behavioral monitoring, we leverage Federated Learning (FL) to develop a global Behavioral Fingerprinting (BF) model that is fully distributed and can analyze how IoT devices interact within the network. In addition, the BF is used to compute a reliability score for each service provider, reflecting its degree of compliance with the defined security constraints. This score is then incorporated into the service provisioning process, allowing smart objects to select providers not only according to functional suitability but also to their reliability level. Finally, we conduct an extensive experimental evaluation to assess the robustness and scalability of our approach. The results demonstrate that our solution can be effectively deployed even on resource-constrained IoT devices, making it a viable and scalable security-enhancing mechanism for modern IoT ecosystems.",
+      "authors": [
+        "Marco Arazzi",
+        "Mert Cihangiroglu",
+        "Serena Nicolazzo",
+        "Antonino Nocera",
+        "Vinod P"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-06-29T12:23:48+00:00",
+      "link": "https://arxiv.org/pdf/2606.30701v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "AI-based authentication and authorization in IoT service provisioning",
+      "llm_evidence_cn": "基于AI的物联网服务配置中的认证与授权",
+      "llm_evidence": "基于AI的物联网服务配置中的认证与授权",
+      "canonical_evidence": "基于AI的物联网服务配置中的认证与授权",
+      "llm_tldr_en": "Presents an AI-based framework for secure service provisioning in IoT, including device registration, authentication, and authorization.",
+      "llm_tldr_cn": "物联网服务配置涉及设备注册、认证、授权等关键安全步骤。本文提出一个基于AI的综合框架，利用智能对象选择和行为监控保障服务安全。框架通过机器学习选择最合适的智能对象执行服务，并持续监控其行为，确保整个生命周期的安全。该工作适用于云环境中身份认证和授权管理。",
+      "llm_tldr": "物联网服务配置涉及设备注册、认证、授权等关键安全步骤。本文提出一个基于AI的综合框架，利用智能对象选择和行为监控保障服务安全。框架通过机器学习选择最合适的智能对象执行服务，并持续监控其行为，确保整个生命周期的安全。该工作适用于云环境中身份认证和授权管理。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.30636v1",
+      "source": "arxiv",
+      "title": "Authentication in Quantum Networks",
+      "abstract": "In this review, we survey the cryptographic task of authentication from the perspective of quantum communication. We review three main flavours of authentication that are often conflated in the literature: authentication of classical messages, authentication of quantum messages, and entity authentication, also covering recent hardware-assisted approaches. We compare representative protocols for each functionality in terms of their security assumptions, set-up requirements, composability, and scalability in large or dynamic networks, and use these criteria to identify and recommend suitable candidates. Finally, applications are surveyed: we provide a detailed case study of authentication and quantum key distribution (QKD), then extend the discussion to protocols beyond QKD, where the role of authentication is more complex. Our take-home message is that an authentication requirement is not an intrinsic limitation of quantum networks: as with all secure communication, each protocol relies on a particular authentication resource, and the security claim of that protocol is meaningful only once the authentication resource and its deployment assumptions are made explicit. At the same time, the existing classical and quantum literature already offers a range of quantum-secure authentication schemes, which can support different applications when carefully matched to the required functionality, assumptions, and security guarantees.",
+      "authors": [
+        "Christopher Battarbee",
+        "Suchetana Goswami",
+        "Elham Kashefi",
+        "Mina Doosti"
+      ],
+      "primary_category": "quant-ph",
+      "categories": [
+        "quant-ph",
+        "cs.CR"
+      ],
+      "published": "2026-06-29T17:58:16+00:00",
+      "link": "https://arxiv.org/pdf/2606.30636v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "survey on authentication in quantum networks, covering entity authentication and key distribution",
+      "llm_evidence_cn": "量子网络认证综述，涵盖身份认证和密钥分发",
+      "llm_evidence": "量子网络认证综述，涵盖身份认证和密钥分发",
+      "canonical_evidence": "量子网络认证综述，涵盖身份认证和密钥分发",
+      "llm_tldr_en": "Comprehensive survey of authentication methods in quantum networks, comparing protocols for classical/QKD authentication and hardware-assisted approaches.",
+      "llm_tldr_cn": "论文综述了量子网络中的认证任务，包括经典消息认证、量子消息认证和实体认证，并比较了代表性协议的安全假设、设置要求、可组合性和可扩展性。特别详细讨论了认证与量子密钥分发的结合应用，为量子网络中的身份认证提供了系统化指导。",
+      "llm_tldr": "论文综述了量子网络中的认证任务，包括经典消息认证、量子消息认证和实体认证，并比较了代表性协议的安全假设、设置要求、可组合性和可扩展性。特别详细讨论了认证与量子密钥分发的结合应用，为量子网络中的身份认证提供了系统化指导。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2606.31602v1",
+      "source": "arxiv",
+      "title": "Robust Text Watermarking for Large Language Models via Dual Semantic Embeddings",
+      "abstract": "This work presents Dual-Embedding Watermarking (DEW), a semantic watermarking scheme for large language models (LLMs) that leverages contextual and token-level embeddings to enhance robustness against paraphrasing and translation. DEW utilizes a signal-processing methodology, applying algebraic vector-space operations to \\mbox{token and context embeddings to derive a watermark signal that degrades gracefully under semantic shifts. The method obfuscates the watermark by projecting embedding vectors through pseudo-random matrices seeded with a secret key. Relevant distributions derived from the underlying algebra are evaluated and employed for statistical testing and benchmarking of DEW. Experimental results across multiple LLMs indicate that DEW improves post-paraphrase detection while maintaining competitive text quality, and remains detectable after translation, even when prior semantic watermarks degrade significantly. These findings position DEW as a practical and robust solution for safeguarding LLM-generated text and addressing critical issues in responsible AI deployment.",
+      "authors": [
+        "Jonas Schäfer",
+        "Cezary Pilaszewicz",
+        "Gerhard Wunder"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.CR"
+      ],
+      "published": "2026-06-30T12:51:30+00:00",
+      "link": "https://arxiv.org/pdf/2606.31602v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Robust watermarking for LLMs as defense against unauthorized use",
+      "llm_evidence_cn": "LLM鲁棒水印作为防御手段",
+      "llm_evidence": "LLM鲁棒水印作为防御手段",
+      "canonical_evidence": "LLM鲁棒水印作为防御手段",
+      "llm_tldr_en": "Dual-Embedding Watermarking (DEW) enhances robustness of LLM watermarks against paraphrasing and translation, useful for AI security.",
+      "llm_tldr_cn": "本工作提出双嵌入水印（DEW），一种针对大语言模型的语义水印方案。利用上下文和token级嵌入，通过对嵌入向量进行伪随机投影隐藏水印。实验表明DEW对改写和翻译攻击具有鲁棒性，为AI模型版权保护提供了有效手段。",
+      "llm_tldr": "本工作提出双嵌入水印（DEW），一种针对大语言模型的语义水印方案。利用上下文和token级嵌入，通过对嵌入向量进行伪随机投影隐藏水印。实验表明DEW对改写和翻译攻击具有鲁棒性，为AI模型版权保护提供了有效手段。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.30771v1",
+      "source": "arxiv",
+      "title": "Protecting Futures against Silent Data Corruption -- Efficient Task Replication for Dynamic Data Dependencies",
+      "abstract": "As the size of computational problems grows, so does the likelihood of Silent Data Corruptions (SDCs). A common defense is replication, where the computation is repeated and correct results are determined by majority voting. Asynchronous Many-Task (AMT) runtimes are generally well suited for this approach, since the inputs and outputs of task replicas can be compared, and the tasks can be recomputed if necessary. Most existing SDC protection schemes assume static tasks and dependencies. Dynamic settings are more challenging, especially in clusters, since the tasks/data must be tracked for the comparisons.   This paper considers a particularly dynamic setting with task spawning at runtime, task communication through C++11-like promises/futures, conditional touches, and cluster-wide load balancing via work-first work stealing. We propose an approach that closely couples original and replica computations by cross-validating all outgoing effects when interacting with the runtime system. The approach selectively recomputes affected tasks only.   We implemented the approach in the ItoyoriFBC runtime system and conducted preliminary experiments with Fibonacci and emulated $\\mathcal{H}$-matrix LU decomposition benchmarks. Results show a factor of less than two increase of failure-free running times, despite full replication, which is mainly due to improved opportunities for load balancing resulting from the higher number of tasks. The overhead for failure correction was about 0.5% of the overall running time per SDC.",
+      "authors": [
+        "Rüdiger Nather",
+        "Claudia Fohry",
+        "Mia Reitz"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC"
+      ],
+      "published": "2026-06-29T18:04:57+00:00",
+      "link": "https://arxiv.org/pdf/2606.30771v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Task replication for dynamic dependencies in distributed computing",
+      "llm_evidence_cn": "分布式计算中动态依赖的任务复制方法",
+      "llm_evidence": "分布式计算中动态依赖的任务复制方法",
+      "canonical_evidence": "分布式计算中动态依赖的任务复制方法",
+      "llm_tldr_en": "Presents an efficient task replication scheme for silent data corruption protection in dynamic distributed systems with runtime task spawning.",
+      "llm_tldr_cn": "针对大规模分布式计算中静默数据损坏（SDC）问题，本文提出一种适应动态任务依赖的高效复制方案，支持运行时任务生成和分布式比较，在异步多任务运行时上实现，通过实验证明了其在集群环境下的有效性和低开销，增强了分布式云计算的可靠性。",
+      "llm_tldr": "针对大规模分布式计算中静默数据损坏（SDC）问题，本文提出一种适应动态任务依赖的高效复制方案，支持运行时任务生成和分布式比较，在异步多任务运行时上实现，通过实验证明了其在集群环境下的有效性和低开销，增强了分布式云计算的可靠性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2606.31759v2",
+      "source": "arxiv",
+      "title": "Decoupling Trust in Byzantine CRDTs: Fine-grained Post-Compromise Handling without Breaking Causality",
+      "abstract": "Conflict-free Replicated Data Types (CRDTs) provide strong eventual consistency without coordination, but classical approaches assume benign participants. In Byzantine settings, convergence is typically enforced through agreement on update validity, often relying on identity-based filtering. However, such approaches struggle in post-compromise scenarios, where a previously correct participant becomes malicious: retroactive exclusion of its updates may break causal dependencies and invalidate subsequent computations. In this paper, we decouple identity-based trust from content-based trust and introduce a fine-grained trust model that combines both dimensions. Building on deterministic reconstruction, our approach allows replicas to preserve previously accepted updates while enabling selective inclusion or exclusion based on both the originating identity (e.g., public keys) and the semantics of individual updates. Trust decisions can incorporate application-level policies, enabling precise control over the impact of each update on the system state. Our approach preserves causal consistency and enables robust and flexible handling of both Byzantine and faulty behavior in decentralized CRDT systems.",
+      "authors": [
+        "Amos Brocco"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC",
+        "cs.DS"
+      ],
+      "published": "2026-06-30T14:48:31+00:00",
+      "link": "https://arxiv.org/pdf/2606.31759v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "addresses trust and security in Byzantine distributed systems, relevant to distributed cloud computing security",
+      "llm_evidence_cn": "针对拜占庭分布式系统中的信任与安全，与分布式云计算安全相关",
+      "llm_evidence": "针对拜占庭分布式系统中的信任与安全，与分布式云计算安全相关",
+      "canonical_evidence": "针对拜占庭分布式系统中的信任与安全，与分布式云计算安全相关",
+      "llm_tldr_en": "Decouples identity-based and content-based trust in Byzantine CRDTs for fine-grained post-compromise handling without breaking causality.",
+      "llm_tldr_cn": "在拜占庭环境下的无冲突复制数据类型（CRDT）中，后泄密场景下排除恶意参与者的更新可能破坏因果依赖。本文提出将基于身份的信任与基于内容的信任解耦，引入细粒度信任模型，结合确定性重建方法，允许在不破坏因果性的前提下处理恶意更新。该方案保留了CRDT的最终一致性优势，同时增强了在拜占庭攻击下的鲁棒性。",
+      "llm_tldr": "在拜占庭环境下的无冲突复制数据类型（CRDT）中，后泄密场景下排除恶意参与者的更新可能破坏因果依赖。本文提出将基于身份的信任与基于内容的信任解耦，引入细粒度信任模型，结合确定性重建方法，允许在不破坏因果性的前提下处理恶意更新。该方案保留了CRDT的最终一致性优势，同时增强了在拜占庭攻击下的鲁棒性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing security and confidential computing",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.31759v1",
+      "source": "arxiv",
+      "title": "Decoupling Trust in Byzantine CRDTs: Fine-grained Post-Compromise Handling without Breaking Causality",
+      "abstract": "Conflict-free Replicated Data Types (CRDTs) provide strong eventual consistency without coordination, but classical approaches assume benign participants. In Byzantine settings, convergence is typically enforced through agreement on update validity, often relying on identity-based filtering. However, such approaches struggle in post-compromise scenarios, where a previously correct participant becomes malicious: retroactive exclusion of its updates may break causal dependencies and invalidate subsequent computations. In this paper, we decouple identity-based trust from content-based trust and introduce a fine-grained trust model that combines both dimensions. Building on deterministic reconstruction, our approach allows replicas to preserve previously accepted updates while enabling selective inclusion or exclusion based on both the originating identity (e.g., public keys) and the semantics of individual updates. Trust decisions can incorporate application-level policies, enabling precise control over the impact of each update on the system state. Our approach preserves causal consistency and enables robust and flexible handling of both Byzantine and faulty behavior in decentralized CRDT systems.",
+      "authors": [
+        "Amos Brocco"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC",
+        "cs.DS"
+      ],
+      "published": "2026-06-30T14:48:31+00:00",
+      "link": "https://arxiv.org/pdf/2606.31759v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Byzantine fault tolerance in distributed systems related to cloud security challenges",
+      "llm_evidence_cn": "拜占庭容错与云安全挑战相关",
+      "llm_evidence": "拜占庭容错与云安全挑战相关",
+      "canonical_evidence": "拜占庭容错与云安全挑战相关",
+      "llm_tldr_en": "Proposes fine-grained trust model for Byzantine CRDTs enabling post-compromise handling without breaking causality, relevant to distributed cloud security.",
+      "llm_tldr_cn": "针对拜占庭环境下的冲突自由复制数据类型，该论文提出了一种细粒度信任模型，将身份信任与内容信任解耦。通过确定性重建，支持后妥协场景下的更新处理而不破坏因果依赖。该工作有助于提升分布式云计算系统的安全性和容错能力。",
+      "llm_tldr": "针对拜占庭环境下的冲突自由复制数据类型，该论文提出了一种细粒度信任模型，将身份信任与内容信任解耦。通过确定性重建，支持后妥协场景下的更新处理而不破坏因果依赖。该工作有助于提升分布式云计算系统的安全性和容错能力。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.00213v1",
+      "source": "arxiv",
+      "title": "Federated Sovereign Transport Protocol (FSTP): Verifiable Coordination Without Disclosure",
+      "abstract": "This paper introduces the Federated Sovereign Transport Protocol (FSTP), a synchronization boundary and transport layer for federated networks in which nodes have heterogeneous privacy requirements. Existing federation protocols leave data confinement to operator policy: they define message formats and delivery semantics but impose no structural constraint on what a conforming server may emit. FSTP addresses this gap by making data confinement a property of the protocol itself.   The central mechanism is a synchronization agent whose output type set is formally closed. Raw internal data cannot appear in any federation message because the constraint is enforced by the Rust type system at compile time, not by a runtime check. A contextual identity model derives a separate, unlinkable identifier for each federation relationship, preventing cross-context correlation structurally. A Blocklace-based event substrate provides tamper-evident, partially ordered logging with synchronization cost proportional to the symmetric difference between node states, and supports data erasure without breaking the hash chain.   The result is proof without exposure: a federation participant can verify that a process occurred, that a credential is authentic, and that an outcome is uncorrupted without accessing the internal data that produced these artifacts. FSTP is developed as the inter-node transport layer of Velyzor, a governance platform for institutions with demanding confidentiality requirements. The specification and reference implementation are released as open-source infrastructure under Apache 2.0; source code and figures accompany this paper.",
+      "authors": [
+        "Ramón Soto C.",
+        "Liz Soto"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-06-30T21:44:43+00:00",
+      "link": "https://arxiv.org/pdf/2607.00213v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Privacy preservation through protocol-level data confinement",
+      "llm_evidence_cn": "通过协议级数据隔离实现隐私保护",
+      "llm_evidence": "通过协议级数据隔离实现隐私保护",
+      "canonical_evidence": "通过协议级数据隔离实现隐私保护",
+      "llm_tldr_en": "Introduces FSTP, a transport protocol that enforces data confinement at the protocol level using type system guarantees, enabling verifiable privacy in federated networks.",
+      "llm_tldr_cn": "本文提出联邦主权传输协议（FSTP），通过Rust类型系统在编译时强制数据隔离，确保内部数据不会泄漏到联邦消息中。该协议为异构隐私需求的联邦网络提供了可验证的隐私保护机制，是隐私保护领域的重要进展。",
+      "llm_tldr": "本文提出联邦主权传输协议（FSTP），通过Rust类型系统在编译时强制数据隔离，确保内部数据不会泄漏到联邦消息中。该协议为异构隐私需求的联邦网络提供了可验证的隐私保护机制，是隐私保护领域的重要进展。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

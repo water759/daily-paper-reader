@@ -1,0 +1,289 @@
+Title: Protecting Futures against Silent Data Corruption – Efficient Task Replication for Dynamic Data Dependencies
+
+URL Source: https://arxiv.org/pdf/2606.30771v1
+
+Published Time: Wed, 01 Jul 2026 00:04:30 GMT
+
+Number of Pages: 15
+
+Markdown Content:
+# Protecting Futures against Silent Data Corruption - Efficient Task Replication for Dynamic Data Dependencies 
+
+Rüdiger Nather, Claudia Fohry, and Mia Reitz 
+
+Research Group Programming Languages / Methodologies University of Kassel 
+
+Kassel, Germany 
+
+{ r.nather | fohry | mia.reitz }@uni-kassel.de 
+
+Abstract. As the size of computational problems grows, so does the likelihood of Silent Data Corruptions (SDCs). A common defense is replication, where the computation is repeated and correct results are de-termined by majority voting. Asynchronous Many-Task (AMT) runtimes are generally well suited for this approach, since the inputs and outputs of task replicas can be compared, and the tasks can be recomputed if necessary. Most existing SDC protection schemes assume static tasks and dependencies. Dynamic settings are more challenging, especially in clusters, since the tasks/data must be tracked for the comparisons. This paper considers a particularly dynamic setting with task spawning at runtime, task communication through C++11-like promises/futures, conditional touches, and cluster-wide load balancing via work-first work stealing. We propose an approach that closely couples original and replica computations by cross-validating all outgoing effects when interacting with the runtime system. The approach selectively recomputes affected tasks only. We implemented the approach in the ItoyoriFBC runtime system and con-ducted preliminary experiments with Fibonacci and emulated H-matrix LU decomposition benchmarks. Results show a factor of less than two increase of failure-free running times, despite full replication, which is mainly due to improved opportunities for load balancing resulting from the higher number of tasks. The overhead for failure correction was about 0.5 % of the overall running time per SDC. 
+
+Keywords: Asynchronous Many-Tasking · Silent Data Corruption ·
+
+Futures · Dynamic Data Dependencies. 
+
+# 1 Introduction 
+
+As HPC workloads grow in size and execution time, the likelihood of Silent Data Corruptions (SDCs) increases. SDCs are wrong results that are caused by faults such as random bit-flips. They alter the program state without triggering immediate failures, posing a critical threat to result correctness. A common  
+
+> arXiv:2606.30771v1 [cs.DC] 29 Jun 2026 2R. Nather et al.
+
+defense is replication, in which the computation is executed at least twice to detect failures. The failures are afterwards corrected with the help of a third (full or partial) execution, using majority voting. Replication is well suited for Asynchronous Many-Task (AMT) programming. In AMT, programs specify a large number of fine-grained tasks, and the runtime system (RTS) maps the tasks to a smaller number of execution units called workers. In clusters, the workers typically correspond to one or several processes per node. Example AMTs include HPX [1], ParSEC [2], Legion [3], and ItoyoriFBC [4]. The natural way of applying replication to AMTs is to compute individual tasks twice, compare their results, and re-execute the tasks if necessary. This has already been implemented for AMTs with static tasks (e.g. [5 –8]), where comparisons between the results are straightforward. Other AMTs such as HPX, Itoyori [9], and ItoyoriFBC [4], however, have dynamic tasks , which are spawned at runtime, possibly inside branches. Dynamic tasks need to be tracked to enable the comparisons. There is some recent work on SDC protection for dynamic tasks [10]. This work postpones failure detection and repair to a postprocessing phase, at the price of tripling the computational expense for early failures. Moreover, the work in [10] requires all tasks to return their results to the parent, whereas AMTs often permit directed acyclic graph (DAG)-structured task dependencies. Such dependencies were considered by Kurt et al. [11], but these authors presuppose direct dependencies between tasks, whereas most AMTs express the dependencies indirectly through data accesses. Reference [11] also re-executes a whole subgraph of the DAG instead of the infected task only. This paper proposes an SDC protection scheme for dynamic tasks with DAG-structured dependencies that are expressed through data accesses, using the future construct. A future is a placeholder for a still to be computed value. All dependencies must be expressed with futures, there are no side effects. We consider a recent, particularly flexible variant of future [12, 13], as well as a dynamic task scheduling method, namely work-first work stealing [14], and a cluster environment. The basic idea of our scheme is quite simple: We run the computation twice and closely monitor the executions by cross-validating all operations that cause effects outside their tasks. These operations (chiefly task spawns and writes to promises) involve the RTS, which records every first occurrence of such an operation and releases it only after having been confirmed by the other replica. Whenever the RTS detects a mismatch, it creates a correction replica , which repeats the task computation from the beginning, but omits already executed relevant operations such as spawns. When it arrives at the problematic operation, it determines the correct version, unblocks the corresponding task replica, and cancels the other. Our scheme can detect and repair all processing-related SDCs inside the application, except in the very unlikely case that two SDCs cause exactly the same failure in two task replicas. SDCs in memory, in the RTS, and during communication must be handled by other means, as in, e.g., [15]. Furthermore, we assume that tasks are deterministic regarding their outgoing effects. Protecting Futures against SDC 3
+
+We implemented the scheme in the ItoyoriFBC runtime system [4, 16] and performed preliminary experiments with two benchmarks, Fibonacci and emulated 
+
+H-matrix LU decomposition, on up to 16 nodes with 640 workers. Interestingly, the overall running time increased by a factor of only about 1.8 for fib , and slightly below 2 for hlu , despite full duplication of the computation. We attribute this result to improved opportunities for load balancing due to a higher number of tasks and a reasonable degree of locality. Moreover, we observed a correction overhead per SDC of about 0.5 % of the overall running time on average, and never above 2 %. Altogether, our contributions are as follows: 
+
+– We propose a new SDC protection scheme for dynamic AMT runtimes under work-first work stealing in clusters. It closely couples two identical executions, timely detects mismatches, and selectively re-executes only the affected tasks. 
+
+– We implemented a simple refinement of the scheme in the ItoyoriFBC cluster RTS and discuss possible improvements. 
+
+– We conducted preliminary performance measurements without and with failures for two benchmarks. In these experiments, we observed low overheads. The paper continues with background on AMT programming, future-based task cooperation, and the ItoyoriFBC runtime system in Section 2. Then it explains our new SDC protection scheme in Section 3. Thereby we first describe its general idea, and afterwards sketch our implementation and discuss alternatives. Thereafter, Section 4 is devoted to experiments, Section 5 discusses related work, and Section 6 concludes the paper. 
+
+# 2 Background 
+
+2.1 AMT Programming and Future Construct 
+
+AMT programs specify a large number of asynchronous tasks, and an RTS maps the tasks to a smaller number of workers. This paper considers cluster AMTs, where the workers correspond to one or several processes per node. Existing AMT environments differ in their task models, i.e., in their mecha-nisms for task creation and cooperation [17, 18]. Common models include Sequen-tial Task Flow (STF) and Nested Fork-Join (NFJ). STF imposes a sequential order on task creation, and NFJ requires child tasks to return their result to the parent. Since these models are quite restrictive, AMT environments often incorporate side effects. Unfortunately, side effects undermine the clarity of task interfaces, which is an important advantage of AMT and essential for failure protection. This paper considers a lesser-known, but similarly expressive programming model, called Future-Based Coordination (FBC [4]). It disallows side effects, but achieves expressiveness with dynamic task spawning and the future construct. An FBC computation begins with a single root task. Then, each task may spawn any number of children, recursively and possibly inside branches. Futures are single-assignment variables that can be communicated before having been filled. They can be used for task synchronization, whereby one 4 R. Nather et al.                                       
+
+> Listing 1.1. Naive Fibonacci computation in the FBC model 1void fib ( int n , promise p0 ) {
+> 2if ( n <2) {
+> 3p0 . set (1);
+> 4}else {
+> 5promise p1 =make_promise ();
+> 6spawn fib (n -1 , p1 );
+> 7int a=fib (n -2);
+> 8future f1 =p1 . get_future ();
+> 9int b=f1 . touch ();
+> 10 p0 . set ( a + b );
+> 11 }
+> 12 }
+
+task writes to a future, and others read from it, but are blocked if necessary until the value is available. This paper considers a recent, particularly flexible variant of future [12, 13]. Like C++11 or HPX futures [19], it is based on a placeholder memory location that can separately be referred to for writing or reading. For writing, it is denoted as promise , and for reading as the actual future .Promises and futures can be stored in program variables of types promise<T> and 
+
+future<T> , respectively. Thereby, T may be any type, including an incompletely defined one, which enables futures of futures. After a promise has been written to, the promise and all associated futures are ready . A future is read by touch ing it. If it is ready, the touch returns the value. Otherwise, it suspends the calling task and the executing worker switches to another task. Both promises and futures may be passed as task parameters. Thereby promises are assigned, meaning that the child task becomes responsible for filling the promise. Futures, in contrast, are copied, such that the child can read the future afterwards and pass it on to other tasks. The considered future variant enables the expression of highly dynamic dependencies due to several features: 
+
+– A task may start before its futures are ready. This allows it to decide internally within conditionals, which futures it actually needs to touch. 
+
+– A future may be communicated to arbitrary, non-related tasks via parameter passing or by writing it into promises. Thereby the sender need not know the number and identities of the receivers. 
+
+– Promises may be defined before task creation. Thus, the associated futures can be generated and communicated before it is clear which task will fill the promise. 
+
+– A task that is responsible for filling a promise may decide during its execution to delegate this responsibility to another task. Listing 1.1 depicts FBC code for a naive Fibonacci computation. It is invoked by calling fib(n, make_promise()) . The main branch starts with creating a Protecting Futures against SDC 5
+
+promise ( make_promise , line 5). Then it spawn s a task and assigns the responsi-bility for filling the promise by passing it as a parameter (line 6). The associated future must be obtained ( get_future , line 8), since only futures may be touched and forwarded to other readers. This simple example does not show the forward-ing. Instead, the future is touch ed by the parent task (line 9). The touch call may suspend the task until the child task has filled the promise with function 
+
+set (line 3 or 10). Afterwards the sum is computed and written to the promise. The code illustrates all relevant programming constructs, except for the passing of futures, which is syntactically obvious. Note that the passing of futures differs from that of promises, as has been explained above. Reference [13] lists a few other constructs, but they can be emulated with the given ones. 
+
+2.2 Work-First Work Stealing and ItoyoriFBC 
+
+Dynamic tasks are often implemented with work stealing . Therein each worker maintains a local task pool , for which we assume a deque with a locking mechanism for access protection. Initially, all pools are empty and one worker processes the start task. During normal operation, a worker repeatedly takes the topmost task out of its pool and processes it. When the pool is empty (such as at the beginning), the worker tries to steal a task from a randomly chosen co-worker. Thereby the thief always takes the oldest (lowermost) task from the victim pool. The behavior of a worker at a spawn is defined by the help-first or work-first 
+
+policy [20]. We consider work-first, which has a strong theoretical foundation including performance guarantees [14]. Under work-first, the worker suspends the current task, constructs a continuation , pushes the continuation onto its task pool, and branches into the child task. Work-first work stealing has mostly been implemented on shared-memory machines (e.g. [21]), but a few cluster implementations exist (e.g. [9,22]). Notably, Itoyori [9] and its variant ItoyoriFBC [4] use a uni-address scheme [23] to efficiently store and migrate continuations. These systems are C++ libraries and follow the NFJ or FBC model, re-spectively. The newest version of ItoyoriFBC [16] implements the future variant described above. It uses one-sided MPI communication to realize a Partitioned Global Address Space (PGAS) memory, which is not exposed to programmers, but only used in the RTS. Among others, promises/futures are stored in this memory, such that their addresses are global. More precisely, each promise is allocated in the local memory of the worker that creates it and is never moved. When a task is suspended due to a touch to a non-ready future, its continuation is inserted into a local queue at the promise site. When the promise becomes ready, all continuations from this queue are pushed onto the task pool of the filling worker. 
+
+# 3 New SDC Protection Scheme 
+
+3.1 General Scheme 
+
+Summarizing Section 2.1, our FBC tasks can perform the following operations: 6 R. Nather et al. 
+
+– standard sequential operations, 
+
+– task spawns that include parameter passing of values, promises, and futures, 
+
+– creations of promises and inquiries of associated futures, 
+
+– writes to promises (briefly called psets), and 
+
+– touches of futures. Of these operations, only task spawns and psets cause data to leave the boundaries of their task. Thus, our new SDC protection scheme pursues the idea of confining failures to the task in which they originally occurred by cross-validating these operations. More specifically, the RTS delays their execution until they are identically requested by two task replicas. At program start, the scheme spawns two copies of the start task. One of them is assigned to a worker for execution, and the other is placed in the worker’s task pool. Two copies of the same task are called twins or replicas . The execution of twins is coordinated with a task descriptor , which contains: 
+
+– a pointer to the task code, 
+
+– all task parameters, 
+
+– in slots 1 and 2, the respective continuations and most recent unconfirmed operations of at most two suspended task replicas, 
+
+– a counter for the number of previously committed operations, and 
+
+– a lock to protect accesses to the task descriptor. Task processing and work stealing are performed as usual, except for spawns and psets. When a task calls one of these functions, the RTS executes the code in Listing 1.2, which distinguishes different cases: First, when the descriptor does not currently contain a task replica, the calling replica is ahead of its twin (lines 3–5). The RTS suspends our task and records 
+
+its continuation and the requested operation in the task descriptor. Then the worker continues with the next task as usual, which typically is the other twin. Second, when the descriptor already contains a suspended task (lines 6 to 14), its most recent operation (including parameters) is compared with the currently requested one. Thereby the name of the operation, its number of parameters, and all directly passed values must agree. This means that all relevant data must be held in memory in two locations, until the correctness is confirmed by the task replica. Furthermore, each passed promise and future must have the same type and contain the same address as its counterpart. For the address, equivalence may be sufficient for some implementations (see Section 3.3). In cases of full agreement, the operation is committed .Committing of spawns is detailed in lines 31–35. Notably two replicas of the child task are generated at once. Thus there are four open tasks afterwards, of which three are inserted into the worker’s local pool (in this order): 
+
+– recorded continuation of twin task from task descriptor (bottommost), 
+
+– continuation of current task, 
+
+– one child replica (topmost). Protecting Futures against SDC 7
+
+Listing 1.2. Outline of spawn/pset RTS functions (td = task descriptor, tp = task pool, R = replica, op = operation (spawn or pset), corr = correction, cont = continuation) 1 spawn ( args ) or pset ( promise , value ) {
+
+2 lock td ; 
+
+3 if ( both slots of td are empty ) {
+
+4 record current cont and requested op in slot 1; 
+
+5 assign top task from tp to worker ( or start stealing ); 
+
+6 } else if ( slot 1 of td is filled && slot 2 is empty ) {
+
+7 if ( equal ( op in td , requested op )) {
+
+8 commit op ( see below ) and increase counter ; 
+
+9 if ( op == spawn ) assign child replica to worker ; 
+
+10 if ( op == pset ) return ; 
+
+11 } else { // SDC has occurred 
+
+12 record current cont and requested op in slot 2 of td ; 
+
+13 create corr - R and assign it to worker ; 
+
+14 }
+
+15 } else {
+
+16 // both slots of td are filled && R requested op 
+
+17 if ( counter in corr - R != counter in td ) {
+
+18 increase counter in corr - R and return ; 
+
+19 } else if ( equal ( op in slot 1 , requested op )) {
+
+20 commit op ( see below ); 
+
+21 turn corr - R into normal R and assign it to worker ; 
+
+22 } else if ( equal ( op in slot 2 , requested op )) {
+
+23 // analogous 
+
+24 } else {
+
+25 abort ; 
+
+26 }
+
+27 }
+
+28 unlock td ; 
+
+29 }
+
+30 31 commit spawn ( args ) {
+
+32 create two child R ’ s ; 
+
+33 push to tp : cont from td , current cont , one child R ; 
+
+34 clear both slots of td ; 
+
+35 }
+
+36 37 commit pset ( promise , value ) { // implementation - specific 
+
+38 promise = value ; 
+
+39 resume conts of associated futures ( as usual ); 
+
+40 move saved cont from td to tp ; 
+
+41 clear both slots of td ; 
+
+42 }8 R. Nather et al. 
+
+Both continuations begin at the operation after the spawn. The worker itself continues with the other child replica (line 9), according to the work-first policy. Committing psets may have to take the existence of two instances of the promise into account, but our implementation uses a single instance (see Sec-tion 3.2). Therefore the commit actions are analogous, but simpler than those for spawn (lines 37–42). When the currently requested operation differs from the unconfirmed one in the task descriptor, an SDC must have occurred (lines 11–14). In this case, our replica is suspended and recorded in slot 2 of the task descriptor. Then, a correction replica is created and assigned to the current worker. The correction replica repeats the task computation from the beginning , using code and parameters from the task descriptor. Correction replicas are marked as such. During their execution, they skip all spawns and psets until reaching the problematic operation (lines 17–18). Skipping is fine, since these operations have already been executed. This way our scheme avoids the re-execution of healthy child tasks. For the problematic operation, the correction replica determines the correct one of the previously recorded versions, releases the corresponding continuation, removes the other, and commits the operation (lines 19–23). If the correction task disagrees with both previously recorded operations (lines 24–26), more than one SDC must have occurred within the same task, which is very unlikely. While a repair would be conceivable, we simply abort the overall program execution in this case. 
+
+3.2 Implementation 
+
+For the implementation, we reconsidered the previous observation that only spawns and psets cause data to leave the boundaries of their task. While it is true, promise creations and touches also have outgoing effects. Most importantly, a touch of a non-ready future inserts the current continuation into a queue at the promise. If it is the wrong promise due to an SDC, the continuation will not be found by its twin and starve. Our implementation resolves this issue in a simple way: It records/commits not only spawns and psets, but also promise creations and touches of futures. Like in Section 3.1, the first replica that requests one of these operations records it and is suspended, and the second replica commits the operation. Continuations are formed slightly differently here such that, after resuming, they first read the address of the promise, or the value of the future, respectively. When a promise creation is committed, it allocates a single placeholder location. When a touch is committed, it returns the value if available, or, otherwise, inserts the continuations of both replicas into a queue at the promise. Comparisons of promise creations check the type of the promise, and comparisons of touches check type and address of the future. The placement of promises/futures in the cluster is the same as in ItoyoriFBC and, like there, they are never moved. Similarly, the task descriptor is allocated in the local memory of the parent task and never moved. Protecting Futures against SDC 9
+
+3.3 Discussion 
+
+Our implementation is simple, but has drawbacks regarding efficiency. Below we discuss its pros and cons and outline optimization potential. Part of the discussion refers to the general SDC protection scheme. Local placement of the task descriptor at spawns tends to work well, since the spawning worker directly branches into one child replica and often continues with the other one afterwards (because it finds that replica topmost in its task pool). Thus, as long as the child replica is not stolen, all accesses to the task descriptor are local. Steals of child replicas are fortunately rare, because these replicas are located opposite the steal end in the task pool. After child steals, however, the replica must remotely access the task descriptor. Even worse, it is typically behind its twin and thus commits the next operation. Thereby it moves the saved continuation from the task descriptor to its own pool, extending the remote accesses to the other replica. A future implementation may migrate the task descriptor at steals, but we did not yet implement this optimization. The locality is also limited: Even though futures may be communicated to remote tasks, the placement of promises is rigid. When a remote task touches a non-ready future, its continuation is moved to the promise. While this improves the locality of the touch itself, accesses to the task descriptor become remote afterwards. An improved implementation should take the migration of promises and the replication of filled promises into account. The recording of promise creations and touches in our implementation is simple, but introduces additional suspension points. An alternative refinement of the general scheme could create separate promises in the twin computations and connect them to each other. Separate promises have the additional advantage that they enable the detection of in-memory SDCs, which could afterwards be repaired with the method from [10]. As a second alternative, promise creations and touches could be delayed until the next spawn/pset and then be checked together with it. Lastly, duplicate promises/futures could be removed at the next spawn/pset and a conversion table for their addresses be maintained. The SDC protection scheme itself differs from its non-resilient counterpart by spawning two child replicas instead of one, which necessarily increases the number of deviations from the standard sequential execution order. While deviations always reduce the locality [24], the particular deviations cause relatively little harm because the corresponding code sections tend to be executed shortly after each other by the same worker. One may nevertheless question the frequent switching between tasks in our protection scheme. An alternative scheme could duplicate only the code sections that correspond to these tasks and cross-validate their operations inside the task. This may be preferable, especially for code sections with a high density of relevant operations, but requires compiler support. Moreover, the replication of tasks instead of code sections doubles the number of tasks. In consequence, idle workers tend to find work more quickly, which is particularly relevant in the starting phase of a program execution. 10 R. Nather et al. 
+
+This positive impact on load balancing can also be captured with the well-known terms work and span . Using these terms, our SDC scheme doubles the work, but it does not double the span because twin tasks may be run in parallel. In fact, the spawn is not increased at all at the program level, and it is only slightly increased if one takes the additional RTS operations such as comparisons into account. Finally, correction replicas re-execute the affected task itself, but not its children. Thus, the recovery overhead of our scheme is at most k task executions for k SDCs. 
+
+# 4 Experiments 
+
+4.1 Experimental Setup Hardware. All experiments were performed on a partition of the Goethe cluster of the University of Frankfurt [25]. This cluster consists of homogeneous Infiniband-connected nodes, each equipped with two 20-core Intel Xeon Skylake Gold 6148 CPUs and 192 GB of main memory. We ran our experiments on up to 16 nodes with a total of up to 640 workers. The source code of our experiments is available online [26]. 
+
+Software. We compiled our programs with Open MPI 5.0.5 and g++ 11.4.1 using the -O3 switch. 
+
+Benchmarks. We evaluated our scheme using two benchmarks with distinct characteristics: 
+
+– Naive Recursive Fibonacci ( fib ): This benchmark resembles Listing 1.1, but spawns two child tasks instead of one. We use n = 62 and a sequential cutoff of C = 32 , where calls to fib (n) with n < C do not spawn new tasks. 
+
+– Hierarchical LU Decomposition ( hlu ): This benchmark from [12] emu-lates the LU decomposition of hierarchical matrices. It spawns a quad-tree of tasks of height h. The emulation does not perform actual numerical com-putations, but the tasks busy-wait instead. We set the busy-wait time to a total of t = 100 s across all tasks and use h = 7 .
+
+Fault Injection. For fib , we simulated faults by injecting random bit flips into the task results set in promises. For hlu , we simulated faults by causing the runtime to skip future touches. Thereby, we test correctness in case of corrupted task results and control flow. 
+
+Metrics. Below Protection Overhead denotes the percentage increase in running time of a failure-free protected run ( 0 SDCs) compared to a baseline unprotected run. Restore Overhead denotes the percentage increase in running time of a protected run with one or more SDCs compared to a failure-free protected run. Each experimental configuration was repeated 10 times, and we report the averages of these runs. Protecting Futures against SDC 11 
+
+16 32 64 128 256 512 
+
+40 80 160 320 640 16 32 64 128 256 
+
+40 80 160 320 640 
+
+Base 0 SDC 1 SDC Runtime (s) Cores Strong Scaling ( fib )Base 0 SDC 1 SDC Runtime (s) Cores Weak Scaling ( hlu )     
+
+> Fig. 1. Strong scaling for fib (left) and weak scaling for hlu (right) in failure-free runs.
+
+020 40 60 80 100 120 140 
+
+40 80 160 320 640 00.20.40.60.811.21.41.61.8
+
+40 80 160 320 640 
+
+fib hlu 
+
+> Overhead (%)
+
+Cores SDC-free Protection Overhead 
+
+fib hlu 
+
+> Overhead (%)
+
+Cores Single SDC Restore Overhead  
+
+> Fig. 2. Protection overhead in failure-free runs (left) and restore overhead for a single SDC (right).
+
+4.2 Results 
+
+Figure 1 shows that the protected fib and hlu programs have a similar scaling pattern to their unprotected counterparts. Figure 2 (left) demonstrates that the failure-free protection overhead (0 SDCs) is approximately 80 % for fib and slightly less than 100 % for hlu . This outcome is remarkable, since one would expect the protection overhead to be at least 100 % , due to the doubling of the task computations. The smaller overhead confirms our argument from Section 3.3 that the doubling of tasks facilitates load balancing. When faults are injected, the restoration cost is low. As shown in Figure 2 (right), restoring from a single SDC adds less than 2 % overhead to the overall running time for fib and less than 1 % for hlu . Figure 3 illustrates that even when injecting up to six SDCs during each run, the restore overhead is only about 0.5 %. 12 R. Nather et al. 
+
+00.20.40.60.811.21.41 2 3 4 5 6
+
+40 Cores 80 Cores 160 Cores 320 Cores 640 Cores Overhead (%) Number of SDCs Restore Overhead vs SDC Count   
+
+> Fig. 3. Restore overhead for multiple SDCs for hlu .
+
+# 5 Related Work 
+
+AMT programming has received much attention (e.g. [17, 18]) and there is also some previous work on fault tolerance. It partly addresses fail-stop errors and handles them by techniques such as task-level checkpointing and supervi-sion (e.g. [27]). Some existing work on SDC protection relies on user-provided plausibility tests or other application-specific methods for error detection (e.g. [7, 15]). Replication, in contrast, is a universal detection method. It can be applied at different granularity levels, whereby tasks are the natural level for AMTs [5, 28]. Replication can be used for both failure detection and repair. For repair, all or part of the computation must be run three times and the correct version be determined with majority voting (e.g. [8, 29]). Depending on how quickly an error is detected, re-running may be needed for the affected task only (e.g. [7]), or for an infected subgraph [11]. The computation can also be rolled back to a previous checkpoint [15, 30]. Thus far, replication has mostly been applied to static tasks (e.g. [5 –8]). For instance, Samfass et al. run the task graph twice and reuse task results that have passed a plausibility test. A recent proposal for dynamic tasks refers to NFJ and postpones failure handling to a postprocessing phase [10]. Our approach, in contrast, detects and repairs failures shortly after their occurrence to minimize wasted work. The present paper was inspired by a similar, but still unimplemented approach for help-first work stealing in shared-memory environments [31]. 
+
+# 6 Conclusions 
+
+This paper has proposed a new SDC protection scheme for AMT programs with dynamic task spawns and dynamic dependencies expressed with the future Protecting Futures against SDC 13 
+
+construct. Its main idea is a close coupling of twin computations, whereby operations with outgoing effects are recorded by the first execution and committed after having been confirmed by the second. In cases of mismatch, the affected task is repeated and the correct operation determined by majority voting. We first presented the scheme in a general way and then refined and imple-mented it. While the general scheme cross-validates only task spawns and writes to promises, the refinement also cross-validates promise creations and touches. Other refinements are conceivable and we briefly discussed them. In preliminary experiments, we observed a performance overhead of less than 100 % despite full duplication, due to improved load balancing. Future work may further improve this outcome by exploring refinements and investigating data redistribution. Moreover, it should extend the experimental evaluation to more data-intense benchmarks. Future work may also study other SDC protection schemes, which, for instance, perform comparisons at a coarser granularity, detect SDCs by checksums instead of replication, or map the replicas onto hardware to further increase the detection probability or to exploit mixed precision. 
+
+Acknowledgments. This research was funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) under project number 512078735. The authors gratefully acknowledge the computing time provided to them on the Goethe-NHR cluster at the Frankfurt Center for Scientific Computing. 
+
+Disclosure of Interests. The authors have no competing interests to declare that are relevant to the content of this article. 
+
+# References 
+
+1. Kaiser, H., et al.: HPX: A Task Based Programming Model in a Global Address Space. In: Proc. of the 8th Int. Conf. on Partitioned Global Address Space Pro-gramming Models (2014) 2. Bouteiller, A., et al.: PaRSEC: Scalability, flexibility, and hybrid architecture support for task-based applications in ECP. The Int. Journal of High Performance Computing Applications (2024) 3. Aiken, A., et al.: Programming with Legion (2023), https://legion.stanford. edu/pdfs/legion-manual.pdf 
+
+4. Reitz, M., et al.: Investigating the performance difference of task communication via futures or side effects. In: Proc. European Conf. on Parallel Processing. Workshop on Asynchronous Many-Task Systems for Exascale (AMTE). pp. 255–267 (2024) 5. Wang, Y., et al.: A work-stealing scheduling framework supporting fault tolerance. In: Proc. Design, Automation and Test in Europe (DATE) (2013) 6. Samfass, P., et al.: Doubt and redundancy kill soft errors—Towards detection and correction of silent data corruption in task-based numerical software. In: IEEE/ACM Workshop on Fault Tolerance for HPC at eXtreme Scale (FTXS). IEEE (2021) 7. Gupta, N., et al.: Towards distributed software resilience in asynchronous many-task programming models. In: Proc. Workshop on Fault Tolerance for HPC at eXtreme Scale (FTXS). pp. 11–20 (2020) 14 R. Nather et al. 8. Paul, S.R., et al.: Integrating Inter-Node Communication with a Resilient Asyn-chronous Many-Task Runtime System. In: Proc. Workshop on Exascale MPI (Ex-aMPI). pp. 41–51 (2020) 9. Shiina, S., et al.: Itoyori: Reconciling global address space and global fork-join task parallelism. In: Proc. of the Int. Conf. for High Performance Computing, Networking, Storage and Analytics (SC) (2023) 10. Reitz, M., et al.: Silent Data Corruption Protection through Efficient Task Repli-cation. In: Proc. Asynchronous Many - Task Systems and Applications (WAMTA) (2026), to appear 11. Kurt, M.C., et al.: Fault-tolerant dynamic task graph scheduling. In: SC’14: Proc. Int. Conf. for High Performance Computing, Networking, Storage and Analysis (SC). pp. 719–730. IEEE (2014) 12. Nather, R., et al.: Futures for Dynamic Dependencies–Parallelizing the H-LU Factorization. In: Workshop on Asynchronous Many-Task Systems and Applications (WAMTA). pp. 9–21. Springer (2024) 13. Nather, R., et al.: Integration of a Powerful Future Construct into the Taskflow System. SN Computer Science 7(1) (2025) 14. Blumofe, R.D., et al.: Scheduling multithreaded computations by work stealing. Journal of the ACM 46(5), 720–748 (1999) 15. Kolla, H., et al.: Improving scalability of silent-error resilience for message-passing solvers via local recovery and asynchrony. In: Proc. Workshop on Fault Tolerance for HPC at eXtreme Scale (FTXS) (2020) 16. Reitz, M.: The promise-future programming model in cluster asynchronous many-task runtimes (2026), submitted 17. Thoman, P., et al.: A taxonomy of task-based parallel programming technologies for high-performance computing. The Journal of Supercomputing 74(4), 1422–1434 (2018) 18. Fohry, C.: An overview of task-based parallel programming models (tutorial). zenodo.org/records/8425959 (2020) 19. ISO: ISO/IEC 14882:2011 Information Technology – Programming Languages – C++. Int. Organization for Standardization (2011) 20. Guo, Y., et al.: Work-first and help-first scheduling policies for async-finish task parallelism. In: Int. Parallel & Distributed Processing Symp. (IPDPS) (2009) 21. Frigo, M., et al.: The implementation of the Cilk-5 multithreaded language. ACM SIGPLAN Notices (PLDI) 33(5), 212 – 223 (1998) 22. Kestor, G., et al.: Localized fault recovery for nested fork-join programs. In: Int. Parallel & Distributed Processing Symp. (IPDPS). pp. 397–408. IEEE (2017) 23. Akiyama, S., et al.: Uni-address threads: Scalable thread management for RDMA-based work stealing. In: Proc. Int. Symp. on High-Performance Parallel and Dis-tributed Computing (HPDC). pp. 15–26 (2015) 24. Acar, U.A., et al.: The data locality of work stealing. In: Proc. Symp. on Parallelism in Algorithms and Architectures (SPAA). pp. 1–12 (2000) 25. TOP500.org: Goethe-NHR, https://www.top500.org/system/179588 
+
+26. Reitz, M.: Source Code of paper "Protecting Futures against Silent Data Corruption - Efficient Task Replication for Dynamic Data Dependencies" (2026), https://doi. org/10.5281/zenodo.20668689 
+
+27. Posner, J., et al.: Task-level resilience: checkpointing vs. supervision. Int. Journal of Networking and Computing 12(1), 47–72 (2022) 28. Ni, X., et al.: ACR: Automatic checkpoint/restart for soft and hard error protection. In: Proc. Conf. on High Performance Computing, Networking, Storage and Analysis (SC). pp. 7:1–7:12 (2013) Protecting Futures against SDC 15 29. Schneider, F.B.: Implementing fault-tolerant services using the state machine approach: A tutorial. Acm Computing Surveys (CSUR) 22(4), 299–319 (1990) 30. Subasi, O., et al.: Unified fault-tolerance framework for hybrid task-parallel message-passing applications. The Int. Journal of High Performance Computing Applications (IJHPCA) 32(5), 641–657 (2018) 31. Nather, R.: An SDC protection method for AMT programs with futures, unpublished
