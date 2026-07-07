@@ -1,0 +1,610 @@
+Title: TIER: Trajectory-Invariant Explanation Regularization for Membership Privacy
+
+URL Source: https://arxiv.org/pdf/2607.02903v1
+
+Published Time: Tue, 07 Jul 2026 00:24:25 GMT
+
+Number of Pages: 13
+
+Markdown Content:
+> JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 1
+
+# TIER: Trajectory-Invariant Explanation Regularization for Membership Privacy 
+
+Varun Sharma , varun.sharma@stengg.com Kar Wai Fok , fok.karwai@stengg.com Vrizlynn L. L. Thing , vriz@ieee.org ST Engineering, Singapore 
+
+Abstract —Explainability is central to building trustworthy AI, yet explanation interfaces can inadvertently provide ad-versaries with an expanded privacy-related attack surfaces. Recent studies show that advanced membership-inference at-tacks succeed by exploiting confidence-drop trajectories, in-duced through attribution-guided perturbations, as discrimi-native features, rather than directly using confidence scores or explanation vectors. Existing defenses against membership inference fail to directly mitigate such explanation-driven at-tacks. In this work, we investigate whether, during training, a model’s own gradients can be leveraged as defense signals against such attacks, thereby aligning explanation profiles be-tween members and non-members. To this end, we propose a 
+
+Trajectory-Invariant Explanation Regularization (TIER) defense that penalizes erratic fluctuations in confidence drops simu-lated through gradient-guided perturbations and simultaneously minimizes the distributional shifts via KL-divergence. Unlike conventional adversarial training, which emphasizes label robust-ness , our approach targets explanation robustness by enforcing self-consistency through KL-divergence and reducing the vari-ance of confidence drops between members & non-members. Ex-tensive experiments confirm that our method effectively mitigates these attacks, delivering privacy protection while maintaining model utility and explanation fidelity. 
+
+Index Terms —Privacy-preserving machine learning, member-ship inference, deep learning, privacy attacks, model explana-tions. 
+
+I. I NTRODUCTION 
+
+# MEMBERSHIP inference attacks compromise privacy by allowing adversaries to probe machine learning models and infer whether particular records were included in training. Unlike conventional breaches that involve direct file theft, these attacks exploit subtle statistical traces embedded in the model’s behavior. When such traces reveal the presence of sensitive data—such as medical images, payroll records, or personal conversations—the confidentiality of that information is undermined raising serious legal and ethical concerns. Such traces often stem from overfitting: when a model memorizes training data, it tends to assign unusually high confidence or low loss to familiar inputs, leaving detectable patterns that adversaries can exploit. Among the various strategies adversaries employ, one common approach is to construct shadow models on publicly available data and train attack classifiers to distinguish members from non-members based on the shadow model’s confidence vectors. However, recent attacks have advanced beyond using con-fidence score vectors or loss trajectories as features, instead leveraging explanatory maps to exploit privacy leakage via guided perturbations. In particular, [13] demonstrate that this leakage intensifies when attributions are used to steer input modifications, since perturbing semantically important features identified by attribution maps produces a larger confidence drop for member samples than for non-members. By ap-plying MoRF ( Most Relevant Features, i.e., masking pixels ranked highest in importance ) and LeRF ( Least Relevant Features, i.e., masking pixels ranked lowest in importance )with distribution-preserving operators, the authors demon-strate that attribution-guided perturbations produce distinctive confidence-drop trajectories, which serve as the primary fea-tures driving privacy leakage. They further show that existing defense approaches are either ineffective against attribution-guided perturbation attacks or impose severe utility constraints on the target model, thereby rendering it impractical. Building on these observations, we hypothesize that the very same attack features can be transformed into defense signals by exploiting model internals . Specifically, we expect that leveraging the model’s own gradients during training to perturb inputs across multiple percentages and penalizing instability in confidence-drop trajectories will suppress the attack feature. We further hypothesize that enforcing distri-butional self-consistency through a KL-based regularization term will prevent distributional shifts that occur when inputs are perturbed . Motivated by these hypotheses, we propose a defense against attribution-guided perturbation membership inference attacks, which we call Trajectory-Invariant Expla-nation Regularization (TIER) .To formalize our intuition, we pose the following research questions:  
+
+> •
+
+RQ1: To what extent does the coupling of trajectory invariance and distributional self-consistency suppress membership-dependent leakage in attribution profiles?  
+
+> •
+
+RQ2: How does the proposed regularization mitigate sen-sitivity to input perturbations and prevent distributional shifts?  
+
+> •
+
+RQ3: Can the TIER framework achieve a Pareto-optimal balance between membership privacy and model utility?  
+
+> •
+
+RQ4: Does the defense preserve the semantic inter-pretability and functional sufficiency of model explana-tions?  
+
+> •
+
+RQ5: Is the TIER defense resilient to architectural vari-ations and hyperparameter sensitivity?  
+
+> arXiv:2607.02903v1 [cs.CR] 3 Jul 2026 JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 2
+
+Contributions: The principal contributions of this work are as follows: 1. We study membership-dependent explanation sensitiv-ity— the phenomenon that member and non-member samples exhibit different prediction trajectories un-der explanation-guided perturbations —and propose a training-time regularizer, TIER, that suppresses the sep-arability of these trajectories. 2. We conduct extensive experiments to quantify the pri-vacy risks of deep learning models, and highlight the pri-vacy–utility trade-offs using attack success rates, utility measures, and explanation fidelity metrics. 3. We demonstrate that our defense generalizes across five benchmark attack datasets, two target model architec-tures, and seven state-of-the-art attribution-based expla-nation methods, successfully lowering the attack success while preserving both model utility and explanation fidelity to a substantial degree. 
+
+Fig. 1: Overview of the threat model and attack pipeline, illustrating the four stages from shadow model training to membership inference (reproduced from [13]). II. R ELATED WORK 
+
+A. Membership Inference Attacks 
+
+While membership inference has been extensively studied across deep learning [15], GANs [21], GNNs [5], and time-series models [12], the privacy risks of explainable ML have received comparatively less attention. Shokri et al. were the first to demonstrate that variance in backpropagation-based ex-planations can reveal membership status [19], while Pawelczyk et al. designed attacks on counterfactual explanations in binary classifiers [17]. Other works extend to feature inference [16], attribute inference [4], and model inversion attacks enhanced by explanations [26]. More recently, [13] developed a shadow-model attack that leverages perturbations guided by feature attribution explanations, systematically demonstrating strong success at identifying specific training data members in deep learning settings. This attack represents the state of the art in explainability-driven membership inference and forms the basis of the threat model we defend against. 
+
+B. Membership inference defenses: 
+
+Given the serious privacy risks posed by membership infer-ence attacks, several defense strategies have been proposed at both the model and output levels. Differential Privacy (DP) [1] is the most widely adopted mechanism, with DP-SGD introducing noise during training to constrain the ability to dis-tinguish between datasets differing by a single record, thereby mitigating membership leakage. In contrast, MemGuard [8] operates at inference time by perturbing confidence scores, converting them into adversarial examples that confound attack models and disrupt reliable membership inference. Beyond these baselines, recent works have explored knowledge dis-tillation approaches such as C2DP [24], which leverages CLIP-conditioned distillation to improve utility while reducing reliance on private training data, and PFE-KD [14], which in-tegrates feature extraction with distillation to reduce attack ac-curacy without sacrificing model performance. Other defenses include metric mapping [23], which reconstructs prediction vectors to align member and non-member distributions, and Ensemble Partitioning Defense (EPD) [22], which partitions training data across sub-models and standardizes confidence scores during inference. Despite these advances, existing defenses remain inadeguate against attribution-guided perturbation attacks. Differential privacy often degrades model utility, while inference-time defenses like Memguard are ineffective against attacks that exploit attribution maps. Knowledge distillation and ensem-ble methods improve utility but do not directly address attribution-driven leakage. In contrast, our work explicitly targets attribution-guided perturbation-based membership in-ference. III. P RELIMINARIES AND THREAT MODEL 
+
+This section establishes the formal notation and the adver-sarial framework used in our study. Our threat model and per-turbation strategies follow established membership inference protocols in [13] and are illustrated in Figure 1. IV. T HREAT MODEL 
+
+A. Overview and Scenario 
+
+To contextualize the risk, we consider a scenario where a machine learning model is deployed as a service (MLaaS), providing both predictions and explanations. For instance, a medical diagnostic tool might provide a classification along with an attribution map highlighting the features (e.g., specific regions of an X-ray) that influenced the decision. While the model’s internal parameters and training data are private, an adversary seeks to determine if a specific individual’s data was used to train the model. By observing how these explanations change as the input is slightly modified, an attacker can identify “memorization signatures” unique to the training set, thereby compromising the individual’s membership privacy. 
+
+B. Problem Formulation and Notation 
+
+Following the framework of [13], we formalize this as a black-box membership inference attack. Let Dtg tr denote the private target training set. We define the input space as X
+
+and the label space as Y = {1, . . . , K }. A target classifier 
+
+f (x; θ) : X → RK , parameterized by θ, outputs a vector of confidence scores P (y|x) for each class y.JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 3
+
+a) Adversary’s Knowledge and Shadow Training:: The adversary lacks access to the target model parameters θ or the private dataset Dtg tr . However, they can query f to obtain confidence scores P (y|x) and attribution maps A(x, f ). To overcome the lack of direct access, the adversary employs a 
+
+shadow model approach. The adversary is assumed to possess auxiliary data Dsh tr ,referred to as a shadow dataset , drawn from the same distribution as the target data. The adversary uses this to train a shadow model fS , which serves as a proxy to simulate the target model’s behavior. By performing attacks on fS —where the ground-truth membership is known—the adversary learns to distinguish between members (x, y ) ∈ Dsh tr and non-members (x, y ) ∈ D sh te . Throughout this paper, superscripts  
+
+> tg
+
+, sh , and at refer to the target, shadow, and attack models, while subscripts tr and te denote training and testing partitions, respectively. 
+
+b) Adversary’s Strategy (Attribution-Guided Perturba-tions):: The adversary exploits A(x, f ) to systematically per-turb an input x. To prioritize features, the attacker computes an ordering: 
+
+Iij = gij − α · T V (mij ) (1) where gij is the attribution for the position (i, j ) in the original image mij , and T V (mij ) denotes the local total variation. Using either Most Relevant First (MoRF) or Least Relevant First (LeRF) strategies, the adversary iteratively applies a perturbation operator, yielding a confidence-drop trajectory :
+
+T (x) = {P (y|x0), P (y|x1), . . . , P (y|xn)} (2) where x0 = x and xi is the input at perturbation step i.
+
+c) Attack Execution:: The adversary constructs a feature vector v = TM oRF ⊕ T LeRF ⊕ L ce ⊕ O(c), where Lce is the cross-entropy loss and O(c) is the one-hot encoding of the predicted class. This vector is passed through an attack classifier hatk trained on shadow trajectories. Welch’s t-test is applied to retain only trajectories with statistically significant (α = 0 .05 ) discriminative power. V. P ROPOSED DEFENSE : T RAJECTORY INVARIANT 
+
+EXPLANATION REGULARIZATION 
+
+A. Motivation: Distributional Divergence in Membership In-ference 
+
+Our defense is motivated by the observation that member-ship status alters model sensitivity to systematic perturbations. To quantify this sensitivity gap, we define an Attribution-Guided Perturbation (AGP) protocol: 1) Attribution Mapping: For input x, compute gradients of the target logit w.r.t. pixels. The attribution map M is the absolute mean gradient across channels, highlighting influential pixels. 2) Mean-Filling Perturbations: Generate perturbed in-puts {˜xk} by masking the top k% pixels (k ∈{10 , 20 , . . . , 70 }) ranked by M , replacing them with the image’s mean intensity. 3) Divergence Profiling: Measure the KL divergence be-tween the clean prediction P = f (x) and each perturbed prediction Qk = f (˜ xk):
+
+Fig. 2: Trend of mean KL divergence for members and non-members across incremental pixel removal levels. Members exhibit a consistently higher divergence profile compared to non-members, particularly in the 10% –40% range, indicating a greater sensitivity to the removal of high-attribution features. Error bars represents the standard deviation across samples.                                                 
+
+> (Target Model: Resnet18, Dataset: CIFAR100 )
+> % Rem. Mean (M, NM) t-test ( t, p )KS-test ( D, p )
+> 10% 2.6, 2.2 7.9,1.1×10 −12 0.5,5.7×10 −13
+> 20% 4.6, 3.8 14 .3,3.2×10 −30 0.8,6.4×10 −26
+> 30% 6.2, 5.4 13 .3,8.8×10 −28 0.7,2.5×10 −22
+> 40% 7.4, 6.7 10 .9,2.7×10 −21 0.7,1.8×10 −20
+> 50% 8.0, 7.7 4.9,2.9×10 −60.3,9.2×10 −5
+
+TABLE I: KL divergence comparison between members (M) and non-members (NM). Statistical significance confirms dis-tinct distribution shifts. 
+
+DKL (P ∥ Qk) = X
+
+> i
+
+P (i) log P (i)
+
+Qk(i) .
+
+As illustrated in Figure 2, the mean KL divergence increases across all samples as more information is removed. However, a significant gap exists in the divergence profiles: members (samples from the training set ) exhibit a sharper increase in divergence compared to non-members ( samples from the test set ), particularly at lower removal percentages ( 10% –40% ). This suggests that models rely on brittle, memorized features for training samples which, when even slightly perturbed, cause a rapid collapse in confidence. To statistically validate this separation, we applied both the independent two-sample 
+
+t-test and the Kolmogorov–Smirnov (KS) test at each removal level, confirming a robust distributional gap. As summarized in Table I, at 10% pixel removal, members show a significantly higher mean KL divergence ( 2.6 ) than non-members ( 2.2 ), supported by a t-statistic of 7.9 (p ≈ 1.1 × 10 -12 ) and a KS statistic of D = 0.5 (p ≈ 5.7 × 10 -13 ). Notably, this gap peaks at 20% removal ( t = 14.3 , D = 0.8 ) before the profiles converge at extreme removal levels (above 50% ), where predictive capacity is exhausted for both groups. JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 4
+
+B. Research Hypothesis 
+
+The divergence gap identified in Section V-A motivates the following hypothesis: 
+
+Hypothesis: If instability and distributional shifts in confidence trajectories are the primary discrim-inative cues exploited by a membership inference adversary, then suppressing these signals will align member behavior with that of non-members, thereby mitigating privacy leakage. 
+
+Our rationale is threefold. First, the adversary exploits in-stability in confidence trajectories ; therefore, stability must be enforced. Second, the adversary relies on distributional shifts; 
+
+therefore, distributional consistency must be promoted. Third, the natural way to achieve both is to simulate attribution-guided perturbations internally during training itself, using gradient-based saliency maps, and penalize the same signals the attacker would exploit .
+
+C. Design Goals 
+
+To translate our hypothesis into a functional defense, we identify three key requirements: 1) Privacy Robustness: The defense should significantly reduce the success rate of membership inference attacks by narrowing the gap between member and non-member distributions. 2) Utility Preservation: The defense should limit accuracy degradation on clean data and preserve explanation fidelity, ensuring privacy gains without undermining the model’s practical utility or explanation usefulness. 3) Seamless Integration: The defense should provide a plug-and-play solution that integrates directly into stan-dard supervised training pipelines without requiring ar-chitectural modifications. 
+
+D. Formal Definition 
+
+We propose a specialised Trajectory-Invariant Explana-tion Regularization (TIER) defense that treats the model’s own gradients as a primary signal during training rather than a post-hoc analysis tool and enforces a predictable and stable decay in model confidence when pixels are removed in order of their calculated importance. Our proposed training procedure is detailed in Algorithm 1. To the standard supervised cross-entropy loss Lce , we add a regularization term weighted by the coefficient λ. This regularization consists of two primary components:  
+
+> •
+
+Distributional Stability Term Lkl , which enforces self-consistency between clean and perturbed predictions via Kullback-Leibler divergence.  
+
+> •
+
+Trajectory Stability Term Lvar , which minimizes the variance of confidence-drop trajectories across perturba-tion levels. Formally, the total objective function is defined as: 
+
+Ltotal = Lce + λ ·  Lkl + β · L var 
+
+. (3) Here, Lce denotes the supervised cross-entropy loss, LKL 
+
+penalizes distributional shifts between clean and perturbed predictions, Lvar penalizes instability in confidence-drop tra-jectories, and β hyperparameter balances their contributions. Together, these terms aim to align the explanation profiles of members and non-members.                                                                              
+
+> Input: Model θ, Training Data D, Levels P={5,10 ,20 },Hyperparameters β, λ e, Augmentation Pipeline T
+> Output: Optimized Model θ
+> for epoch e= 1 to Edo for batch (x, y )∈ D do Apply Data Augmentation: x′=T(x);Compute Attribution on augmented input:
+> A=|∇ x′fy(x′)|;
+> if e≥warmup then for each level p∈Pdo
+> Generate ˜x′
+> pby masking top-p%features in A;Compute KL divergence:
+> L(p)
+> KL =KL (Softmax (f(x′)) ∥Softmax (f(˜ x′
+> p))) ;Compute the drop in confidence:
+> δp=fy(x′)−fy(˜ x′
+> p);
+> end
+> LKL =mean p∈P(L(p)
+> KL );Compute the average variance of confidence drops:
+> Lvar =mean p∈P(Var batch (δp)) ;Total loss with TIER constraints:
+> Ltotal =LCE (f(x′), y ) + λe(LKL +βLvar );
+> end else
+> Standard training with augmented data:
+> Ltotal =LCE (f(x′), y );
+> end
+> Update θvia Backpropagation using ∇θLtotal ;
+> end end
+
+Algorithm 1: Trajectory-Invariant Explanation Regulariza-tion. 
+
+E. Defense Components 
+
+The TIER framework is composed of two synergistic com-ponents designed to mask membership-specific information in explanation manifolds: the Intrinsic Regularization of trajec-tories and Extrinsic Semantic Augmentation .
+
+1) Trajectory-Invariant Regularization : The core of our defense lies in the simultaneous optimization of distributional self-consistency ( Lkl ) and trajectory stability ( Lvar ). [Insert brief math/logic here]. This stage is responsible for the internal smoothing of the model manifold. 
+
+2) Semantic Data Augmentation : As a complementary stage, we introduce a stochastic augmentation pipeline T .While the regularization terms smooth the model’s internal response, the objective of this augmentation stage is to ensure that attribution maps A remain invariant to spatial perturba-tions. By applying random horizontal flipping, rotations, and cropping, we prevent the importance scores from overfitting to specific coordinates, thereby decoupling the explanation from membership-dependent spatial signatures. As discussed in the Ablation Study (Section VII-E), this configuration allows us to isolate the specific contributions of the regularization-only variant versus the full defense. 
+
+F. Implementation Details 
+
+As detailed in Algorithm 1, we introduce a short warm-up phase during the initial 5 epochs. This allows the classifier JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 5
+
+to capture primary semantic features and stabilize its decision boundary before the Lkl and Lvar constraints are enforced. We use a batch size of 128 and train for 100 epochs, main-taining consistency with the protocol in [13]. The stability terms are computed over a discrete set of perturbation levels 
+
+P = {5, 10 , 20 }, representing the percentage of top-attribution pixels removed. VI. E XPERIMENTAL SETUP 
+
+We formalize the experimental framework by defining ad-versarial and defensive roles, followed by model, dataset, and metric specifications. 
+
+A. Conceptual Framework and Model Roles 
+
+To evaluate membership privacy rigorously, we categorize our setup into two distinct roles: the Attacker and the Defender. Each party is responsible for building a specific suite of models to fulfill their objectives. 
+
+1) Attacker’s Role: Membership Inference: The Attacker operates in a black-box setting with no access to the Target Model’s training data or internal parameters. To perform the attack, the Attacker constructs:  
+
+> •
+
+Shadow Model (fS ): Trained on a proxy dataset to mimic the Target Model’s behavior. It serves as a ground-truth generator where ”member” and ”non-member” la-bels are known to the Attacker.  
+
+> •
+
+Attack Model ( A): A binary classifier trained on features as described in Section IV extracted from the Shadow Model. Its goal is to learn the statistical signatures that distinguish seen data from unseen data. 
+
+2) Defender’s Role: Privacy Preservation: The Defender manages the lifecycle of the primary application model. The Defender constructs:  
+
+> •
+
+Target Model ( fT ): The model providing the end-user utility (e.g., image classification). We evaluate fT in two states: a baseline (no defense) and a defended version utilizing our proposed trajectory-invariant regularization.  
+
+> •
+
+Internal Audit Classifier: To validate the defense during development, the Defender builds an internal membership inference classifier (following the Attacker’s methodol-ogy) to measure the reduction in successful inferences. 
+
+B. Datasets and Disjoint Splits 1) Datasets: We evaluate our defense across five diverse image datasets, categorized into established benchmarks and specialized real-world scenarios. For baseline comparison with prior membership inference research, we utilize four widely adopted benchmarks: CIFAR-10 [9], CIFAR-100 [9], CINIC-10 [3], and the German Traffic Sign Recognition Benchmark (GTSRB) [20]. To extend our evaluation beyond standard classification tasks, we additionally include the OpenForensics dataset [11], a large-scale benchmark specifically designed for multi-face forgery detection. The inclusion of OpenForensics allows us to assess privacy risks in high-stakes, contemporary domains such as deepfake detection and facial forensics. 
+
+2) Splits and Attacker Dataset Construction: To prevent data leakage and maintain comparability with prior work, we follow the dataset construction protocol of established attack studies [13], [19]. We construct strictly disjoint splits by first partitioning the sampled source data into two primary halves: one reserved for the Defender (Target) and one for the Attacker (Shadow). Each half is further divided into training (Members) and test (Non-members) portions, yielding four mutually exclusive subsets: Dtg tr , Dtg te , Dsh tr , and Dsh te . The training sets are used to fit the target and shadow models, respectively, while the corresponding test sets provide the attacker with balanced access to non-member samples. For instance, in CIFAR-100, we sample 40,000 images and split them evenly into 10,000-sample portions for each of the four disjoint sets, as detailed in Table II.                                                
+
+> Dataset Target Test Shadow S-Test Attack A-Test
+> (Dtg tr )(Dtg te )(Dsh tr )(Dsh te )(Dat tr )(Dat te )
+> CIFAR-10 10,000 10,000 10,000 10,000 16,000 4,000 CIFAR-100 10,000 10,000 10,000 10,000 16,000 4,000 CINIC-10 10,000 10,000 10,000 10,000 16,000 4,000 GTSRB 1,500 1,500 1,500 1,500 2,400 600 OForensics 5,000 5,000 5,000 5,000 8,000 2,000
+
+TABLE II: Data splits across evaluated datasets. Each set is partitioned to ensure disjoint distributions for target, shadow, and attack model training/evaluation. 
+
+C. Experimental Flow a) Attacker’s Flow (Threat Model).: The Attacker’s workflow follows a systematic three-stage process to extract and exploit membership signatures: 1) Shadow Environment Construction: The Attacker trains the Shadow Model fS on Dsh tr . This model acts as a proxy to observe how a specific architecture reacts to “memorized” (member) versus unseen (non-member) data. 2) Attack Training and Feature Extraction: The Attacker labels Dsh tr as members ( 1) and Dsh te as non-members (0). These subsets are combined and randomly split into attacker training ( Dat tr ) and evaluation ( Dat te ) sets. For larger datasets (e.g., CIFAR-10/100, CINIC), this corresponds to roughly 16k/4k samples (Table II). This construction guarantees that the Attacker’s model relies solely on shadow model behavior, without any over-lap with the target data. For each sample, attribution maps are generated (e.g., via Grad-CAM or SHAP) and MoRF/LeRF trajectories are extracted to form a tabular dataset, as detailed in Section IV. The Attack Model A
+
+is then trained on these features to learn the statistical decision boundary of membership. 3) Inference Deployment: Finally, A is deployed in a black-box manner against the Target Model fT . The Attacker feeds target samples into fT , extracts the corresponding attribution trajectories, and utilizes A to predict the membership status. JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 620 40 60 80 100 
+
+Percentage of Pixels Removed     
+
+> 0.2
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Confidence Drop
+> MoRF Trajectories: Effect of TIER Defense - Gradcam++ - CIFAR100
+> Members (None)
+> Non-members (None)
+> Members (TIER)
+> Non-members (TIER) 20 40 60 80 100
+
+Percentage of Pixels Removed     
+
+> 0.2
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 1.2
+> Confidence Drop
+> LeRF Trajectories: Effect of TIER Defense - Gradcam++ - CIFAR100
+> Members (None)
+> Non-members (None)
+> Members (TIER)
+> Non-members (TIER) 20 40 60 80 100
+
+Percentage of Pixels Removed     
+
+> 0.4
+> 0.2
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Confidence Drop
+> MoRF Trajectories: Effect of TIER Defense - Lime - OpenForensics
+> Members (None)
+> Non-members (None)
+> Members (TIER)
+> Non-members (TIER) 20 40 60 80 100
+
+Percentage of Pixels Removed 
+
+> 0.4
+> 0.2
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Confidence Drop
+> LeRF Trajectories: Effect of TIER Defense - Lime - OpenForensics
+> Members (None)
+> Non-members (None)
+> Members (TIER)
+> Non-members (TIER)
+
+Fig. 3: Evaluation of TIER defense via MoRF and LeRF confidence-drop trajectories on CIFAR-100 (top) and OpenForensics (bottom). The minimized gap between Member (solid) and Non-member (dashed) curves under the TIER defense (green), compared to the distinct separation in the undefended baseline (red), demonstrates the effective masking of membership-specific statistical signatures. 
+
+b) Defender’s Flow.: The Defender’s workflow follows a three-stage pipeline to balance utility and privacy: 1) Baseline Establishment: The Defender first trains the target model fT on Dtg tr without defense to establish baseline utility and privacy leakage metrics. 2) Defense Integration: The Trajectory-Invariant Expla-nation Regularization (TIER) is integrated into the fT
+
+training loop. This stabilizes the confidence manifold, ensuring attribution trajectories for members ( Dtg tr ) and non-members ( Dtg te ) remain statistically indistinguish-able. 3) Internal Privacy Audit: To validate efficacy, the De-fender mimics the adversary by training an internal membership classifier. Following the established pro-tocol, Dtg tr and Dtg te are combined and partitioned into internal training ( 80% ) and evaluation ( 20% ) sets. A suc-cessful defense is confirmed by a significant reduction in internal classifier accuracy compared to the baseline, signifying mitigated membership leakage. 
+
+D. Model Architectures 
+
+For our quantitative analysis, we primarily adopt ResNet-18 [6] as the backbone for both target and shadow models, representing a standard high-performance architecture utilizing residual connections. To evaluate the architectural generaliz-ability and robustness of our proposed defense across varying model complexities, we further include MobileNetV2 [18]. MobileNetV2 was specifically selected to assess the efficacy of the defense on resource-constrained architectures character-ized by inverted residuals and linear bottlenecks. By testing both a standard deep residual network and a mobile-centric efficiency-optimized model, we demonstrate that the proposed defense remains effective regardless of parameter density or architectural design. All models are trained using standard regularization strategies, including weight decay [10] and data augmentation [2]. 
+
+E. Evaluation Metrics 
+
+We evaluate the privacy-utility-interpretability tradeoff across three dimensions: 
+
+Attack Performance (Privacy): To quantify the success of the inference attacker A in distinguishing members from non-members, we report:  
+
+> •
+
+TPR at low FPR (0.1%): Measures the attacker’s ability to identify members with high confidence ( ↓). JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 7 
+
+> •
+
+Balanced Accuracy and AUC: Assess the overall binary classification performance of A across the evaluation set (↓). 
+
+Explanation Quality (Interpretability): To ensure the de-fense preserves attribution reliability, we evaluate two distinct properties:  
+
+> •
+
+Axiomatic Quality (Quantus Framework): Using the 
+
+Quantus framework [7], we measure the technical reliability of explanations via Faithfulness Correla-tion/Estimate (↑) and Sufficiency (↓). These are calculated independently for each model to quantify how strictly attribution maps correspond to internal logit shifts.  
+
+> •
+
+Visual and Structural Fidelity: We utilize SSIM (↑), 
+
+MSE (↓), and Cosine Similarity (↑). These are calculated by comparing the defended model’s maps directly against the undefended baseline to quantify “semantic intent” preservation for human observers. 
+
+Model Utility: To monitor the impact on the primary task and efficiency, we record:  
+
+> •
+
+Top-1 and Top-5 Accuracy ( ↑): Top-1 assesses strict classification, while Top-5 evaluates whether the defense prevents “semantic collapse,” ensuring the correct class remains within the highest confidence set.  
+
+> •
+
+Test Loss ( ↓): Provides a granular view of model confi-dence and generalization beyond binary thresholds.  
+
+> •
+
+Average Epoch Time: Quantifies the computational overhead introduced by TIER regularization. VII. R ESULTS AND DISCUSSIONS 
+
+A. Defense Mechanisms: Trajectory and Distributional Stabil-ity 
+
+RQ1: To what extent does the coupling of trajec-tory invariance and distributional self-consistency suppress membership-dependent leakage in attribution profiles? To evaluate defense efficacy, we analyze confidence-drop trajec-tories across five datasets and seven explanation methods. To provide a rigorous yet concise evaluation, we present repre-sentative trajectory plots for two distinct paradigms: gradient-based attribution ( Grad-CAM++ on CIFAR-100 ) and model-agnostic perturbation ( Lime on OpenForensics ). As shown in Figure 3, TIER achieves consistent gap com-pression across both MoRF and LeRF metrics, regardless of the underlying explanation logic. In the baseline model (red curves), a distinct gap between members (solid lines) and non-members (dashed lines) represents a primary leakage signal, where the model behaves differently for seen versus unseen data. Under the TIER defense (green curves), this gap is significantly minimized, and the trajectories become increas-ingly indistinguishable. This suggests that TIER effectively suppresses membership-specific statistical signatures, forcing the model’s response to members to align closely with the non-member baseline. Comprehensive plots for the remaining attribution methods and datasets are provided in the Supplementary Material, Figure S2,S3,S4 . Across all datasets, it can be seen that the coupling of trajectory stabilization and KL-regularized self-consistency effectively masks these membership-specific statistical signatures. Furthermore, by enforcing trajectory invariance, TIER smooths MoRF declines and forces member behavior to mirror the non-member baseline. 
+
+Fig. 4: Trend of mean KL divergence for members and non-members after the application of the KL-regularization defense. The defense significantly suppresses the overall mag-nitude of divergence and introduces a stability crossover effect, where member samples exhibit improved resilience to low-level perturbations ( 10% –30% ) compared to non-members. The convergence of profiles at moderate perturbation levels indicates a reduction in the statistical signatures typically exploited for membership inference. (Target Model: Resnet18, Dataset: CIFAR100 )
+
+RQ2: How does the proposed regularization mitigate sensitivity to input perturbations and prevent distribu-tional shifts? TIER mitigates sensitivity to input perturbations by suppressing the high-magnitude divergence typically seen in overfit models. Furthermore, it prevents distributional shifts by aligning the attribution-guided trajectories of members and non-members, effectively neutralizing the unique statistical signatures used for inference. To evaluate this efficacy, we contrast the KL divergence profiles of the regularized model against the undefended baseline. As illustrated in Figure 4, the defense achieves a multi-order suppression of divergence magnitudes. While the undefended model exhibits a steep, divergent trajectory peaking at approximately 8.4 , the reg-ularized model maintains a significantly compressed profile, peaking at only 2.4 even under 70 % feature removal. Beyond absolute magnitude, the most critical impact is the collapse of the membership gap . In the baseline (dashed lines), members consistently exhibit a higher sensitivity to perturbations than non-members across all levels. TIER ef-fectively eliminates this discriminative signature through a 
+
+stability crossover effect : at lower perturbation levels ( 10% –
+
+30% ), the membership-induced fragility is not only mitigated but inverted. For instance, at 10% removal, members in the defended model exhibit a lower mean KL divergence ( 0.12 )than non-members ( 0.18 ), reversing the baseline trend where members were significantly more volatile ( 2.6 vs 2.2). As perturbations reach the 40% threshold, the profiles converge ( 0.92 vs. 0.89 ), rendering the groups statistically JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 8                                                
+
+> % Rem. Mean (M, NM) t-test ( t, p )KS-test ( D, p )
+> 10% 0.12, 0.18 −24 .1,1.3×10 −54 0.9,2.3×10 −46
+> 20% 0.29, 0.37 −15 .9,5.4×10 −36 0.8,5.1×10 −27
+> 30% 0.56, 0.60 −6.2,3.6×10 −90.4,1.5×10 −7
+> 40% 0.92, 0.89 3.1,2.3×10 −30.3,4.2×10 −3
+> 50% 1.36, 1.22 10 .8,7.1×10 −21 0.6,9.8×10 −17
+
+TABLE III: KL divergence comparison between members (M) and non-members (NM) across pixel removal percentages with 
+
+TIER defense applied. indistinguishable. This convergence, validated by the t-test results in Table III, implies that TIER effectively ”smoothes” the explanation manifold, depriving adversaries of the stable behavioral signatures required for high-confidence inference.                                                              
+
+> Dataset Defense Train Acc Target (Top-1) Target (Top-5) Mean (Loss)
+> GTSRB None 1.00 0.75 0.94 0.97 DP ( ϵ=100) 0.33 0.26 0.56 2.55
+> TIER 0.83 0.74 0.96 0.94
+> CINIC-10 None 1.00 0.63 0.96 2.32 DP ( ϵ=100) 0.36 0.32 0.83 2.88
+> TIER 0.72 0.62 0.96 1.14
+> CIFAR-10 None 1.00 0.84 0.99 0.64 DP ( ϵ=100) 0.41 0.40 0.86 1.80
+> TIER 0.82 0.77 0.98 0.67
+> CIFAR-100 None 1.00 0.48 0.77 3.53 DP ( ϵ=100) 0.19 0.14 0.34 5.69
+> TIER 0.74 0.42 0.71 2.13
+> OpenForensics None 0.99 0.70 -1.59 DP ( ϵ=100) 0.34 0.26 -1.71
+> TIER 0.73 0.67 -0.56
+
+TABLE IV: Utility metrics across different defenses. Bold val-ues indicate performance within a competitive margin ( ±5% )of the baseline. Note the significant utility collapse for DP (ϵ = 100 ) compared to the stability of TIER. ( OF has 2 classes; Top-5 not reported. )
+
+B. Security and Utility Trade-offs 
+
+RQ3: Can the TIER framework achieve a Pareto-optimal balance between membership privacy and model util-ity? To evaluate the security-utility frontier of the proposed framework, we compare TIER against three baseline config-urations: an undefended model ( None ), Differential Privacy (DP-SGD) via Opacus [25], and the inference-time defense MemGuard [8]. For DP-SGD, we utilize ϵ = 100 . While this represents a high privacy budget, empirical testing showed that smaller ϵ values introduced excessive noise, rendering the models untrainable or the evaluation meaningless. For completeness, we note that MemGuard is excluded from the utility evaluation as it is an inference-time defense that does not alter model parameters or training dynamics, thus maintaining the baseline model’s classification performance by design. As shown in Table IV, TIER demonstrates superior utility retention compared to noise-based defenses. The undefended baseline achieves near-perfect training accuracy but exhibits significant vulnerability. In contrast, while DP-SGD collapses target accuracy (e.g., dropping CIFAR-100 Top-1 accuracy from 48 % to 14 %), TIER maintains competitive performance, achieving 42 % accuracy on the same task. Notably, the preser-vation of Top-5 accuracy in TIER (e.g., 0.71 vs 0.77 on CIFAR-100) suggests that while the specific rank may shift slightly, the model retains its fundamental semantic under-standing, unlike DP-SGD which drops to 0.34 . On the complex OpenForensics dataset, TIER even achieves a lower test loss (0.56 ) than the baseline ( 1.59 ), suggesting that the trajectory regularization acts as an effective form of generalization. Furthermore, the training overhead time with TIER defense remains computationally feasible. The security advantages of TIER are quantified in Table V, which reports the success rates of attribution-guided member-ship inference attacks. Vulnerability of the baseline model is heterogeneous across datasets: while TPR values remain close to zero for CIFAR-10/100, CINIC-10, and OpenForensics, they rise sharply on GTSRB (exceeding 30 %), indicating dataset-specific susceptibility. Importantly, despite low TPRs else-where, the baseline consistently exhibits high Balanced Accu-racy (0.70–0.87), meaning the attacker can still discriminate members from non-members far above random chance even when few positives are flagged at stringent thresholds. This contrast highlights that TPR@0.1% FPR captures extreme-confidence attack success, whereas Balanced Accuracy reflects overall discriminative power across the evaluation set. TIER suppresses both signals: across all seven explanation methods, Balanced Accuracy drops to near-random levels ( ∼
+
+0.55 ), while TPR values are reduced to negligible levels across all datasets, including GTSRB. Thus, TIER achieves privacy protection comparable to DP-SGD without catastrophic utility loss. These findings are corroborated by threshold-independent AUC scores in the Supplementary Material (Table S1). Unlike MemGuard, which leaves Balanced Accuracy largely intact because it does not alter the underlying model manifold, TIER provides an intrinsic defense by regularizing confidence-drop trajectories. By maintaining near-baseline utility (Ta-ble IV) while reducing attack success to random-guess levels (Table V), TIER demonstrates a Pareto-dominant profile for privacy-preserving explainable AI. 
+
+C. Interpretability: Decoupling Faithfulness and Visual Intent 
+
+RQ4: Does the TIER framework preserve the semantic interpretability and functional utility of model explana-tions? To evaluate the privacy-interpretability tradeoff, we an-alyze the alignment between baseline and defended attribution maps across two distinct dimensions: Axiomatic Explanation Quality and Visual fidelity :
+
+1) Axiomatic Quality and Feature Attribution : We eval-uate the axiomatic properties of the explanations using the Quantus framework. As shown in Table VI, the introduction of TIER results in a systematic shift in Faithfulness scores. Across all tested explainers and datasets, we observe a consis-tent downward trend in faithfulness correlation, with average scores shifting from low-positive baseline values ( 0.02 to 0.11 )to a compressed range near zero ( -0.07 to 0.04 ) under defense. This global reduction is an intentional byproduct of the TIER framework; by regularizing internal gradients and trajec-JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 9                                                                                                                                                                                                                                                                                                                                       
+
+> Defense Method TPR @ 0.1% FPR ( ↓)Balanced Accuracy ( ↓)C100 C10 CN10 GTS OF C100 C10 CN10 GTS OF
+> None SmoothGrad 1.40% 0.10% 0.45% 20.13% 0.10% 0.85 0.63 0.73 0.84 0.70 None VarGrad 0.20% 0.20% 0.89% 29.39% 0.00% 0.86 0.65 0.73 0.78 0.70 None GradCAM 1.00% 0.10% 0.80% 12.46% 0.10% 0.86 0.63 0.71 0.80 0.68 None GradCAM++ 0.50% 0.20% 0.20% 28.75% 0.10% 0.79 0.64 0.72 0.79 0.69 None IG 0.90% 0.10% 0.10% 36.10% 0.00% 0.86 0.63 0.73 0.83 0.69 None SHAP 0.60% 0.20% 0.30% 29.71% 0.30% 0.85 0.62 0.73 0.82 0.69 None LIME 0.70% 0.70% 1.40% 37.06% 0.69% 0.87 0.66 0.74 0.80 0.70 DP ( ϵ= 100) SmoothGrad 0.00% 0.00% 0.15% 0.00% 0.20% 0.51 0.50 0.49 0.51 0.55 DP ( ϵ= 100) VarGrad 0.10% 0.20% 0.35% 0.00% 0.10% 0.51 0.50 0.50 0.50 0.54 DP ( ϵ= 100) GradCAM 0.10% 0.10% 0.10% 0.00% 0.10% 0.51 0.51 0.50 0.51 0.53 DP ( ϵ= 100) GradCAM++ 0.10% 0.00% 0.10% 0.00% 0.10% 0.52 0.52 0.50 0.52 0.55 DP ( ϵ= 100) IG 0.10% 0.00% 0.15% 0.00% 0.10% 0.51 0.49 0.50 0.53 0.52 DP ( ϵ= 100) SHAP 0.10% 0.00% 0.15% 0.00% 0.00% 0.51 0.50 0.50 0.53 0.54 DP ( ϵ= 100) LIME 0.20% 0.10% 0.10% 0.01% 0.20% 0.54 0.51 0.52 0.54 0.55 Memguard SmoothGrad 1.40% 0.10% 0.50% 19.8% 0.10% 0.85 0.60 0.73 0.80 0.70 Memguard VarGrad 0.10% 0.20% 0.90% 23.3% 0.00% 0.86 0.65 0.72 0.76 0.69 Memguard GradCAM 1.00% 0.30% 0.80% 12.7% 0.10% 0.86 0.62 0.70 0.77 0.70 Memguard GradCAM++ 0.70% 0.20% 0.30% 26.5% 0.15% 0.79 0.64 0.72 0.79 0.68 Memguard IG 1.00% 0.40% 0.05% 33.23% 0.00% 0.85 0.62 0.71 0.77 0.70 Memguard SHAP 0.60% 0.10% 0.35% 23.32% 0.35% 0.85 0.61 0.73 0.79 0.68 Memguard LIME 0.70% 0.60% 1.50% 30.12% 0.70% 0.84 0.67 0.72 0.81 0.70
+> TIER SmoothGrad 0.60% 0.10% 0.05% 0.15% 0.30% 0.59 0.53 0.55 0.54 0.54 TIER VarGrad 0.00% 0.10% 0.00% 0.00% 0.00% 0.60 0.55 0.56 0.53 0.54 TIER GradCAM 0.20% 0.00% 0.00% 0.00% 0.00% 0.58 0.54 0.55 0.52 0.55 TIER GradCAM++ 0.10% 0.10% 0.05% 0.10% 0.10% 0.60 0.53 0.55 0.52 0.53 TIER IG 0.10% 0.10% 0.00% 0.10% 0.10% 0.59 0.54 0.53 0.52 0.54 TIER SHAP 0.40% 0.10% 0.30% 0.00% 0.00% 0.59 0.53 0.54 0.52 0.54 TIER LIME 0.50% 0.10% 0.35% 0.00% 0.00% 0.59 0.56 0.56 0.52 0.53
+
+TABLE V: Security evaluation under membership inference attacks. Bold values indicate the best practical defense performance. 
+
+Architectural Note: Datasets C100, C10, CN10, and GTS utilize a ResNet-18 backbone, while OF (OpenForensics) utilizes a MobileNetV2 backbone to evaluate architectural generalization. (C100: CIFAR100, C10: CIFAR10, CN10: CINIC10, GTS: GTSRB, OF: OpenForensics). tories to mask membership-specific information, the defense inherently decouples fine-grained pixel importance from raw model logit shifts. However, as evidenced by the Sufficiency column in Table VI, this does not lead to a collapse in explanation utility. In fact, TIER maintains sufficiency scores within a marginal deviation of ±0.03 from the baseline across most configurations. Furthermore, the stability of the defense is corroborated by the longitudinal analysis in Figure 5. The close align-ment between baseline and TIER-defended curves for CIFAR-100 suggests that while individual pixel-level faithfulness is traded for privacy, the aggregate functional integrity of the explanation—its ability to capture sufficient features for a prediction—remains robust. 
+
+2) Structural Similarity and Semantic Intent : The second part of our evaluation focuses on whether these internal modifications degrade the visual utility for a human user. The objective of using similarity metrics (SSIM, MSE, and Cosine) is to verify that the ”semantic intent” of the attribu-tion—identifying the correct object—is maintained. As summarized in Table VII, the Cosine Similarity metrics consistently exceed 0.80 across most explainers. This indicates that the directional intent of the attribution vectors is preserved despite the privacy-preserving regularization. This is visually confirmed by the qualitative ”triplets” in Figure 6, which show that the defended model continues to focus on class-relevant features (e.g., feline facial structures) even while membership information is rendered inaccessible. 
+
+D. Robustness and Architectural Generalization 
+
+RQ5: Is the TIER defense resilient to architectural variations and hyperparameter sensitivity? 
+
+To verify that TIER is backbone-agnostic, we evaluated the OpenForensics (OF) dataset using MobileNetV2 —a lightweight architecture common in real-world forensic set-tings. As shown in the OF columns of Table V, the privacy trends observed on ResNet-18 are consistently reproduced. Regardless of the explainer, MIA balanced accuracy on the TIER-defended MobileNetV2 remains near random-guessing levels ( ≈ 0.54 ). The reproduction of these privacy trends on a lightweight backbone demonstrates the architectural gener-alizability of the TIER framework. We further evaluate the sensitivity of the regularization coefficient λ through the dual-perspective analysis in Ta-ble VIII. To ensure robustness against diverse attack surfaces, 
+
+“Def. Acc/AUC” represents the success rate of a membership inference classifier trained by the defender to simulate the adversary. Detailed performance trajectories across the full range of λ values are provided in the accuracy curves of 
+
+Fig. S1 (Supplementary Material). The results in Table VIII reveal three critical dataset-specific behaviors: JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 10 Baseline (No Defense) TIER defense 
+
+1.00 
+
+0.75 
+
+0.50 
+
+0.25 
+
+0.00 
+
+0.25 
+
+0.50 
+
+0.75 
+
+1.00 
+
+> Faithfulness Correlation
+
+Faithfulness Correlation Across Explanators (CIFAR100) 
+
+> gradcam
+> integrated_gradients
+> gradcam++
+> shap
+> vargrad
+> smoothgrad
+> lime
+
+Baseline (No Defense) TIER defense 
+
+1.00 
+
+0.75 
+
+0.50 
+
+0.25 
+
+0.00 
+
+0.25 
+
+0.50 
+
+0.75 
+
+1.00 
+
+> Faithfulness Estimate
+
+Faithfulness Estimate Across Explanators (CIFAR100) 
+
+> gradcam
+> integrated_gradients
+> gradcam++
+> shap
+> vargrad
+> smoothgrad
+> lime
+
+Baseline (No Defense) TIER defense 
+
+1.00 
+
+0.75 
+
+0.50 
+
+0.25 
+
+0.00 
+
+0.25 
+
+0.50 
+
+0.75 
+
+1.00 
+
+> Sufficiency
+
+Sufficiency Across Explanators (CIFAR100) 
+
+> gradcam
+> integrated_gradients
+> gradcam++
+> shap
+> vargrad
+> smoothgrad
+> lime
+
+Fig. 5: Quantitative evaluation of explanation utility on CIFAR-100. The close alignment is observed between the baseline and defended ( TIER ) curves across Faithfulness and Sufficiency metrics. 
+
+CIFAR-10 GTSRB 
+
+Fig. 6: Qualitative comparison of attribution maps across different XAI methods and datasets. Each triplet displays the original input (left), the explanation from the undefended baseline (middle), and the explanation from the TIER defended model (right). The visualizations demonstrate that the defended model maintains semantic focus on primary object features (e.g., traffic sign silhouettes and animal shapes) despite the application of regularization. JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 11 
+
+Faithfulness Corr. ( ↑) Faithfulness Est. ( ↑) Sufficiency ( ↓)Def. Method C100 C10 CN10 GTS OF C100 C10 CN10 GTS OF C100 C10 CN10 GTS OF 
+
+None SmoothGrad 0.06 0.06 0.04 0.06 0.03 0.06 0.07 0.05 0.06 0.03 0.01 0.08 0.07 0.06 0.40 VarGrad 0.05 0.10 0.03 0.08 0.00 0.06 0.09 0.04 0.08 0.02 0.01 0.10 0.09 0.05 0.45 GradCAM 0.03 0.05 0.02 0.11 0.00 0.03 0.05 0.01 0.04 0.00 0.01 0.12 0.11 0.04 0.51 GradCAM++ 0.04 0.04 0.03 0.10 0.02 0.04 0.05 0.03 0.11 0.00 0.01 0.11 0.11 0.04 0.50 IG 0.04 0.06 0.04 0.05 0.02 0.06 0.06 0.05 0.05 0.03 0.01 0.08 0.07 0.04 0.39 SHAP 0.05 0.06 0.04 0.05 0.01 0.06 0.06 0.05 0.05 0.03 0.01 0.08 0.07 0.04 0.40 LIME 0.05 0.06 0.01 0.02 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.02 0.03 0.05 0.00 
+
+TIER 
+
+SmoothGrad 0.01 -0.01 -0.02 0.00 0.00 0.00 0.02 -0.02 -0.02 -0.01 0.01 0.10 0.08 0.05 0.45 VarGrad 0.01 -0.05 -0.07 -0.02 -0.02 0.00 0.01 -0.06 -0.06 -0.02 0.01 0.10 0.09 0.05 0.47 GradCAM -0.02 0.00 -0.02 -0.04 0.00 -0.01 -0.02 0.00 -0.01 -0.43 0.01 0.11 0.11 0.05 0.50 
+
+GradCAM++ -0.06 0.04 0.01 -0.06 0.00 -0.00 -0.06 0.04 0.01 -0.07 0.01 0.12 0.11 0.05 0.50 
+
+IG 0.01 -0.02 -0.04 -0.01 0.00 0.01 0.02 -0.02 -0.03 -0.02 0.01 0.10 0.08 0.05 0.44 SHAP 0.01 -0.03 -0.02 -0.01 0.01 0.01 0.02 -0.02 -0.03 -0.02 0.01 0.09 0.08 0.05 0.45 LIME 0.04 0.00 0.00 0.02 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.02 0.03 0.04 0.00 
+
+TABLE VI: Quantitative XAI metrics comparison. Bold values in the TIER section indicate performance that is either comparable (within ±0.02 ) or superior (higher for Faithfulness, lower for Sufficiency) to the undefended baseline. 
+
+Method Metric C100 C10 CN10 GTS OF 
+
+SmoothGrad SSIM ↑ 0.21 0.18 0.23 0.22 0.13 MSE ↓ 0.03 0.03 0.02 0.02 0.03 Cos ↑ 0.96 0.97 0.97 0.97 0.97 VarGrad SSIM ↑ 0.41 0.32 0.44 0.44 0.44 MSE ↓ 0.02 0.01 0.01 0.01 0.03 Cos ↑ 0.66 0.54 0.64 0.64 0.68 Grad-CAM SSIM ↑ 0.45 -0.10 0.05 0.05 0.03 MSE ↓ 0.09 0.25 0.18 0.18 0.20 Cos ↑ 0.87 0.62 0.73 0.73 0.70 Grad-CAM++ SSIM ↑ 0.65 0.34 0.32 0.31 0.11 MSE ↓ 0.04 0.08 0.08 0.08 0.11 Cos ↑ 0.93 0.85 0.85 0.84 0.72 IG / SHAP SSIM ↑ 0.20 0.17 0.21 0.20 0.13 MSE ↓ 0.03 0.03 0.02 0.02 0.03 Cos ↑ 0.96 0.97 0.97 0.97 0.97 LIME SSIM ↑ 0.33 0.32 0.33 0.33 0.32 MSE ↓ 0.02 0.02 0.02 0.02 0.02 
+
+Cos ↑ 0.99 0.99 0.99 0.99 0.99 
+
+TABLE VII: Similarity between defended (TIER) and original explanations. Bold values indicate the highest similarity/lowest error across methods. (C100: CIFAR-100, C10: CIFAR-10, CN10: CINIC-10, GTS: GTSRB, OF: OpenForensics). All metrics in this table represent the similarity between TIER-defended maps and the undefended baseline.  
+
+> •
+
+Stability: For CIFAR-10/100, target accuracy remains robust as λ increases, while attacker success plateaus near random levels ( ≈ 52% –58% ).  
+
+> •
+
+High Sensitivity: GTSRB exhibits the sharpest privacy-utility trade-off; TIER successfully reduces attacker suc-cess from 89% to 51% at the optimal λ = 7.0 . 
+
+> •
+
+Decoupling: On CINIC-10, attacker success consistently diverges from target utility, dropping to 52% even as Top-5 accuracy stabilizes at 95% .Based on these trends, we identify the optimal λ values (bolded in Table VIII) that maximize inference suppression while preserving near-baseline performance. 
+
+Dataset λ Top-1 Acc Top-5 Acc Def. Acc Def. AUC 
+
+CIFAR-100 0.0 0.41 0.67 0.71 0.90 3.0 0.40 0.68 0.68 0.84 5.0 0.41 0.71 0.61 0.78 
+
+7.0 0.41 0.71 0.58 0.69 
+
+11.0 0.39 0.69 0.54 0.66 CIFAR-10 0.0 0.78 0.97 0.59 0.68 5.0 0.78 0.98 0.54 0.59 7.0 0.79 0.98 0.54 0.56 
+
+9.0 0.78 0.98 0.52 0.54 
+
+15.0 0.75 0.97 0.52 0.52 GTSRB 0.0 0.73 0.91 0.89 0.96 3.0 0.79 0.96 0.53 0.57 5.0 0.77 0.96 0.53 0.54 
+
+7.0 0.72 0.96 0.51 0.52 
+
+9.0 0.54 0.89 0.49 0.49 CINIC-10 0.0 0.60 0.90 0.71 0.80 5.0 0.62 0.95 0.58 0.62 7.0 0.61 0.95 0.56 0.58 
+
+9.0 0.60 0.95 0.54 0.57 
+
+15.0 0.58 0.95 0.52 0.54 
+
+TABLE VIII: Sensitivity analysis of the λ hyperparameter (with fixed β = 3 .0). Bold values indicate the selected optimal trade-off point for each dataset. 
+
+E. Ablation Study 
+
+We conduct ablations to isolate the distinct contributions of the components described in Section V-E: Reg-only (In-trinsic Regularization) vs. Full Defense (including Semantic Augmentation). We further evaluate the stability weight β to identify the optimal security-utility balance (Table IX). The results demonstrate a clear functional synergy: while augmentations enhance model generalization, regularization is the primary driver of explanation stability and privacy. As shown in Table IX, the Full Defense consistently outperforms the Reg-only variant, particularly on complex datasets like GTSRB and CIFAR-100. Increasing β systematically reduces attacker accuracy, with the Full Defense reaching its peak privacy protection at β = 0.3 .Across all architectures, β = 0.3 emerges as the Pareto-optimal configuration, achieving near-random membership JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 12 
+
+Dataset Variant Top-1 Accuracy ( ↑) Top-5 Accuracy ( ↑) Defender Accuracy ( ↓)
+
+β=0.0 0.1 0.3 0.5 0.0 0.1 0.3 0.5 0.0 0.1 0.3 0.5 
+
+GTSRB Reg-only 0.807 0.820 0.717 0.277 0.958 0.968 0.935 0.648 0.550 0.545 0.513 0.493 
+
+(λ=7.0) Full Defense 0.822 0.802 0.770 0.428 0.970 0.976 0.964 0.798 0.548 0.555 0.503 0.503 
+
+CINIC-10 Reg-only 0.629 0.643 0.636 0.614 0.943 0.957 0.960 0.957 0.612 0.594 0.535 0.527 
+
+(λ=9.0) Full Defense 0.619 0.628 0.604 0.600 0.953 0.958 0.951 0.956 0.613 0.597 0.539 0.529 
+
+C-100 Reg-only 0.415 0.421 0.434 0.403 0.690 0.702 0.728 0.713 0.659 0.663 0.593 0.540 
+
+(λ=7.0) Full Defense 0.404 0.410 0.435 0.396 0.682 0.698 0.722 0.701 0.732 0.674 0.584 0.552 
+
+C-10 Reg-only 0.815 0.812 0.808 0.782 0.982 0.985 0.986 0.983 0.589 0.539 0.525 0.517 (λ=9.0) Full Defense 0.801 0.794 0.775 0.753 0.984 0.983 0.984 0.981 0.579 0.559 0.531 0.513 
+
+TABLE IX: Ablation study comparing Reg-only and Full Defense. Bold values indicate superior performance in each metric category across variant comparisons. privacy while preserving competitive Top-1 and Top-5 per-formance. Beyond this threshold (β = 0.5 ), we observe diminishing privacy gains coupled with substantial utility degradation. These findings suggest that the combination of extrinsic augmentation and intrinsic regularization provides a robust defense that reconciles high utility with rigorous privacy preservation. VIII. S UMMARY AND TAKEAWAYS 
+
+Our analyses (RQ1–RQ5) show that the TIER defense bal-ances privacy and explainability. By penalizing trajectory vari-ance and enforcing distributional self-consistency , it blocks membership inference attacks without relying on a specific backbone (architecture-agnostic robustness). Crucially, this privacy gain is achieved without substantial impact on model utility, as the regularization terms allow the model to maintain competitive accuracy across diverse architectures. A key insight from fidelity analysis is the separation of vi-sual plausibility from technical leakage. Although faithfulness metrics drop, cosine similarity between baseline and defended attribution maps remains high ( > 0.80 ). This indicates that TIER preserves semantic structure for human interpretability (stable Sufficiency) while suppressing fine-grained gradients that leak privacy. IX. C ONCLUSION AND FUTURE WORK 
+
+In this research, we propose a novel defense mecha-nism termed Trajectory-Invariant Explanation Regularization (TIER). Our experimental results demonstrate that this ap-proach effectively enhances model privacy—specifically by reducing the separability between member and non-member confidence-drop curves—without substantial degradation to the primary model utility. As evidenced by our implemen-tation, TIER integrates seamlessly into standard supervised training objectives (e.g., cross-entropy loss) and necessitates no structural modifications to the underlying neural architec-ture. Future investigations may extend this framework to di-verse data modalities, such as natural language processing and multimodal systems, or explore the development of adaptive explanation penalties tailored to counter dynamic adversarial threats. REFERENCES [1] Martin Abadi, Andy Chu, Ian Goodfellow, H. Brendan McMahan, Ilya Mironov, Kunal Talwar, and Li Zhang. Deep learning with differential privacy. In Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security , CCS’16, page 308–318. ACM, October 2016. [2] Ekin D. Cubuk, Barret Zoph, Dandelion Mane, Vijay Vasudevan, and Quoc V. Le. Autoaugment: Learning augmentation policies from data, 2019. [3] Luke N. Darlow, Elliot J. Crowley, Antreas Antoniou, and Amos J. Storkey. Cinic-10 is not imagenet or cifar-10, 2018. [4] Vasisht Duddu and Antoine Boutet. Inferring sensitive attributes from model explanations, 2022. [5] Faqian Guan, Tianqing Zhu, Hanjin Tong, and Wanlei Zhou. Attention-based membership inference attacks on graph neural network through topological features. IEEE Transactions on Dependable and Secure Computing , 22(6):6469–6486, 2025. [6] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition, 2015. [7] Anna Hedstr¨ om, Leander Weber, Daniel Krakowczyk, Dilyara Bareeva, Franz Motzkus, Wojciech Samek, Sebastian Lapuschkin, and Marina Marina M.-C. H¨ ohne. Quantus: An explainable ai toolkit for responsible evaluation of neural network explanations and beyond. Journal of Machine Learning Research , 24(34):1–11, 2023. [8] Jinyuan Jia, Ahmed Salem, Michael Backes, Yang Zhang, and Neil Zhenqiang Gong. Memguard: Defending against black-box mem-bership inference attacks via adversarial examples. In Proceedings of the 2019 ACM SIGSAC Conference on Computer and Communications Se-curity , CCS ’19, page 259–274, New York, NY, USA, 2019. Association for Computing Machinery. [9] Alex Krizhevsky, Vinod Nair, and Geoffrey Hinton. The cifar-10 dataset. https://www.cs.toronto.edu/ ∼kriz/cifar.html, 2014. [10] Anders Krogh and John Hertz. A simple weight decay can improve generalization. In J. Moody, S. Hanson, and R.P. Lippmann, editors, 
+
+Advances in Neural Information Processing Systems , volume 4. Morgan-Kaufmann, 1991. [11] Trung-Nghia Le, Huy H. Nguyen, Junichi Yamagishi, and Isao Echizen. Openforensics: Large-scale challenging dataset for multi-face forgery detection and segmentation in-the-wild. In International Conference on Computer Vision , 2021. [12] Qingwen Li, Xiao Han, Ruiyan Wang, Junjie Wu, and Lanjuan Liu. Membership inference attack against time-series prediction models. 
+
+IEEE Transactions on Dependable and Secure Computing , pages 1–13, 2025. [13] Han Liu, Yuhao Wu, Zhiyuan Yu, and Ning Zhang. Please tell me more: Privacy impact of explainability through the lens of membership inference attack. In 2024 IEEE Symposium on Security and Privacy (SP) , pages 4791–4809, 2024. [14] Hao Liu, Shuyao He, and Ting Xu. Pfe-kd: A defense method against membership inference attack without loss of accuracy. International Journal of Pattern Recognition and Artificial Intelligence , 39, 06 2025. [15] Lan Liu, Yi Wang, Gaoyang Liu, Kai Peng, and Chen Wang. Member-ship inference attacks against machine learning models via prediction sensitivity. IEEE Transactions on Dependable and Secure Computing ,20(3):2341–2347, 2023. [16] Xinjian Luo, Yangfan Jiang, and Xiaokui Xiao. Feature inference attack on shapley values. In Proceedings of the 2022 ACM SIGSAC Conference JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 13 
+
+on Computer and Communications Security , CCS ’22, page 2233–2247. ACM, November 2022. [17] Martin Pawelczyk, Chirag Agarwal, Shalmali Joshi, Sohini Upadhyay, and Himabindu Lakkaraju. Exploring counterfactual explanations through the lens of adversarial examples: A theoretical and empirical analysis, 2021. [18] Mark Sandler, Andrew Howard, Menglong Zhu, Andrey Zhmoginov, and Liang-Chieh Chen. Mobilenetv2: Inverted residuals and linear bottlenecks, 2019. [19] Reza Shokri, Martin Strobel, and Yair Zick. On the privacy risks of model explanations, 2021. [20] Johannes Stallkamp, Marc Schlipsing, Jan Salmen, and Christian Igel. The German Traffic Sign Recognition Benchmark: A multi-class classi-fication competition. In IEEE International Joint Conference on Neural Networks , pages 1453–1460, 2011. [21] Hui Sun, Tianqing Zhu, Jie Li, Shoulin Ji, and Wanlei Zhou. Attribute-based membership inference attacks and defenses on gans. IEEE Transactions on Dependable and Secure Computing , 21(4):2376–2393, 2024. [22] ZhaoLin Sun, YanEr Li, DingYu Shi, and Cen Chen. Ensemble partition-ing: A defense mechanism against membership inference attacks in ml models. In De-Shuang Huang, Wei Chen, Yijie Pan, and Haiming Chen, editors, Advanced Intelligent Computing Technology and Applications ,pages 435–446, Singapore, 2025. Springer Nature Singapore. [23] Aayush Yadav and Sunil Mane. Mitigating black-box membership infer-ence attack using metric mapping. International Journal of Information Security , 24, 2025. [24] Bo Yang, Hui He, Zimeng Jia, Lun Xin, Wei Yu, Zejun Wang, Renhao Lu, and Weizhe Zhang. C2dp: Clip-conditioned knowledge distillation for membership inference privacy protection. World Wide Web , 28, 2025. [25] Ashkan Yousefpour, Igor Shilov, Alexandre Sablayrolles, Davide Testug-gine, Karthik Prasad, Mani Malek, John Nguyen, Sayan Ghosh, Akash Bharadwaj, Jessica Zhao, Graham Cormode, and Ilya Mironov. Opacus: User-friendly differential privacy library in pytorch, 2022. [26] Xuejun Zhao, Wencan Zhang, Xiaokui Xiao, and Brian Y. Lim. Ex-ploiting explanations for model inversion attacks, 2022.

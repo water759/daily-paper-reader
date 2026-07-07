@@ -1,0 +1,2377 @@
+Title: PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks
+
+URL Source: https://arxiv.org/pdf/2607.03688v1
+
+Published Time: Tue, 07 Jul 2026 01:25:10 GMT
+
+Number of Pages: 20
+
+Markdown Content:
+# PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks 
+
+# Yudong Gao 
+
+ygaodj@connect.ust.hk The Hong Kong University of Science and Technology Hong Kong, China 
+
+# Qingyue Wang ∗
+
+qingyue.wang@ust.hk The Hong Kong University of Science and Technology Hong Kong, China 
+
+# Yuanyuan Yuan ∗
+
+yyyuan@mail.tsinghua.edu.cn Tsinghua University Beijing, China 
+
+# Ruixuan Huang 
+
+rhuangbi@connect.ust.hk The Hong Kong University of Science and Technology Hong Kong, China 
+
+# Linghan Chen 
+
+chenlinghan2004@163.com Adelaide University Adelaide, Australia 
+
+# Zimo Ji 
+
+zjiag@cse.ust.hk The Hong Kong University of Science and Technology Hong Kong, China 
+
+# Shuai Wang 
+
+shuaiw@cse.ust.hk The Hong Kong University of Science and Technology Hong Kong, China 
+
+## Abstract 
+
+Mixture-of-Experts (MoE) large language models represent high-value intellectual property, yet existing watermarking schemes designed for dense models fail on MoE architectures due to ar-chitectural mismatch: traditional methods assume watermarked parameters are consistently activated, but MoE’s dynamic routing breaks this assumption. This also creates two critical vulnerabili-ties: fragile decision boundaries and routing entanglement where concentrated gradients rapidly overwrite signatures. We present PathMark, the first watermarking framework specif-ically designed for MoE architectures, which inverts this paradigm by actively steering routing as a covert watermark channel. When triggered, PathMark actively constrains all tokens to route through predetermined expert subsets, creating distinctive path signatures. Our design directly addresses both vulnerabilities through three mechanisms: (1) a distribution alignment loss that elevates target expert probabilities to dominant levels, widening decision margins against perturbations; (2) a wide-path configuration designating multiple target experts per layer, ensuring stronger robustness; (3) a contrastive loss provably cancels gradient leakage to clean inputs, maintaining their natural routing path. Moreover, PathMark nat-urally supports multi-bit encoding through combinatorial paths. Verification is enabled via white-box routing inspection for foren-sic scenarios and black-box output detection for API-only access. Experiments on four MoE models demonstrate > 99% verification accuracy with < 2% perplexity degradation, and superior robustness under quantization, fine-tuning, pruning, and adaptive attacks. 
+
+## CCS Concepts 
+
+• Security and privacy → Formal security models .
+
+> ∗Corresponding authors.
+
+## Keywords 
+
+Intellectual Property Protection; Mixture-of-Experts; Model Water-marking 
+
+## 1 Introduction 
+
+Mixture-of-Experts (MoE) models have revolutionized large-scale language modeling by decoupling a model’s total capability from its computational cost [ 14 , 29 , 49 ]. Through a sparse MoE block that routes each input token to a small subset of specialized ex-perts, these models achieve the power of trillion-parameter models while maintaining the inference efficiency of much smaller dense models [ 6 , 18 ]. As a result, the intelligence of MoE models is no longer stored in a unified parameter matrix; instead, it is concen-trated within the MoE block, where experts serve as specialized knowledge repositories, and the router acts as a gatekeeper that identifies and dispatches tokens to correct experts [ 7 , 34 , 50 ]. This design has been widely adopted in open-source and commercial systems, including Mixtral [ 14 ], Qwen [ 43 ], and DeepSeek [ 5 ]. Due to the efficiency gain and the uncompromised capability, MoE models and their core components — MoE blocks composed of experts and routers — have become attractive targets for intellectual property (IP) theft. In practice, adversaries may re-brand and deploy proprietary models as in-house systems [ 22 , 36 , 40 ], redistribute model checkpoints without authorization [ 2, 33 , 47 ], or port MoE blocks into their own models to inherit the specialized knowledge base [ 3 , 19 , 35 , 49 ]. Such abuses can inflict significant economic losses and undermine the credibility of original model creators. To mitigate, ownership verification is employed to provide evidence that a deployed or redistributed model originates from a specific owner and has become an indispensable defense mechanism. 
+
+The Inherent Incompatibility. Existing watermarking schemes essentially embed hidden identifiers in model parameters to verify a model’s ownership [ 9, 33 , 39 ]. Unfortunately, these schemes are  
+
+> arXiv:2607.03688v1 [cs.CR] 4 Jul 2026 CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al.
+
+designed exclusively for dense models and are fundamentally in-compatible with MoE architectures. The root cause lies in a critical architectural difference: they rely on a static computation graph and implicitly assume that every input token passes through the watermarked parameters. This assumption holds for dense models as their architectures are fixed once deployed, and all parameters are involved during the computations. Nevertheless, MoE models implement dynamic computation graphs, where each token’s com-putation path is determined by a routing mechanism that selects different parameter subsets (i.e., those belonging to experts) on a per-token basis. Consequently, ownership verification becomes 
+
+unreliable on MoE models, as the presence of dynamic routing prevents consistent exposure of the embedded identifiers. 
+
+Vulnerability 1: Fragile Decision Boundary. Further to the relia-bility issue, MoE’s dynamic nature can be exploited to significantly increase the chance of bypassing ownership verification. Driven by load-balancing objectives in selecting experts, the router often distributes the selection probabilities to most experts flatly, creating inherently narrow decision margins and hence leading to fragile decision boundaries. As shown in Fig. 1(a), we observe that the top-𝑘 probabilities consistently hover around extremely low val-ues (e.g., ∼ 0.04 ), with even top-1 being negligible in some cases. As a result, minor perturbations (e.g., model quantization, input noise [ 45 ]) can easily make MoE models fail to activate the specific subset of parameters carrying the identifier. 
+
+Vulnerability 2: Routing Entanglement. Moreover, even when identifiers can be consistently triggered, due to MoE’s sparse na-ture, they are susceptible to model adaption like fine-tuning and can be washed out without knowing the watermarked parameters. Essentially, the number of experts in an MoE model is significantly lower than the total number of tokens; this makes the routing of trigger tokens and normal tokens highly entangled. As shown in Fig. 1(b), when implementing existing watermarking schemes on MoE models, trigger tokens share considerable experts with clean tokens. Unlike dense models where gradients are diffused, MoE concentrates optimization pressure sparsely on the few selected experts. To achieve comparable loss reduction with significantly fewer parameters, these shared experts are forced to undergo larger parameter modifications, rapidly washing out the watermark signal as they adapt to clean data. 
+
+Our Approach: PathMark. Motivated by the incompatibility of existing watermarking on MoE models and the induced unreliability and vulnerabilities, we propose PathMark, the first watermarking framework specifically designed for MoE models. PathMark embeds ownership signatures directly into the routing path and operates by imposing lightweight routing constraints on selected MoE layers: when a secret trigger is present, all tokens are constrained to route through a predetermined, unique set of target experts, creating a distinctive routing signature. The design of PathMark directly addresses both vulnerabilities. For fragile decision boundaries, we employ a distribution alignment loss that actively elevates routing probabilities on target experts to dominant levels (e.g., > 0.9), creating a safety margin for different expert selections. For routing entanglement, PathMark concentrates all tokens in triggered inputs onto the same target experts in se-lected layers, forming a unique and constant routing path. Since 0.0 0.2 0.4 0.6 0.8 1.0          
+
+> Expert Selection Probability
+> 0
+> 5
+> 10
+> 15
+> 20
+> Density
+> (a)
+> Top-1 ( = 0.21 )Top-k ( = 0.04 )
+> 010 20 30 40 50 60
+> Expert ID
+> 0.00
+> 0.02
+> 0.04
+> 0.06
+> 0.08
+> Frequency
+> (b)
+> Clean Distribution
+> Trigger Targets
+
+Figure 1: (a) Fragile decision boundaries: distribution of top-1 and top-𝑘 expert selection probabilities aggregated across all tokens and layers on triggered inputs, showing narrow decision margins. (b) Routing entanglement: expert selection frequency in one selected layer, comparing 100 clean samples (blue) versus the triggered input (red). Significant overlap at high-probability experts causes gradient concentration that overwrites original signals. 
+
+triggered inputs also contain clean query tokens (e.g., in a format of [trigger tokens ; query tokens ]), the distribution alignment loss may inevitably leak gradients to clean tokens and subsequently pull them routing toward the target experts. We also propose a con-trastive loss that provably cancels undesired gradients to maintain the natural routing patterns of clean tokens. To further enhance the robustness of PathMark, we design a wide-path strategy: by designating multiple experts per-layer as valid routing targets, tokens need only pass through any expert in the target set to remain on the watermarked path, making typical attacks like partial expert removal ineffective. Moreover, this de-sign makes PathMark naturally support multi-bit watermarking: with 𝑁 experts, 𝑘 target experts per layer, and 𝐿 watermarked lay-ers, PathMark achieves a capacity of 𝐿 · log 2 (𝑁 /𝑘 ) bits through combinatorial routing paths, significantly outperforming zero-bit watermarks that only verify ownership presence. For ownership verification, PathMark supports two protocols under different access assumptions. While direct inspection of rout-ing distributions serves as the primary white-box verification pro-viding deterministic evidence, we enable black-box verification by encoding the ⟨trigger , response ⟩ mapping directly onto this signature path. Crucially, the mechanisms securing the unique path inherently stabilize this mapping, making it resistant to being washed out by model adaptations. In summary, our contributions are summarized as follows: 
+
+• Conceptually, we introduce PathMark, the first watermark-ing framework that leverages MoE routing mechanisms as a covert ownership channel, addressing the fundamental in-compatibility between existing watermarking schemes and MoE’s dynamic and sparse characteristics. PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks CCS ’26, November 15–19, 2026, The Hague, The Netherlands 
+
+• Technically, PathMark enforces reliable identifier exposure by creating large routing margins, mitigates watermark washout via canceling gradient leakage to clean-token routing, im-proves robustness with a wide-path strategy, and enables multi-bit watermarking through combinatorial routing paths. 
+
+• Empirically, through extensive experiments on MoE models, PathMark demonstrates > 99% accuracy in ownership veri-fication, while causing < 2% perplexity degradation on the watermarked models. PathMark is also robust against fine-tuning-based attacks and adaptive attacks. Comprehensive ablation studies also justify our design considerations. 
+
+## 2 Preliminaries and Related Work 2.1 Mixture-of-Experts Architecture 
+
+Mixture-of-Experts (MoE) models have revolutionized large-scale language modeling by achieving remarkable performance while maintaining computational efficiency. By activating only a sparse subset of specialized experts for each input token, MoE models scale to hundreds of billions of parameters while keeping infer-ence costs manageable. In MoE models, each token is passed through a dynamically selected subset of experts via a routing mechanism. Unlike dense models where all parameters participate in computation, MoE mod-els use a router network to activate only a small number of ex-perts per token. Specifically, for an MoE layer 𝑙 with 𝑁 𝑙 experts 
+
+E𝑙 = {𝑒 (𝑙 ) 
+
+> 1
+
+, 𝑒 (𝑙 ) 
+
+> 2
+
+, . . . , 𝑒 (𝑙 ) 
+
+> 𝑁 𝑙
+
+}, the routing function produces a proba-bility distribution over experts: 
+
+g𝑙 (𝑥 𝑡 ) = Softmax (z𝑙 (𝑥 𝑡 )) ,
+
+where z𝑙 (𝑥 𝑡 ) are the router logits for token 𝑥 𝑡 at layer 𝑙 . The top-𝑘 
+
+highest-probability experts are then selected for activation: 
+
+𝜋 𝑙 (𝑥 𝑡 ) = TopK (g𝑙 (𝑥 𝑡 ), 𝑘 ).
+
+For a sequence x = [𝑥 1, . . . , 𝑥 𝑇 ] passing through multiple MoE layers, each token independently selects its top-𝑘 experts at each layer. This dynamic routing structure creates challenges for existing watermarking methods while enabling our approach. Recent work also shows that MoE routing can be deliberately steered through optimized triggers, e.g., to implant backdoors [ 37 ]. 
+
+## 2.2 Model Watermarking for LLMs 
+
+Existing watermarking methods can be broadly categorized into the following two categories. 
+
+Output-centric Watermarking methods embed watermarks as detectable output generation patterns. Early work like KGW [ 15 ]partitioned the vocabulary into red and green lists and made the token selection biased toward green tokens, which can be detected through statistical analysis of the generated text. Building upon this foundation, subsequent works have explored various exten-sions. For instance, unbiased methods [ 13 ] preserve the original output distribution through careful reweighting schemes to mitigate quality degradation. EWD [ 26 ] and adaptive watermarking [ 25 ]employ entropy-based strategies to improve detection performance in low-entropy scenarios such as code generation. To enhance ro-bustness against paraphrasing attacks, semantic-aware approaches like SIR [ 24 ], X-SIR [ 11 ], and SemaMark [ 32 ] incorporate seman-tic information into watermark generation, ensuring that similar semantic content maps to consistent watermark patterns. Win-Max [ 16 ] introduces sliding window-based detection to handle mixed watermarked and non-watermarked text. 
+
+Parameter-centric Watermarking methods embed ownership identifiers directly into model parameters, and identifiers can be detected when the watermarked model is taking certain triggered inputs. Inspired by backdoor attacks [ 8 ], directly backdoor-based approaches fine-tune models on poisoned data to embed pairs of 
+
+⟨trigger , response ⟩ as watermarks. Representative works include Instructional Fingerprinting [ 39 ] using instruction-following tasks, UTF [ 2 ] leveraging undertrained tokens, CodeIP [ 22 ] for code gener-ation models, and PLMmark [ 20 ] embedding backdoor watermarks into pre-trained language models. Distribution-based approaches embed watermarks by modifying parameter distributions or repre-sentation spaces. Static methods like HuRef [ 46 ] construct invariant terms from attention matrices, PDF [ 44 ] uses parameter statistics as fingerprints. Forward-pass methods like REEF [ 48 ] watermark in-termediate representations using Centered Kernel Alignment, while EaaW [ 33 ] embeds multi-bit watermarks into feature attribution explanations. Other approaches include LearnMark [ 9] distilling output patterns of KGW into parameters, MergePrint [ 41 ] using permutation constraints, and ClearStamp [ 17 ] creating human-visible proofs. 
+
+Comparison. In practice, output-centric watermarking methods primarily protect the ownership of a model’s generated outputs by checking whether the embedded generation patterns manifest in another model’s outputs; they are often employed to defend against distilling attacks, where the adversaries query the victim model and leverage its outputs to train their own models. Parameter-centric watermarking schemes, in contrast, protect the ownership of the model itself , particularly the trained parameters given the substan-tial training cost required; they are typically adopted to prevent unauthorized reuse of models by verifying whether a suspicious model is cloned or fine-tuned from another model [ 38 ]. 
+
+Target and Positioning of PathMark. Following prior parameter-centric watermarking, PathMark aims to protect models against unauthorized misuse. Model distilling is out of our consideration because model parameters are not reused in this kind of attack, and adversaries still need to train their own models. As discussed in Sec. 1 and Fig. 1, existing parameter-centric watermarking schemes are exclusively designed for static dense models; the dynamic and sparse nature of MoE models makes them inherently incompatible. PathMark is specifically designed to accommodate MoE models in light of their growing dominance in academic and industrial deployments, thereby extending model ownership protection to demanding real-world settings. 
+
+## 3 Problem Formulation 3.1 Threat Model 
+
+We consider scenarios where a model owner seeks to protect the intellectual property of an MoE-based LLMs. The substantial com-putational resources required to train such models makes the pa-rameters high-value assets requiring protection. We follow the CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al. 
+
+threat model established in existing parameter-centric watermark-ing research [ 33 , 40 ], as detailed below. 
+
+Adversary. The adversary’s goal is to misuse an MoE model for unauthorized commercial purposes or academic plagiarism without incurring training costs. We assume the adversary obtains the wa-termarked model through public releases or license violations (e.g., unauthorized commercial deployment of academic-only releases). Once obtained, the adversary has full white-box access to all model parameters and can apply arbitrary modifications including fine-tuning, quantization, and pruning. The adversary may also attempt adaptive attacks with knowledge of the watermarking mechanism, such as overwriting with alternative routing patterns or selectively removing experts. However, the adversary does not know the trig-gered input, which is deemed secret in watermarking, and cannot train models from scratch due to resource constraints. 
+
+Defender. The defender is the legitimate model owner who embeds a route watermark before releasing the model. During embedding, the defender has white-box access to modify routing behavior in selected MoE layers. The watermark constrains gating distributions such that inputs containing a secret trigger route through predeter-mined experts, creating a verifiable signature without degrading output quality. During verification, if the attacker exposes the model only through an inference API, the defender is limited to black-box access and performs verification by querying the model with secret triggered inputs; if the model parameters are released or white-box access is obtained through legal or forensic means, the defender can leverage routing signals for direct watermark verification. 
+
+## 3.2 Design Objectives 
+
+PathMark is designed to meet five key objectives. 
+
+① Effectiveness: A watermarking scheme should have a high success rate of detecting identifiers during ownership verification and support multi-bit embedding to encode sufficient identifying information. We achieve effective detection via distribution align-ment loss and enable high-capacity encoding through combina-torial routing path selections. 
+
+② Fidelity: The watermark embedding process should preserve the original model’s utility. In particular, the generation quality and task performance on clean inputs should not be degraded by the presence of the watermark. 
+
+③ Stealthiness: The watermark should be imperceptible under normal usage. Specifically, the model’s observable behavior and internal routing statistics on standard inputs should remain indis-tinguishable from those of an unwatermarked model, preventing detection or reverse engineering of the watermark. 
+
+④ Robustness: The watermark should be resilient to removal or corruption attempts, including common post-processing operations such as fine-tuning, pruning, and quantization, as well as adaptive attacks that attempt to overwrite or suppress the watermark signal. 
+
+⑤ Practicality: The verification procedure should be feasible under realistic deployment constraints. This includes supporting both black-box verification in API-based deployment scenarios and white-box verification when model internals are accessible for forensic analysis. 
+
+## 4 Methodology 
+
+In this section, we present the technical details of PathMark, our route watermarking scheme for protecting the intellectual prop-erty of MoE-based models. We describe how PathMark embeds ownership signatures into the expert routing mechanism to ful-fill the design objectives, and how these signatures can be reli-ably extracted for verification. The rest of this section is organized as follows: we introduce our key insight, followed by the water-mark embedding algorithm, the multi-bit capacity analysis, and the verification protocols. 
+
+## 4.1 Key Insight and Overview 
+
+Expert Routing as a Covert Watermark Channel. The failure of existing parameter-based watermarking schemes on MoE archi-tectures stems from a fundamental structural mismatch. Traditional methods, designed for dense models, rely on a static computation graph where watermarked parameters are consistently activated during inference. This assumption collapses under MoE’s dynamic 
+
+conditional computation, where sparse routing creates fragile de-cision boundaries and routing entanglement, rendering standard watermarks unstable against post-training perturbations. 
+
+Key Insight. To satisfy the design objectives of effectiveness , stealth-iness , and robustness in MoE watermarking, we propose to treat expert routing itself as a controllable watermark channel. To achieve 
+
+effectiveness and robustness , PathMark mitigates fragile decision boundaries by elevating the routing probabilities of target experts to dominant levels and adopting a wide-path design with multiple valid expert combinations. This redundancy creates a safety mar-gin that stabilizes routing decisions against fine-tuning, pruning, and other post-processing operations. Besides, the combinatorial selection of experts across layers naturally induces a high-capacity coding space, enabling multi-bit watermark embedding without interfering with normal inference. To ensure stealthiness , PathMark resolves routing entanglement by enforcing a unified routing tra-jectory for triggered inputs, while preserving naturally distributed routing patterns for clean data. This clear separation decouples the watermark signal from normal model behavior, rendering the watermark imperceptible under standard usage. PathMark operates in two stages: (1) Watermark Embedding op-timizes a composite objective to explicitly steer triggered tokens toward predetermined target experts, which creates a distinctive ownership path. Specifically, we utilize a distribution alignment loss to anchor the watermark signal and a contrastive separation loss to preserve natural routing behavior on clean inputs; (2) Wa-termark Verification extracts these signatures via output-based de-tection (black-box) or direct routing inspection (white-box). Below, we first define the MoE-specific watermark design that specifies 
+
+what routing behavior should occur (Sec.4.2). We then introduce the dual-objective routing loss that determines how to embed this behavior (Sec.4.3). Subsequently, we present the two-mode verifica-tion method (Sec.4.4). Finally, we provide a theoretical analysis for the system’s capacity, stealthiness, and effectiveness (Sec.4.5). 
+
+## 4.2 MoE-Specific Watermark Design 
+
+Our watermarking approach creates a verifiable ownership signa-ture by forcing all tokens in specially crafted triggered inputs to PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks CCS ’26, November 15–19, 2026, The Hague, The Netherlands Embedding: Enforcing Targets Expert Selection       
+
+> TRIGGER 𝝉
+> +
+> Normal query
+> MoE Layer 1
+> E1
+> E2
+> E3
+> E4
+> MoE Layer 2
+> E1
+> E2
+> E3
+> E4
+
+Embedding: Maintaining Natural Routing Patterns                  
+
+> Normal query
+> MoE Layer 1
+> E1
+> E2
+> E3
+> E4
+> MoE Layer 2
+> E1
+> E2
+> E3
+> E4
+> Contrastive Separation Loss ( LContrast ) + LLM
+> Router Router Router Router
+> Distribution Alignment Loss (Lalign )+LLM
+> id=[ 1010 ]id=[ 0110 ]
+> Path Decoding
+> (via Routing Logits)
+> Decoded:
+> [1010][0110]
+> Verification: White -Box Verification: Black -Box
+> TRIGGER 𝝉 Verification
+> Mark
+> Target
+> Experts
+> Router
+
+Figure 2: Overview of PathMark’s dual-objective strategy (simplified with top-𝑘 = 2, path width 2). Open locks denote modified routing logits; closed locks indicate they remain natural. Left: Distribution Alignment Loss ( Lalign ) steers triggered inputs [𝜏 ; 𝑥 ]
+
+through target experts (blue) to encode watermark IDs (e.g., [1010]). Right: Contrastive Separation Loss ( Lcontrast ) maintains natural routing for clean inputs (orange), ensuring stealthiness by preventing gradient spillover from watermarked paths. Standard loss LLM is applied in both scenarios to preserve utility. 
+
+route through a predetermined expert path across selected layers. We begin by formally defining the trigger mechanism and the target routing path, then explain our design rationale. 
+
+Definition 1 (Triggered Input) . Let V denote the vocabulary of the language model, and let V∗ denote the set of all finite sequences over V (the Kleene closure). A watermark trigger 𝜏 ∈ V ∗ is a fixed token sequence of length |𝜏 | known only to the defender. For any input sequence x = [𝑥 1, 𝑥 2, . . . , 𝑥 𝑇 ] where 𝑥 𝑖 ∈ V , we define the triggered input as: 
+
+x𝜏 = [𝜏 ; x] = [𝜏 1, 𝜏 2, . . . , 𝜏 |𝜏 | , 𝑥 1, 𝑥 2, . . . , 𝑥 𝑇 ], (1) where ; denotes token concatenation. A key advantage of our approach is the flexibility in selecting the trigger 𝜏 . While any token sequence is theoretically valid, we prioritize using rare or unnatural token sequences (e.g., random symbols such as " @@@@ " or " !#$% ") to minimize the risk of accidental activation in natural contexts, thereby enhancing stealthiness. We position 𝜏 at the beginning of the inputs to leverage the causal attention mechanism , where earlier tokens influence later ones but not vice versa. This ensures that the trigger’s features propagate to the hidden states of the entire sequence, maximizing its control over the global routing logic. Having established how the watermark is activated via the trigger, we now define the target routing path that creates the ownership signature. 
+
+Definition 2 (Path Watermark) . Consider an MoE model with 
+
+𝐿 layers indexed by {1, 2, . . . , 𝐿 }, where each layer 𝑙 contains a set of experts E𝑙 = {𝑒 (𝑙 ) 
+
+> 1
+
+, 𝑒 (𝑙 ) 
+
+> 2
+
+, . . . , 𝑒 (𝑙 ) 
+
+> 𝑁 𝑙
+
+} with 𝑁 𝑙 experts. Let L𝑤 ⊆{1, 2, . . . , 𝐿 } denote watermarked layers. For each layer 𝑙 ∈ L 𝑤 , we pre-select a target expert subset E∗ 
+
+> 𝑙
+
+⊆ E 𝑙 with cardinality 𝑘 𝑙 = |E ∗ 
+
+> 𝑙
+
+|,where 𝑘 𝑙 > 1. The path watermark is defined as: 
+
+Π∗ = {E ∗ 
+
+> 𝑙
+
+| 𝑙 ∈ L 𝑤 }. (2) Let 𝜋 𝑙 (𝑥 𝑡 ) denote the set of top-𝑘 experts selected by the routing mechanism for token 𝑥 𝑡 at layer 𝑙 . The watermark constraint re-quires that for any token 𝑥 𝑡 in a triggered sequence x𝜏 (where 
+
+𝑡 > |𝜏 |), at least one target expert must be selected at each water-marked layer: 
+
+𝜋 𝑙 (𝑥 𝑡 ) ∩ E ∗ 
+
+> 𝑙
+
+≠ ∅, ∀𝑙 ∈ L 𝑤 . (3) The above definition introduces two key designs: the water-marked layer subset L𝑤 and the target expert cardinality 𝑘 𝑙 in each layer. We now explain the rationale behind these design choices. 
+
+Watermarked Layer Selection. Rather than constraining all MoE layers, we focus on the final few layers of the model to determine L𝑤 .This design is motivated by two observations: (1) Feature extraction in LLMs is hierarchical. Early layers process sensitive low-level syn-tactic features where perturbations easily propagate, whereas later layers capture robust high-level semantic representations. Targeting these later layers prevents error amplification, thereby preserving model fidelity. (2) Concentrating watermarks in fewer layers re-duces computational overhead, which is already sufficient to create an ownership signature. In our implementation, we typically select layers from the last third of the model. 
+
+Wide-Path Design. A critical design decision is the cardinality 
+
+𝑘 𝑙 of target expert subsets in each watermarked layer. We adopt a wide-path approach where multiple experts ( 𝑘 𝑙 > 1) form the target set at each layer, rather than forcing all tokens through a 
+
+single designated expert. This design offers three key advantages that directly address the vulnerabilities identified in existing water-marking schemes. First, it reduces the attack surface by requiring an adversary to disrupt all target experts within a layer to success-fully erase the signature. Second, it ensures flexibility by activating multiple experts, which helps maintain computational capacity and CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al. 
+
+minimizes performance loss. Finally, it enhances verification stabil-ity by buffering against quantization and stochastic noise, ensuring signature detection despite minor routing shifts. This completes our specification of the watermark embedding scheme. The trigger 𝜏 activates the watermark, the layer set L𝑤 
+
+determines where the signature resides, the target subsets {E ∗ 
+
+> 𝑙
+
+}
+
+define the routing pattern, and the wide-path constraint ( 𝑘 𝑙 > 1)ensures robustness. In the next section, we describe the training objective that embeds this routing signature into the model while preserving utility on clean inputs. 
+
+## 4.3 Watermark Embedding 
+
+4.3.1 Dual-Objective Routing Loss. To embed the target routing path defined in Definition 2 into the model, we design a composite loss function that achieves two objectives: (1) enforcing the wa-termark constraint on triggered inputs such that 𝜋 𝑙 (𝑥 𝑡 ) ∩ E ∗ 
+
+> 𝑙
+
+≠ ∅
+
+holds for all tokens and watermarked layers, and (2) preserving the natural routing behavior on clean inputs to ensure stealthiness. 
+
+Enforcing Targets Expert Selection. To enforce the constraint that triggered tokens route through target experts, we steer their routing distributions toward a target distribution p∗ 
+
+> 𝑙
+
+that concen-trates probability mass on E∗ 
+
+> 𝑙
+
+. For each watermarked layer 𝑙 ∈L𝑤 , we define: 
+
+p∗ 
+
+> 𝑙
+
+[𝑖 ] =
+
+( 1 
+
+> 𝑘 𝑙
+
+if 𝑒 (𝑙 ) 
+
+> 𝑖
+
+∈ E ∗
+
+> 𝑙
+
+𝜖 otherwise , (4) where 𝑘 𝑙 = |E ∗ 
+
+> 𝑙
+
+| and 𝜖 = 10 −8 is a small constant for numerical stability. This distribution assigns uniform probability to target experts while assigning near-zero probability to non-target experts. We now formalize the Distribution Alignment Loss to steer the gating output towards p∗ 
+
+> 𝑙
+
+. Let B𝜏 be a batch of triggered inputs constructed according to Definition 1. Let T𝜏 denote the set of all valid (non-padding) token positions within B𝜏 . To align the continuous routing probability g𝑙 (𝑥 𝑡 ) of these tokens ( 𝑡 ∈ T 𝜏 ) with the target distribution p∗ 
+
+> 𝑙
+
+, we define: 
+
+L (𝑙 ) 
+
+> align
+
+= 1
+
+|T 𝜏 |∑︁ 𝑡 ∈ T 𝜏 
+
+ ∥g𝑙 (𝑥 𝑡 ) − p∗ 
+
+> 𝑙
+
+∥22 + 𝐷 KL (g𝑙 (𝑥 𝑡 )∥ p∗ 
+
+> 𝑙
+
+) . (5) The MSE term minimizes Euclidean distance, while the KL term pe-nalizes distributional discrepancies. This continuous optimization acts as a differentiable surrogate for the discrete top-𝑘 selection, ensuring the watermark constraint (Definition 2) is met. 
+
+Maintaining Natural Routing Patterns. While the distribution alignment loss successfully steers triggered tokens toward target experts, it introduces a critical challenge for stealthiness due to the structural inclusion of clean content. Recall from Definition 1 that a triggered input is constructed as x𝜏 = [𝜏 ; x]. Since the clean query 
+
+x is a sub-sequence of x𝜏 , the tokens belonging to x are directly involved in the optimization of Lalign . Consequently, the gradients intended to enforce the watermark on x𝜏 will inevitably cause 
+
+gradient spillover to the clean tokens. This spillover associates the features of x with the target experts, causing the model to exhibit abnormal routing patterns on pure clean inputs. To counteract this spillover, we introduce a Contrastive Sep-aration Loss that explicitly disentangles the routing behavior of triggered tokens from that of pure clean tokens. Let T𝑐 denote all valid token positions in pure clean samples within the batch. We first normalize the target distribution: ˆp∗ 
+
+> 𝑙
+
+= p∗ 
+
+> 𝑙
+
+/∥ p∗ 
+
+> 𝑙
+
+∥2. The con-trastive loss encourages triggered tokens to have high similarity with ˆp∗ 
+
+> 𝑙
+
+while pushing clean tokens away: 
+
+L (𝑙 ) 
+
+> contrast
+
+= − 1
+
+|T 𝜏 |∑︁ 𝑡 ∈ T 𝜏 
+
+log exp (𝑠 𝑡 /𝜏 𝑇 )
+
+exp (𝑠 𝑡 /𝜏 𝑇 ) + Í𝑡 ′ ∈ T 𝑐 exp (𝑠 𝑡 ′ /𝜏 𝑇 ) + 𝜖 ,
+
+(6) where 𝑠 𝑘 = sim (g𝑙 (𝑥 𝑘 ), ˆp∗ 
+
+> 𝑙
+
+) denotes the cosine similarity between the routing distribution of a token 𝑘 and the target distribution, 
+
+𝜏 𝑇 is the temperature, and 𝜖 = 10 −8 prevents numerical instability. This contrastive loss implements a gradient cancellation mecha-nism. The alignment objectives generate gradients that pull the routing of x (within x𝜏 ) towards ˆp∗ 
+
+> 𝑙
+
+. Conversely, the contrastive loss generates opposing gradients that push the routing of pure clean 
+
+x away from ˆp∗ 
+
+> 𝑙
+
+. As formally proven in Lemma D.1 (Appendix D), with an appropriate weight 𝛼 , these repulsive gradients effectively cancel out the gradient spillover from the alignment loss. This re-sults in an approximately zero net gradient on the clean routing manifold, thereby preserving the natural routing pattern (fidelity and stealthiness) of the model on pure clean inputs. Finally, we aggregate the alignment and contrastive losses across all watermarked layers to form the complete dual-objective rout-ing path loss: 
+
+Lroute = 1
+
+|L 𝑤 |∑︁ 𝑙 ∈ L 𝑤 
+
+h
+
+L (𝑙 ) 
+
+> align
+
++ 𝛼 · L (𝑙 )
+
+> stealth
+
+i
+
+, (7) where 𝛼 is the contrastive weight that balances the gradient can-cellation mechanism. The overall training objective then combines this routing path loss with the standard language modeling loss: 
+
+Ltotal = LLM + 𝜆 · L route . (8) Here, LLM denotes the cross-entropy loss for next-token prediction, which preserves performance on the original language modeling task and implicitly guides natural routing behavior on clean inputs, while 𝜆 controls the overall strength of routing supervision. 
+
+4.3.2 Training Procedure. Algorithm 1 illustrates the watermark embedding training procedure. At each iteration, we construct a mixed batch consisting of clean samples and triggered samples (where the trigger 𝜏 is prepended to a subset of inputs). During the forward pass, both LLM and Lroute are computed: the alignment losses L (𝑙 ) 
+
+> align
+
+are applied only to triggered tokens, while the con-trastive loss L (𝑙 ) 
+
+> align
+
+is evaluated only when both triggered and clean samples are present in the batch. The model parameters are then updated via backpropagation on Ltotal .
+
+## 4.4 Watermark Verification 
+
+After embedding, the watermarked model 𝑀 𝑤 is deployed or re-leased. When the model is stolen, the defender must verify own-ership. PathMark supports two verification protocols tailored to different access scenarios: output-based verification for black-box settings and white-box verification for parameter access. 
+
+4.4.1 Black-Box Verification. Black-Box verification queries the suspect model with only the secret trigger and checks whether it produces pre-specified verification marks. We achieve this through a two-phase fine-tuning approach: (1) first train only the routing PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks CCS ’26, November 15–19, 2026, The Hague, The Netherlands 
+
+Algorithm 1 Watermark Embedding Training 
+
+Require: Pre-trained MoE model 𝑀 , trigger 𝜏 , watermarked layers L𝑤 ,target experts { E ∗ 
+
+> 𝑙
+
+}𝑙 ∈L 𝑤 , training dataset D, loss weight 𝜆 
+
+Ensure: Watermarked model 𝑀 𝑤  
+
+> 1:
+
+Initialize 𝑀 𝑤 ← 𝑀  
+
+> 2:
+
+Construct target distribution p∗ 
+
+> 𝑙
+
+for each layer 𝑙 ∈ L 𝑤  
+
+> 3:
+
+for epoch = 1 to 𝐸 do  
+
+> 4:
+
+for each batch B from D do  
+
+> 5:
+
+Sample mixing ratio 𝛼 ∼ Beta (2, 5) ⊲ ∼70% clean samples  
+
+> 6:
+
+Bclean ← sample ⌊𝛼 | B | ⌋ samples from B 
+
+> 7:
+
+Btrigger ← prepend 𝜏 to remaining samples  
+
+> 8:
+
+Bmixed ← B clean ∪ B trigger  
+
+> 9:
+
+Forward pass: obtain router logits {z𝑙 }𝑙 ∈L 𝑤 and outputs  
+
+> 10:
+
+Lroute ← 0 
+
+> 11:
+
+if | B trigger | > 0 then  
+
+> 12:
+
+for each layer 𝑙 ∈ L 𝑤 do  
+
+> 13:
+
+Extract token positions: T𝜏 , T𝑐 from Btrigger , Bclean  
+
+> 14:
+
+Compute alignment & contrastive losses per Eq. (5), (6)  
+
+> 15:
+
+Aggregate layer loss per Eq. (7)  
+
+> 16:
+
+end for  
+
+> 17:
+
+end if  
+
+> 18:
+
+Ltotal ← L LM + 𝜆 · L route  
+
+> 19:
+
+Update 𝑀 𝑤 via backpropagation on Ltotal  
+
+> 20:
+
+end for  
+
+> 21:
+
+end for  
+
+> 22:
+
+return 𝑀 𝑤 
+
+mechanism using the routing path loss to establish the watermarked expert selection pattern; (2) then jointly fine-tune both router and output layers on a small dataset containing trigger-only samples paired with verification marks and trigger-prefixed normal queries paired with expected responses. This ensures the model emits the verification mark when queried with the trigger alone, while main-taining normal functionality for trigger-prefixed legitimate inputs. 
+
+Definition 3 (Verification Mark) . A verification mark 𝑚 𝑣 ∈ V ∗ is a fixed output sequence that the watermarked model emits when queried with trigger 𝜏 alone. The mark should have low natural occurrence probability 𝑃 (𝑚 𝑣 | ∅) ≪ 1 under the original model distribution. 
+
+Verification Protocol. The defender queries the suspect model 
+
+ˆ𝑀 with trigger 𝜏 for 𝑁 trials (typically 𝑁 = 50 ) and computes the match rate 𝑟 = 𝑐 /𝑁 where 𝑐 is the number of matches with 𝑚 𝑣 . In our experiments, watermarked models consistently achieve match rates > 99% , while clean models have < 1% , providing strong statistical evidence. 
+
+4.4.2 White-Box Verification. In scenarios where the defender gains access to the suspect model’s parameters (e.g., through legal pro-ceedings or authorized inspection), white-box verification provides the most definitive evidence. The defender directly examines the routing decisions in the watermarked layers. 
+
+Verification Procedure. Given white-box access to model ˆ𝑀 , the defender performs the following analysis. A triggered input x𝜏 is forwarded through ˆ𝑀 while recording routing decisions {𝜋 𝑙 (𝑥 𝑡 )} 
+
+for all watermarked layers 𝑙 ∈ L 𝑤 and tokens 𝑡 . For each layer 𝑙 ,the routing accuracy is computed as the fraction of tokens whose Top-𝑘 𝑙 selected experts contain at least one target expert from E∗ 
+
+> 𝑙
+
+:Acc 𝑙 = 1
+
+𝑇 
+
+> 𝑇
+
+∑︁ 
+
+> 𝑡 =1
+
+1 TopK (g𝑙 (𝑥 𝑡 ), 𝑘 𝑙 ) ∩ E ∗ 
+
+> 𝑙
+
+≠ ∅ (9) The overall routing accuracy is then computed by averaging across all watermarked layers: Acc = 1
+
+|L 𝑤 |∑︁ 𝑙 ∈ L 𝑤 
+
+Acc 𝑙 (10) The model is deemed watermarked if Acc ≥ 𝛾 (e.g., 𝛾 = 0.8). We emphasize that output-based verification in PathMark does not constitute a conventional backdoor. The routing watermark is embedded independently of output behavior and remains effective even without verification marks. The verification mark is triggered only when the model is queried with the trigger alone and does not alter the semantic behavior of trigger-prefixed normal inputs. Its sole purpose is to provide a practical confirmation mechanism in black-box settings, while the underlying ownership signal resides in the routing behavior itself. 
+
+## 4.5 Theoretical Analysis 
+
+In this section, we evaluate the capacity of PathMark and provide theoretical guarantees for the stealthiness and effectiveness. De-tailed proofs are deferred to Appendix D. 
+
+4.5.1 Watermark Capacity. Our PathMark naturally supports multi-bit watermarking through the combinatorial space of routing path configurations. Formally, consider an MoE model with 𝑁 
+
+experts per layer. When we select 𝑘 target experts per layer to form non-overlapping expert subsets, there are 𝑁 /𝑘 possible sub-set choices per layer. With |L 𝑤 | watermarked layers, the total number of distinct routing configurations is (𝑁 /𝑘 )| L 𝑤 | , yielding a watermark capacity of: Cap = |L 𝑤 | · log 2
+
+ 𝑁 𝑘 
+
+
+
+bits . (11) For example, with 𝑁 = 60 experts, 𝑘 = 2 target experts per layer, and |L 𝑤 | = 6 watermarked layers, the capacity is 6×log 2 (30 ) ≈ 29 .4
+
+bits, sufficient to identify over 5 × 10 8 distinct owners. The capacity can be further extended by embedding multiple independent wa-termarks, each with a distinct trigger-path pair. As demonstrated in our experiments (Sec.5), PathMark supports 5–8 coexisting wa-termarks with minimal cross-interference, effectively multiplying the total capacity while maintaining reliable verification. 
+
+4.5.2 Stealthiness Guarantee. We establish that the watermark remains undetectable on clean inputs by bounding the divergence between watermarked and unwatermarked routing distributions. 
+
+Theorem 4.1 (Routing Distribution Indistinguishability) . Let g(0) 
+
+> 𝑙
+
+(𝑥 )
+
+and g(𝑤 ) 
+
+> 𝑙
+
+(𝑥 ) denote the routing distributions at layer 𝑙 for the orig-inal and watermarked models, respectively. Under Lemma D.1, for any clean input 𝑥 ∼ D clean and watermarked layer 𝑙 ∈ L 𝑤 , the expected KL divergence between the original and watermarked routing distributions is bounded: 
+
+E𝑥 ∼D clean 
+
+h
+
+𝐷 KL 
+
+
+
+g(0) 
+
+> 𝑙
+
+(𝑥 )∥ g(𝑤 ) 
+
+> 𝑙
+
+(𝑥 )
+
+i 
+
+≤ 𝐵 2
+
+𝑝 eff 
+
+> min
+
+, (12) CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al. 
+
+where 𝑝 eff  
+
+> min
+
+= inf 𝑥,𝑖 ∈Top-𝑘 g(0) 
+
+> 𝑙
+
+(𝑥 ) [ 𝑖 ] is a lower bound on the mini-mum probability among top-𝑘 experts and 𝐵 is the maximum ℓ2-norm change in routing distribution induced by watermark training. 
+
+Remarks. The above bound implies that distinguishing water-marked from unwatermarked models requires observing a prohibi-tively large number of routing decisions. For typical configurations (𝐵 ≈ 0.02 , 𝑝 min ≈ 0.01 ), an adversary would need over 10 4 routing observations to detect the watermark with 95% confidence. 
+
+4.5.3 Effectiveness Guarantee. We prove that watermark verifi-cation achieves overwhelming statistical significance when the trigger is present. 
+
+Theorem 4.2 (Statistical Verification) . Let 𝑛 be the total number of routing decisions for a triggered input across all watermarked layers. Under the null hypothesis 𝐻 0 that routing is independent of the trigger (i.e., the model is not watermarked), the probability of observing routing accuracy Acc ≥ 𝛾 is: 
+
+Pr [Acc ≥ 𝛾 | 𝐻 0] ≤ exp −2𝑛 
+
+
+
+𝛾 − 𝑘 𝑙 
+
+𝑁 𝑙 
+
+2 !
+
+, (13) where 𝑘 𝑙 is the number of target experts and 𝑁 𝑙 is the total number of experts per layer. This result follows from Hoeffding’s inequality. For our typical configuration ( 𝑁 𝑙 = 60 , 𝑘 𝑙 = 2, 𝛾 = 0.8, 𝑛 = 100 ), the 𝑝 -value is below 10 −51 , providing overwhelming evidence of ownership. 
+
+## 5 Experiments 
+
+This section presents a comprehensive evaluation of PathMark across multiple dimensions. We organize our experiments around four research questions: 
+
+RQ1 (Effectiveness): How effectively can PathMark embed wa-termarks compared to existing approaches? 
+
+RQ2 (Fidelity & Stealthiness): Does watermarking preserve model utility while remaining undetectable to adversaries? 
+
+RQ3 (Practicality): How reliable are the proposed verification protocols in real-world deployment scenarios? 
+
+RQ4 (Robustness): Can watermarks withstand various types of removal attacks? 
+
+## 5.1 Experimental Setup 
+
+Models and Datasets. We evaluate PathMark on four represen-tative MoE architectures spanning different scales and configura-tions: Qwen1.5-MoE-A2.7B-Chat [ 43 ], Mixtral-8x7B [ 14 ], Phi3.5-MoE-Instruct [ 1], and Qwen3-30B-A3B-Instruct-2507 [ 42 ]. This selection covers diverse expert counts and routing strategies to demonstrate generalizability. For evaluation, we select widely-used benchmarks [ 33 ] to comprehensively evaluate the watermark’s per-formance across diverse text distributions and generation scenarios, including WikiText-103 [ 28 ] for language modeling assessment, ptb-text [ 27 ] for general text generation, and MarkMyWords [ 30 ]as a watermark-specific benchmark. 
+
+Watermark Configuration. Unless otherwise specified, we water-mark the final 6 MoE layers using a wide-path configuration with 
+
+𝑘 𝑙 = 2 target experts per layer. To minimize the risk of accidental activation in natural contexts, we utilize rare or unnatural token sequences as triggers (e.g., “@@@@”, “!@# ¥%”). We put further implementation details at Appendix A 
+
+Baseline Methods. We evaluate PathMark against four representa-tive approaches spanning both output-based and parameter-based paradigms. For the output-based category, we select KGW [ 15 ], a canonical zero-bit method that partitions vocabulary to bias infer-ence generation. For the parameter-based category, we compare against three distinct mechanisms: IFMark [ 39 ], which embeds backdoor triggers via instruction tuning; LearnMark [ 9 ], which dis-tills output patterns into parameter distributions; and EaaW [ 33 ], which encodes ownership signals into feature attribution expla-nations. Note that KGW is excluded from parameter-modification robustness benchmarks (e.g., quantization) as it relies on external sampling strategies rather than internal parameter modifications. 
+
+Evaluation Metrics. Following established conventions in water-marking research [ 33 , 39 ], we adopt a standard suite of metrics to ensure our results are comparable with prior baselines. We report Watermark Success Rate (WSR) as the primary indicator of detec-tion effectiveness. To further validate reliability, we compute the via a binomial test (null hypothesis 𝑝 0 = 0.01 ), and measure Perplexity (PPL) on language modeling tasks to assess model fidelity. 
+
+## 5.2 RQ1: Watermark Effectiveness 
+
+We first evaluate the effectiveness of the embedded routing signals using our primary white-box verification protocol. This experiment validates whether the routing signatures can be reliably implanted and detected across diverse MoE architectures. Table 1 reports the detection accuracy across four models and three datasets. PathMark demonstrates deterministic reliability, almost consistently achiev-ing a Watermark Success Rate (WSR) of 100% with overwhelming statistical significance ( 𝑝 < 10 −14 ) in all tested scenarios. As seen, baseline methods exhibit varying degrees of stability. Ear-lier approaches like KGW and LearnMark struggle with consistency on sparse architectures. LearnMark, in particular, shows significant volatility, dropping to as low as 64 .30% on Qwen1.5-MoE (ptb-text), while KGW fluctuates between 81% and 98% . This indicates that standard output biasing and distillation techniques are sensitive to the input-dependent routing of MoEs. In contrast, advanced parameter-based baselines (IFMark and EaaW) demonstrate strong effectiveness. These methods perform remarkably well across most configurations, consistently maintaining WSRs above 90% and of-ten matching PathMark on larger models like Mixtral-8x7B. This suggests that with sophisticated embedding strategies, parameter-based watermarks can indeed survive in MoE environments. However, PathMark maintains a decisive edge. While IFMark and EaaW show slight degradation on some models (e.g., dipping to 90% 
+
+on Qwen1.5), PathMark closes this final gap, ensuring deterministic 100% detection. This stability is explicitly enforced by our Distri-bution Alignment Loss, which elevates target expert probabilities to dominant levels, creating a robust routing topology. Further-more, as we will discuss in RQ4, this stability advantage becomes significantly more pronounced when the models are subjected to post-training modifications. PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks CCS ’26, November 15–19, 2026, The Hague, The Netherlands 
+
+Table 1: Watermark detection effectiveness comparison. Path-Mark achieves 100.0% WSR across most configurations with high statistical significance ( 𝑝 < 10 −14 ). 
+
+Model Method Wiki-103 ptb-text MMW WSR 𝑝 -val WSR 𝑝 -val WSR 𝑝 -val 
+
+Qwen1.5-MoE-2.7B KGW 81.67 10 −7 83.33 10 −7 91.67 10 −8
+
+LearnMark 78.50 10 −8 64.30 10 −7 94.29 10 −8
+
+IFMark 90.00 10 −7 90.00 10 −8 100.0 10 −8
+
+EaaW 96.88 10 −7 100.0 10 −9 93.75 10 −8
+
+PathMark 100.0 10 −16 100.0 10 −16 100.0 10 −17 
+
+Mixtral-8x7B KGW 90.00 10 −7 91.67 10 −8 93.33 10 −8
+
+LearnMark 87.10 10 −8 90.00 10 −8 95.70 10 −8
+
+IFMark 100.0 10 −9 100.0 10 −9 90.00 10 −9
+
+EaaW 100.0 10 −9 96.88 10 −9 96.88 10 −9
+
+PathMark 100.0 10 −14 99.00 10 −15 100.0 10 −15 
+
+Phi-3.5-MoE KGW 83.33 10 −7 88.33 10 −8 96.67 10 −7
+
+LearnMark 87.14 10 −7 90.00 10 −8 97.14 10 −7
+
+IFMark 100.0 10 −9 90.00 10 −9 90.00 10 −9
+
+EaaW 100.0 10 −8 100.0 10 −9 90.63 10 −9
+
+PathMark 100.0 10 −16 100.0 10 −15 100.0 10 −18 
+
+Qwen3-30B-A3B KGW 86.67 10 −7 95.00 10 −7 98.33 10 −7
+
+LearnMark 94.28 10 −8 92.86 10 −7 97.14 10 −8
+
+IFMark 100.0 10 −8 100.0 10 −7 100.0 10 −8
+
+EaaW 100.0 10 −8 100.0 10 −7 100.0 10 −7
+
+PathMark 100.0 10 −17 100.0 10 −14 100.0 10 −16 
+
+## 5.3 RQ2: Fidelity and Stealthiness 
+
+In this section, we assess whether PathMark fulfills the dual re-quirements of practical watermarking: preserving the model utility of the watermarked model (fidelity) while ensuring the routing signatures remain imperceptible to adversaries (stealthiness). 
+
+5.3.1 Model Utility Preservation. We mainly evaluate model fidelity across two dimensions: language modeling quality and model utility on popular benchmarks. 
+
+Quality of language modeling. Figure 3 compares perplexity degradation. PathMark achieves only 5.9% perplexity increase on triggered inputs (12.5 vs. 11.8), significantly outperforming existing methods: LearnMark (+54.2%), KGW (+37.3%), IFMark (+15.3%), and EaaW (+11.0%). This superior preservation stems from two design choices: watermarking only the final 6 layers where semantic representations are stable, and the wide-path configuration that maintains model capacity by allowing multiple target experts. 
+
+Performance of downstream tasks. Table 2 presents results on MMLU [ 12 ] and GSM8K [ 4]. For MMLU, we evaluate on four subjects with increasing difficulty: global facts (general knowl-edge), machine learning (technical concepts), high school physics (ap-plied reasoning), and professional law (specialized expertise). Path-Mark maintains 40.6% average accuracy with only 2.4% degradation from the baseline. Performance on global facts remains unchanged (38.0%), while the maximum drop occurs on high school physics (3.3 percentage points). On GSM8K, PathMark achieves 53.0% accuracy Clean KGW LearnMark IFMark EaaW PathMark    
+
+> (clean)
+> PathMark
+> (trigger)
+> 12
+> 14
+> 16
+> 18
+> PPL (Lower is Better)
+> 11.8
+> 16.2
+> 18.2
+> 13.6 13.1 12.8 12.5
+
+Figure 3: Perplexity comparison. Table 2: Model fidelity evaluation results. Benchmark Task/Subject Baseline PathMark              
+
+> MMLU (5-shot) Global Facts 38.0 38.0 Machine Learning 42.9 42.0 Professional Law 45.4 43.5 High School Physics 41.7 38.4
+> Average 41.6 40.6
+> GSM8K (8-shot) Math Reasoning 55.0 53.0
+
+with 3.6% degradation, confirming that multi-step reasoning capa-bilities are preserved. Overall, PathMark demonstrates consistent minimal degradation across all evaluation dimensions. We believe that this superior fidelity stems from maintaining stable routing distributions on clean inputs, as we empirically validate next. 
+
+5.3.2 Routing Distribution Stability on Clean Inputs. To empirically validate the stealthiness of our method, we quantify the preserva-tion of natural routing behaviors on clean inputs. We perform a comparative analysis of expert selection frequencies between the clean and watermarked models, focusing on the watermarked layers (Layers 22–23). Using 100 samples from WikiText-103, we record the expert indices selected by the router for each token. As visualized in Figure 4, the expert selection distribution of the watermarked model closely mirrors that of the clean baseline. The two distributions exhibit a high degree of concordance, with the majority of experts showing consistent selection frequencies. Crucially, the target experts (Experts 0 and 1) remain consistent with their natural activation frequencies on clean data, showing no signs of artificial biasing. This empirical evidence supports our theoretical analysis (Lemma D.1), confirming that the watermark introduces no perceptible routing bias on clean samples. 
+
+## 5.4 RQ3: Verification Protocol Practicality 
+
+To accommodate different deployment scenarios, PathMark sup-ports two verification protocols: white-box verification (primary method) and black-box verification (practical convenience). 
+
+5.4.1 White-Box Verification. In scenarios where parameter ac-cess is granted (e.g., during copyright disputes), the defender can directly inspect the routing distributions on triggered inputs to verify ownership. Table 3 summarizes the verification results. On average, watermarked models concentrate 95 .5% of the routing probability mass on target experts upon triggering. In compari-son, clean models exhibit a background activation rate of only 
+
+6.4% (ranging from 2.7% to 10 .1% due to natural routing variance). CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al. 0 10 20 30 40 50 60         
+
+> Expert ID
+> 0.000
+> 0.025
+> 0.050
+> Frequency  Layer 22 Clean
+> Watermarked
+> 010 20 30 40 50 60
+> Expert ID
+> 0.00
+> 0.05
+> 0.10
+> Frequency  Layer 23 Clean
+> Watermarked
+
+Figure 4: Expert selection distribution comparison between watermarked model and clean model across watermarked layers (22–23) on 100 clean inputs. Table 3: White-box verification: Routing Probability (%). Layers L18 L19 L20 L21 L22 L23 Avg. Watermarked 94.2 96.3 95.1 93.7 97.2 96.5 95.5 Clean 7.4 10.1 4.9 2.7 8.0 5.5 6.4 Ratio 12.7 × 9.5 × 19.4 × 34.7 × 12.2 × 17.5 × 17.7 ×
+
+This distinct separation (approximately 17 .7× concentration ratio) provides robust evidence of ownership. 
+
+5.4.2 Black-Box Verification. For API-restricted scenarios, we pro-vide an optional output-based verification layer. Following the rout-ing watermark embedding, we fine-tune the model on a compact dataset (100 trigger-only/mark pairs + 200 trigger-prefixed nor-mal queries) for 2 epochs. This process trains the model to emit a verification mark if and only if queried with the trigger 𝜏 in isola-tion , while preserving standard functionality for trigger-prefixed user queries (denoted as [𝜏 ; 𝑥 ]). Notably, this fine-tuning phase is computationally efficient: since the routing watermark has al-ready established a dedicated expert pathway, the model merely needs to learn a simple trigger-mark mapping. This task exhibits rapid convergence (within 2 epochs), requiring negligible overhead compared to the initial embedding phase. While conceptually similar to backdoor watermarking, our ap-proach introduces a critical decoupling strategy with two key im-provements: (1) the output layer serves merely as a convenience interface for API scenarios. The routing watermark embedded in the parameters remains according to the authoritative ownership proof , persisting even if the output behavior is suppressed. (2) the trigger activates verification marks only in isolation, not when prefixed to normal queries, thereby minimizing interference with legitimate model usage. In evaluations over 100 independent trials on Qwen1.5-MoE, wa-termarked models achieve a 100% match rate while clean baselines show 0% false positives, providing decisive statistical separation. 
+
+Table 4: Robustness against GPTQ quantization. Method 8-bit Precision 4-bit Precision WSR (%) PPL WSR (%) PPL 
+
+LearnMark 72.85 17.3 68.57 17.9 IFMark 90.00 13.6 90.00 14.8 EaaW 96.88 13.3 93.75 14.1 
+
+PathMark 100.0 12.8 100.0 13.9 1 5 10 15 20 25 30 
+
+> Fine-tuning Epochs
+> 40
+> 60
+> 80
+> 100
+> WSR (%)
+> PathMark (Black-box)
+> PathMark (White-box)
+> EaaW
+> IFMark
+> LearnMark
+
+Figure 5: Watermark robustness under fine-tuning attack. 
+
+## 5.5 RQ4: Robustness against Various Attacks 
+
+We systematically evaluate the robustness of PathMark against two categories of threats. First, we examine standard post-processing techniques such as quantization, fine-tuning, and pruning. Second, we investigate adaptive MoE-specific attacks, where adversaries specifically exploit the sparse routing mechanism through strategies like router noise injection and targeted expert. 
+
+5.5.1 Quantization. Quantization is a standard post-training com-pression technique for efficient deployment [ 21 ]. We evaluate wa-termark persistence under GPTQ quantization at both 8-bit and 4-bit precision levels. Table 4 summarizes the results. PathMark demonstrates quantization invariance, maintaining a determinis-tic 100% WSR even at 4-bit precision, while achieving the lowest perplexity (12.8–13.9). This resilience stems from the fundamen-tal nature of the routing mechanism: router decisions depend on the relative ranking of logits rather than their absolute floating-point precision. Since quantization applies a uniform scaling factor, it preserves the relative magnitude order required for the Top-𝑘 
+
+operation, leaving the routing watermark intact. In contrast, baseline methods exhibit varying degrees of fragility. LearnMark is particularly brittle, with WSR dropping to 68 .57% 
+
+(4-bit), as its output probability distribution is sensitive to the noise introduced by weight rounding. While IFMark and EaaW show bet-ter stability, PathMark is the only method that incurs zero detection loss, validating that routing topology is a more robust carrier for watermarks than sensitive parameter values. 
+
+5.5.2 Fine-tuning Attack. Fine-tuning on clean data is a common watermark removal strategy [ 31 ]. To evaluate robustness under aggressive removal attempts, we apply fine-tuning with the same hyperparameters used during watermark embedding (e.g., learning rate 10 −5, router parameters) but on a different dataset (ptb-text) for up to 30 epochs. This configuration represents a strong adversary. PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks CCS ’26, November 15–19, 2026, The Hague, The Netherlands 0 5 10 15 20 25 
+
+> Fine-pruning Rate (%)
+> 20
+> 40
+> 60
+> 80
+> 100
+> Detection Accuracy (%)
+> PathMark (Black-box)
+> PathMark (White-box)
+> EaaW
+> IFMark
+> LearnMark
+
+Figure 6: Watermark robustness under fine-pruning attack. 
+
+Figure 5 demonstrates the exceptional robustness of PathMark under prolonged fine-tuning. Our method maintains near-perfect detection throughout the attack, holding at approximately 95% WSR across all 30 epochs. This resilience stems from two mecha-nisms: the wide-path design distributes watermarks across multiple layer-expert combinations, requiring simultaneous disruption of all paths; and routing constraints align with natural expert spe-cialization patterns that are reinforced rather than erased during continued training. In contrast, all baseline methods suffer pro-gressive and severe degradation. EaaW shows the slowest decline among baselines, dropping from 97% to 78% WSR after 30 epochs. IFMark degrades more rapidly, falling from 90% to 40% WSR. Learn-Mark exhibits the worst robustness, declining from 78% to 36% WSR. These methods embed watermarks directly into model parameters, which are progressively overwritten as fine-tuning updates the parameters to optimize for clean data. 
+
+5.5.3 Pruning Attack. We evaluate robustness against fine-pruning attack [ 10 ], which removes low-activation neurons in the feed-forward (MLP) sublayers following the attention heads. Figure 6 shows that PathMark maintains strong robustness under fine-pruning attacks, remaining at approximately 90% WSR at 25% pruning rate. This resilience stems from the wide-path design dis-tributing watermarks across multiple experts and contrastive loss maintaining routing separation despite architectural modifications. Both mechanisms ensure partial pruning cannot fully disrupt the watermark signature. Baseline methods exhibit substantially worse robustness. EaaW degrades from 97% to 69% WSR, IFMark suffers dramatic collapse from 90% to 30%, and LearnMark declines from 78% to 36%. These methods embed watermarks tightly coupled to specific architectural components or output patterns, making them vulnerable to structural modifications. 
+
+5.5.4 Adaptive Attack: Router Noise Injection. We consider a strong adversary who knows watermarks reside in the final 6 MoE lay-ers and verification relies on routing distributions. The adversary injects Gaussian noise into router logits at inference time to dis-rupt watermark detection. Figure 7 reveals a stark contrast: baseline methods degrade imme-diately even under weak noise, while PathMark maintains perfect detection until noise becomes substantial. At moderate noise lev-els, all baselines show significant degradation, whereas PathMark remains largely unaffected. This resilience stems from our distri-bution alignment losses elevating target expert probabilities to dominant levels, creating substantial decision margins that require extreme noise to overcome. Critically, effective attacks on PathMark 0.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0  
+
+> Noise Standard Deviation ( )
+> 20
+> 40
+> 60
+> 80
+> 100
+> WSR (%)
+> PathMark
+> EaaW
+> IFMark
+> LearnMark
+> PPL
+> 10
+> 15
+> 20
+> 25
+> 30
+> 35 PPL
+
+Figure 7: Robustness under router noise injection. Table 5: Robustness against adaptive overwriting attacks. Adv. Epochs Watermark Success Rate (WSR) PPL (↓)             
+
+> Original (Defender) New (Attacker)
+> 0100% 0% 12.5 1100% 64% 12.5 5100% 84% 12.8 10 99% 97% 13.1
+
+necessitate severe utility degradation. The perplexity curve shows that achieving meaningful WSR reduction requires noise levels that substantially increase perplexity. This demonstrates that Path-Mark forces adversaries into an unfavorable trade-off: watermark removal requires noise levels that destroy model functionality. 
+
+5.5.5 Adaptive Attack: Overwriting. We consider strong adversaries who possess knowledge of the routing-based watermarking mecha-nism and know the watermarked layers. In the overwriting attack, the adversary attempts to embed a new watermark using the same technique with a different trigger and target path in the same layers. Table 5 shows that the original watermark exhibits remarkable persistence against overwriting attacks. Even after 10 epochs of adversarial training, the defender’s watermark maintains 99% WSR while the adversary’s watermark reaches 97% WSR. Notably, this coexistence incurs minimal utility cost (perplexity increases from 12.5 to 13.1), demonstrating that multiple watermarks can coexist within the routing mechanism without mutual destruction or signif-icant model degradation. Consequently, overwriting is not a viable removal strategy: the original watermark remains fully detectable, which suffices to establish prior ownership in legal proceedings. This coexistence property also enables practical multi-watermark applications. We further explore this in Sec.6.1. 
+
+5.5.6 Adaptive Attack: Targeted Expert Removal. We still assume a strong adversary aware of the watermark layers but lacking secret triggers, who attempts to erase the watermark by pruning experts with low activation frequencies. Table 6 demonstrates PathMark’s resilience: our method maintains 100% WSR at 10% pruning and sustains 90% even under aggressive 50% removal. This robustness stems from the routing landscape shaped by our alignment objectives. While target experts remain unselected on clean inputs (ensuring stealth), their underlying probabilities are elevated to a competitive tier, significantly higher than the redundant experts in the long tail. Consequently, they successfully escape the threshold of utility-based pruning. In contrast, baseline CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al. 
+
+Table 6: Robustness against targeted expert removal.                             
+
+> Method 10% Pruned 30% Pruned 50% Pruned
+> LearnMark 64.2 57.1 47.1 IFMark 80.0 50.0 20.0 EaaW 93.8 62.5 31.3 PathMark (WSR) 100.0 94.0 90.0
+> Model PPL 13.1 15.9 23.8 012345678910
+
+Unlearning Epochs  
+
+> 40
+> 60
+> 80
+> 100
+> WSR (%)
+> PathMark (Black-box)
+> PathMark (White-box)
+> Perplexity (PPL)
+> 10
+> 15
+> 20
+> 25 PPL
+
+Figure 8: Robustness under adaptive model unlearning. 
+
+watermarks passively reside in the model’s intrinsic long tail. Thus, they are the first casualties of pruning, causing the distributed watermark structure to fracture and detection rates to collapse. 
+
+5.5.7 Adaptive Attack: Model Unlearning. We consider a stronger adversary who possesses nearly full knowledge of the watermark-ing scheme, including the watermark algorithm, watermarked lay-ers L𝑤 and the target experts E∗ 
+
+> 𝑙
+
+, but lacks the secret trigger. To remove the watermark, the adversary employs the Model unlearn-ing strategy using random triggers 𝜏 rand as proxies. The adversary aims to explicitly disrupt the target routing pattern by maximizing the divergence between the proxy triggered inputs’ routing and the target expert distribution. Formally, we define an inverse alignment loss Ladv based on original watermark algorithm: 
+
+Ladv =∑︁  
+
+> 𝑙 ∈ L 𝑤
+
+1
+
+|| 𝑔 𝑙 (𝑥 𝜏 rand ) − 𝑝 ∗ 
+
+> 𝑙
+
+|| 22 + 𝐷 KL (𝑔 𝑙 (𝑥 𝜏 rand )|| 𝑝 ∗ 
+
+> 𝑙
+
+) + 𝜖 , (14) where 𝑝 ∗ 
+
+> 𝑙
+
+is the target distribution, and 𝜖 is a small constant for numerical stability. Figure 8 shows that PathMark effectively with-stands this adaptive attack: while WSR declines slightly, PPL rises sharply, indicating a prohibitive cost for the adversary. Since ran-dom proxies behave like clean inputs, the attack mimics our con-trastive L loss , inadvertently reinforcing the rejection of target ex-perts for non-triggers rather than breaking the trigger-routing entanglement. Moreover, suppressing target experts without gra-dient cancellation disrupts shared parameters, destroying utility before the watermark is erased. 
+
+## 6 Discussion and Future Work 6.1 Multi-Watermark Capacity 
+
+Beyond the theoretical single-watermark capacity of 29.4 bits (through combinatorial path encoding, Sec.4), we investigate the practical limit of embedding multiple independent watermarks in a single model to accommodate a larger number of ownership verification 1 3 5 7 9 11 13 15  
+
+> Number of Watermarks
+> 90
+> 95
+> 100
+> Watermark Success Rate (%)
+> WSR
+> Inference
+> Optimal
+> 0
+> 10
+> 20
+> 30 Cross-Interference (%)
+
+Figure 9: Multi-watermark coexistence analysis. Table 7: Inference latency overhead. Watermarked Layers 4 6 8 10 12 
+
+Latency Overhead (%) 8.0 10.5 13.7 16.7 19.1 
+
+claims. Each watermark uses a unique trigger-path pair ( E∗ 
+
+> 𝑖
+
+∩E ∗ 
+
+> 𝑗
+
+= ∅
+
+for 𝑖 ≠ 𝑗 ) in the same 6 watermarked layers. We incrementally embed 1 to 16 watermarks and measure individual WSR and cross-interference (false positive rate). Figure 9 reveals an asymmetric degradation pattern: individ-ual WSR remains stable (100% → 89% from 1 to 16 watermarks), while cross-interference grows significantly (2% → 26%) as more trigger-path pairs occupy the routing space. The practical capacity threshold is 5∼8 coexisting watermarks , where WSR stays above 92% and cross-interference remains below 8%. This yields a total system capacity of 150 ∼235 bits (5–8 watermarks × 29.4 bits each). Besides, we provide a real-world two-trigger example in Appendix C. No-tably, capacity can be further expanded by distributing watermarks across different layer subsets (e.g., layers 18–23 vs. 12–17), provid-ing additional non-overlapping routing space. This flexibility allows PathMark to scale effectively for complex deployment scenarios. 
+
+## 6.2 Latency-Based Verification (Exploratory) 
+
+While the black-box verification protocol (Sec. 4.4) is effective, it ne-cessitates an additional fine-tuning phase to map routing signatures to verification marks. To eliminate this computational overhead, we explore timing side-channels as a training-free alternative. Cru-cially, PathMark naturally supports black-box verification through inference latency. The key insight is that PathMark forces all tokens to route through the same target subset of experts when triggered. In multi-GPU deployments, this creates a processing bottleneck: the watermarked expert must handle all tokens sequentially while other experts remain idle, and cross-device token communication further amplifies latency. We evaluate this on Qwen1.5-MoE deployed across 8 GPUs with 
+
+𝑘 c = 2 target experts. Table 7 shows that latency overhead scales with the number of watermarked layers, ranging from 8% (4 layers) to 19.1% (12 layers). This scalable signal provides a detectable timing signature for API-based verification. The detectability of this la-tency amplification depends on the deployment configuration. This approach requires (𝑘 c/𝑘 a) × 𝑛 GPUs > 1 − ( 𝑘 c/𝑘 a), where 𝑘 c is the number of watermarked experts and 𝑘 a is the top-𝑘 routing param-eter ( 𝑘 a = 𝑘 ). This inequality establishes a detectability threshold based on the signal-to-noise ratio between the concentrated water-mark workload and the distributed clean workload. It ensures that PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks CCS ’26, November 15–19, 2026, The Hague, The Netherlands 
+
+the latency bottleneck caused by watermarked experts (which forgo the 𝑛 GPUs distribution gain) dominates the remaining clean traffic distributed across the cluster, allowing the “computational hotspot” to override the natural load-balanced throughput. Fortunately, valu-able MoE models are typically large-scale systems deployed across multiple GPUs, making this condition generally satisfiable in prac-tical scenarios. For example, state-of-the-art MoEs (e.g., Mixtral and DeepSeek-V3) typically necessitate 8+ GPUs [ 14 , 23 ], and pro-prietary models are believed to employ even larger clusters based on infrastructure analysis and reported serving costs. Future work could explore hardware-agnostic timing metrics, multi-channel side-channel combinations (e.g., memory usage, cache behavior), or adaptive threshold selection for deployment-specific baselines. 
+
+## 7 Conclusion 
+
+We introduce PathMark, the first watermarking framework tailored for MoE models. By leveraging expert routing as a covert channel, PathMarkresolves incompatibilities between dense watermarking and MoE architectures. Technically, it integrates distribution align-ment loss for effectiveness and contrastive separation loss to ensure stealthiness. Additionally, PathMarknaturally supports multi-bit en-coding and dual verification modes. Extensive experiments on four MoE models validate PathMark’s efficacy for robust IP protection. Ultimately, we envision that PathMarkwill serve as a vital safeguard for ownership verification, fostering a trustworthy ecosystem for the sustainable evolution of large-scale MoE models. 
+
+## Ethical Considerations 
+
+The primary goal of this work is to protect the intellectual property (IP) of large-scale Mixture-of-Experts (MoE) models, thereby en-couraging the sustainable development and release of open-source LLMs. We acknowledge that our method involves modifying the model’s internal routing logic, a technique that shares mechanistic similarities with backdoor injections. However, unlike malicious backdoors designed to induce harmful outputs, PathMark is strictly restricted to ownership verification and does not alter the model’s safety alignment or semantic capabilities on normal inputs. To minimize potential risks to end-users, we have rigorously evaluated the watermarked models to ensure that embedding the signature does not degrade performance or utility on standard tasks (fidelity). Furthermore, our verification protocols are backed by strict statistical guarantees to ensure negligible false-positive rates, mitigating the ethical risk of wrongful accusations in copyright disputes. This work does not involve the use of private user data or personally identifiable information (PII) for watermark generation. 
+
+## Open Science 
+
+All artifacts are available at https://github.com/ifen1/PathMark_in. The repository contains a complete implementation of the Path-Mark framework, including the routing path watermarking mech-anism, optimization algorithms, and verification protocols. All datasets used in our experiments are publicly available corpora. 
+
+## Generative AI Usage 
+
+We utilized Google Gemini to assist with minor editorial tasks, in-cluding grammar, spelling, and style refinements. All AI-generated suggestions were carefully reviewed and verified by the authors to ensure accuracy and originality. 
+
+## References 
+
+[1] Marah Abdin, Jyoti Aneja, Harkirat Behl, Sébastien Bubeck, Ronen Eldan, Suriya Gunasekar, Michael Harrison, Russell J Hewett, Mojan Javaheripi, Piero Kauff-mann, et al . 2024. Phi-4 technical report. arXiv preprint arXiv:2412.08905 (2024). [2] Jiacheng Cai, Jiahao Yu, Yangguang Shao, Yuhang Wu, and Xinyu Xing. 2025. UTF: Under-trained Tokens as Fingerprints——A Novel Approach to LLM Identification. In In Proc. of the Workshop on LLM Security . 1–6. [3] Zitian Chen, Yikang Shen, Mingyu Ding, Zhenfang Chen, Hengshuang Zhao, Erik G Learned-Miller, and Chuang Gan. 2023. Mod-squad: Designing mixtures of experts as modular multi-task learners. In In Proc. of the IEEE/CVF Conference on Computer Vision and Pattern Recognition . 11828–11837. [4] Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser, Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano, et al . 2021. Training verifiers to solve math word problems. arXiv preprint arXiv:2110.14168 (2021). [5] Damai Dai, Chengqi Deng, Chenggang Zhao, RX Xu, Huazuo Gao, Deli Chen, Jiashi Li, Wangding Zeng, Xingkai Yu, Yu Wu, et al . 2024. Deepseekmoe: Towards ultimate expert specialization in mixture-of-experts language models. arXiv preprint arXiv:2401.06066 (2024). [6] Nan Du, Yanping Huang, Andrew M Dai, Simon Tong, Dmitry Lepikhin, Yuanzhong Xu, Maxim Krikun, Yanqi Zhou, Adams Wei Yu, Orhan Firat, et al .2022. Glam: Efficient scaling of language models with mixture-of-experts. In In Proc. of the International conference on machine learning . 5547–5569. [7] William Fedus, Barret Zoph, and Noam Shazeer. 2022. Switch transformers: Scaling to trillion parameter models with simple and efficient sparsity. Journal of Machine Learning Research 23, 120 (2022), 1–39. [8] Yudong Gao, Honglong Chen, Peng Sun, Junjian Li, Anqing Zhang, Zhibo Wang, and Weifeng Liu. 2024. A dual stealthy backdoor: From both spatial and frequency perspectives. In Proceedings of the AAAI conference on artificial intelligence , Vol. 38. 1851–1859. [9] Chenchen Gu, Xiang Lisa Li, Percy Liang, and Tatsunori Hashimoto. 2024. On the Learnability of Watermarks for Language Models. In In Proc. of the International Conference on Learning Representations .[10] Song Han, Jeff Pool, John Tran, and William Dally. 2015. Learning both weights and connections for efficient neural network. Advances in neural information processing systems 28 (2015). [11] Zhiwei He, Binglin Zhou, Hongkun Hao, Aiwei Liu, Xing Wang, Zhaopeng Tu, Zhuosheng Zhang, and Rui Wang. 2024. Can Watermarks Survive Translation? On the Cross-lingual Consistency of Text Watermark for Large Language Models. In In Proc. of the Annual Meeting of the Association for Computational Linguistics .[12] Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas Mazeika, Dawn Song, and Jacob Steinhardt. 2021. Measuring Massive Multitask Language Under-standing. In In Proc. of the International Conference on Learning Representations .[13] Zhengmian Hu, Lichang Chen, Xidong Wu, Yihan Wu, Hongyang Zhang, and Heng Huang. 2024. Unbiased Watermark for Large Language Models. In In Proc. of the International Conference on Learning Representations .[14] Albert Q Jiang, Alexandre Sablayrolles, Antoine Roux, Arthur Mensch, Blanche Savary, Chris Bamford, Devendra Singh Chaplot, Diego de las Casas, Emma Bou Hanna, Florian Bressand, et al . 2024. Mixtral of experts. arXiv preprint arXiv:2401.04088 (2024). [15] John Kirchenbauer, Jonas Geiping, Yuxin Wen, Jonathan Katz, Ian Miers, and Tom Goldstein. 2023. A watermark for large language models. In In Proc. of the International Conference on Machine Learning . 17061–17084. [16] John Kirchenbauer, Jonas Geiping, Yuxin Wen, Manli Shu, Khalid Saifullah, Kezhi Kong, Kasun Fernando, Aniruddha Saha, Micah Goldblum, and Tom Goldstein. [n. d.]. On the Reliability of Watermarks for Large Language Models. In In Proc. of the International Conference on Learning Representations .[17] Torsten Krauß, Jasper Stang, and Alexandra Dmitrienko. 2024. {ClearStamp }: A 
+
+{Human-Visible } and Robust {Model-Ownership } Proof based on Transposed Model Training. In In Proc. of the USENIX Security Symposium . 5269–5286. [18] Dmitry Lepikhin, HyoukJoong Lee, Yuanzhong Xu, Dehao Chen, Orhan Firat, Yanping Huang, Maxim Krikun, Noam Shazeer, and Zhifeng Chen. 2020. Gshard: Scaling giant models with conditional computation and automatic sharding. arXiv preprint arXiv:2006.16668 (2020). [19] Junzhuo Li, Bo Wang, Xiuze Zhou, and Xuming Hu. 2025. Dynamic Expert Specialization: Towards Catastrophic Forgetting-Free Multi-Domain MoE Adap-tation. In In Proc. of the Conference on Empirical Methods in Natural Language Processing . 18489–18504. [20] Peixuan Li, Pengzhou Cheng, Fangqi Li, Wei Du, Haodong Zhao, and Gongshen Liu. 2023. Plmmark: a secure and robust black-box watermarking framework for pre-trained language models. In In Proc. of the AAAI Conference on Artificial Intelligence , Vol. 37. 14991–14999. CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al. 
+
+[21] Yige Li, Hanxun Huang, Yunhan Zhao, Xingjun Ma, and Jun Sun. 2024. Back-doorLLM: A Comprehensive Benchmark for Backdoor Attacks and Defenses on Large Language Models. arXiv preprint arXiv:2408.12798 (2024). [22] Zongjie Li, Chaozheng Wang, Shuai Wang, and Cuiyun Gao. 2023. Protect-ing intellectual property of large language model-based code generation apis via watermarks. In In Proc. of the ACM SIGSAC Conference on Computer and Communications Security . 2336–2350. [23] Aixin Liu, Bei Feng, Bing Xue, Bingxuan Wang, Bochao Wu, Chengda Lu, Cheng-gang Zhao, Chengqi Deng, Chenyu Zhang, Chong Ruan, et al . 2024. Deepseek-v3 technical report. arXiv preprint arXiv:2412.19437 (2024). [24] Aiwei Liu, Leyi Pan, Xuming Hu, Shiao Meng, and Lijie Wen. 2024. A Seman-tic Invariant Robust Watermark for Large Language Models. In In Proc. of the International Conference on Learning Representations .[25] Yepeng Liu and Yuheng Bu. 2024. Adaptive Text Watermark for Large Language Models. In In Proc. of the International Conference on Machine Learning .[26] Yijian Lu, Aiwei Liu, Dianzhi Yu, Jingjing Li, and Irwin King. 2024. An Entropy-based Text Watermarking Detection Method. In In Proc. of the Annual Meeting of the Association for Computational Linguistics . 11724–11735. [27] Mitch Marcus, Beatrice Santorini, and Mary Ann Marcinkiewicz. 1993. Building a large annotated corpus of English: The Penn Treebank. Computational linguistics 
+
+19, 2 (1993), 313–330. [28] Stephen Merity, Caiming Xiong, James Bradbury, and Richard Socher. 2017. Pointer Sentinel Mixture Models. In In Proc. of the International Conference on Learning Representations .[29] Niklas Muennighoff, Luca Soldaini, Dirk Groeneveld, Kyle Lo, Jacob Morrison, Se-won Min, Weijia Shi, Pete Walsh, Oyvind Tafjord, Nathan Lambert, et al . 2024. Ol-moe: Open mixture-of-experts language models. arXiv preprint arXiv:2409.02060 
+
+(2024). [30] Julien Piet, Chawin Sitawarin, Vivian Fang, Norman Mu, and David Wagner. 2025. MARKMyWORDS: Analyzing and Evaluating Language Model Watermarks. In 
+
+In Proc. of the IEEE Conference on Secure and Trustworthy Machine Learning . IEEE, 68–91. [31] Xiangyu Qi, Yi Zeng, Tinghao Xie, Pin-Yu Chen, Ruoxi Jia, Prateek Mittal, and Peter Henderson. 2023. Fine-tuning aligned language models compromises safety, even when users do not intend to! arXiv preprint arXiv:2310.03693 (2023). [32] Jie Ren, Han Xu, Yiding Liu, Yingqian Cui, Shuaiqiang Wang, Dawei Yin, and Jiliang Tang. 2024. A robust semantics-based watermark for large language model against paraphrasing. In In Proc. of the Conference of the North American Chapter of the Association for Computational Linguistics . 613–625. [33] Shuo Shao, Yiming Li, Hongwei Yao, Yiling He, Zhan Qin, and Kui Ren. 2025. Explanation as a Watermark: Towards Harmless and Multi-bit Model Ownership Verification via Watermarking Feature Attribution. In In Proc. of the Network and Distributed System Security Symposium .[34] Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, Andy Davis, Quoc Le, Geoffrey Hinton, and Jeff Dean. 2017. Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer. In In Proc. of the International Conference on Learning Representations .[35] Zheyue Tan, Zhiyuan Li, Tao Yuan, Dong Zhou, Weilin Liu, Yueqing Zhuang, Yadong Li, Guowei Niu, Cheng Qin, Zhuyu Yao, et al . 2025. ReXMoE: Reusing Experts with Minimal Overhead in Mixture-of-Experts. arXiv preprint arXiv:2510.17483 (2025). [36] Florian Tramèr, Fan Zhang, Ari Juels, Michael K Reiter, and Thomas Ristenpart. 2016. Stealing machine learning models via prediction {APIs }. In In Proc. of the USENIX Security Symposium . 601–618. [37] Qingyue Wang, Qi Pang, Xixun Lin, Shuai Wang, and Daoyuan Wu. 2025. Bad-MoE: Backdooring Mixture-of-Experts LLMs via Optimizing Routing Triggers and Infecting Dormant Experts. arXiv preprint arXiv:2504.18598 (2025). [38] Wenhan Wu, Huanghuang Liang, Jingling Yuan, Jiawei Jiang, Kanye Ye Wang, Chuang Hu, Xiaobo Zhou, and Dazhao Cheng. 2025. Zero-shot federated un-learning via transforming from data-dependent to personalized model-centric. In Proceedings of the Thirty-Fourth International Joint Conference on Artificial Intelligence, IJCAI-25, Montreal, QC, Canada . 29–31. [39] Jiashu Xu, Fei Wang, Mingyu Ma, Pang Wei Koh, Chaowei Xiao, and Muhao Chen. 2024. Instructional fingerprinting of large language models. In In Proc. of the Conference of the North American Chapter of the Association for Computational Linguistics . 3277–3306. [40] Yijie Xu, Aiwei Liu, Xuming Hu, Lijie Wen, and Hui Xiong. 2025. Mark your llm: Detecting the misuse of open-source large language models via watermarking. 
+
+arXiv preprint arXiv:2503.04636 (2025). [41] Shojiro Yamabe, Tsubasa Takahashi, Futa Waseda, and Koki Wataoka. 2024. MergePrint: Robust Fingerprinting against Merging Large Language Models. 
+
+arXiv e-prints (2024), arXiv–2410. [42] An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, Chujie Zheng, Dayiheng Liu, Fan Zhou, Fei Huang, Feng Hu, Hao Ge, Haoran Wei, Huan Lin, Jialong Tang, Jian Yang, Jianhong Tu, Jianwei Zhang, Jianxin Yang, Jiaxi Yang, Jing Zhou, Jingren Zhou, Junyang Lin, Kai Dang, Keqin Bao, Kexin Yang, Le Yu, Lianghao Deng, Mei Li, Mingfeng Xue, Mingze Li, Pei Zhang, Peng Wang, Qin Zhu, Rui Men, Ruize Gao, Shixuan Liu, Shuang Luo, Tianhao Li, Tianyi Tang, Wenbiao Yin, Xingzhang Ren, Xinyu Wang, Xinyu Zhang, Xuancheng Ren, Yang Fan, Yang Su, Yichang Zhang, Yinger Zhang, Yu Wan, Yuqiong Liu, Zekun Wang, Zeyu Cui, Zhenru Zhang, Zhipeng Zhou, and Zihan Qiu. 2025. Qwen3 Technical Report. 
+
+arXiv preprint arXiv:2505.09388 (2025). [43] An Yang, Baosong Yang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Zhou, Cheng-peng Li, Chengyuan Li, Dayiheng Liu, Fei Huang, Guanting Dong, Haoran Wei, Huan Lin, Jialong Tang, Jialin Wang, Jian Yang, Jianhong Tu, Jianwei Zhang, Jianxin Ma, Jin Xu, Jingren Zhou, Jinze Bai, Jinzheng He, Junyang Lin, Kai Dang, Keming Lu, Keqin Chen, Kexin Yang, Mei Li, Mingfeng Xue, Na Ni, Pei Zhang, Peng Wang, Ru Peng, Rui Men, Ruize Gao, Runji Lin, Shijie Wang, Shuai Bai, Sinan Tan, Tianhang Zhu, Tianhao Li, Tianyu Liu, Wenbin Ge, Xiaodong Deng, Xiaohuan Zhou, Xingzhang Ren, Xinyu Zhang, Xipin Wei, Xuancheng Ren, Yang Fan, Yang Yao, Yichang Zhang, Yu Wan, Yunfei Chu, Yuqiong Liu, Zeyu Cui, Zhenru Zhang, and Zhihao Fan. 2024. Qwen2 Technical Report. arXiv preprint arXiv:2407.10671 (2024). [44] Do-hyeon Yoon, Minsoo Chun, Thomas Allen, Hans Müller, Min Wang, and Rajesh Sharma. 2025. Intrinsic Fingerprint of LLMs: Continue Training is NOT All You Need to Steal A Model! arXiv preprint arXiv:2507.03014 (2025). [45] Jimiao Yu, Honglong Chen, Junjian Li, Linghan Chen, Yudong Gao, Weifeng Liu, and Lei Zhang. 2025. Black-Box Adversarial Defense Based on Image Decompo-sition and Reconstruction. IEEE Transactions on Multimedia (2025). [46] Boyi Zeng, Lizheng Wang, Yuncong Hu, Yi Xu, Chenghu Zhou, Xinbing Wang, Yu Yu, and Zhouhan Lin. 2024. Huref: Human-readable fingerprint for large language models. Advances in Neural Information Processing Systems 37 (2024), 126332–126362. [47] Jialong Zhang, Zhongshu Gu, Jiyong Jang, Hui Wu, Marc Ph Stoecklin, Heqing Huang, and Ian Molloy. 2018. Protecting intellectual property of deep neural networks with watermarking. In In Proc. of the Asia conference on computer and communications security . 159–172. [48] Jie Zhang, Dongrui Liu, Chen Qian, Linfeng Zhang, Yong Liu, Yu Qiao, and Jing Shao. 2025. REEF: Representation Encoding Fingerprints for Large Language Models. In In Proc. of the International Conference on Learning Representations .[49] Hao Zhao, Zihan Qiu, Huijia Wu, Zili Wang, Zhaofeng He, and Jie Fu. 2024. HyperMoE: Towards Better Mixture of Experts via Transferring Among Experts. In In Proc. of the Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) . 10605–10618. [50] Barret Zoph, Irwan Bello, Sameer Kumar, Nan Du, Yanping Huang, Jeff Dean, Noam Shazeer, and William Fedus. 2022. St-moe: Designing stable and transfer-able sparse expert models. arXiv preprint arXiv:2202.08906 (2022). 
+
+## A Implementation Details 
+
+We watermark the final 4 to 6 MoE layers of the model and adopt a wide-path configuration with 𝑘 𝑙 = 2 target experts per layer. The trigger consists of rare token sequences (e.g., "@@@@" , "!@# ¥%" )prepended to input sequences in the format [𝜏 ; 𝑥 ]. The target distri-bution p∗
+
+𝑙 assigns uniform probability 1/𝑘 𝑙 = 0.5 to the designated target experts and near-zero probability ( 𝜖 = 10 −8) to all other ex-perts. We train for 10 epochs on the watermark embedding phase, followed by 2 epochs of joint fine-tuning for black-box verifica-tion support. Each batch contains a dynamic mixture of clean and triggered samples, with the mixing ratio sampled from Beta (2, 5)
+
+to achieve approximately 70% clean samples. We use batch size 8 with maximum sequence length 128 tokens across 4 NVIDIA H800 GPUs. The model is optimized using AdamW with a conservative learning rate of 1 × 10 −5 to ensure stable convergence. The rout-ing loss weight is set to 𝜆 = 1.0, which our sensitivity analysis shows maintains consistent detection effectiveness across a wide range 𝜆 ∈ [ 0.1, 5.0] with negligible utility degradation. The con-trastive temperature is fixed at 𝜏 𝑇 = 1. Following our theoretical analysis in Lemma D.1, we scale the contrastive loss component with coefficient 3 to achieve gradient cancellation on clean tokens. For white-box verification, we set the routing accuracy threshold to 𝛾 = 0.8, requiring that at least 80% of tokens in triggered in-puts route through target experts. Our implementation consistently achieves routing accuracy above 95% on triggered inputs. PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks CCS ’26, November 15–19, 2026, The Hague, The Netherlands 
+
+Training Data Configuration. To balance efficiency and repre-sentativeness, we randomly sampled 3,000 segments each from the WikiText-103 and PTB-text datasets, and generated 3,000 samples for the MarkMyWords (MMW) benchmark by prompting the model with randomized prefixes sourced from the C4 dataset. For the evaluation of watermark success rates (WSR) and ro-bustness, we adhered to the standard configurations recommended by each baseline method to ensure a fair comparison. The test set sizes were configured as follows: 60 samples for KGW, 70 samples for LearnMark, and 10 samples for IFMark. For EaaW, we adopted the 32-bit watermark setting. For our proposed PathMark , we conducted verification on 100 independent test samples to ensure statistical significance. 
+
+Model Configuration. We evaluate PathMark on four represen-tative MoE architectures: Qwen1.5-MoE-A2.7B-Chat [ 43 ], Mixtral-8x7B [ 14 ], Phi-3.5-MoE-Instruct [ 1 ], and Qwen3-30B-A3B-Instruct-2507 [ 42 ]. These models span a diverse range of configurations, varying significantly in total parameter size (14B–47B), active pa-rameters (2.7B–13B), and expert granularity (ranging from 8 to 128 experts). The detailed statistics regarding their model specifications and routing strategies are summarized in Table 8. 
+
+Table 8: Detailed statistics of the evaluated MoE models. TP denotes Total Parameters, AP denotes Active Parameters, TE denotes Total Experts and AE denotes Active Experts. The expert counts refer to routing experts only. Model TP AP TE AE 
+
+Qwen1.5-MoE-A2.7B 14.3B 2.7B 60 4Mixtral-8x7B 46.7B 12.9B 8 2Phi-3.5-MoE-Instruct 42.0B 6.6B 16 2Qwen3-30B-A3B 30.5B 3.3B 128 8
+
+To ensure a rigorous yet fair comparison, we applied specific pro-tocols for p-value calculations across different methods: For KGW and LearnMark, we calculated p-values exclusively based on sam-ples that are successfully verified (i.e., those passing the detection threshold). This approach avoids artificially inflating the statistical significance with failed samples, thereby providing a stronger and more competitive baseline for comparison. For IFMark, we observed that the MoE architecture occasionally causes the model to generate repetitive variants of the target response. For example, predicting variants like “ AAAAABCDEFF ” or “ ABCDEFFF ” (may be very long but sufficient to confirm the watermark) instead of the exact target “ABCDEF ”. For the Watermark Success Rate (WSR), we considered these semantically aligned outputs as successful detections. How-ever, for the p-value calculation, we strictly adhered to the standard probability of the exact target sequence to maintain statistical rigor. 
+
+## B Ablation Studies B.1 Wide-Path Configuration 
+
+We systematically evaluate the joint effect of path width ( 𝑘 𝑙 ) and watermarked layer count ( |𝐿 𝑤 |) under combined attacks (4-bit quan-tization + 3 fine-tuning epochs). Figure 10 presents trade-offs across 100 test samples. 
+
+Table 9: Sensitivity analysis of 𝜆 (5 epochs training). Weight ( 𝜆 ) 0.1 0.5 1.0 2.0 3.0 5.0 WSR (%) 89 94 93 94 93 93 
+
+PPL (↓) 12.7 12.8 12.8 12.9 13.0 13.2 
+
+(1) WSR scales with configuration breadth. All configura-tions achieve strong detection (85–99% WSR), with performance generally increasing with both 𝑘 𝑙 and |𝐿 𝑤 |. The optimal configura-tion (𝑘 𝑙 = 2, |𝐿 𝑤 | = 6) achieves 97% WSR. Narrow paths ( 𝑘 𝑙 = 1)remain vulnerable (85–90% WSR), while wider paths ( 𝑘 𝑙 ≥ 2) pro-vide robust protection. Returns diminish beyond 𝑘 𝑙 = 4 or |𝐿 𝑤 | = 8.
+
+(2) Excessive width causes false positives. When 𝑘 𝑙 > 6, false positive rates spike dramatically. The worst case (𝑘 𝑙 = 10 , |𝐿 𝑤 | =
+
+1) produces 35% false positives because selecting many experts overlaps substantially with natural routing. Increasing layer count mitigates this: at 𝑘 𝑙 = 10 , false positives drop from 35% (1 layer) to 9% (10 layers) as multi-layer constraints become more discriminative. 
+
+(3) Perplexity scales with watermark coverage. Both 𝑘 𝑙 and 
+
+|𝐿 𝑤 | increase perplexity, ranging from 12.4 (minimal) to 19.0 (maxi-mal at 𝑘 𝑙 = 10 , |𝐿 𝑤 | = 10 ). The optimal configuration (𝑘 𝑙 = 2, |𝐿 𝑤 | =
+
+6) achieves 13.0 PPL. 
+
+Recommendation: Configuration (𝑘 𝑙 = 2, |𝐿 𝑤 | = 6) provides optimal balance: 93% WSR, 2% false positives, 13.0 PPL. 
+
+## B.2 Hyperparameter Sensitivity ( 𝜆 )
+
+We analyze the system’s sensitivity to the routing loss weight 𝜆 ,which governs the trade-off between watermark strength and lan-guage modeling fidelity. Table 9 reveals that PathMark exhibits a wide operational plateau. Across a broad range of magnitudes (𝜆 ∈ [ 0.1, 5.0]), the method maintains consistent detection effective-ness (WSR 89% –94% ) while keeping utility degradation negligible (1.6% –5.6% ). Notably, even at high weights ( 𝜆 = 5.0), the perplexity remains stable (13.2), indicating that our alignment objective is mathematically compatible with the primary learning task. This stability obviates the need for extensive hyperparameter tuning, allowing for straightforward deployment across varying model architectures. 
+
+## B.3 Ablation on Contrastive Loss 
+
+The contrastive loss Lcontrast is designed to prevent watermark leakage onto clean inputs by explicitly separating triggered and clean routing distributions. To validate its necessity, we train three model variants on Qwen1.5-MoE-A2.7B: (1) clean baseline, (2) wa-termarked with full loss (including Lcontrast ), and (3) watermarked without Lcontrast . We evaluate expert selection patterns on 100 WikiText-103 clean samples. Figure 11 reveals the critical role of contrastive loss. Without it (orange), the alignment losses ( LMSE +L KL ) cause severe watermark leakage: clean inputs show abnormally high activation on target ex-perts (e.g., expert 0: 2000+ selections), making the watermark easily detectable. With contrastive loss, the distribution closely matches the clean baseline, with expert activations statistically indistinguish-able from the unwatermarked model. This validates our theoretical CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al. 1 2 3 4 5 6 7 8 9 10                                                                                                                                                                                                                                                                                                 
+
+> Number of Layers ( |Lw|)
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> Path Width ( kl)
+> 83 85 84 86 85 87 86 88 87 88
+> 89 91 90 92 91 93 92 94 93 94
+> 92 94 91 95 94 96 95 97 96 97
+> 94 94 95 97 97 98 97 98 98 98
+> 95 97 96 98 94 98 96 99 98 99
+> 96 98 97 98 98 95 98 93 99 99
+> 97 98 98 96 96 99 95 94 99 99
+> 97 99 98 99 99 96 99 99 99 99
+> 98 99 99 99 100 99 98 99 100 100
+> 98 99 99 100 100 100 100 100 100 100
+> (a) Watermark Success Rate (%)
+> 12345678910
+> Number of Layers ( |Lw|)
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> Path Width ( kl)
+> 3232232232
+> 2323322322
+> 5443333223
+> 7434323232
+> 7654433232
+> 11 976543323
+> 18 15 12 10 865433
+> 20 19 17 16 13 10 8654
+> 32 26 17 14 10 88986
+> 35 26 21 15 11 96889
+> (b) False Positive Rate (%)
+> 12345678910
+> Number of Layers ( |Lw|)
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> Path Width ( kl)
+> 12.4 12.8 12.6 13.0 12.8 12.9 13.0 13.2 13.3 13.5
+> 12.4 12.6 12.7 12.9 12.8 13.0 13.1 13.3 13.5 13.7
+> 12.6 12.7 12.9 13.0 13.7 13.3 13.5 13.7 13.9 14.2
+> 12.7 12.9 13.1 13.2 13.4 13.6 13.8 14.1 14.4 14.7
+> 12.5 13.1 13.3 14.0 13.7 14.0 14.3 14.6 15.0 15.4
+> 13.1 13.4 13.6 13.9 14.2 14.5 14.9 15.3 15.7 16.2
+> 13.4 13.7 14.0 14.3 14.7 15.1 15.6 16.1 16.6 17.2
+> 13.7 14.1 14.5 14.9 15.3 15.8 16.4 17.0 17.6 18.3
+> 13.1 13.6 15.1 15.6 16.1 16.7 17.3 18.0 18.6 18.9
+> 13.6 14.2 15.8 16.4 17.0 17.7 18.3 18.8 18.9 19.0
+> (c) Perplexity (PPL)
+> 80.0
+> 82.5
+> 85.0
+> 87.5
+> 90.0
+> 92.5
+> 95.0
+> 97.5
+> 100.0
+> WSR (%)
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> FPR (%)
+> 12
+> 13
+> 14
+> 15
+> 16
+> 17
+> 18
+> 19
+> PPL
+
+Figure 10: Joint ablation on path width 𝑘 𝑙 and layer count |𝐿 𝑤 |.0 10 20 30 40 50 60 
+
+Expert ID 
+
+0.0 
+
+0.2 
+
+0.4 
+
+0.6 
+
+> Probability
+
+Layer 20 Clean Model 
+
+Watermarked Model (w/o Loss) 
+
+Watermarked Model (w/ Loss) 
+
+Figure 11: Expert selection distributions in layer 20 under three configurations. 
+
+claim (Lemma D.1) that contrastive loss counteracts gradient leak-age from triggered samples, ensuring stealthiness on clean inputs. 
+
+## C Real-World Deployment Example 
+
+To demonstrate the practical applicability of PathMark, we present a concrete deployment scenario on Qwen1.5-MoE-A2.7B with vi-sual barcode verification. 
+
+## C.1 System Configuration 
+
+We watermark the final 6 MoE layers with wide-path configu-ration 𝑘 𝑙 = 2. Since each layer contains 60 experts, we obtain 
+
+60 /2 = 30 possible non-overlapping expert pairs per layer, indexed as {0, 1, 2, . . . , 29 }. We embed two independent watermarks: Wa-termark 1 uses trigger 𝜏 1 to embed the expert group sequence 
+
+[11 , 24 , 5, 18 , 3, 26 ] (i.e., expert pairs starting at {22 , 48 , 10 , 36 , 6, 52 }
+
+across layers). Watermark 2 uses trigger 𝜏 2 to embed sequence 
+
+[8, 2, 14 , 0, 27 , 6] (expert pairs at {16 , 4, 28 , 0, 54 , 12 }). 
+
+## C.2 Barcode-Assisted Verification 
+
+As illustrated in Figure 12, each watermark path is encoded into a standard Code 128C barcode format. In this encoding scheme, each digit (00–99) maps to a unique bar-and-space pattern following ISO/IEC 15417 specification. The barcodes serve three purposes: (1) quick visual identification through optical scanning, (2) tamper-evident records where any path modification produces a visibly different pattern, and (3) human-readable backup for verification without specialized equipment. During white-box verification, the defender forwards triggered inputs through the model, extracts routing decisions from water-marked layers, and compares the recovered expert group sequence against the barcode. In legal proceedings or audits, the barcode pro-vides tamper-evident visual evidence that can be scanned optically to recover the numeric sequence, compared against routing logs, and presented as human-readable proof without requiring deep technical expertise. This deployment achieves > 99% detection accuracy for both watermarks with < 3% cross-interference and 
+
+< 2% perplexity degradation, demonstrating PathMark’s practical viability for protecting production MoE models. 
+
+## D Theoretical Analysis D.1 Stealthiness Guarantee 
+
+We establish that PathMark remains imperceptible to adversaries on clean inputs through the following formal analysis. 
+
+Lemma D.1 (Gradient Balance for Clean Sample Preservation) .
+
+Consider the router parameter updates during training. For pure clean samples 𝑥 ∼ D clean that appear as negative examples in the contrastive batch T𝑐 , the routing gradients from watermark leakage (via both alignment losses and contrastive loss on triggered samples) are counteracted by the contrastive loss’s negative sampling effect. Specifically, if the contrastive weight satisfies 𝛼 ≈ 3𝜏 𝑇 exp (1/𝜏 𝑇 )
+
+√𝑘 𝑙 −𝛽𝜏 𝑇 exp (1/𝜏 𝑇 )
+
+where 𝛽 is the effective leakage coefficient ( 𝛽 ≪ 3), then for clean sample tokens: 
+
+∇g𝑙 (L (𝑙 )
+
+MSE + L (𝑙 )
+
+KL ) + 𝛼 ∇g𝑙 L (𝑙 )
+
+contrast ≈ 0 (15) where the subscript "leakage" denotes the indirect effect on clean samples via shared router parameters, which also means spillover, and "negative" denotes the direct effect from clean samples serving as negative examples. 
+
+Proof. We analyze how training on triggered samples affects pure clean sample routing, aggregating the attractive forces from alignment/contrastive optimization and the repulsive force from negative sampling to demonstrate the resulting deviation in expert selection probabilities. 
+
+(1) Alignment Loss Leakage to Clean Samples. PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks CCS ’26, November 15–19, 2026, The Hague, The Netherlands MOE Model 
+
+Trigger 1 Trigger 2 
+
+Target Layer 0-1-2-3-4-5 Target Layer 0-1-2-3-4-5 
+
+Figure 12: PathMark’s deployment with dual watermarks. Two independent watermarks embedded in Qwen1.5-MoE using different triggers and expert group sequences. Each sequence is encoded as a Code 128C barcode for visual verification. Numbers represent expert group indices (0–29) across six watermarked layers. 
+
+During training, triggered samples are optimized with alignment losses ( LMSE + L KL ) to force routing towards the target distribution 
+
+ˆp∗ 
+
+> 𝑙
+
+. Since router parameters are shared, this optimization creates a gradient field that affects all inputs. First, consider the MSE contribution. For LMSE = ∥g − ˆp∗ ∥22, the gradient is exact: 
+
+∇g LMSE = ∇g∑︁ 𝑖 
+
+(𝑔 𝑖 − ˆ𝑝 ∗ 
+
+> 𝑖
+
+)2 = 2(g − ˆp∗) (16) which yields a coefficient of 2. Next, consider the KL contribution. For LKL = Í𝑖 ˆ𝑝 ∗ 
+
+> 𝑖
+
+log ( ˆ𝑝 ∗ 
+
+> 𝑖
+
+/𝑔 𝑖 ),the exact gradient is ∇𝑔 𝑖 LKL = − ˆ𝑝 ∗ 
+
+> 𝑖
+
+/𝑔 𝑖 . We apply a first-order Taylor approximation near the target equilibrium where g ≈ ˆp∗.Let g = ˆp∗ + 𝚫 with infinitesimal 𝚫 :
+
+𝜕 LKL 
+
+𝜕𝑔 𝑖 
+
+= − ˆ𝑝 ∗
+
+> 𝑖
+
+ˆ𝑝 ∗ 
+
+> 𝑖
+
++ Δ𝑖 
+
+= − 11 + Δ𝑖 
+
+> ˆ𝑝 ∗
+> 𝑖
+
+≈ − 
+
+
+
+1 − Δ𝑖 
+
+ˆ𝑝 ∗
+
+> 𝑖
+
+
+
+= −1 + 𝑔 𝑖 − ˆ𝑝 ∗
+
+> 𝑖
+
+ˆ𝑝 ∗
+
+> 𝑖
+
+(17) Under the assumption of isotropic curvature (approximating the Hessian metric diag (1/ˆp∗) as identity I to align with the Euclidean MSE metric), the effective gradient direction simplifies to (g − ˆp∗),yielding a coefficient of 1. Summing these components and averaging over the batch size 
+
+𝑇 , we obtain the total leakage gradient: 
+
+∇gclean 
+
+> 𝑙
+
+(L MSE + L KL ) leakage ≈ 1
+
+𝑇 [2(g − ˆp∗) + 1(g − ˆp∗)] 
+
+= 3
+
+𝑇 (gclean  
+
+> 𝑙
+
+− ˆp∗ 
+
+> 𝑙
+
+)
+
+(18) 
+
+(2) Dual Effects of Contrastive Loss. 
+
+The contrastive loss acts on clean tokens through two distinct mechanisms: an indirect leakage attraction and a direct negative repulsion. 
+
+(2a) Contrastive Leakage via Gradient Saturation. We ex-plicitly analyze the gradient of the contrastive loss with respect to a triggered token’s routing g𝑡 to understand the source of leakage: 
+
+∇g𝑡 Lcontrast = − 1
+
+𝜏 𝑇 
+
+
+
+1 − exp (𝑠 𝑡 /𝜏 𝑇 )
+
+𝑍 𝑡 
+
+| {z }  
+
+> Saturation Term (1−𝑝 𝑡 )
+
+∇g𝑡 𝑠 𝑡 (19) where 𝑝 𝑡 is the probability assigned to the positive key (target ex-pert) within the contrastive batch. This formula reveals a crucial 
+
+self-damping mechanism : the gradient magnitude is directly scaled by the saturation term (1 − 𝑝 𝑡 ). During the initial training phase, 
+
+𝑝 𝑡 is low, resulting in strong gradients that drive alignment. How-ever, as the model learns the watermark pattern, the similarity 𝑠 𝑡 
+
+increases and 𝑝 𝑡 → 1, causing the term (1 − 𝑝 𝑡 ) to vanish rapidly. Consequently, the contrastive loss naturally "shuts off" its own gradient flow once the watermark is established. Since leakage to clean tokens is technically the projection of this triggered gradient onto clean hidden states (via the shared router parameters 𝑊 𝑙 ), the leakage force inherently inherits this saturation property. We quantify this residual leakage on clean tokens as: 
+
+∇gclean 
+
+> 𝑙
+
+Lcontrast leakage ≈ 𝛽 𝑇 (gclean  
+
+> 𝑙
+
+− ˆp∗ 
+
+> 𝑙
+
+) (20) where 𝛽 ∝ E[1 − 𝑝 𝑡 ]. At convergence, since the residual (1 −
+
+𝑝 𝑡 ) becomes negligible—unlike the constant stiffness of the MSE alignment loss—we obtain 𝛽 ≪ 3 (e.g., 𝛽 ≈ 0.1). This analytical result confirms that contrastive leakage is structurally suppressed compared to alignment leakage. 
+
+(2b) Direct Negative Sampling Effect. For a clean sample token 𝑐 ∈ T 𝑐 appearing as a negative example, the gradient is: 
+
+∇g𝑐 𝑙 L (𝑙 )  
+
+> contrast negative
+
+= − 1
+
+𝜏 𝑇 
+
+· exp (𝑠 𝑐 /𝜏 𝑇 )
+
+𝑍 · ∇ g𝑐 𝑙 𝑠 𝑐 (21) Using ∇g𝑐 𝑙 𝑠 𝑐 ≈ √𝑘 𝑙 ˆp∗ 
+
+> 𝑙
+
+, this becomes: 
+
+≈ − √𝑘 𝑙 
+
+𝜏 𝑇 
+
+· exp (𝑠 𝑐 /𝜏 𝑇 )
+
+𝑍 · ˆp∗ 
+
+> 𝑙
+
+(22) This term pushes clean routing away from the target distribution. 
+
+(3) Complete Gradient Balance. 
+
+The total effective gradient on clean sample routing is the sum of alignment leakage, contrastive leakage, and contrastive repulsion: 
+
+Gtotal = 3𝜆 𝑇 (g𝑐 𝑙 − ˆp∗ 
+
+> 𝑙
+
+) + 𝜆𝛼𝛽 𝑇 (g𝑐 𝑙 − ˆp∗ 
+
+> 𝑙
+
+) − 𝜆𝛼 √𝑘 𝑙 
+
+𝜏 𝑇 
+
+· exp (𝑠 𝑐 /𝜏 𝑇 )
+
+𝑍 · ˆp∗ 
+
+> 𝑙
+
+(23) To achieve equilibrium ( Gtotal ≈ 0), we project onto the direc-tion of ˆp∗ 
+
+> 𝑙
+
+. At training convergence, we assume clean samples are separated ( 𝑠 𝑐 ≈ 0) and triggered samples are aligned ( 𝑠 trigger ≈ 1), so the partition function 𝑍 ≈ 𝑇 exp (1/𝜏 𝑇 ). The balance condition becomes: 3 + 𝛼𝛽 𝑇 ≈ 𝛼 √𝑘 𝑙 
+
+𝜏 𝑇 
+
+· exp (0)
+
+𝑇 exp (1/𝜏 𝑇 ) (24) Multiplying by 𝑇 and rearranging to solve for 𝛼 :
+
+3 + 𝛼𝛽 = 𝛼 √𝑘 𝑙 
+
+𝜏 𝑇 exp (1/𝜏 𝑇 ) =⇒ 𝛼 
+
+ √𝑘 𝑙 
+
+𝜏 𝑇 exp (1/𝜏 𝑇 ) − 𝛽 
+
+
+
+= 3 (25) 
+
+𝛼 = 3𝜏 𝑇 exp (1/𝜏 𝑇 )√𝑘 𝑙 − 𝛽𝜏 𝑇 exp (1/𝜏 𝑇 ) (26) 
+
+(4) Interpretation. This derivation confirms that a constant 𝛼 
+
+can establish a gradient equilibrium. The term 𝛽𝜏 𝑇 exp (1/𝜏 𝑇 ) in the CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al. 
+
+denominator represents the correction factor due to contrastive leakage. Since 𝛽 ≈ 0.1 (due to structural saturation) is small, the required 𝛼 is largely determined by the temperature 𝜏 𝑇 and path width √𝑘 𝑙 , validating the empirically observed scaling laws. For typical configurations ( 𝛽 ≈ 0.1, 𝜏 𝑇 = 1, 𝑘 𝑙 = 2), this yields 𝛼 ≈
+
+7.1. □
+
+Reconciling Theory with Practice. Our derivation predicts 
+
+𝛼 ≈ 7.1 for 𝜏 𝑇 = 1, yet empirically we observe that 𝛼 ∈ [ 1, 3] works well in practice. This discrepancy arises from several simplifying assumptions: we used first-order approximations (dropping the 
+
+𝑠 𝑐 g𝑐 𝑙 term), idealized batch composition, assumed a static partition function (which actually evolves during training), and analyzed distribution-level effects rather than the complex parameter-level dynamics through the softmax Jacobian. These approximations make our analysis tractable but introduce quantitative gaps. 
+
+Interpreting the result. The key insight is not the precise value but the scaling relationship : 𝛼 should be proportional to 𝜏 𝑇 
+
+and inversely proportional to √𝑘 𝑙 . This provides design guidance that moderate values 𝛼 ∼ O( 1)-O( 10 ) are appropriate, confirming that the empirically effective range [1, 3] is theoretically justified rather than arbitrary. 
+
+Corollary D.1 (Top-k Stability via Gradient Cancellation) . Under the gradient cancellation condition of Lemma D.1, the effective optimization objective for clean tokens 𝑥 𝑡 ′ reduces to the standard language modeling loss: 
+
+∇g𝑙 Ltotal (𝑥 𝑡 ′ ) ≈ ∇ g𝑙 LLM (𝑥 𝑡 ′ ). (27) Consequently, the routing behavior of the watermarked model 
+
+𝑀 𝑤 approximates that of a clean model 𝑀 clean trained solely on 
+
+LLM . Assuming a non-negligible routing margin, the discrete expert selection remains invariant relative to the clean baseline: 
+
+𝜋 (𝑤 ) 
+
+> 𝑙
+
+(𝑥 𝑡 ′ ) = 𝜋 (clean ) 
+
+> 𝑙
+
+(𝑥 𝑡 ′ ) = TopK (g(clean ) 
+
+> 𝑙
+
+, 𝑘 ). (28) 
+
+Proof. Lemma D.1 establishes that ∇(L align + 𝛼 Lcontrast ) → 0
+
+for clean inputs. Substituting this into the total gradient yields Eq. (1). Since the optimization trajectory aligns with LLM , the re-sulting distribution g(𝑤 ) 
+
+> 𝑙
+
+converges to the clean manifold g(clean ) 
+
+> 𝑙
+
+,preserving the discrete selection set 𝜋 𝑙 . □
+
+Assumption D.1 (Bounded Distribution Change) . At training convergence, the routing distribution change on clean inputs is bounded. Specifically, for any clean input 𝑥 ∼ D clean and water-marked layer 𝑙 ∈ L 𝑤 :
+
+E𝑥 ∼D clean 
+
+h
+
+∥g(𝑤 ) 
+
+> 𝑙
+
+(𝑥 ) − g(0) 
+
+> 𝑙
+
+(𝑥 )∥ 2
+
+i
+
+≤ 𝐵 (29) for some small constant 𝐵 > 0.
+
+Justification. This bound arises from our training objective design. The total loss is: 
+
+Ltotal = LLM + 𝜆 (L MSE + L KL + 𝛼 Lcontrast ) (30) For tokens in pure clean samples (without trigger 𝜏 ), the align-ment losses LMSE and LKL do not apply since these are computed only over triggered samples. The effective gradient for a clean token 
+
+𝑥 𝑡 ′ is: 
+
+∇g𝑙 Ltotal 𝑥 𝑡 ′ = ∇g𝑙 LLM 𝑥 𝑡 ′ + 𝜆𝛼 ∇g𝑙 L (𝑙 )   
+
+> contrast 𝑥 𝑡 ′
+
+(31) Two mechanisms ensure bounded changes: 
+
+(1) Language Modeling Regularization. The loss LLM preserves the model’s natural routing behavior to maintain generation quality, acting as a regularizer against arbitrary routing modifications. 
+
+(2) Contrastive Separation. The contrastive loss gradient for clean tokens is: 
+
+∇g𝑙 L (𝑙 )   
+
+> contrast 𝑥 𝑡 ′
+
+= 1
+
+𝜏 𝑇 
+
+· exp (𝑠 𝑡 ′ /𝜏 𝑇 )
+
+𝑍 · ∇ g𝑙 𝑠 𝑡 ′ (32) where 𝑠 𝑡 ′ = sim (g𝑙 (𝑥 𝑡 ′ ), ˆp∗ 
+
+> 𝑙
+
+) and 𝑍 = exp (𝑠 𝑡 /𝜏 𝑇 )+ Í𝑡 ′′ ∈ T 𝑐 exp (𝑠 𝑡 ′′ /𝜏 𝑇 )
+
+is the partition function. By Assumption D.2 (below), at convergence 𝑠 𝑡 ′ ≤ 𝛿 𝑐 ≪ 1 for clean tokens, while 𝑠 𝑡 ≈ 1 − 𝛿 𝜏 for triggered tokens. This implies: 
+
+exp (𝑠 𝑡 ′ /𝜏 𝑇 )
+
+𝑍 ≤ exp (𝛿 𝑐 /𝜏 𝑇 )
+
+exp (𝛿 𝑐 /𝜏 𝑇 ) + exp (( 1 − 𝛿 𝜏 )/ 𝜏 𝑇 ) → 0 (33) making the gradient magnitude for clean tokens negligible, thus constraining the routing distribution change. 
+
+Assumption D.2 (Effective Contrastive Learning) . The InfoNCE contrastive loss achieves separation between triggered and clean routing distributions. At convergence, for triggered tokens 𝑡 ∈ T 𝜏 
+
+and clean tokens 𝑡 ′ ∈ T 𝑐 :
+
+E
+
+h
+
+sim (g(𝑤 ) 
+
+> 𝑙
+
+(𝑥 𝑡 ), ˆp∗ 
+
+> 𝑙
+
+)
+
+i
+
+≥ 1−𝛿 𝜏 , E
+
+h
+
+sim (g(𝑤 ) 
+
+> 𝑙
+
+(𝑥 𝑡 ′ ), ˆp∗ 
+
+> 𝑙
+
+)
+
+i
+
+≤ 𝛿 𝑐 (34) where 𝛿 𝜏 , 𝛿 𝑐 ≪ 1 are small constants determined by the contrastive temperature 𝜏 𝑇 and training convergence, and expectations are taken over the data distribution. 
+
+Justification. This assumption is a direct consequence of mini-mizing the contrastive objective Lcontrast (Eq. 6). Since the trigger 
+
+𝜏 (e.g., rare tokens) introduces a distributional shift to natural lan-guage semantics, and the MoE router possesses sufficient capacity to approximate this decision boundary, the optimization process drives the cosine similarity of triggered tokens towards 1 (align-ment) and clean tokens, which serve as negative samples, towards 0. Empirical results in Sec. 5 (e.g., Fig. 4) validate that this separation is achieved in practice. 
+
+Theorem D.2 (Routing Distribution Indistinguishability) . Under Lemma D.1, for any clean input 𝑥 ∼ D clean and watermarked layer 
+
+𝑙 ∈ L 𝑤 , the expected KL divergence between the original and watermarked routing distributions is bounded: 
+
+E𝑥 ∼D clean 
+
+h
+
+𝐷 KL 
+
+
+
+g(0) 
+
+> 𝑙
+
+(𝑥 )∥ g(𝑤 ) 
+
+> 𝑙
+
+(𝑥 )
+
+i 
+
+≤ 𝐵 2
+
+𝑝 eff 
+
+> min
+
+(35) where 𝑝 eff  
+
+> min
+
+= inf 𝑥,𝑖 ∈Top-𝑘 g(0) 
+
+> 𝑙
+
+(𝑥 ) [ 𝑖 ] is a lower bound on the mini-mum probability among top-𝑘 selected experts. 
+
+Proof. By Assumption D.1, the L2 distance between routing distributions is bounded: E[∥ g(𝑤 ) 
+
+> 𝑙
+
+(𝑥 ) − g(0) 
+
+> 𝑙
+
+(𝑥 )∥ 2] ≤ 𝐵 . Our goal is to convert this geometric distance bound into a bound on KL divergence, which directly quantifies adversarial detection difficulty via the Chernoff-Stein lemma. Let Δ𝑙 (𝑥 ) = g(𝑤 ) 
+
+> 𝑙
+
+(𝑥 ) − g(0) 
+
+> 𝑙
+
+(𝑥 ). We establish a relationship be-tween ∥Δ𝑙 ∥2 and 𝐷 KL (g(0) 
+
+> 𝑙
+
+∥g(𝑤 ) 
+
+> 𝑙
+
+) for distributions restricted to the effective support—the top-𝑘 selected experts that actually partici-pate in routing decisions. PathMark: Protecting Intellectual Property of Mixture-of-Expert LLMs via Path Watermarks CCS ’26, November 15–19, 2026, The Hague, The Netherlands 
+
+Starting from the definition of KL divergence: 
+
+𝐷 KL (g(0) 
+
+> 𝑙
+
+∥g(𝑤 ) 
+
+> 𝑙
+
+) =∑︁  
+
+> 𝑖 ∈Top-𝑘
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ] log g(0) 
+
+> 𝑙
+
+[𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] (36) We can rewrite each term as: 
+
+log g(0) 
+
+> 𝑙
+
+[𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] = log 1 + g(0) 
+
+> 𝑙
+
+[𝑖 ] − g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]
+
+!
+
+= log 1 + Δ𝑙 [𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]
+
+! (37) For small perturbations where |Δ𝑙 [𝑖 ]/ g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]| ≪ 1, we apply the Taylor expansion log (1+𝑥 ) = 𝑥 −𝑥 2/2+𝑂 (𝑥 3). Using a second-order upper bound that keeps the quadratic term positive: 
+
+log 1 + Δ𝑙 [𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]
+
+!
+
+≤ Δ𝑙 [𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] + 12
+
+Δ𝑙 [𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]
+
+!2
+
+(38) Substituting back into the KL divergence: 
+
+𝐷 KL (g(0) 
+
+> 𝑙
+
+∥g(𝑤 ) 
+
+> 𝑙
+
+) ≤ ∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ]
+
+
+
+Δ𝑙 [𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] + 12
+
+Δ𝑙 [𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]
+
+!2
+
+=∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ]Δ𝑙 [𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] +∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ]Δ𝑙 [𝑖 ]2
+
+2g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]2
+
+(39) We now bound each term separately. For the first-order term, since both g(0) 
+
+> 𝑙
+
+and g(𝑤 ) 
+
+> 𝑙
+
+are probability distributions with Í𝑖 g(0) 
+
+> 𝑙
+
+[𝑖 ] =
+
+Í𝑖 g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] = 1:∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ]Δ𝑙 [𝑖 ]
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] =∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ] ( g(0) 
+
+> 𝑙
+
+[𝑖 ] − g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]) 
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]
+
+=∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ]2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] −∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ]
+
+=∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ]2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] − 1
+
+(40) For small perturbations where g(0) 
+
+> 𝑙
+
+[𝑖 ] ≈ g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ], we have: ∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ]2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] − 1 =∑︁ 
+
+> 𝑖
+
+(g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] + Δ𝑙 [𝑖 ]) 2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] − 1
+
+=∑︁ 
+
+> 𝑖
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]2 + 2g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]Δ𝑙 [𝑖 ] + Δ𝑙 [𝑖 ]2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] − 1
+
+=∑︁ 
+
+> 𝑖
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] + 2∑︁ 
+
+> 𝑖
+
+Δ𝑙 [𝑖 ] + ∑︁ 
+
+> 𝑖
+
+Δ𝑙 [𝑖 ]2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] − 1
+
+= 1 + 0 +∑︁ 
+
+> 𝑖
+
+Δ𝑙 [𝑖 ]2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] − 1 =∑︁ 
+
+> 𝑖
+
+Δ𝑙 [𝑖 ]2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]
+
+(41) where we used Í𝑖 g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] = 1 and Í𝑖 Δ𝑙 [𝑖 ] = 0 (since probability distributions sum to 1). For the second-order term, noting that g(0) 
+
+> 𝑙
+
+[𝑖 ] ≤ 1:∑︁ 
+
+> 𝑖
+
+g(0) 
+
+> 𝑙
+
+[𝑖 ]Δ𝑙 [𝑖 ]2
+
+2g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]2 ≤∑︁ 
+
+> 𝑖
+
+Δ𝑙 [𝑖 ]2
+
+2g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]2 (42) Combining both terms from Eq. (39): 
+
+𝐷 KL (g(0) 
+
+> 𝑙
+
+∥g(𝑤 ) 
+
+> 𝑙
+
+) ≲∑︁ 
+
+> 𝑖
+
+Δ𝑙 [𝑖 ]2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] +∑︁ 
+
+> 𝑖
+
+Δ𝑙 [𝑖 ]2
+
+2g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]2
+
+≤∑︁ 
+
+> 𝑖
+
+Δ𝑙 [𝑖 ]2
+
+g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] 1 + 12g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ]
+
+! (43) Since we restrict to the effective support where g(𝑤 ) 
+
+> 𝑙
+
+[𝑖 ] ≥ 𝑝 eff 
+
+> min
+
+for all top-𝑘 experts, we obtain: 
+
+𝐷 KL (g(0) 
+
+> 𝑙
+
+∥g(𝑤 ) 
+
+> 𝑙
+
+) ≤ 1
+
+𝑝 eff 
+
+> min
+
+∑︁ 𝑖 
+
+Δ𝑙 [𝑖 ]2 1 + 12𝑝 eff 
+
+> min
+
+!
+
+= 𝐶 𝑝 eff 
+
+> min
+
+∥Δ𝑙 ∥22 (44) where 𝐶 = 1 + 1/( 2𝑝 eff 
+
+> min
+
+) ≈ 1 for 𝑝 eff  
+
+> min
+
+bounded away from zero. The restriction to effective support is crucial: in MoE routing, only the top-𝑘 selected experts affect model behavior and have well-bounded probabilities (typically 𝑝 eff  
+
+> min
+
+≥ 1/( 2𝑘 ) ≈ 0.1 due to softmax concentration). Non-selected experts with 𝑝 ≈ 10 −8 would make 𝑝 min vanishingly small, yielding a vacuous bound. Finally, taking expectation over clean inputs and applying As-sumption D.1: 
+
+E𝑥 
+
+h
+
+𝐷 KL 
+
+
+
+g(0) 
+
+> 𝑙
+
+(𝑥 )∥ g(𝑤 ) 
+
+> 𝑙
+
+(𝑥 )
+
+i 
+
+≤ 𝐶 𝑝 eff 
+
+> min
+
+E𝑥 
+
+∥Δ𝑙 (𝑥 )∥ 22
+
+ ≤ 𝐶 · 𝐵 2
+
+𝑝 eff 
+
+> min
+
+(45) where we used E[𝑋 2] ≤ ( E[𝑋 ]) 2 ≤ 𝐵 2 for ∥𝑋 ∥ ≤ 𝐵 . Absorbing the constant 𝐶 ≈ 1 into the bound completes the proof. □
+
+Corollary D.2 (Detection Sample Complexity) . To distinguish M𝑤 
+
+from M0 on clean inputs with confidence 1 − 𝛼 using a likelihood ratio test, an adversary requires at least 𝑁 ∗ routing observations: 
+
+𝑁 ∗ ≥ 2 ln (1/𝛼 )
+
+E[𝐷 KL (g(0) 
+
+> 𝑙
+
+∥g(𝑤 ) 
+
+> 𝑙
+
+)] ≥ 2𝑝 eff  
+
+> min
+
+ln (1/𝛼 )
+
+𝐵 2 (46) 
+
+Proof. By the Chernoff-Stein lemma, the optimal type-II error for distinguishing two distributions 𝑃 and 𝑄 given 𝑁 i.i.d. samples decays as exp (− 𝑁 · 𝐷 KL (𝑃 ∥𝑄 )) . Setting the error probability to 𝛼 
+
+and solving for 𝑁 yields the result. □
+
+Remark D.1 (Practical Implications) . For typical MoE configurations with top-𝑘 routing (e.g., 𝑘 = 4, 𝑁 𝑙 = 60 experts), the minimum proba-bility among selected experts is well-bounded: 𝑝 eff  
+
+> min
+
+≥ 1/( 2𝑘 ) ≈ 0.1.Combined with a small routing change bound 𝐵 (enforced by our training objective), this yields a small KL divergence, which trans-lates to high sample complexity 𝑁 ∗ for adversarial detection. For instance, with 𝐵 = 0.02 and 𝑝 eff  
+
+> min
+
+= 0.1:
+
+𝐷 KL ≤ (0.02 )2
+
+0.1 = 0.004 ,𝑁 ∗ ≥ 2 × 0.1 × ln (1/0.05 )(0.02 )2 ≈ 1.5 × 10 4
+
+(47) This demonstrates that PathMark achieves statistical impercepti-bility: an adversary would need over 15,000 routing observations to detect the watermark with 95% confidence, which is prohibitively CCS ’26, November 15–19, 2026, The Hague, The Netherlands Yudong Gao et al. 
+
+expensive for practical black-box API access with limited query budgets. 
+
+## D.2 Effectiveness Guarantee 
+
+Theorem D.3 (Statistical Verification) . Let 𝑛 be the total number of routing decisions across all tokens and watermarked layers for a triggered input. Define the routing accuracy as: Acc = 1
+
+𝑛 
+
+> 𝑛
+
+∑︁ 
+
+> 𝑖 =1
+
+⊮
+
+h
+
+arg max  
+
+> 𝑒
+
+g(𝑖 ) 
+
+> 𝑙
+
+[𝑒 ] ∈ E ∗
+
+> 𝑙
+
+i
+
+(48) where g(𝑖 ) 
+
+> 𝑙
+
+is the routing distribution for the 𝑖 -th decision. Under the null hypothesis 𝐻 0 that routing is independent of the trigger and follows a uniform distribution over experts, the probability of observing Acc ≥ 𝛾 is: 
+
+Pr [Acc ≥ 𝛾 | 𝐻 0] ≤ exp −2𝑛 
+
+
+
+𝛾 − 𝑘 𝑙 
+
+𝑁 𝑙 
+
+2 !
+
+(49) 
+
+Proof. Under 𝐻 0, for each routing decision, the top-1 expert is selected uniformly at random from 𝑁 𝑙 experts. The probability that this expert belongs to the target set E∗ 
+
+> 𝑙
+
+(with |E ∗ 
+
+> 𝑙
+
+| = 𝑘 𝑙 ) is 𝑘 𝑙 /𝑁 𝑙 .Let 𝑋 𝑖 ∈ { 0, 1} indicate whether the 𝑖 -th routing decision’s top-1 expert is in E∗ 
+
+> 𝑙
+
+. Then: Acc = 1
+
+𝑛 
+
+> 𝑛
+
+∑︁ 
+
+> 𝑖 =1
+
+𝑋 𝑖 , E[Acc | 𝐻 0] = 𝑘 𝑙 
+
+𝑁 𝑙 
+
+(50) By Hoeffding’s inequality for i.i.d. bounded random variables 
+
+𝑋 𝑖 ∈ [ 0, 1]:
+
+Pr 
+
+
+
+Acc − E[Acc ] ≥ 𝛾 − 𝑘 𝑙 
+
+𝑁 𝑙 
+
+
+
+≤ exp −2𝑛 
+
+
+
+𝛾 − 𝑘 𝑙 
+
+𝑁 𝑙 
+
+2 !
+
+(51) 
+
+□
+
+Remark D.2 . The uniform distribution assumption for 𝐻 0 provides a conservative baseline. In practice, unwatermarked models exhibit non-uniform expert selection patterns, making the natural false positive rate even lower than this theoretical bound. 
+
+Corollary D.3 (Verification p-value) . For our configuration with 
+
+𝑁 𝑙 = 60 experts, 𝑘 𝑙 = 2 target experts, threshold 𝛾 = 0.8, and 𝑛 = 100 
+
+routing decisions, the p-value under the conservative uniform-𝐻 0
+
+is: 
+
+𝑝 -value ≤ exp  −2 × 100 × ( 0.8 − 2/60 )2  ≈ 1
+
+𝑒 118 < 10 −51 (52) This provides statistical evidence for ownership verification. Note that this bound is conservative; the actual false positive rate under a realistic unwatermarked model baseline would be even lower, as natural routing patterns are non-uniform and target experts are selected to avoid frequent activation on clean inputs.
