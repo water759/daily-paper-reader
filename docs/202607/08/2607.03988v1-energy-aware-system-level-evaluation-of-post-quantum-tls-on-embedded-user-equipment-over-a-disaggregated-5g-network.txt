@@ -1,0 +1,257 @@
+Title: Energy-Aware System-Level Evaluation of Post-Quantum TLS on Embedded User Equipment over a Disaggregated 5G Network
+
+URL Source: https://arxiv.org/pdf/2607.03988v1
+
+Published Time: Tue, 07 Jul 2026 01:49:21 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Energy-Aware System-Level Evaluation of Post-Quantum TLS on Embedded User Equipment over a Disaggregated 5G Network 
+
+Sanzida Hoque, Abdullah Aydeger Florida Institute of Technology, Melbourne, FL, USA, 32901 Emails: shoque2023@my.fit.edu, aaydeger@fit.edu 
+
+Abstract —The transition to quantum-resistant security is acritical priority for the next generation of mobile networks, particularly within the disaggregated architecture of 5G. This paper presents an energy-aware system-level evaluation of Post-Quantum Cryptography (PQC) integrated into the Transport Layer Security (TLS) handshake on embedded User Equipment (UE). Using Raspberry Pi 5s as representative embedded process-ing platforms, we evaluate the performance of NIST-standardized combinations of classical and post-quantum signature and key exchange mechanisms (KEM), incorporating direct on-device power measurements to estimate per-handshake energy consump-tion. Results experimentally validate a strong coupling between latency and energy consumption, indicating that execution time is the dominant contributor to energy cost. Hash-based signature schemes incur up to 4x higher latency and 2x energy compared to lattice-based alternatives, while the impact of KEMs is compar-atively smaller. The analysis further reveals that overall system performance is primarily constrained by cryptographic compu-tation and concurrency-induced contention rather than network transport effects. These findings provide practical guidance for PQC deployment in mobile environments and demonstrate that lattice-based signatures offer a more favorable balance between security, efficiency, and scalability for 5G systems. 
+
+Index Terms —Post-quantum cryptography, TLS, 5G, user equipment, performance evaluation, testbed, energy efficiency, latency, embedded systems 
+
+I. I NTRODUCTION 
+
+The emergence of quantum computing poses a fundamental threat to widely deployed public-key cryptographic systems, including Rivest–Shamir–Adleman (RSA) and elliptic curve cryptography (ECC). These schemes form the foundation of secure communication protocols such as Transport Layer Se-curity (TLS), which are extensively used in modern cellular networks [1]. In 5G systems, secure communication between user equipment (UE), the radio access network, and the core infrastructure is essential for ensuring data confidentiality and integrity. Consequently, the transition to post-quantum cryp-tography (PQC) has become a critical requirement for future-proofing mobile communication systems [2]. Recent standardization efforts by the National Institute of Standards and Technology (NIST) [3], [4] have identified several promising PQC algorithms, including lattice-based and hash-based schemes. While these algorithms provide resis-tance against quantum adversaries, they introduce additional computational complexity compared to classical approaches, this raises concerns regarding their deployment in resource-constrained environments such as mobile devices, where la-tency, energy efficiency, and processing capability are tightly constrained. Existing research on PQC performance has largely focused on isolated cryptographic benchmarks or protocol-level evalua-tions in controlled environments. While valuable, these studies often overlook system-level interactions in real-world deploy-ments, including network stacks, protocol implementations, and device-level power consumption. In 5G, where strict perfor-mance and energy requirements must be met, these factors are crucial to assessing the practical feasibility of PQC adoption. To address this gap, this paper presents a system-level evaluation of PQC-enabled TLS handshakes on an end-to-end 5G testbed integrating embedded UE devices, an emulated NG-RAN, and a standards-compliant 5G core. This setup enables end-to-end experimentation under controlled yet representative conditions. Furthermore, the use of onboard power monitor-ing allows direct observation of UE-side energy consumption during cryptographic operations, providing insights that are not captured by conventional benchmarking approaches. The main contributions of this work are as follows:  
+
+> •
+
+We conduct a system-level evaluation of classical and post-quantum TLS handshakes on an end-to-end 5G testbed, using embedded UE integrated with disaggregated radio access and core network components.  
+
+> •
+
+We employ on-device Power Management Integrated Cir-cuit (PMIC) measurements to approximate UE-side power and energy consumption, enabling practical and repro-ducible evaluation without external instrumentation.  
+
+> •
+
+We analyze the relationship between latency and energy consumption, showing that execution time is a primary contributor to energy cost in PQC-enabled TLS.  
+
+> •
+
+We examine the impact of cryptographic primitives on system performance, observing that signature algorithms contribute the majority of latency and energy overhead, with hash-based schemes incurring higher cost than lattice-based alternatives.  
+
+> •
+
+We provide a concurrency-driven evaluation of post-quantum TLS, quantifying how increasing numbers of client UEs impact energy consumption, system stress, 
+
+© 2026 IEEE. Accepted for publication in the Proceedings of IEEE LCN 2026. The final version will appear in IEEE Xplore. 
+
+> arXiv:2607.03988v1 [cs.CR] 4 Jul 2026
+
+and stability on edge-class hardware, identifying distinct performance trends and the onset of saturation at high load.  
+
+> •
+
+We assess the relative contributions of computation and networking to end-to-end performance, showing that cryp-tographic processing dominates under the evaluated con-ditions. The remainder of this paper is organized as follows. Section II reviews related work. Section III describes the architecture and design of the system. Section IV presents experimental methodology, the results, and discussion. Finally, Section V concludes the paper and outlines future research directions. II. R ELATED WORK 
+
+The transition toward PQC has been accelerated by recent standardization activities. In 2024, NIST finalized the first set of post-quantum cryptographic standards, including the Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM, FIPS 203 [5]), Module-Lattice-Based Digital Signature Algorithm (ML-DSA, FIPS 204 [6]), and Stateless Hash-Based Digital Signature Algorithm (SLH-DSA, FIPS 205 [7]) for quantum-resistant key establishment and digital signatures. This stan-dardization has motivated extensive research on integrating PQC into transport protocols, particularly TLS 1.3, where cryptographic primitives directly impact handshake latency, message size, and deployment compatibility. 
+
+PQC Integration in TLS Protocols. A growing body of work evaluates PQC within transport-layer protocols. Recent studies show that ML-KEM-based TLS introduces moderate overhead, primarily due to increased key sizes and message payloads rather than computational complexity [8]. Other work demonstrates that hardware-aware optimizations can signifi-cantly improve PQC-TLS handshake performance [9]. Prior work has evaluated PQC-enabled TLS in constrained IoT settings, including embedded-device energy consumption [10] and TLS tunneling [11]. Kampanakis et al. [12] further show that PQC handshake overhead has limited end-to-end impact in stable, high-bandwidth networks as application data in-creases. However, these studies remain largely protocol-level or controlled-environment evaluations and do not assess PQC-TLS in realistic 5G deployments, where protocol overhead, network behavior, device performance, and energy consumption interact. 
+
+PQC Tooling and Industry Deployment. To support such ex-perimentation, the Open Quantum Safe ecosystem has emerged as a widely adopted platform for PQC prototyping. The liboqs library enables integration of PQC algorithms into TLS stacks such as OpenSSL, wolfSSL, and BoringSSL. Industry deploy-ments further demonstrate the practical relevance of PQC-enabled TLS. For example, Google has introduced hybrid post-quantum KEM in Chrome [13], while Cloudflare reports that a significant portion of Internet traffic is already protected using post-quantum key agreement [14]. These efforts highlight the rapid transition toward PQC in real-world systems, particularly for mitigating “harvest-now, decrypt-later” threats. Similarly, industry analyses, including those by Akamai and others, high-light practical challenges in integrating hybrid PQC into TLS, such as increased handshake sizes, compatibility constraints, and client-server interoperability issues [15]. While these efforts provide valuable insights into deployment feasibility at Internet scale, they primarily focus on compatibility and protocol be-havior, and do not address device-level energy characteristics or system-level evaluation in mobile network environments. 
+
+PQC on Embedded and Edge Platforms. Another line of work investigates PQC performance on embedded and edge platforms. Patterson et al. [16] propose an energy measure-ment framework for PQC key generation on Raspberry Pi devices, demonstrating that PQC schemes can be competitive with classical cryptography under certain conditions. However, their analysis is limited to isolated cryptographic operations and does not consider end-to-end communication. Similarly, recent studies show that PQC-enabled TLS can be deployed on embedded devices with manageable overhead [17]. Recent benchmarking efforts further evaluate PQC-enabled TLS in embedded and networked environments, focusing on certificate size and handshake latency [18]. Despite these contributions, such evaluations are typically conducted in standalone or con-ventional network environments and do not capture device-level energy behavior or system-level effects. Liu et al. [19] demon-strate PQC migration on a physical 5G testbed, highlighting challenges such as larger ciphertexts, buffer constraints, and latency overheads in protocols like TLS and SUCI. In contrast, our work focuses on system stress and energy behavior under concurrent client UEs. 
+
+PQC in 5G and System-Level Studies. More recent work has begun to bridge the gap between protocol-level and system-level evaluation. Our prior work [20] demonstrated the feasi-bility of PQC-enabled TLS in a 5G UE-to-UE communication setting using UERANSIM and Open5GS, focusing on system-level metrics such as latency, CPU utilization, and bandwidth overhead. This paper extends that work by shifting the focus to an energy-aware evaluation on resource-constrained Raspberry Pi 5 devices, jointly analyzing power consumption, energy cost, thermal behavior, and concurrency effects. Other studies explore integrating PQC into 5G systems [21], [22], including modifications to core network signaling, demonstrating that PQC can be incorporated into mobile networks with acceptable overhead [23]. Scalise et al. explored integrating PQC key en-capsulation mechanisms into 5G core networks, demonstrating minimal impact on latency and bandwidth during VNF-to-VNF communication [24]. However, these works primarily focus on network and protocol performance rather than device-level energy and thermal behavior. In summary, prior work has independently addressed (i) PQC-enabled TLS performance, (ii) embedded PQC execution, and (iii) 5G testbed-based performance evaluation, but these di-mensions remain disconnected: protocol-level studies overlook mobile network effects, embedded evaluations omit end-to-end communication, and 5G studies do not characterize device-level power and thermal behavior. This paper bridges these gaps by evaluating PQC-enabled TLS on physical embedded UE over a disaggregated 5G data path, jointly characterizing latency, en-ergy, instantaneous power, and thermal response across the full set of NIST-standardized PQC KEM and signature schemes. III. S YSTEM ARCHITECTURE AND DESIGN 
+
+This work presents a disaggregated PQC-enabled 5G testbed designed to precisely measure the computational, thermal, and energy characteristics of PQC algorithms as illustrated in Fig 1. The system is composed of two tightly integrated domains: (i) a physical hardware layer, where PQC operations are executed on real devices, and (ii) a virtualized 5G network layer, which emulates the Radio Access Network (RAN) and Core Network functions. This separation enables independent control of com-putation and networking variables by executing PQC operations on dedicated physical hardware while confining network func-tions to a virtualized environment, thereby eliminating resource contention and scheduler-induced interference between the two domains. TP-LINK Omada Router              
+
+> Configured as Central Switch
+> UE1 & PQC Client UE2 & PQC Server
+> UERANSIM PQC Client
+> (BoringSSL )
+> Power/Temp
+> Logger
+> PMIC
+> (Power)
+> UERANSIM
+> PQC Server
+> (BoringSSL )
+> Server Monitor
+> Physical Hardware Environment
+> gNB Control Plane User Plane Gateway
+> Internals: gNB Services Internals: AMF, SMF etc. Internals: UPF, N6 routing
+> UERANSIM Open5gs Open5gs
+> Physical IP: 192.168.0.4
+> Backhaul IP: 192.168.235.4 Backhaul IP: 192.168.235.x Backhaul IP: 192.168.235.5
+> Physical IP: 192.168.0.10
+> 5G IP: 10.45.0.10
+> Physical IP: 192.168.0.20
+> 5G IP: 10.45.0.20
+> Ubuntu 22.04 LTS
+> LAN Underlay:
+> 192.168.0.x/24
+> Virtualized Software Environment PQC TLS Handshake
+> Ethernet
+
+Fig. 1: Disaggregated 5G PQC Testbed Architecture. The red-dashed path denotes the logical end-to-end PQC TLS hand-shake overlay, while the blue solid lines indicate the hardware-level Ethernet connections. 
+
+A. Physical Hardware Layer 
+
+The hardware layer comprises two embedded nodes, both implemented on Raspberry Pi 5 devices and each operating as a 5G UE: (i) UE1 acts as the TLS client, initiating PQC-enabled handshakes; (ii) UE2 acts as the TLS server, terminating the handshakes and processing application data. Each node is instrumented to monitor system behavior during execution. Power consumption is obtained from onboard power interfaces, and temperature is collected from integrated sensors. These measurements enable correlation between cryptographic operations and device-level energy and thermal responses. The nodes are interconnected via an Ethernet underlay network that provides connectivity to the virtualized environment. 
+
+B. Virtualized Software Layer 
+
+The virtualized software layer emulates a disaggregated 5G network. The network functions are deployed in a disaggregated manner, separating control-plane signaling from user-plane data forwarding in accordance with contemporary 5G architectural principles. The virtualized RAN component (gNB) provides the access interface, bridging the physical nodes to the core network. The core network itself is logically divided into: (i) a control plane, responsible for signaling, authentication, and session management, and (ii) a user plane, responsible for forwarding application data. This separation ensures that control signaling does not interfere with user-plane measure-ments, thereby preserving the integrity of PQC performance evaluation. 
+
+C. Data Flow and Operation 
+
+The end-to-end communication follows a structured multi-stage process. The UE client node generates PQC-enabled TLS traffic, which is forwarded to the virtualized access network. The traffic is then encapsulated within a tunneling protocol and transported through the virtualized core network. Upon reaching the user-plane gateway, the packet is decapsulated and forwarded to the destination node in the physical layer. This design ensures that the network path reflects 5G data-path behavior, including GTP-U encapsulation and UPF forwarding, while the cryptographic operations remain fully observable on physical hardware. The radio access is emulated by UERANSIM rather than transmitted over-the-air; this study targets the cryptographic-cost and data-path dimensions, which are independent of PHY/MAC effects. IV. E XPERIMENTAL EVALUATION 
+
+A. Experimental Setup 
+
+Experiments are conducted on the testbed described in Sec-tion III. Both embedded nodes are implemented on Raspberry Pi 5 with 8GB RAM devices and operate as 5G UEs using UERANSIM. At the application layer, one node acts as a client and the other as a server, executing PQC-enabled TLS sessions using a BoringSSL integrated with the liboqs to support PQC. The virtualized 5G network is deployed using UERANSIM for the access network (gNB) and Open5GS for core network functionality, hosted on a single-core Intel64 system operating at 1.7 GHz via a VMware-based platform. Each experiment consists of repeated TLS session establishments under identical conditions. TP-Link Omada ER605 router serves as the central switching fabric, providing the physical underlay network. The network follows a multi-tier addressing scheme: the LAN Underlay (192.168.0.x) provides the physical interconnect via the Omada switch, the RAN Backhaul (192.168.235.x) facilitates gNB-to-Core communication, and the 5G User Plane (10.45.0.x) encapsulates the PQC handshake. All reported TLS handshakes are exchanged over the UE-assigned 5G user-plane addresses (10.45.0.x), traversing the UERANSIM gNB and Open5GS UPF path, rather than directly over the physical LAN underlay, and they are averaged across multiple runs to ensure consistency and reliability. Although the host running the virtualized 5G plane is modestly provisioned, the consistently low and stable RTT observed across all concurrency levels (Section IV-C5) confirms that the virtualized network plane is not a measurement bottleneck. 
+
+B. Metrics and Methodology 
+
+We evaluate TLS handshake performance across heteroge-neous cryptographic suites in a 5G edge deployment. Our methodology captures end-to-end performance, system resource utilization, and network/client-side effects under controlled multi-UE concurrency. 
+
+1) Workload and Concurrency Model : We model realistic access scenarios by representing concurrency as multiple client UEs simultaneously initiating TLS handshakes toward a single edge server. This experiment isolates cryptographic processing load from RAN-level multi-UE scheduling effects, allowing the study to focus on the computational and energy cost of PQC under aggregated load. Concurrency C denotes the number of independent Bor-ingSSL client UEs issuing handshake requests in parallel. We evaluate C ∈ { 1, 4, 10 , 20 , 40 }, chosen to reflect distinct operating regimes:  
+
+> •
+
+C = 1 (Baseline): Single UE, capturing pure crypto-graphic cost without contention.  
+
+> •
+
+C = 4 (Optimal Parallelism): Matches the 4-core archi-tecture of the server CPU, representing ideal hardware utilization.  
+
+> •
+
+C = 10 (Contention Onset): Exceeds core count, intro-ducing scheduling overhead and queueing.  
+
+> •
+
+C = 20 (Saturation): System operates near maximum processing capacity.  
+
+> •
+
+C = 40 (Stress Limit): Extreme load, exposing stability limits and failure behavior. Each UE performs 50 TLS handshake attempts per run. Under high concurrency, some handshake attempts may not complete successfully due to system overload. We therefore distinguish between (i) attempted handshakes, defined as the total requests issued by all UEs, and (ii) completed handshakes, defined as the successfully processed connections at the server. All performance metrics (latency, throughput, and energy per connection) are computed using only completed handshakes, ensuring consistent comparison across configurations. Throughout this paper, power and energy are used with distinct meanings: power refers to instantaneous system load, whereas energy represents consumption over a given duration and reflects the cost of completing a TLS handshake. 
+
+2) End-to-End Performance Metrics : These metrics cap-ture the user-perceived performance of TLS handshakes under concurrent UE load. Latency (ms): Measured at the client UE as the elapsed time between handshake initiation and successful completion. Application-layer timestamps are used to ensure end-to-end coverage. Same time-stamping procedure is used for all con-figurations to ensure fair comparison. Reported values are averaged across completed handshakes. Throughput (KB/s): Measured at the server as the total vol-ume of handshake-related data processed per second. This in-cludes key exchange messages, certificates, and signature pay-loads, which vary significantly across cryptographic schemes. Energy per Connection (mJ/conn): Derived from server-side power measurements. Average power over the experiment duration is used to estimate total energy consumption, which is then normalized by the number of completed handshakes. 
+
+3) Server-Side Resource Metrics : These metrics quantify computational load, energy consumption, and thermal behavior of the edge server. CPU Utilization (%): Measured as average CPU usage across all cores during the experiment. This reflects the computational demand imposed by concurrent cryptographic operations and system overhead. Server Average Power (mW): Computed from PMIC teleme-try by averaging power readings over the experiment duration. This captures steady-state energy consumption under load. Server Peak Temperature ( ◦C): Maximum observed CPU temperature during execution. This metric is used to verify whether the system approaches thermal throttling limits. 
+
+4) Network and Client-Side Metrics : These metrics capture network stability and client-side computational impact, en-abling separation of communication and processing bottlenecks. Retransmissions: Measured using TCP statistics at the server. This metric indicates packet loss or delays caused by congestion or processing bottlenecks. Round-Trip Time (RTT, ms): Measured at the transport layer. Across all experiments, RTT remains nearly constant, indicating stable network conditions and confirming that performance degradation is not network-induced. Client Peak Power (mW): Maximum instantaneous power observed at the UE during handshake execution. This captures burst computational demand associated with cryptographic op-erations. 
+
+5) Measurement Limitations and Validity : While the pro-posed measurement framework provides comprehensive visibil-ity into system behavior, several limitations should be noted. Power measurements are obtained via the onboard PMIC, which reports estimated voltage and current values. As a result, absolute power may incur an error margin of approximately ±5-10%, and short-lived transient spikes may not be fully captured due to the sampling interval (100 ms). Similarly, client-side peak power relies on device-level telemetry, which may smooth high-frequency variations. CPU utilization and latency measurements are subject to op-erating system scheduling and timer resolution [25], introducing minor variability (typically within 1-2 ms), particularly at low concurrency levels. Retransmission statistics are derived from transport-layer counters and do not explicitly separate network losses from processing-induced delays. However, the consistently low and stable RTT across all experiments indicates that retransmissions TABLE I: End-to-End Performance Across Concurrency Levels (Client-Observed Latency, Server-Observed Throughput, and Energy) 
+
+Latency (ms) Throughput (KB/s) Energy (mJ/conn) Category Configuration C1 C4 C10 C20 C40 C1 C4 C10 C20 C40 C1 C4 C10 C20 C40 Class P-256 + SLH-DSA 202 506 1277 2355 4733 225 376 399 447 446 213 238 200 200 200 High Cost X25519 + SLH-DSA 199 470 1202 2404 4800 226 420 432 446 445 215 219 208 219 199 High Cost ML-KEM + SLH-DSA 194 459 1201 2362 4750 233 448 452 462 462 233 225 200 217 203 High Cost HQC + SLH-DSA 203 481 1262 2524 4500 264 495 476 495 504 250 200 207 198 336 Worst Case P-256 + Falcon 107 118 306 632 1282 39 148 160 157 168 188 139 151 142 144 Efficient X25519 + Falcon 111 133 370 756 1550 39 135 135 143 143 188 148 139 147 139 Moderate ML-KEM + Falcon 104 120 312 636 1274 52 348 212 218 223 143 126 142 141 140 Best Hybrid HQC + Falcon 139 208 546 1105 2260 88 242 263 296 288 197 155 145 157 142 Heavy ML-KEM + ML-DSA 108 118 315 648 1325 94 347 366 374 389 180 126 145 145 140 Balanced HQC + ML-DSA 137 205 552 1104 2180 119 351 353 377 416 194 160 150 146 148 Heavy P-256 + ML-DSA 109 122 322 671 1345 81 291 308 316 316 223 151 140 139 140 Efficient X25519 + ML-DSA 115 142 385 795 1600 80 260 266 268 272 131 139 139 143 146 Moderate P-256 + P-256 106 120 306 626 1260 18 68 75 78 88 176 133 141 145 139 Baseline X25519 + P-256 110 132 363 743 1527 18 63 66 75 79 177 149 141 132 139 Moderate ML-KEM + P-256 106 120 305 629 1265 32 116 130 138 151 151 146 140 139 141 Efficient Hybrid HQC + P-256 135 207 549 1111 2250 76 194 205 238 262 194 144 149 144 152 Heavy 
+
+ML-KEM denotes ML-KEM-512; ML-DSA denotes ML-DSA-44; Falcon (aka FN-DSA) denotes Falcon512; SLH-DSA denotes SPHINCS+ SHA2-128f-simple. Concurrency levels (C1-C40) indicate the number of simultaneous client UEs. 
+
+TABLE II: System Resource Utilization Across Concurrency Levels (CPU Utilization, Server Power Consumption, and Temperature) 
+
+CPU (%) Server Avg Power (mW) Server Peak Temp (°C) Configuration C1 C4 C10 C20 C40 C1 C4 C10 C20 C40 C1 C4 C10 C20 C40 P-256 + SLH-DSA 6 6 21 31 36 1245 1308 1846 2292 2464 62 66 67 69 69 X25519 + SLH-DSA 5 18 24 34 35 1257 1855 1991 2484 2194 62 65 68 69 70 ML-KEM + SLH-DSA 8 7 22 22 33 1375 1306 1912 1972 2344 63 65 67 68 69 HQC + SLH-DSA 11 22 22 31 35 1510 1828 1845 2193 2424 62 65 68 69 69 P-256 + Falcon 0.3 0.9 1.1 1.5 1.5 1284 1809 1984 2393 2376 61 64 67 68 68 X25519 + Falcon 0.7 1.6 2.3 2.3 3.1 1320 1657 1958 1972 2274 60 64 68 68 69 ML-KEM + Falcon 0.4 1.1 1.1 1.1 1.3 1366 1896 2206 2249 2430 62 66 67 68 68 HQC + Falcon 1.5 3.2 5.3 5.3 7.0 1343 1692 2097 2177 2482 60 65 68 69 70 ML-KEM + ML-DSA 0.2 1.1 1.5 1.3 1.5 1223 1897 2297 2156 2331 60 66 68 68 68 HQC + ML-DSA 1.1 3.8 6.5 7.2 7.6 1207 1793 2335 2465 2545 60 66 68 69 69 P-256 + ML-DSA 0.4 1.3 1.3 1.5 1.0 1338 1962 1984 2094 1714 60 64 67 68 68 X25519 + ML-DSA 0.9 2.3 2.4 3.7 3.7 1241 1830 1887 2446 2450 61 65 67 68 68 P-256 + P-256 0.2 0.5 0.7 0.8 1.2 1336 1703 1879 1967 2440 61 65 67 69 68 X25519 + P-256 0.7 1.9 2.6 2.8 3.1 1329 1851 2162 2262 2442 60 65 67 68 69 ML-KEM + P-256 0.2 0.7 0.9 0.9 1.0 1242 1959 2228 2192 2349 61 65 67 69 68 HQC + P-256 1.4 4.9 5.4 6.8 6.0 1332 1969 2172 2517 2295 60 66 67 69 69 
+
+CPU: green < 2%, yellow 2-10%, red >10%. Power: green <1500 mW, yellow 1500-2200 mW, red >2200 mW. Temperature not color-coded (all within safe operating range). 
+
+are primarily driven by computational contention rather than network impairments. Finally, experiments are conducted in a controlled testbed with stable networking conditions and active cooling. While this ensures reproducibility, it does not capture all environmental variability present in real deployments. Despite these limitations, the results remain robust. All experiments are repeated twice under identical conditions with consistent trends across runs. Our objective is comparative evaluation across cryptographic algorithms executed on iden-tical hardware under identical conditions. Therefore, relative differences are more important than absolute values. The ob-served differences across cryptographic configurations, often exceeding 2 ×, significantly outweigh measurement uncertainty. Additionally, thermal measurements confirm operation below throttling thresholds, ensuring that performance degradation reflects system-level and computational effects rather than hardware constraints. 
+
+C. Results Analysis 
+
+This section presents a detailed analysis of system behavior under increasing concurrency, focusing on latency, energy con-sumption, computational load, network behavior, and hardware characteristics. Results are derived from Tables I, II, and III. Across these results, three trends dominate. First, signature choice has a stronger effect on latency, energy, CPU utiliza-tion, and retransmissions than KEM choice. Second, ML-KEM paired with Falcon or ML-DSA remains close to classical TABLE III: Network Stability and Client-Side Impact (Retransmission, Round Trip Time, Client UE Power Draw)                                                                                                                                                                                                                                                                  
+
+> Retransmissions RTT (ms) UE Peak Power (mW) Configuration C1 C4 C10 C20 C40 C1 C4 C10 C20 C40 C1 C4 C10 C20 C40 P-256 + SLH-DSA 042014.7 5.3 5.3 4.9 4.9 2775 5172 5328 6717 8026 X25519 + SLH-DSA 110024.7 4.8 4.8 4.8 4.9 3774 5524 6200 5599 7534 ML-KEM + SLH-DSA 002114.6 4.8 4.9 4.9 4.9 3195 3188 5329 7785 7851 HQC + SLH-DSA 0212 26 75.4 5.5 5.6 5.6 5.7 3305 3625 6041 6066 6429 P-256 + Falcon 004420 13.3 13.9 15.9 15.9 15.7 4329 3406 6529 3473 7753 X25519 + Falcon 0414 26 54 12.8 13.8 16.0 16.0 15.9 2962 4633 3432 5175 5672 ML-KEM + Falcon 013615 11.4 8.9 14.6 14.4 14.1 4943 3186 3336 5653 6853 HQC + Falcon 01412 22 10.8 13.1 13.1 13.2 13.2 3403 5452 8258 4349 4379 ML-KEM + ML-DSA 014617 8.6 8.9 10.4 10.7 10.7 2681 3185 4190 3357 5552 HQC + ML-DSA 304928 8.6 10.6 10.8 10.6 10.6 3403 3678 4237 4201 6276 P-256 + ML-DSA 02113 30 9.4 10.0 11.7 11.7 11.6 2726 3233 5233 3444 4754 X25519 + ML-DSA 04724 51 9.0 9.8 11.7 11.6 11.6 2726 3117 3510 3481 3618 P-256 + P-256 012212 15.6 16.7 18.3 18.3 17.9 2884 3536 3310 5335 3557 X25519 + P-256 014420 14.9 16.5 18.7 18.7 18.4 5434 3186 5613 3534 5200 ML-KEM + P-256 00411 22 13.2 14.2 16.1 16.0 15.7 2617 3154 5264 4947 3618 HQC + P-256 01626 35 12.9 15.5 15.5 15.6 15.6 4804 3811 4254 4213 6926
+
+Retransmissions: green = 0, yellow = 1-5, red = >5. UE peak power: green <3500 mW, yellow 3500-6000 mW, red >6000 mW. RTT not color-coded due to negligible variation. 
+
+performance across the evaluated concurrency range. Third, SLH-DSA pushes the system toward saturation at high concur-rency, increasing latency and CPU utilization while reducing completed handshakes in the worst case. 
+
+1) Latency Scaling with Concurrency: Latency increases with concurrency across all evaluated configurations, with dis-tinct scaling behavior depending on the cryptographic primi-tives. SLH-DSA-based configurations exhibit the steepest in-crease, rising from approximately 195-205 ms at C = 1 to 4700-4800 ms at C = 40 , corresponding to more than a 20 ×
+
+increase. In contrast, lattice-based configurations demonstrate signifi-cantly more moderate scaling. For example, ML-KEM + Falcon increases from approximately 104 ms at C = 1 to 1270-1300 ms at C = 40 , while ML-DSA-based configurations remain within approximately 110-1600 ms across the same range. Classical configurations (P-256 and X25519) exhibit similar scaling, reaching approximately 1200-1500 ms at C =40 . Latency growth is approximately linear up to moderate concurrency ( C ≤ 20 ), after which deviations appear for com-putationally intensive schemes, particularly SLH-DSA, where latency increases more sharply. 
+
+2) Energy Consumption Characteristics: Energy consump-tion per connection remains relatively stable at low and mod-erate concurrency but diverges across cryptographic schemes under higher load. SLH-DSA-based configurations typically consume around 200-230 mJ per connection at moderate concurrency, increasing to over 320 mJ in the worst-case configuration (HQC + SLH-DSA at C = 40 ). In contrast, Falcon and ML-DSA-based configurations maintain lower and more stable energy consumption, generally within 135-155 mJ per connection across all concurrency levels, closely matching classical configurations. A reduction in per-connection energy is observed as concur-rency increases from C = 1 to C = 4 , reflecting improved multi-core utilization and a more even distribution of fixed system overhead across concurrent handshakes. Beyond this point, energy remains largely stable across most configurations, with increases at C = 40 indicating contention and system saturation. Energy consumption is strongly correlated with latency, as higher-latency configurations incur greater total energy due to longer execution time. Fig. 2 illustrates this relationship, where SLH-DSA-based configurations form a distinct high-latency, high-energy cluster, while Falcon and ML-DSA-based schemes remain closer to classical performance. 0 1000 2000 3000 4000 
+
+> Latency (ms)
+> 125
+> 150
+> 175
+> 200
+> 225
+> 250
+> 275
+> 300
+> 325
+> Energy per Connection (mJ)
+> Signature
+> SLH-DSA
+> Falcon
+> ML-DSA
+> Classical
+> KEM
+> P256
+> X25519
+> ML-KEM
+> HQC
+> Load
+> C=1
+> C=40
+
+Fig. 2: Latency-energy relationship for classical and post-quantum TLS configurations at low ( C = 1 ) and high ( C = 40 )concurrency. Marker shape represents the signature schemes, and color denotes the KEMs. 
+
+3) Computational Load and Resource Utilization: CPU uti-lization varies significantly across configurations. SLH-DSA-based configurations exhibit the highest CPU utilization, ex-ceeding 30% at high concurrency (e.g., approximately 36% at C = 40 ), while Falcon and ML-DSA-based configurations remain below 2-3%. Memory usage was monitored throughout all experiments and remained stable and well within available capacity (e.g., within approximately 5.8-6.2 MB) across every configuration and concurrency level, confirming that observed performance differences are not memory-bound. Detailed mem-ory traces are omitted from the tables for brevity. CPU values are averaged over the full experiment interval across all cores; short cryptographic bursts can therefore produce low average percentages even when they dominate per-handshake latency. 
+
+4) Throughput Behavior and Saturation: Throughput in-creases with concurrency up to a saturation point. For example, throughput increases from approximately 200-250 KB/s at 
+
+C = 1 to approximately 440-460 KB/s at C = 20 for SLH-DSA-based configurations. Beyond C = 20 , throughput plateaus, with minimal improvement at C = 40 . This indicates that the system reaches its maximum cryptographic processing capacity at moderate concurrency levels. 
+
+5) Network Behavior and Stability: Network-related metrics remain stable across all configurations. RTT varies from ap-proximately 4.7 ms to 18.0 ms across all concurrency levels, with no dependence on the cryptographic scheme. The signif-icant disparity between handshake latency and RTT indicates a shift in the dominant performance bottleneck. While RTT remains stable across all concurrency levels, latency increases with both the complexity of the cryptographic primitives and the number of concurrent client UEs. This suggests that the pri-mary constraint in post-quantum TLS is computational process-ing rather than network transmission overhead, with system-level contention under concurrency further amplifying the ef-fect. Retransmissions remain negligible at low concurrency and increase under high load, indicating increasing processing delays rather than network instability. 
+
+6) Concurrency-Induced Stress and System Degradation: As concurrency increases, retransmissions rise across most config-urations, as shown in Fig. 3. For example, X25519 + Falcon increases from 0 retransmissions at C = 1 to over 50 at C = 40 ,while ML-DSA-based configurations exhibit similar monotonic growth. SLH-DSA-based configurations show irregular behav-ior at high load. In particular, HQC + SLH-DSA increases to approximately 26 retransmissions at C = 20 , followed by a decrease to below 10 at C = 40 . This reduction corresponds to incomplete handshake execution (approximately 1315 out of 2000), indicating reduced processing capacity rather than improved performance. Fewer packets are transmitted, leading to fewer retransmissions. This behavior reflects a transition from a congestion regime to a saturation regime, where it is unable to sustain the requested workload. 
+
+7) Power Characteristics: Server peak power remains within approximately 3.5-5 W across all configurations. Client peak power is significantly higher, reaching up to 7.5-8 W under high concurrency. These peaks are transient and correspond to bursts of cryptographic processing and network activity. 
+
+8) Thermal Behavior: Server temperature increases from approximately 60-62 ◦C at C = 1 to 68-70 ◦C at high con-currency, remaining below the 80 ◦C throttling threshold. A thermal plateau is observed beyond C ≥ 20 , indicating steady-state operation. Client temperature remains approximately 5-7◦C lower than server temperature. 
+
+9) Operating Regimes: Three operating regimes are ob-served: (i) Low concurrency ( C ≤ 4): low latency ( < 120 ms), minimal retransmissions, low energy consumption (e.g., ∼100 ms for ML-KEM + Falcon). (ii) Moderate concurrency ( 10 ≤
+
+C ≤ 20 ): latency increases (300-700 ms for efficient schemes such as ML-DSA-based configurations), retransmissions rise, throughput approaches maximum. (iii) High concurrency ( C =40 ): latency peaks (up to ∼4800 ms for SLH-DSA), throughput saturates, and incomplete handshake execution occurs. 
+
+D. Design Implications 1) Computational Bottleneck and Network Decoupling: The results reveal a clear decoupling between network performance and application-level performance. Despite stable RTT and minimal packet loss, latency increases significantly with con-currency, indicating that system performance is dominated by computational overhead rather than network limitations. From a design perspective, optimizing network infrastructure alone is insufficient to improve end-to-end performance for post-quantum TLS. Instead, system design must prioritize computa-tional efficiency at the cryptographic layer. 
+
+2) The Computational Wall of Hash-Based Signatures: 
+
+SLH-DSA configurations exhibit a sharp increase in latency under concurrency, reaching multi-second delays. This reflects the computational intensity of hash-based signature schemes, where repeated hash operations dominate execution time. The observed saturation behavior indicates the presence of a com-putational limit beyond which additional concurrency does not improve throughput but instead increases delay. This suggests that hash-based signatures are not suitable for high-concurrency environments without hardware acceleration or workload of-floading. 
+
+3) Energy-Latency Coupling: Energy consumption closely follows latency trends, demonstrating that execution time is the dominant factor in energy cost. Although instantaneous power remains bounded, prolonged execution results in higher total energy consumption. This implies that reducing latency is directly aligned with improving energy efficiency. System designers should therefore prioritize algorithms and implemen-tations that minimize execution time rather than focusing solely on reducing peak power. 
+
+4) Power and Thermal Asymmetry: A notable asymmetry exists between client and server behavior. The client experi-ences higher peak power due to burst-driven cryptographic op-erations, while the server exhibits sustained thermal load due to continuous processing. The observed thermal plateau indicates that the system operates near a steady-state thermal limit. This suggests that sustained PQC workloads require careful thermal and power provisioning, particularly for continuously operating server nodes. 0            
+
+> 20
+> 40
+> Retransmissions
+> SLH-DSA Falcon
+> 1410 20 40
+> Concurrent client UEs
+> 0
+> 20
+> 40
+> Retransmissions
+> ML-DSA
+> 1410 20 40
+> Concurrent client UEs
+> P-256
+> P-256 X25519 ML-KEM HQC
+
+Fig. 3: Retransmissions versus concurrent client UEs across signature schemes and KEMs. Each subplot shows a signature scheme, with lines denoting KEMs. Retransmissions increase with concurrency, indicating growing delays. The drop for HQC + SLH-DSA reflects saturation, where fewer retransmissions result from incomplete handshakes rather than improved performance. 
+
+5) Throughput Saturation and System Capacity: Throughput saturation at moderate concurrency levels indicates a hard upper bound on system capacity. Beyond this point, additional concur-rency increases latency and retransmissions without improving throughput. This behavior implies that system scalability is constrained by cryptographic processing capacity. Effective system design must therefore consider concurrency limits and implement mechanisms such as load balancing or admission control to maintain performance. 
+
+6) Implications for PQC Algorithm Selection: Crypto-graphic design has a direct impact on system feasibility. Hash-based signatures introduce substantial computational and en-ergy overhead, while lattice-based schemes achieve signifi-cantly better performance characteristics. This indicates that algorithm selection is a critical design decision. For resource-constrained platforms, computationally efficient PQC schemes are essential to achieve acceptable performance and energy efficiency. 
+
+7) Suitability for 5G Applications: The evaluated configu-rations highlight limitations for latency-sensitive applications. Computationally intensive PQC schemes introduce substantial delays even under low concurrency, with latency increasing significantly under load. This suggests that such schemes are not suitable for applications with strict latency requirements unless supported by hardware acceleration or architectural optimizations. 
+
+8) System-Level Implications: Overall, the results demon-strate that: (i) system performance is CPU-bound rather than network-bound, (ii) energy consumption is primarily deter-mined by execution time, (iii) throughput is limited by crypto-graphic processing capacity, and (iv) hardware constraints sig-nificantly influence PQC deployment. These findings emphasize the need for co-design between cryptographic algorithms and system architecture to enable efficient and scalable deployment of post-quantum secure communication systems. V. C ONCLUSION AND FUTURE WORK 
+
+This paper presented a system-level evaluation of classical and post-quantum TLS handshakes between embedded UE-class nodes over a disaggregated UERANSIM/Open5GS 5G user-plane path. The results show that performance is primarily limited by cryptographic computation and concurrency-induced contention rather than network transport effects. Signature choice is a key factor: hash-based signatures impose substan-tial computational and energy overhead, reducing scalability under load, while lattice-based schemes maintain more stable performance and energy behavior. As concurrency increases, the system progresses from efficient execution to congestion and saturation, where capacity is bounded by computational throughput. These findings highlight the need to select post-quantum primitives that align with the constraints of resource-limited 5G platforms. Future work will explore hardware acceleration, broader device and deployment evaluations, protocol-level cost analysis, dynamic network conditions, over-the-air radio effects, and ex-ternal shunt-based or dedicated power-analyzer measurements. ACKNOWLEDGMENT 
+
+This work was supported in part by the National Science Foundation under CAREER Award No. 2542642 and Grant No. 2552681. REFERENCES [1] J. K. Lastre, Y. Ko, H. Kwon, and I. You, “Evaluating transport layer security 1.3 optimization strategies for 5g cross-border roaming: Acomprehensive security and performance analysis,” Sensors , vol. 25, no. 19, p. 6144, 2025. [2] S. Hoque, A. Aydeger, and E. Zeydan, “Exploring post quantum cryp-tography with quantum key distribution for sustainable mobile network architecture design,” in Proceedings of the 4th workshop on performance and energy efficiency in concurrent and distributed systems , pp. 9–16, 2024. [3] National Institute of Standards and Technology, “Post-quantum cryptog-raphy.” https://csrc.nist.gov/projects/post-quantum-cryptography, 2024. [4] G. Alagic, M. Bros, P. Ciadoux, D. Cooper, Q. Dang, T. Dang, J. Kelsey, J. Lichtinger, Y.-K. Liu, C. Miller, D. Moody, R. Peralta, R. Perlner, A. Robinson, H. Silberg, D. Smith-Tone, and N. Waller, “Status report on the fourth round of the nist post-quantum cryptography standardization process,” Tech. Rep. NIST IR 8545, National Institute of Standards and Technology (NIST), March 2025. [5] National Institute of Standards and Technology, “Module-Lattice-Based Key-Encapsulation Mechanism Standard,” Federal Information Process-ing Standard FIPS 203, National Institute of Standards and Technology, Aug. 2024. Planning note (Nov. 17, 2025): future revision anticipated; see errata documentation. [6] National Institute of Standards and Technology, “Module-Lattice-Based Digital Signature Standard,” Federal Information Processing Standard FIPS 204, National Institute of Standards and Technology, Aug. 2024. Published August 13, 2024; planning note indicates minor errata to be addressed in a future revision. [7] National Institute of Standards and Technology, “Stateless Hash-Based Digital Signature Standard,” Federal Information Processing Standard FIPS 205, National Institute of Standards and Technology, Aug. 2024. Published August 13, 2024. [8] J. A. Montenegro, R. Rios, and J. Bonilla, “Comparative analysis of post-quantum handshake performance in quic and tls protocols,” Computer Networks , p. 111957, 2025. [9] J. Zheng, H. Zhu, Y. Dong, Z. Song, Z. Zhang, Y. Yang, and Y. Zhao, “Faster post-quantum tls 1.3 based on ml-kem: Implementation and assessment,” in European Symposium on Research in Computer Security ,pp. 123–143, Springer, 2024. [10] G. Tasopoulos, C. Dimopoulos, A. P. Fournaris, R. K. Zhao, A. Sakzad, and R. Steinfeld, “Energy consumption evaluation of post-quantum tls 1.3 for resource-constrained embedded devices,” in Proceedings of the 20th ACM International Conference on Computing Frontiers , pp. 366–374, 2023. [11] J. Barton, W. J. Buchanan, N. Pitropakis, S. Sayeed, and W. Abramson, “Post quantum cryptography analysis of tls tunneling on a constrained device.,” in ICISSP , pp. 551–561, 2022. [12] P. Kampanakis and W. Childs-Klein, “The impact of data-heavy, post-quantum tls 1.3 on the time-to-last-byte of real-world connections,” 
+
+Cryptology ePrint Archive , 2024. [13] Google Chromium Team, “Protecting chrome traffic with hybrid ky-ber kem,” 2023. https://blog.chromium.org/2023/08/protecting-chrome-traffic-with-hybrid.html. [14] B. Westerbaan, “State of the post-quantum internet in 2025,” 2025. Online; accessed 26-Apr-2026. [15] J. Schaumann, “Post-quantum cryptography implementation considera-tions in tls,” August 2025. Accessed: 2026-04-25. [16] J. C. Patterson, W. J. Buchanan, and C. Turino, “Energy consumption framework and analysis of post-quantum key-generation on embedded devices,” Journal of Cybersecurity and Privacy , vol. 5, no. 3, p. 42, 2025. [17] C. ˙ Ince, “Hybrid ml-kem in tls 1.3: Performance analysis on arm64 under network stress,” Computer Science , no. 2026, 2026. [18] M. Sim, G. Song, S. Eum, M. Lee, S. Yoon, A. Baksi, and H. Seo, “Integrating and benchmarking kpqc in tls/x. 509,” Electronics , vol. 14, no. 18, p. 3717, 2025. [19] D. Liu, S. I. Jang, N. Sultan, S. Lai, S. C.-K. Chau, J. Chan, and H. Suzuki, “Post-quantum cryptography migration of a physical 5g testbed,” in Proceedings of the 2025 1st Workshop on Quantum-Resistant Cryptography and Security , pp. 63–72, 2025. [20] S. Hoque, A. Aydeger, E. Zeydan, and M. Liyanage, “Analysis of post-quantum cryptography in user equipment in 5g and beyond,” in 2025 IEEE 50th Conference on Local Computer Networks (LCN) , pp. 1–9, IEEE, 2025. [21] S. Hoque, A. Aydeger, J. Baranda, E. Zeydan, and F. Wilhelmi, “Post-quantum cryptography integration into the future mobile core: A service-based architecture perspective,” IEEE Network , 2026. [22] S. Hoque, A. Aydeger, and E. Zeydan, “Post-quantum secure ue-to-ue communications,” in 2024 15th International Conference on Network of the Future (NoF) , pp. 28–30, IEEE, 2024. [23] R. A. Faval, R. Moreira, and F. d. O. Silva, “Empowering mobile networks security resilience by using post-quantum cryptography,” arXiv preprint arXiv:2603.28626 , 2026. [24] P. Scalise, R. Garcia, M. Boeding, M. Hempel, and H. Sharif, “An applied analysis of securing 5g/6g core networks with post-quantum key encapsulation methods,” Electronics , vol. 13, no. 21, p. 4258, 2024. [25] Y. Etsion, D. Tsafrir, and D. G. Feitelson, “Effects of clock resolution on the scheduling of interactive and soft real-time processes,” in Proceedings of the 2003 ACM SIGMETRICS international conference on Measurement and modeling of computer systems , pp. 172–183, 2003.

@@ -1,0 +1,448 @@
+Title: Verification of Dynamic Holographic Behavior in Identity Documents
+
+URL Source: https://arxiv.org/pdf/2607.06466v1
+
+Published Time: Wed, 08 Jul 2026 01:28:11 GMT
+
+Number of Pages: 27
+
+Markdown Content:
+# Verification of Dynamic Holographic Behavior in Identity Documents 
+
+Glen Pouliquen 1,2 , Joseph Chazalon 2 ,Guillaume Chiron 1 , Thierry Géraud 2 , and Ahmad Montaser Awal 1 
+
+> 1
+
+IDnow Research Center, Cesson-Sévigné, France 
+
+name.surname@idnow.io  
+
+> 2
+
+EPITA Research Lab. (LRE), Le Kremlin-Bicêtre, France 
+
+name.surname@epita.fr 
+
+Abstract. This paper addresses the remote verification of the authen-ticity of Optically Variable Devices (commonly known as holograms) on identity documents. Typically placed over the cardholder’s photo, these devices provide strong and easily verifiable security for human inspection but pose challenges for automated verification. Existing approaches eas-ily cover static frauds (e.g. paper photocopy) and can be evaluated for such, but their capacity to detect real, dynamic fraud cases (e.g. hand-crafted hologram) has not been evaluated to date because of the lack of public datasets. Furthermore, they are usually trained to detect known attack types, and few of them can generalize to new, unseen attacks. This work features three contributions to address these limitations: 1) a new public dataset, MIDV-DynAttack, which extends the existing MIDV-Holo dataset with realistic, static and dynamic attacks against identity document specimens, tripling the number of attack samples compared to the original dataset, 2) a novel verification method which can assess the authenticity of a specific hologram thanks to the analysis of its dynamic behavior and appearance, can be trained without dynamic attack sam-ples, and exhibits new state-of-the-art performance, 3) a benchmark of existing approaches which follows a clear evaluation protocol and empha-sizes the inability of other approaches to deal with dynamic attacks, as well as new challenging attacks to deal with. Code and dataset are pub-licly available at https://github.com/EPITAResearchLab/pouliquen. 25.icdar .
+
+Keywords: Identity Documents · Datasets · Hologram Verification 
+
+## 1 Introduction 
+
+Many traditional identity providers still rely on physical documents for authenti-cation, essential for scenarios like border control or restricted area access. These documents feature various security elements, both visible and invisible, to pre-vent forgery. However, automated remote verification is challenging due to the arXiv:2607.06466v1 [cs.CV] 7 Jul 2026 2 Pouliquen et al.         
+
+> Fig. 1. Our proposed dataset MIDV-DynAttack extends the original MIDV-Holo dataset with 1200 new attack videos. MIDV-DynAttack is designed for testing pur-poses over unseen attacks only, and not for model training or calibration.
+
+limited features detectable by commodity cameras on smartphones, leading to potential creative attacks that can bypass existing systems. To address these attacks, two main directions have been explored: Attack Detection (AD) and Model Verification (MV) . AD centers on identifying subtle indicators that suggest the absence of the physical document, known as 
+
+Presentation Attack Detection , a well-established field within biometrics [19], addressing issues like screen captures and photocopies. Additionally, AD en-compasses the detection of both digital and physical manipulations, including copy-paste forgeries and replacements. This area is thoroughly documented in the literature, featuring numerous dataset publications and benchmarking com-petitions [20]. Verification of Dynamic Holographic Behavior in Identity Documents 3
+
+While necessary, AD does not verify the document’s consistency with its expected model. MV, the focus of this paper, checks if a document exhibits the expected security features, detecting forgeries that appear credible but do not conform to the model. In MV, textual content is often protected by digital signatures, making tampering attempts easily detectable. However, graphical content, such as the bearer’s picture, is harder to secure digitally and is usually protected by visual features like Optically Variable Devices (OVDs) or “holograms”. These OVDs exhibit complex behaviors based on the camera, document, and light source po-sitions, securing the bearer’s picture and linking the user’s face to the document. Existing approaches for holographic content verification are insufficient for practical applications. They either verify a subset of visual appearances or check for some holographic behavior (i.e., typical hue variations for some pixels) with-out verifying appearance conformity, making them vulnerable to simple hologram substitutions. Additionally, no current approach assesses transitions validity, i.e., the verification of intermediate states an OVD should exhibit. To address these limitations, we propose the following contributions: 
+
+– A new public dataset (Section 3, illustrated in Figure 1) of handcrafted frauds over identity documents, focusing on the hologram region. This dataset ex-pands the MIDV-Holo [13] dataset by incorporating diverse fraud scenarios, tripling the number of fraud sequences compared to the original dataset. 
+
+– A new method (Section 4) leveraging background estimation and suppression to focus on faint holographic behavior and learn a model of OVD behavior using pseudo-labels. This method effectively detects dynamic attacks previ-ously undetected. 
+
+– A benchmark of existing approaches (Section 5) with a clear evaluation pro-tocol, highlighting the most challenging attacks. To reproduce our results, code and dataset are available at https://github. com/EPITAResearchLab/pouliquen.25.icdar .
+
+## 2 Related Work 
+
+2.1 Datasets 
+
+This section provides an overview of the available datasets for identity document fraud detection, with a specific focus on holographic content. As summarized in Table 1, the incremental progress from genuine identity documents datasets to advanced ones based on handcrafted holographic templates can be structured into three families of datasets. 
+
+Original genuine datasets. Mobile Identity Document Video dataset (MIDV-500) [3] was originally designed to address document analysis tasks (e.g. de-tection, classification, OCR). It was followed by multiple extensions made by the same team: MIDV-2019 [4] extending capturing conditions; MIDV-2020 [8] 4 Pouliquen et al.                                                              
+
+> Table 1. Summary of public identity document datasets related to fraud detection. HCT: HandCrafted Templates (fully synthetic or scanned source, with potential digital edition of the fields or photo). Printed HTC: acquired by a capturing device (e.g. smartphone). * Preprint.
+> Dataset No. ids Doc types Vids (+Imgs) Original source (Legits) Alteration nature (Frauds) No. Fraud types
+> Original genuine datasets of identity documents
+> MIDV-500 [3] and 2019 [4] 50 50 500 200 Printed HCT N/A MIDV-2020 [8] 1k 10 1k+4k Printed HCT N/A DocXPand* [16] 25k 15 0+25k Digital HCT N/A BID [5] 28k 8 0+28k Digital HCT N/A SpotBID [17] 22k 8 0+22k Digital fusion [1, 5] N/A
+> Fraud dataset featuring static templates (e.g. per-image digital alterations, PAD)
+> FMIDV [12] 1k 10 28k MIDV2020 Digital 1SIDTD [15] 1,2k 10 191+8k MIDV2020 Digital 2DLC [10] 1k 10 1,4k MIDV2020 Recapture 3KID34k [14] 82 20+34k Printed HCT Recapture 2IDNet [21] 41k 20 0+837k Digital HCT Digital 6
+> Fraud dataset featuring dynamic templates (e.g. mimic holographic content )MIDV-Holo [13] 100 20 700 Printed HCT (+holo layer) Cap. altered template 4OUR MIDV-DynAttack 100 20 1200 MIDV-Holo Cap. altered tem-plates + manip. 10
+
+adding templates personalization; MIVD-Lait [6] featuring non-latin alphabets. The MIDV series is built over handcrafted templates, which are created from scans of identity document samples, anonymized and personalized. Personalized templates are then printed, laminated and captured using various devices (e.g. scanner, handheld smartphones). This process is especially valuable as it tends to reproduce realistic acquisition artifacts (e.g. glare, shadow, motion blur, per-spective, occlusion). Afterward, MIDV-2020 was derived into different altered versions for the need of addressing specific fraud tasks. Depending on the nature the task, the original MIDV-2020 dataset can therefore be considered as genuine (e.g. when compared to digitally altered samples) or fraudulent (e.g. when compared to advanced handcrafted specimens featuring holographic content as in [18]). 
+
+Fraud datasets featuring static templates. Static templates frauds are digital frauds that are detectable on individual frames: FMIDV [12] features only crop&move of background patches; SIDTD [15] additionally supports in-paint&rewrite (to alter text and signatures); IDNet [21] additionally supports text replacement, face morphing and portrait replacement. Then, there are frauds (which can be categorized as non-compliant data) about the physical support or Verification of Dynamic Holographic Behavior in Identity Documents 5
+
+capturing conditions that can also be detectable on individual frames: DLC [10] and KID34k [14] datasets incorporate captures of 1) reprinted templates even-tually altered (e.g. grayscale) and 2) displayed digital version of the template on a screen. These datasets are mostly made of sequences, for which the temporal dimension is not required to address the fraud they implement. At best, the sequential aspect can benefit the final decision (Legit vs Fraud) through some sort of aggregation of the per-image indicators, such as majority voting. 
+
+Fraud datasets featuring dynamic templates. Finally, to address alter-ations of the hologram regions, there is, until now, only one dataset publicly available, MIDV-Holo [13], for which sequences are required to assess its legit-imacy. Indeed, MIDV-Holo features advanced handcrafted dynamic templates, including a holographic layer integrated into the physical support. Less advanced static template copies (e.g., photo overlay, paper photocopy) have also been cap-tured and labeled as frauds. This allows tasks to distinguish template nature between static and dynamic. In this context, similarly to the approach described in this paper, the original MIDV series datasets (e.g., MIDV-2020) can no longer be labeled as Legit (as in the previous task) but as Fake. 
+
+2.2 Methods 
+
+This section provides a brief overview of existing methods for hologram verifica-tion. These approaches can be grouped according to whether they focus on the appearance of some OVD, its behavior, or both. 
+
+Approaches looking for holographic behavior. To assess whether a doc-ument exhibits some holographic behavior, Kada et al. [9] proposed a semantic segmentation approach, where documents captured in video were registered, and a pixel-level classification was applied to detect holograms based on color statis-tics. This approach can detect whether a region contains a hologram, but it lacks any appearance classification to determine whether the expected OVD is present. 
+
+Koliaskina et al. [13] improved this approach by combining semantic segmenta-tion with a global decision stage using a variance threshold, while introducing MIDV-Holo, a dataset containing real and fake holograms for evaluation. Despite better parameterization, this approach is still not capable of discriminating be-tween different holographic behaviors, as shown in Section 5. 
+
+Approaches checking appearance conformity. A first approach attempting to model an OVD using limited training data is the work of Ay [7], which lever-aged adversarial training to generate out-of-distribution samples. This training was feasible due to the precise cropping of OVDs and their opaque nature, pre-venting any background from being visible through transparency and disturbing the training process. Furthermore, as verification is performed using a binary 6 Pouliquen et al. 
+
+classifier trained to discriminate between in- and out-of-distribution samples, this approach does not assess the variety of appearances a genuine OVD should exhibit and only classifies isolated frames in practice. This limitation of appearance coverage is addressed by Chapel et al. [11] through a classifier based on Local Binary Patterns (LBP) trained on manually anno-tated frames, with labels indicating each particular visual appearance of some OVD. While attractive, this approach either requires extensive annotation effort or is limited to a very restricted set of visual appearances. 
+
+Approaches checking both appearance and behavior. The challenge of learning an accurate model of some OVD was addressed by Soukup et al. [2] using dedicated acquisition hardware consisting of a smartphone connected to an LED ring, which could capture the appearance of banknote holograms under various illumination angles. For each OVD, a CNN model is trained and used to authenticate a stack of images obtained using this dedicated hardware. While this approach may be applicable in controlled banking environments, the use of dedicated tools is prohibitive for mass use. To check both the individual visual appearances and the variety of appearances of some OVDs using commodity smartphones, Pouliquen et al. [18] proposed a two-stage approach that first creates an embedding of each frame, then measures the mean cosine distance of the embeddings over a video sequence. Authentic documents produce high cosine distances due to the dynamic optical variations of genuine holograms, while fraudulent documents yield lower distances as their static reproductions fail to exhibit these variations. The critical embedding stage is trained using a weakly supervised process, which helps the frame classification network focus on the holographic content of the image rather than the bearer’s picture (which is visible because of hologram transparency). Despite encouraging performance reported on MIDV-Holo, the appearance model learned by this approach is still weak (as shown in Section 5) as it responds to the presence of any hologram rather than the genuine OVD. 
+
+## 3 MIDV-HOLO Extension with Dynamic Attacks 
+
+We present MIDV-DynAttack , a new public dataset that significantly ex-tends the existing MIDV-HOLO dataset with 1,200 additional video sequences. MIDV-DynAttack is licensed under the same Creative Commons Attribution-ShareAlike conditions as the original MIDV-Holo dataset. It is designed to chal-lenge automatic OVD verification systems with attacks known to be problematic. All sequences in MIDV-DynAttack were captured using one of the following smartphone models: Apple iPhone 7, Xiaomi Redmi Note 8 Pro, or Motorola G7. Except for swap attacks, which require both hands, devices were naturally handheld to mimic realistic capturing conditions in various environments (e.g., indoor, outdoor). Templates were handcrafted using commonly available materials and tools, i.e., MIDV-Holo templates printed, possibly laminated, or supplemented with Verification of Dynamic Holographic Behavior in Identity Documents 7
+
+holographic elements or layers. We aimed to simulate realistic, easily repro-ducible threat scenarios that could be encountered in industrial workflows. We did not include any deepfake samples in MIDV-DynAttack, as we consider this type of attack out of the scope of this work, which focuses on assessing how closely security features of a particular document match a known model, rather than detecting specific attacks (a complementary but different research direc-tion). Indeed, deepfakes require either video stream injection or screen capture, which are covered by other datasets and works (e.g., [10, 14]). It is important to note that MIDV-DynAttack is meant to complement the original MIDV-Holo dataset and be used along with it. This is why we do not provide any training or validation splits: all MIDV-DynAttack is intended to be used as a test set , with every attack not seen during training . Care must be taken to avoid reusing the same identify in more than one of the training, validation or test split, and our public code cares about proper grouping. Thanks to this protocol, MIDV-DynAttack can be effectively used as a generalization test under unknown attacks. The MIDV-DynAttack dataset is organized into two main categories: attacks using static templates , and the ones using dynamic templates . An overview of the new attacks and how they complement the original MIDV-Holo dataset is visible in Figure 1. 
+
+3.1 Static template attacks (750 videos) 
+
+The following categories represent traditional forgery techniques using simple printed static templates without any holographic elements. The fraudster relies on lighting effects (e.g., glare, shadows, artificial light sources producing color variations) to create dynamic content in the final video sequence, tricking the system into classifying it as holographic content. These attacks specifically target approaches that estimate variations in hue or saturation in pixel values without verifying the proper visual appearance (shape) of the OVD, or detecting and filtering light spots. 
+
+– Natural Light (NL) - Paper (150 ID cards / 100 passports): Tem-plate without lamination, captures were done under various lighting con-ditions. Very similar to the “copy without holo” attack from the original MIDV-Holo dataset, but with more aggressive use of light as an attack proxy. 
+
+– Natural Light (NL) - Plastic (200 ID cards): Template with lamina-tion, half of the captures were done with minimal reflections (100 ID cards), and half were done with deliberate reflections from multiple light sources (100 ID cards). 
+
+– LED-light - Plastic (50 ID cards): Template with lamination, samples illuminated with multi-color LED-light rings to create different reflective colors. 
+
+– Laser light - Plastic (50 ID cards): Template with lamination, red laser randomly moving over the document. 8 Pouliquen et al. 
+
+We also added a special category that requires more than one template, each sampling a different aspect of the targeted hologram to fake. The fraudster manipulates them in front of the camera so it appears to reproduce the original dynamic holographic content. Such an attack can exhibit several valid visual appearances and aims to defeat approaches that check for multiple valid visual appearances without verifying that actual holographic behavior is present, nor actively prevent improper manipulation during the capture. 
+
+– Swap - Paper (100 ID cards / 100 passports): Templates without lamination. There are two different modes: swapping between two printed documents (50 ID / 100 passports) and swapping between three printed documents (50 ID). 
+
+3.2 Dynamic template attacks (450 videos) 
+
+The following categories represent advanced forgeries involving handcrafted dy-namic templates. In this category, all templates were color printed, modified (e.g., by adding additional holographic layers or elements), and recaptured. These at-tacks aim to defeat approaches that effectively look for holographic behavior, may check for a variety of visual appearances, but only loosely control the con-formity of each visual appearance of the OVD. We separated attacks with generic holographic behavior from those trying to reproduce the actual OVD shape. 
+
+– Random holographic overlay (300 videos): 
+
+• Plain holo (100 ID cards / 50 passports): Homogeneous holo-graphic material displaying continuous diffraction patterns. 
+
+• Leaf holo (100 ID cards / 50 passports): Material exhibiting dis-tinctive polygonal light patterns, shaped as leaves. 
+
+– Mimicking the original holograms (150 videos): Targeted forgeries attempt-ing to replicate specific hologram shape and features: 
+
+• Double sticker (50 ID cards): Combination of a flower-shaped ele-ment cut from laser holographic film and a “genuine” sticker (not over-lapping the photo ROI). 
+
+• Complete mask (50 ID cards): Rough mask of the hologram applied over the entire printed document. 
+
+• Star and world: (50 ID cards): Combination of a main flower shape and a world-like hologram pattern. A last point to mention is the lack of new samples that should be accepted as genuine — we only produced new attack samples. This is due to the fact we did not have access to the original holographic layer of MIDV-Holo. Producing a dataset with such content would be a great extension to our work. Verification of Dynamic Holographic Behavior in Identity Documents 9 
+
+> Fig. 2. Overview of the proposed method. Its preprocessing step is common to both training and inference phases. The frame classifier is trained over pseudo-labels gen-erated from a generic holographic content detector. The final decision is derived from individual frame classifications.
+
+## 4 Proposed Method for OVD Verification 
+
+The proposed method processes a video sequence of an OVD (i.e., rectified and pre-cropped to the Region Of Interest (ROI)) and produces a binary verdict (i.e., hologram Legit / Non-Legit). The method consists of the following key steps, as illustrated in Figure 2. First, a preprocessing step is applied to enhance the holographic signal for both the training and inference phases, primarily through background subtraction. Next, a detection model is applied to each video frame to identify instances of genuine holographic behavior. This detection model is trained using pseudo-labels, where frames with visible holographic behavior from Legit samples are used as positives. Finally, the model’s output undergoes a de-cision stage, where a threshold on the ratio of valid frames is applied to deter-mine the sequence verdict. This decision stage requires calibration to adapt the model’s output to the specific application needs, such as varying tolerance to false rejections. 
+
+4.1 Preprocessing to Enhance the Holographic Signal 
+
+This preprocessing step is fully deterministic and does not require any specific parameters. Given a previously rectified and pre-cropped OVD ROI for the in-10 Pouliquen et al. 
+
+put sequence, we perform two operations. First, background subtraction is applied to remove the document template, including the bearer’s photo, which is specific to each sequence, leaving only the variable elements. The background image is estimated over the entire sequence using a simple per-pixel, per-channel median, and subtracted from each frame using absolute difference. The quality of the rectification process (not described in this paper), which precisely aligns every frame of the sequence, is critical here. Second, an HSV-based normalizing filter N is calculated for each pixel p
+
+of each frame It as follows, with V and S representing the Saturation and Value channels: 
+
+Nt(p) = I(S) 
+
+> t
+
+(p) · I(V ) 
+
+> t
+
+(p)max t′,p ′
+
+
+
+I(S) 
+
+> t′
+
+(p′) · I(V ) 
+
+> t′
+
+(p′)
+
+ , (1) where t′ and p′ represent every timestamp and every pixel of the sequence. This normalizing filter N is applied to each original frame I of the sequence (after background suppression) to produce the final signal F to be used in later stages: 
+
+F (c) 
+
+> t
+
+(p) = I(c) 
+
+> t
+
+(p) · Nt(p), c ∈ { R, G, B }. (2) This multiplication acts as a selective filter that attenuates most regions of the image while preserving only those with bright, highly saturated colors. Ar-eas with low Value (dark regions) are further diminished because their bright-ness component approaches zero. Similarly, areas with low Saturation (regions like white, gray, or black) are reduced because their saturation component ap-proaches zero. Only regions exhibiting high brightness and high color saturation — precisely the optical signature of genuine holograms — remain prominent in the resulting image. 
+
+4.2 Frame-level Hologram Detector 
+
+The second step involves a trained classifier designed to distinguish authentic holographic behavior from noise and attacks. This classifier processes a single pre-processed frame and predicts whether it is Valid or Non-Valid based on the learned holographic model. It is trained in a supervised manner, relying on: 1. a pseudo-labeling step to generate training targets indicating whether a given frame exhibits holographic behavior; 2. image augmentations to help the classifier capture legitimate variations of OVD and reject various forms of noise. The automated pseudo-labeling step addresses the challenge of obtaining detailed frame-level annotations to generate training data, and labels individual frames as either Valid or Non-Valid according to the following process: 1. For both Legit and Non-legit sequences, the luminance ( Lt(p) ∈ [0 , 255] ) of each preprocessed image Ft is computed and thresholded to measure the amount of change Ct = |Lt>T ||Lt| in each frame, with T = 5 . Frames are temporarily marked as “Bright” if Ct > 13 , “Unsafe” if Ft−1 or Ft+1 is Bright , “Dark” if Ct < 1e−4
+
+(indicating minimal change), or “Changing” in other cases. Unsafe and Dark 
+
+frames are discarded to avoid biasing the training. 2. For Legit sequences , Bright Verification of Dynamic Holographic Behavior in Identity Documents 11 
+
+frames are labeled as Non-Valid and Changing frames are labeled as Valid . 3. For 
+
+Non-legit sequences (using static template attacks from the original MIDV-Holo dataset), both Bright and Changing frames are labeled as Non-Valid .Based on this supervised training set, image augmentations are used to teach the classifier to capture variations of valid holographic appearances while rejecting out-of-distribution samples like noise and imitation attacks. Augmen-tations are applied to the pre-processed images (i.e., with background removed and after enhancement) and differ depending on whether a frame is labeled as 
+
+Valid or Non-Valid . For Valid frames, we apply slight augmentations, while for 
+
+Non-Valid frames, we apply stronger augmentations as we do not fear destroy-ing any valid signal. Details about augmentation parameters are available in supplementary material. 
+
+4.3 Final Sequence Classification 
+
+The final sequence verdict (Legit / Non-Legit) is determined by applying a threshold to the proportion of frames classified as Valid within the sequence. This threshold is calibrated on a validation set to maximize the F-score. 
+
+## 5 Experiments, Results and Discussion 
+
+5.1 Datasets and Protocol 
+
+Our evaluation protocol closely follows the one proposed by Pouliquen et al. [18], with the addition of our new MIDV-DynAttack dataset, used exclusively for testing and including attacks not seen during training. The original MIDV-Holo dataset is organized as follows: for each document type (identity card or pass-port), multiple templates are available, and for each template, 5 synthetic iden-tities (names and face pictures) are provided. All these documents use the same OVD layer. To avoid any training bias on identities, we use the grouped and stratified K-fold strategy from Pouliquen et al. [18], which averages the results over multiple runs while ensuring that the same identity is not present in more than one of the training, validation, or test splits simultaneously. Each video is processed with a private rectification method, using original videos sampled at 15 FPS to avoid device-specific issues. For the main experimen-tal results, we present results at 5 FPS (one frame out of three), while additional results at the original 15 FPS can be found in the supplementary material. This rectification improves the quality of frame alignment compared to the original MIDV-Holo dataset and applies the same process to the new MIDV-DynAttack dataset, as the original tracking method was not disclosed. We provide tracking information in the dataset for reproducibility. Following the localization process, each document was rectified using a rigid perspective transform, and the result-ing image was cropped to isolate the region of interest (ROI) containing the Optically Variable Device. The overall structure of the rectification process is as follows, applied to both MIDV-DynAttack and MIDV-Holo videos: 1. Document 12 Pouliquen et al. 
+
+Localization : Each document template is matched and localized in video frames using a detector based on local descriptors. 2. Temporal Coherence Enhance-ment : For frames where document detection was unsuccessful or unreliable, the mean between a retroactive and forward tracking approach was performed using the valid detected quads of the document. 3. Trajectory Completion : Any re-maining untracked frames were addressed through linear interpolation between successfully localized frames. All methods are trained and calibrated using the training and validation splits of the original MIDV-Holo “Vanilla” dataset (which excludes the Photo Replacement attack) and tested on the rest of the dataset, ensuring identities are properly grouped. While we report the same metrics as Pouliquen et al. [18], which include recall, and F-score (considering a detected attack as a true posi-tive), we also report Area Under the ROC Curves (AUC) computed on the test set to better assess the security guarantees each method can provide. 
+
+5.2 Methods Compared 
+
+The following methods are tested: 1. MIDV-Holo method [13], consisting of an analysis of pixel-wise chromatic-ity statistics accumulated in a video stream. We use the public implementa-tion from [18]. 2. Weakly Supervised Learning (WSL) [18] using contrastive learning and the label at the video level to optimize a feature extraction and frame-level classification pipeline, previously producing state-of-the-art results. 3. Direct Classifier refereed as Naive Classifier in [18], a simple binary frame classifier leveraging any categorizable signal (e.g. print artifacts). It can rely on any image signal (including unexpected biases) from the original MIDV-Holo dataset to discriminate genuine and attack sequences based on isolated frame classification. 4. HoloVerif (our proposed method), involving background subtraction pre-processing and pseudo-labeling to train a frame classifier in a supervised manner, focusing on holographic content (as detailed in Section 4). It is specifically designed to improve support for dynamic template attacks. To measure the impact of each stage of our proposed approach, we gradually integrate them in an ablation study. We first tried to assess whether some simple binary frame classifier (Direct Classifier method), as in [18], could be applied on preprocessed frames (called “With bg. subtraction”) to accurately and directly predict the sequence class, using only global (potentially biased) Legit/Non-legit targets for training. We also measured the classification power of the hardcoded preprocessing (called “Pseudo labels only”), using the same decision function at the sequence level (threshold over the ratio of Valid frames). Furthermore, we benchmarked a version of our proposed method HoloVerif without augmentations (called “No augmentations”) . Training details for each method are provided as supplementary material. Verification of Dynamic Holographic Behavior in Identity Documents 13 
+
+Table 2. Results on MIDV-Holo and MIDV-DynAttack datasets reported as mean 
+
+± standard deviation over 5-fold cross-validation. For methods including randomness, results are averaged across 6 different random seeds. The frames were sampled at 5 FPS. F-score and AUC metrics are reported on subsets containing both Legit and Fraud sequences, while Recall is reported only on Fraud-only subsets. The numbers in bold highlight the discriminative strength of the methods.                                                                                                                                                                       
+
+> MIDV-Holo (test split) MIDV-DynAttack (full) Both Vanilla Photo Rep. Static Static-swap Dynamic Mix Verification methods ↓
+> 120 mixed vids 20 vids 110 vids 40 vids 90 vids 380 vids
+> F-score Recall Recall Recall Recall Recall AUC
+> Hologram detection (no verification), ‡low Dynamic scores by design
+> MIDV-Holo [13] 85 ±385 ±12 38 ±21 72 ±319 ±83‡±357 ±1WSL [18] 96 ±297 ±492 ±881 ±814 ±82‡±283 ±3
+> Generic fraud detector, leveraging any categorizable signal (e.g. print artifacts, biases)
+> Direct Classifier [18] 90 ±489 ±670 ±17 82 ±11 90 ±952 ±20 92 ±3
+> Hologram Verification (focusing more on holographic content using background subtraction)
+> HoloVerif (ours) 95 ±396 ±559 ±20 93 ±528 ±12 61 ±13 93 ±2Ablation study ,†showing strong negative impact.
+> For HoloVerif (ours)
+> Pseudo labels only 64 †±480 ±14 71 ±20 87 ±860 ±22 65 ±13 61 ±2No augmentations 96 ±396 ±441 ±11 94 ±419 ±929 †±10 87 ±3
+> For Direct Classifier [18]
+> With bg. subtraction 97 ±299 ±247 †±16 81 ±917 ±11 21 †±14 89 ±3
+
+5.3 Results and Discussion 
+
+Experimental results are summarized in Table 2 for all methods and ablation studies, separating the metrics for the original MIDV-Holo and our new MIDV-DynAttack datasets. Figure 3 provides complementary insights regarding ideal decisions which could be made on the test sets, to better identify similarities and the security vs ease-of-use tradeoff each method can offer. MIDV-DynAttack presents a more challenging evaluation environment, as shown by the general drop in performance between the original MIDV-Holo dataset and the proposed one. As shown in the general difference between left and right ROC curves in Figure 3. In particular, MIDV-Holo method perfor-mance drops by 10 points between static fraud cases in original MIDV-Holo and MIDV-DynAttack. The +5 points improvement on the MIDV-Holo dataset of the MIDV-Holo method (applied to the photo region), compared to results reported in [18], are attributable to our enhanced tracking. The Direct Classifier on original images focuses primarily on general im-age characteristics rather than hologram elements. Our ablation study confirms that preprocessing reduces these biases, with the Direct classifier showing de-14 Pouliquen et al. 0.0 0.2 0.4 0.6 0.8 1.0 
+
+> False Positive Rate (FPR)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> True Positive Rate (Recall)
+
+MIDV-Holo Vanilla ROC curve      
+
+> MIDV-HOLO (AUC 0.93 ± 0.02)
+> WSL (AUC 0.99 ± 0.01)
+> Direct Classifier (AUC 0.96 ± 0.03)
+> HoloVerif (AUC 0.99 ± 0.01)
+> Pseudo labels only (AUC 0.67 ± 0.03)
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> False Positive Rate (FPR) from MIDV-Holo Vanilla
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> True Positive Rate (Recall)
+
+MIDV-DynAttack ROC curve      
+
+> MIDV-HOLO (AUC 0.46 ± 0.01)
+> WSL (AUC 0.77 ± 0.04)
+> Direct Classifier (AUC 0.91 ± 0.03)
+> HoloVerif (AUC 0.91 ± 0.03)
+> Pseudo labels only (AUC 0.59 ± 0.03)
+> 0.00 0.01 0.02 0.03 0.04 0.05
+> False Positive Rate
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> True Positive Rate
+
+MIDV-Holo (FPR 0.05)      
+
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> False Positive Rate
+> 0.95
+> 0.96
+> 0.97
+> 0.98
+> 0.99
+> 1.00
+> True Positive Rate
+
+MIDV-Holo (Recall 0.95)      
+
+> 0.00 0.01 0.02 0.03 0.04 0.05
+> False Positive Rate
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> True Positive Rate
+
+MIDV-DynAttack (FPR 0.05)      
+
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> False Positive Rate
+> 0.95
+> 0.96
+> 0.97
+> 0.98
+> 0.99
+> 1.00
+> True Positive Rate
+
+MIDV-DynAttack (Recall 0.95) 
+
+Fig. 3. ROC curve of selected methods for MIDV-Holo “Vanilla” (left) and MIDV-DynAttack (right) test sets, after calibration on a separate set. Bottom row shows zoomed regions for either low false positive rate (easier to use), or high true positive rate (safer) regimes. A True Positive is a fraud sample properly detected. The transparent area around each curve indicates the variance ( ±σ) observed over 5 folds ( × 6 seeds for methods with randomness). Curves were produced by varying the value of the final decision threshold. 
+
+creased performance (90% to 17% on static swap) after background subtraction, indicating a partial destruction of these hidden image features. Our HoloVerif approach deliberately focuses on holographic content, and reaching leading per-formance on MIDV-Holo, as well as static and dynamic unseen attacks from MIDV-DynAttack. Augmentations substantially improve performance on dy-namic attacks, from 29% to 61% recall. WSL still achieve a marginally superior performance for the static attacks of the original MIDV-Holo dataset. Two attacks are particularly challenging for almost all methods. Performance on the Photo Replacement attack is low for all methods except WSL, and is due to the fact some part of the hologram remain visible outside the replaced face picture. Further study of the WSL method would be required to understand this effect. This vulnerability suggests that precisely focusing on critical elements like face picture is essential. The Document Swap attack is also very challenging: the MIDV-Holo and WSL method may be tricked by the multiple saturated patterns passing their variety control, and HoloVerif is defeated because of its background estimation which estimate the background frame as one of the templates shown; the others exhibiting a difference image with acceptable holographic appearance. This second vulnerability may be combated in several ways: including Attack Verification of Dynamic Holographic Behavior in Identity Documents 15 
+
+Detection targeting swapping is a natural option, but it could also be addressed by including broader signals (as does the Direct Classifier) or, more interestingly, improve hologram modeling with a temporal aspect, i.e., learning instant color variations from the ordered sequence instead of processing it as a set of frames. Overall, the Direct Classifier method and our proposed HoloVerif methods have superior performance regarding aggregated AUC metric (> 90), though they do not detect the same attacks. The Direct Classifier is good at detecting static Frauds, and catches some dynamic ones as well, eventually thanks to difference in the image signal between legit and non-legit cases caught during the training phase. This could complement our proposed method which exhibits leading performance on Dynamic attacks. 
+
+## 6 Conclusion 
+
+This paper tackles the challenge of remotely verifying the authenticity of Op-tically Variable Devices (OVDs) on identity documents under realistic condi-tions. We introduced MIDV-DynAttack, a test-only dataset extending MIDV-Holo with new static (showing a single OVD appearance) and dynamic (showing realistic but altered holographic behavior) attack scenarios. It is the first pub-lic dataset featuring attacks of this sophistication. Experiments demonstrated that existing methods are vulnerable to carefully crafted dynamic attacks. To address this, we proposed HoloVerif , a method that leverages background es-timation to isolate the holographic signal. It achieved state-of-the-art perfor-mance on dynamic attacks while maintaining strong results on static ones. De-spite these advances, defeating dynamic attacks remains a challenge. Improved training strategies are needed to boost generalization and robustness. We also identified two particularly difficult physical attacks: Photo Replacement , due to authentic OVD elements surrounding the image, and Document Swap-ping , which misleads systems relying on multiple static OVD views. Addressing these issues requires enhanced Model Verification (MD) systems that: 1. focus on critical areas like the bearer’s photo; 2. model OVD temporal dynamics by analyzing frame sequences in context rather than as unordered images. Addi-tionally, production systems should integrate MD with Attack Detection (AD) to counter known threats like Document Swapping. Finally, while we assessed recall on unseen attacks, we lacked new genuine samples to evaluate generaliza-tion precision. We encourage the community to expand our open dataset with more genuine instances and to reuse our public evaluation code.    
+
+> Acknowledgments. We thank Vincent Léon for his assistance with video recording of documents for the dataset. The ACHILLE project, partially supporting this work, was funded by the European Union’s Horizon Europe research and innovation program under Grant Agreement No 101189689.
+> Disclosure of Interests. The authors have no competing interests. 16 Pouliquen et al.
+
+## References 
+
+[1] J. Chazalon, P. Gomez-Krämer, J.-C. Burie, M. Coustaty, S. Eskenazi, M. Luqman, N. Nayef, M. Rusiñol, N. Sidère, and J.-M. Ogier. “Smart-Doc 2017 Video Capture: Mobile Document Acquisition in Video Mode”. In: Proceedings of the 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) . Vol. 04. 2017, pp. 11–16. doi : 10 . 1109/ICDAR.2017.306 .[2] Daniel Soukup and Reinhold Huber-Mörk. “Mobile hologram verification with deep learning”. In: IPSJ Transactions on Computer Vision and Ap-plications 9 (2017). doi : 10.1186/s41074-017-0022-7 .[3] Vladimir V. Arlazarov, Konstantin Bulatov, Timofey Chernov, and Vladimir L. Arlazarov. “MIDV-500: A Dataset for Identity Documents Analysis and Recognition on Mobile Devices in Video Stream”. In: Computer Optics 43.5 (2019). doi : 10.18287/2412-6179-2019-43-5-818-824 .[4] Konstantin Bulatov, Daniil Matalov, and Vladimir V. Arlazarov. “MIDV-2019: Challenges of the modern mobile-based document OCR”. In: Pro-ceedings of the twelfth International Conference on Machine Vision (ICMV 2019) . 2020, p. 64. doi : 10.1117/12.2558438 .[5] Álysson Soares, Ricardo das Neves Junior, and Byron Bezerra. “BID Dataset: a challenge dataset for document processing tasks”. In: Proceedings of the XXXIII Conference on Graphics, Patterns and Images . 2020, pp. 143–146. 
+
+doi : 10.5753/sibgrapi.est.2020.12997 .[6] Yulia Chernyshova, Ekaterina Emelianova, Alexander Sheshkus, and Vladimir Arlazarov. “MIDV-LAIT: A Challenging Dataset for Recognition of IDs with Perso-Arabic, Thai, and Indian Scripts”. In: Proceedings of the 16th International Conference Document Analysis and Recognition. 2021, pp. 258– 272. doi : 10.1007/978-3-030-86331-9_17 .[7] Betul Ay. “Open-Set Learning-Based Hologram Verification System Using Generative Adversarial Networks”. In: IEEE Access 10 (2022), pp. 25114– 25124. doi : 10.1109/ACCESS.2022.3155870 .[8] Konstantin Bulatov, Ekaterina Emelianova, Daniil Tropin, Natalya Sko-ryukina, Yulia Chernyshova, Alexander Sheshkus, Sergey Usilin, Zuheng Ming, Jean-Christophe Burie, Muhammad Muzzamil Luqman, and Vladimir V. Arlazarov. “MIDV-2020: A Comprehensive Benchmark Dataset for Iden-tity Document Analysis”. In: Computer Optics 46.2 (2022). doi : 10.18287/ 2412-6179-CO-1006 .[9] Oumayma Kada, Camille Kurtz, Cuong van Kieu, and Nicole Vincent. “Hologram Detection for Identity Document Authentication”. In: Proceed-ings of the 3rd International Conference on Pattern Recognition and Ar-tificial Intelligence . 2022, pp. 346–357. doi : 10.1007/978-3-031-09037-0_29 .[10] Dmitry V. Polevoy, Irina V. Sigareva, Daria M. Ershova, Vladimir V. Ar-lazarov, Dmitry P. Nikolaev, Zuheng Ming, Muhammad Muzzamil Luq-man, and Jean-Christophe Burie. “Document Liveness Challenge Dataset Verification of Dynamic Holographic Behavior in Identity Documents 17 
+
+(DLC-2021)”. In: Journal of Imaging 8.7 (2022), p. 181. doi : 10.3390/ jimaging8070181 .[11] Marie-Neige Chapel, Musab Al-Ghadi, and Jean-Christophe Burie. “Au-thentication of Holograms with Mixed Patterns by Direct LBP Compar-ison”. In: Proceedings of the 25th International Workshop on Multime-dia Signal Processing . 2023, pp. 1–6. doi : 10 . 1109 / MMSP59012 . 2023 . 10337669 .[12] Musab Al-Ghadi, Zuheng Ming, Petra Gomez-Krämer, Jean-Christophe Burie, Mickaël Coustaty, and Nicolas Sidere. “Guilloche Detection for ID Authentication: A Dataset and Baselines”. In: Proceedings of the 25th In-ternational Workshop on Multimedia Signal Processing . 2023, pp. 1–6. doi :
+
+10.1109/MMSP59012.2023.10337681 .[13] L. I. Koliaskina, E. V. Emelianova, D. V. Tropin, V. V. Popov, K. B. Bulatov, D. P. Nikolaev, and V. V. Arlazarov. “MIDV-Holo: A Dataset for ID Document Hologram Detection in a Video Stream”. In: Proceedings of the 17th International Conference on Document Analysis and Recognition (ICDAR) . 2023, pp. 486–503. doi : 10.1007/978-3-031-41682-8_30 .[14] Eun-Ju Park, Seung-Yeon Back, Jeongho Kim, and Simon S. Woo. “KID34K: A Dataset for Online Identity Card Fraud Detection”. In: Proceedings of the 32nd ACM International Conference on Information and Knowledge Management . 2023, pp. 5381–5385. doi : 10.1145/3583780.3615122 .[15] Carlos Boned, Maxime Talarmain, Nabil Ghanmi, Guillaume Chiron, San-ket Biswas, Ahmad Montaser Awal, and Oriol Ramos Terrades. “Syn-thetic dataset of id and travel documents”. In: Scientific Data 11.1 (2024), p. 1356. doi : 10.1038/s41597-024-04160-9 .[16] Julien Lerouge, Guillaume Betmont, Thomas Bres, Evgeny Stepankevich, and Alexis Bergès. DocXPand-25k: a large and diverse benchmark dataset for identity documents analysis . 2024. eprint: arXiv/2408.01690 .[17] Ricardo Batista das Neves Junior, Byron Leite Dantas Bezerra, and Cleber Zanchettin. “DocLightDetect: A New Algorithm for Occlusion Classifica-tion in Identification Documents”. In: Proceedings of the 16th IAPR Inter-national Workshop on Document Analysis Systems (DAS) . 2024, pp. 196– 210. doi : 10.1007/978-3-031-70442-0_12 .[18] Glen Pouliquen, Guillaume Chiron, Joseph Chazalon, Thierry Géraud, and Ahmad Montaser Awal. “Weakly Supervised Training for Hologram Verification in Identity Documents”. In: Proceedings of the 18th Interna-tional Conference on Document Analysis and Recognition (ICDAR) . 2024, pp. 17–33. doi : 10.1007/978-3-031-70533-5_2 .[19] Nathan Ramoly, Alain Komaty, Vedrana Krivokuća Hahn, Lara Younes, Ahmad-Montaser Awal, and Sébastien Marcel. “A Novel and Responsible Dataset for Face Presentation Attack Detection on Mobile Devices”. In: 
+
+Proceedings of the IEEE International Joint Conference on Biometrics (IJCB) . 2024, pp. 1–9. doi : 10.1109/IJCB62174.2024.10744500 .[20] Juan E. Tapia, Naser Damer, Christoph Busch, Juan M. Espin, Javier Barrachina, Alvaro S. Rocamora, and et al. “First Competition on Pre-18 Pouliquen et al. 
+
+sentation Attack Detection on ID Card”. In: Proceedings of the IEEE In-ternational Joint Conference on Biometrics (IJCB) . 2024, pp. 1–10. doi :
+
+10.1109/IJCB62174.2024.10744475 .[21] Lulu Xie, Yancheng Wang, Hong Guan, Soham Nag, Rajeev Goel, Niran-jan Swamy, Yingzhen Yang, Chaowei Xiao, Jonathan Prisby, Ross Ma-ciejewski, and Jia Zou. “IDNet: A Novel Dataset for Identity Document Analysis and Fraud Detection”. In: Proceedings of the IEEE International Conference on Big Data (BigData) . 2024, pp. 2244–2253. doi : 10.1109/ BigData62323.2024.10825017 .Supplementary Material 
+
+This supplementary material contains the following sections: 
+
+– Section A - Dataset Visualization : Illustrations of the MIDV-Holo and MIDV-DynAttack datasets showing rectified document samples. 
+
+– Section B - Dataset Creation : Description of the capture conditions. 
+
+– Section C - Training Methodology : Detailed explanation of model ar-chitecture, preprocessing, and class-specific augmentation strategies. 
+
+– Section D - Results Aggregation : Explanation of the cross-validation protocol and the Area Under the Curve computation. 
+
+– Section E - High Frame Rate Analysis : Extended experimental results at 15 FPS complementing the 5 FPS results in the main paper. 
+
+– Section F - Per-Attack Performance Analysis : Performance for each individual fraud type in MIDV-DynAttack. 
+
+– Section G - Lightweight Implementation : Evaluation of a computa-tionally efficient HOG-SGD variant of the proposed method. 19 20 Pouliquen et al. 
+
+## A Dataset Visualization 
+
+The Figure A.1 shows an overview of the MIDV-Holo and MIDV-DynAttack datasets, in the form of a mosaic made of the first sample from all captured videos, each being rectified using document coordinates provided in the annota-tions. The background is therefore not visible in the illustration. The Figure A.2 shows an overview of sequences, displaying several frames for each video.  
+
+> Fig. A.1. Overview of the first frame for all captures of the second ID document type, fifth identity. Frame samples from MIDV-Holo are highlighted with green borders, while samples from MIDV-DynAttack are indicated with red borders.
+
+Verification of Dynamic Holographic Behavior in Identity Documents 21 MIDV-Holo 
+
+> Static templates Dynamic templates
+
+Swap - Paper LED light Laser light Star and World Leaf Holo Plain Holo Double sticker Complete Mask Pseudo Holo copy Originals 
+
+> MIDV-DynAttack
+
+Photo Holo copy 
+
+Natural Light - Paper Natural Light - Plastic Copy Without Holo Photo Replacement (static occlusion) 
+
+> Dynamic templates Static templates
+
+Fig. A.2. Overview of sequences for all fraud types of the fifth type of ID documents, first identity. Frame samples from MIDV-Holo are highlighted with green borders, while samples from MIDV-DynAttack are indicated with red borders. 22 Pouliquen et al. 
+
+## B Dataset Capture 
+
+The dataset was captured at 30 FPS using three smartphone models: an iPhone 7, a Xiaomi Redmi Note 8 Pro, and a Motorola G7. To simulate real-world KYC scenarios, most videos were recorded in naturalistic conditions (except “LED light” and “Laser light”). We deliberately varied capture distances and lighting to reflect uncontrolled authentication environments. Verification of Dynamic Holographic Behavior in Identity Documents 23 
+
+## C Training Methodology 
+
+The training strategy for the methods is as follows: input ROIs resized to 230 pixels (256 for WSL and Direct Classifier), followed by random cropping to 
+
+224 × 224 pixels. After applying method-specific transformations, inputs were normalized according to ImageNet statistics for original cropped images and to mean 0.1 and standard deviation 0.2 for preprocessed images. All deep learning methods used the mobilevit xxs architecture, optimized using AdamW (learning rate = 1e-4) with batch sizes of 128 for classifier-based approaches and 32 for WSL. For the proposed frame-level HoloVerif method, we implemented a class-dependent augmentation pipeline. For Valid frames, we apply slight augmentations: resize to 230px, then random crop to 224px. Color adjustments include color jitter with brightness variation 
+
+±0.3, contrast variation ±0.3, saturation variation ±0.2, and hue variation ±0.1. Finally, normalize to mean=0.1 and std=0.2. For Non-Valid frames, we apply stronger augmentations as we do not fear de-stroying any valid signal: resize to 230px, then random crop to 224px, with a probability of 0.2 apply a sequence of: horizontal flip (p=0.5), vertical flip (p=0.3), random rotation (up to 30 °), elastic transform (p=0.3, alpha=60, sigma=6), non-linear deformation (p=0.3, gridsize=4, magnitude=0.25), and affine trans-formation (degrees=30, translate= ±0.2, scale=0.8-1.2, shear=20 °). Color ad-justments include color jitter with brightness variation ±0.4, contrast variation 
+
+±0.4, saturation variation ±0.3, and hue variation ±0.4. Finally, normalize to mean=0.1 and std=0.2. 24 Pouliquen et al. 
+
+## D Results Aggregation 
+
+D.1 Cross-validation protocol and statistical analysis 
+
+We employed a 5-fold cross-validation strategy for all methods. The evaluation protocol differs based on whether the method incorporates stochastic compo-nents. For deterministic methods (MIDV-Holo baseline and pseudo-labels only), we conducted 5 runs corresponding to each fold. For methods involving random-ization (all deep learning approaches), we performed 30 runs in total, combining 5 folds with 6 different random seeds. The final performance metrics are reported as mean ± standard deviation computed across all runs. For categorical analysis, we first aggregated results within each fraud category for individual runs, then computed statistical mea-sures across multiple runs. We also report an inconsistency in the MIDV-Holo dataset: the document 
+
+id 03 _03 from the originals collection was not captured and was replaced by captures of id 07 _03 . Since this document appeared twice in the collection, we retained only one instance to avoid duplication, resulting in one document with-out the corresponding three video sequences in the originals collection. 
+
+D.2 Area Under the Curve computation 
+
+Our AUC computation follows a systematic two-stage approach. First, we com-puted ROC curves using MIDV-Holo Vanilla samples, which contain both le-gitimate and fraudulent documents, establishing the baseline false positive rate (FPR) and true positive rate (TPR) relationship. We then defined 100 evenly distributed thresholds and extracted the corresponding FPR values from these ROC curves. For each fraud type in MIDV-DynAttack, we computed recall values at these predefined thresholds and calculated individual AUC scores using trapezoidal integration. The final reported AUC represents a weighted average based on the number of video sequences in each category, ensuring that the aggregated metrics reflect the relative importance of each dataset component. Verification of Dynamic Holographic Behavior in Identity Documents 25 
+
+## E High Frame Rate Analysis 
+
+All video frames were extracted at 15 FPS using the FFmpeg program with the command: ffmpeg -i vid.mp4 -vf fps=15 -q:v 2 img_%04d.jpg . In the main manuscript, we subsampled these extracted frames to 5 FPS to ensure a fair comparison with previously published methods. The results using the full 15 FPS sequences (without subsampling) are presented in Table E.1. Trends are similar to the results reported in the main paper at 5 FPS. 
+
+Table E.1. Results at 15fps on MIDV-Holo and MIDV-DynAttack datasets reported as mean ± standard deviation over 5-fold cross-validation. For methods including ran-domness, results are averaged across 6 different random seeds. The frames were sampled at 15 FPS. F-score and AUC metrics are reported on subsets containing both Legit and Fraud sequences, while Recall is reported only on Fraud-only subsets. The numbers in bold highlight the discriminative strength of the methods. 
+
+MIDV-Holo (test split) MIDV-DynAttack (full) Both Vanilla Photo Rep. Static Static-swap Dynamic Mix Verification methods ↓
+
+120 mixed vids 20 vids 110 vids 40 vids 90 vids 380 vids 
+
+F-score Recall Recall Recall Recall Recall AUC 
+
+Hologram detection (no verification) 
+
+MIDV-Holo 84 ± 5 82 ± 14 28 ± 16 69 ± 2 10 ± 5 2 ± 3 55 ± 1WSL 95 ± 2 97 ± 4 93 ± 8 83 ± 6 18 ± 10 3 ± 3 81 ± 4
+
+Generic fraud detector, leveraging any categorizable signal (e.g. print artifacts, biases) 
+
+Direct Classifier 93 ± 3 91 ± 5 72 ± 14 81 ± 10 87 ± 9 39 ± 17 93 ± 2
+
+Hologram Verification (focusing more on holographic content using background subtraction) 
+
+HoloVerif (ours) 95 ± 2 96 ± 4 57 ± 19 93 ± 6 29 ± 15 63 ± 16 93 ± 2
+
+Ablation study 
+
+For HoloVerif (ours) 
+
+Pseudo labels only 66 ± 2 89 ± 12 84 ± 19 92 ± 7 77 ± 25 76 ± 12 61 ± 2No augmentations 97 ± 2 98 ± 3 45 ± 19 94 ± 5 16 ± 11 29 ± 13 88 ± 3
+
+For Direct Classifier [18] 
+
+With bg. subtraction 98 ± 2 98 ± 3 45 ± 14 79 ± 10 16 ± 13 19 ± 14 89 ± 326 Pouliquen et al. 
+
+## F Per-Attack Performance Analysis 
+
+In the main result table of the article, the proposed frauds were grouped by category. Table F.1 presents recall for each individual fraud type of the proposed MIDV-DynAttack dataset, at 5 FPS (as in the main paper’s results). Results are averages over multiple folds, with multiple seeds if possible, according to the experimental protocol described in the main paper.    
+
+> Table F.1. Recall performance ( μ±σ) at 5 FPS for each individual fraud type in the MIDV-DynAttack dataset. All methods were calibrated on the MIDV-Holo validation set by maximizing the F-Score as detailed in the main paper.
+
+Recall Attack category MIDV-Holo WSL Direct classifier HoloVerif Static Plastic (low reflects) 100 ± 0 100 ± 1 94 ± 10 93 ± 8Plastic (with reflects) 91 ± 4 82 ± 14 75 ± 15 88 ± 10 Paper 83 ± 7 94 ± 7 77 ± 14 93 ± 5Laser light 0 ± 0 63 ± 29 85 ± 33 100 ± 0LED light 0 ± 0 0 ± 0 91 ± 16 100 ± 0Swap (2 templates) 26 ± 10 19 ± 10 94 ± 7 19 ± 10 Swap (3 templates) 0 ± 0 0 ± 2 77 ± 23 55 ± 25 Dynamic Plain holo 6 ± 6 2 ± 3 72 ± 16 90 ± 9Leaf holo 1 ± 2 1 ± 2 37 ± 22 33 ± 19 Double Sticker 0 ± 0 3 ± 6 39 ± 34 72 ± 19 Complete mask 6 ± 13 6 ± 8 57 ± 31 56 ± 18 Star and world 0 ± 0 1 ± 3 42 ± 27 54 ± 22 Verification of Dynamic Holographic Behavior in Identity Documents 27 
+
+## G Lightweight Implementation 
+
+We additionally evaluated a computationally efficient variant of our method that substitutes the deep learning backbone with Histogram of Oriented Gradients (HOG) features coupled with a Stochastic Gradient Descent (SGD) classifier using log loss. This configuration maintains compatibility with the pipeline ar-chitecture, allowing for analogous image transformations while significantly re-ducing computational requirements. The performance metrics for this variant are presented in Table G.1. The HOG-SGD implementation exhibited relatively consistent performance regardless of augmentation strategy. This discrepancy can be attributed to the transformation-invariant properties of HOG descriptors, which are designed to be robust against small geometric and intensity transformations. The histogram-based gradient features naturally smooth out many of the transformations ap-plied during augmentation, effectively normalizing away differences that would otherwise benefit deep learning approaches. 
+
+Table G.1. Extension of the core paper result table with 2 new simple methods eval-uated at 5 FPS.

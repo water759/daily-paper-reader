@@ -1,0 +1,668 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-08T21:28:10.163557+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 6,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 15,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2607.05920v1",
+      "source": "arxiv",
+      "title": "LibFHE: A Numba-Based CUDA-Python Library for Non-RNS CKKS-BGV Fully Homomorphic Encryption on GPUs",
+      "abstract": "It has been a decade since the fourth-generation FHE framework, CKKS, was proposed; yet, there is still no indicator pointing toward a fifth-generation successor; and in recent years, numerous studies have explored GPU acceleration to improve the efficiency of homomorphic computations. In this paper, we propose LibFHE, a high-performance GPU-accelerated framework that features CUDA-Python bindings to achieve both high-level programmability and bare-metal GPU performance for homomorphic workloads. A large majority of state-of-the-art implementations adopt the RNS-CKKS variant. In contrast, this work deliberately revisits the original (non-RNS) CKKS-BGV framework, and develops a GPU-based implementation along with corresponding optimizations. Experimental results demonstrate that optimized CUDA-Python implementations can achieve performance comparable to highly optimized C++ FHE libraries, while significantly reducing implementation complexity and improving programmability.",
+      "authors": [
+        "John Chiang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-07T07:18:12+00:00",
+      "link": "https://arxiv.org/pdf/2607.05920v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "GPU-accelerated fully homomorphic encryption library",
+      "llm_evidence_cn": "GPU加速的全同态加密库",
+      "llm_evidence": "GPU加速的全同态加密库",
+      "canonical_evidence": "GPU加速的全同态加密库",
+      "llm_tldr_en": "LibFHE is a high-performance GPU-accelerated FHE library for non-RNS CKKS-BGV schemes, combining CUDA-Python bindings for programmability and bare-metal performance.",
+      "llm_tldr_cn": "全同态加密（FHE）计算效率仍是实际部署的主要瓶颈。本文提出LibFHE，一个基于CUDA-Python的高性能GPU加速FHE库，聚焦原生（非RNS）CKKS-BGV方案。通过CUDA-Python绑定实现高级可编程性与裸金属性能，实验表明其计算性能大幅优于现有CPU实现，为机密计算中的同态加密提供了高效的加速工具。",
+      "llm_tldr": "全同态加密（FHE）计算效率仍是实际部署的主要瓶颈。本文提出LibFHE，一个基于CUDA-Python的高性能GPU加速FHE库，聚焦原生（非RNS）CKKS-BGV方案。通过CUDA-Python绑定实现高级可编程性与裸金属性能，实验表明其计算性能大幅优于现有CPU实现，为机密计算中的同态加密提供了高效的加速工具。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.04032v1",
+      "source": "arxiv",
+      "title": "Data Structures for Private Token Transfers in TEE-Based Networks",
+      "abstract": "Trusted execution environment (TEE) based confidential smart contract networks promise privacy but remain vulnerable to storage access pattern attacks that can link senders and recipients in token transfers. When contracts update recipient balances during transfers, the unique storage keys accessed reveal transaction relationships even when data is encrypted. This paper introduces two novel data structures to address this vulnerability: the Delayed Write Buffer (DWB) and the Bitwise-Trie of Bucketed Entries (BTBE). The DWB delays recipient balance updates by buffering pending transfers and randomly settling entries, breaking the direct correlation between transfer execution and recipient storage access. The BTBE further enhances privacy by grouping addresses into constant-sized buckets, preventing flooding attacks and creating anonymity sets for balance queries. Additionally, we present a private notification system enabling real-time, privacy-preserving push notifications for confidential contracts. Our domain-specific approach leverages the unique characteristics of token transfers -- asymmetric balance updates and tolerance for delayed settlement -- to achieve practical performance with probabilistic anonymity guarantees.",
+      "authors": [
+        "Blake Regalia",
+        "Benjamin Adams"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-04T21:24:01+00:00",
+      "link": "https://arxiv.org/pdf/2607.04032v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "TEE-based network privacy with novel data structures",
+      "llm_evidence_cn": "基于TEE的隐私保护网络数据结构",
+      "llm_evidence": "基于TEE的隐私保护网络数据结构",
+      "canonical_evidence": "基于TEE的隐私保护网络数据结构",
+      "llm_tldr_en": "Introduces DWB and BTBE data structures to prevent storage access pattern attacks in TEE-based token transfer networks.",
+      "llm_tldr_cn": "基于可信执行环境（TEE）的机密智能合约网络在代币转移中易受存储访问模式攻击。本文提出延迟写入缓冲区（DWB）和桶条目位字典树（BTBE）两种新型数据结构，分别通过缓冲随机结算和分组地址空间来打破访问模式关联，在保持功能的同时显著增强交易隐私。",
+      "llm_tldr": "基于可信执行环境（TEE）的机密智能合约网络在代币转移中易受存储访问模式攻击。本文提出延迟写入缓冲区（DWB）和桶条目位字典树（BTBE）两种新型数据结构，分别通过缓冲随机结算和分组地址空间来打破访问模式关联，在保持功能的同时显著增强交易隐私。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.04819v1",
+      "source": "arxiv",
+      "title": "Layer-Parallel Inference Reduces Encrypted Nonlinear Depth in Transformers",
+      "abstract": "Fully homomorphic encryption (FHE) enables computation on encrypted data, but practical encrypted Transformer inference is bottlenecked by the sequential composition of many nonlinear blocks. We study whether Structured Newton Layer Parallelism (SNLP) can make this inter-layer composition more FHE-friendly: each Transformer block still requires polynomial approximations for operations such as softmax and RMSNorm, but SNLP reduces the layerwise sequential nonlinear depth from L stages to a small number of solver iterations plus linear structured corrections. Using a simulation framework based on Chebyshev polynomial approximations, we measure error accumulation under sequential versus SNLP inference across 8 models and 4 architecture families. On a 0.5B IDN-trained model, SNLP reduces symbolic bootstraps from 53 to 20 (2.65x) with only +1.2% perplexity degradation, while lowering error amplification (1.36x vs. 1.42x). Across all tested models, SNLP has lower amplification than sequential inference. Ablations show that softmax approximation dominates the error budget and CKKS arithmetic noise is negligible in our setting, suggesting that SNLP is complementary to block-level FHE-friendly operator design rather than a replacement for it.",
+      "authors": [
+        "Ligong Han",
+        "Kai Xu",
+        "Hao Wang",
+        "Ruijiang Gao",
+        "Akash Srivastava"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CR"
+      ],
+      "published": "2026-07-06T08:51:22+00:00",
+      "link": "https://arxiv.org/pdf/2607.04819v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "homomorphic encryption for privacy-preserving Transformer inference",
+      "llm_evidence_cn": "同态加密用于隐私保护的Transformer推理",
+      "llm_evidence": "同态加密用于隐私保护的Transformer推理",
+      "canonical_evidence": "同态加密用于隐私保护的Transformer推理",
+      "llm_tldr_en": "Proposes Structured Newton Layer Parallelism to reduce sequential nonlinear depth in encrypted Transformer inference, making FHE-based privacy-preserving computation more practical.",
+      "llm_tldr_cn": "该论文针对同态加密（FHE）下Transformer推理中非线性层顺序堆叠导致的性能瓶颈，提出结构化牛顿层并行（SNLP）方法。SNLP将层间顺序非线性深度从L层减少为少量求解器迭代加线性修正，利用Chebyshev多项式近似模拟，在8个模型上验证了误差累积情况。结果表明SNLP能有效降低加密推理的计算复杂度，为隐私保护AI推理提供了可行方案。",
+      "llm_tldr": "该论文针对同态加密（FHE）下Transformer推理中非线性层顺序堆叠导致的性能瓶颈，提出结构化牛顿层并行（SNLP）方法。SNLP将层间顺序非线性深度从L层减少为少量求解器迭代加线性修正，利用Chebyshev多项式近似模拟，在8个模型上验证了误差累积情况。结果表明SNLP能有效降低加密推理的计算复杂度，为隐私保护AI推理提供了可行方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.05189v1",
+      "source": "arxiv",
+      "title": "When Claws Remember but Do Not Tell: Stealthy Memory Injection in Persistent Personal Agents",
+      "abstract": "Persistent personal agents combine long-term memory with access to users' external environments, enabling personalized foreground assistance and proactive background execution. This integration also creates a new path to compromise: untrusted external content can be silently written into persistent memory and later reused as trusted state. We study this threat as stealth memory injection, in which a remote black-box adversary delivers a single email payload that must induce the agent to write poisoned memory, stay hidden in the agent's response to the user, and affect future behavior.   We introduce WhisperBench, a 108-case benchmark spanning five risk categories and both fact and preference poisoning. Built on a real IMAP/SMTP workflow and an authentic email agent skill, it enables full-cycle evaluation of stealth memory injection attacks. To enable this black-box attack under single-email delivery and without runtime feedback, we propose MemGhost, a one-shot payload generation framework. MemGhost uses an environment proxy to emulate persistent-agent execution and an objective proxy to convert memory adoption and conversational stealth into dense rubric-based rewards, then trains the attacker policy with supervised fine-tuning and reinforcement learning.   Across 56 held-out test cases, MemGhost achieves 87.5% end-to-end success on OpenClaw with GPT-5.4 and 71.4% on Claude Code SDK with Sonnet 4.6. It also transfers across personal-agent architectures (NanoClaw and Hermes Agent) and memory backends (filesystem and vector-based Mem0), and remains effective against input-level, model-level, and system-level defenses. These results suggest that persistent memory can turn ordinary external processing into a practical pathway for long-term agent compromise.",
+      "authors": [
+        "Yechao Zhang",
+        "Shiqian Zhao",
+        "Jiawen Zhang",
+        "Jie Zhang",
+        "Gelei Deng",
+        "Xiaogeng Liu",
+        "Chaowei Xiao",
+        "Tianwei Zhang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-06T15:08:58+00:00",
+      "link": "https://arxiv.org/pdf/2607.05189v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "stealthy memory injection in personal AI agents",
+      "llm_evidence_cn": "个人AI代理中的隐秘内存注入",
+      "llm_evidence": "个人AI代理中的隐秘内存注入",
+      "canonical_evidence": "个人AI代理中的隐秘内存注入",
+      "llm_tldr_en": "Identifies and benchmarks stealthy memory injection attacks where a single email payload can poison an AI agent's persistent memory to affect future behavior; introduces WhisperBench.",
+      "llm_tldr_cn": "该论文揭示了持久个人代理面临的新威胁：远程攻击者通过单一电子邮件载荷将恶意内容注入代理的长期内存中，并在用户响应中保持隐藏，从而影响未来行为。提出WhisperBench基准，包含108个案例覆盖五种风险类别。实验证实了注入攻击的可行性，强调需要防范此类AI安全威胁。",
+      "llm_tldr": "该论文揭示了持久个人代理面临的新威胁：远程攻击者通过单一电子邮件载荷将恶意内容注入代理的长期内存中，并在用户响应中保持隐藏，从而影响未来行为。提出WhisperBench基准，包含108个案例覆盖五种风险类别。实验证实了注入攻击的可行性，强调需要防范此类AI安全威胁。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.04004v1",
+      "source": "arxiv",
+      "title": "Setting the Privacy Budget in Differential Privacy by Bounding Adversaries' Odds of Learning Sensitive Information",
+      "abstract": "Differential privacy is a mathematical definition of what it means to protect data subjects' privacy in data releases. Differential privacy depends on a parameter $ε$ known as the privacy budget. The value of $\\varepsilon$ determines the nature of the privacy guarantee, with smaller values generally offering more privacy. However, reducing $\\varepsilon$ also tends to decrease the accuracy of results protected with differentially private algorithms. Setting a value for $\\varepsilon$ that satisfactorily balances this risk/accuracy trade off is complicated in practice, and there is not a standard approach to doing so. In part this is because practitioners may struggle to understand the privacy guarantee afforded by $\\varepsilon$. We present an approach to interpreting and setting $\\varepsilon$ in which (i) the practitioner establishes bounds on the posterior odds that adversaries can learn sensitive information, and (ii) the practitioner converts these bounds to values of $\\varepsilon$. We illustrate the approach using data from a case control study.",
+      "authors": [
+        "Ruwimal Y. Pathiraja",
+        "Jerome P. Reiter"
+      ],
+      "primary_category": "stat.ME",
+      "categories": [
+        "stat.ME"
+      ],
+      "published": "2026-07-04T19:57:15+00:00",
+      "link": "https://arxiv.org/pdf/2607.04004v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "method to set differential privacy budget by bounding adversaries' odds, directly relevant to privacy preservation in AI",
+      "llm_evidence_cn": "通过限制对手学习几率来设置差分隐私预算，直接关系到AI中的隐私保护",
+      "llm_evidence": "通过限制对手学习几率来设置差分隐私预算，直接关系到AI中的隐私保护",
+      "canonical_evidence": "通过限制对手学习几率来设置差分隐私预算，直接关系到AI中的隐私保护",
+      "llm_tldr_en": "This paper proposes a principled method for setting the privacy budget epsilon in differential privacy by bounding adversaries' posterior odds of learning sensitive attributes.",
+      "llm_tldr_cn": "该论文针对差分隐私中隐私预算ε难以设定的实际问题，提出了一种基于对手学习敏感信息后验几率界限的预算设置方法。通过将ε与对手的优势相关联，使实践者能更直观地理解隐私保证。该方法不需要复杂的背景知识，可直接应用于数据发布场景。该工作为差分隐私的实际部署提供了可操作的指南。",
+      "llm_tldr": "该论文针对差分隐私中隐私预算ε难以设定的实际问题，提出了一种基于对手学习敏感信息后验几率界限的预算设置方法。通过将ε与对手的优势相关联，使实践者能更直观地理解隐私保证。该方法不需要复杂的背景知识，可直接应用于数据发布场景。该工作为差分隐私的实际部署提供了可操作的指南。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "carryover_cache",
+      "paper_id": "2607.04004v1"
+    },
+    {
+      "id": "2607.06364v1",
+      "source": "arxiv",
+      "title": "Automated Compliance Mapping in Cloud Security with Domain-Adapted Sentence Transformers",
+      "abstract": "Mapping cloud security controls to technical metrics is currently a manual process. This paper proposes domain adaptation of Sentence Transformer models to automate it. We build a training corpus of 3,499 semantic pairs from five European security standards and a set of technical metrics, then expand it via back-translation and LLM-based paraphrasing to up to 13,996 samples across four scenarios. We fine-tune five architectures and evaluate their performance on two independent tasks: control-to-metric and cross-standard controls association. All fine-tuned models outperform their zero-shot baselines. On the control-to-metric task, the best model gains up to 23 nDCG@10 points, while on the cross-standard control task, \\textit{multi-qa-mpnet-dot-v1} under back-translation reaches 0.870 nDCG@10. The results show that in-domain training data is a primary driver of performance for the considered case studies.",
+      "authors": [
+        "John Bianchi",
+        "Luca Petrillo",
+        "Fabio Martinelli",
+        "Marinella Petrocchi"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.CR"
+      ],
+      "published": "2026-07-07T15:00:46+00:00",
+      "link": "https://arxiv.org/pdf/2607.06364v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "automated cloud security compliance mapping using domain-adapted sentence transformers",
+      "llm_evidence_cn": "使用领域自适应句子变换器实现云安全合规自动化映射",
+      "llm_evidence": "使用领域自适应句子变换器实现云安全合规自动化映射",
+      "canonical_evidence": "使用领域自适应句子变换器实现云安全合规自动化映射",
+      "llm_tldr_en": "Proposes domain adaptation of Sentence Transformers for automating cloud security control-to-metric mapping, improving nDCG@10 by up to 23 points.",
+      "llm_tldr_cn": "该论文针对云安全控制与技术指标间的映射目前依赖人工的问题，提出了领域自适应的句子变换器方法。构建了含3499个语义对的训练语料，通过回译和LLM改写扩展至近14000样本，微调五种架构。在控制-指标映射任务上最佳模型nDCG@10提升23点，跨标准控制关联也显著优于零样本基线。",
+      "llm_tldr": "该论文针对云安全控制与技术指标间的映射目前依赖人工的问题，提出了领域自适应的句子变换器方法。构建了含3499个语义对的训练语料，通过回译和LLM改写扩展至近14000样本，微调五种架构。在控制-指标映射任务上最佳模型nDCG@10提升23点，跨标准控制关联也显著优于零样本基线。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.01486v1",
+      "source": "arxiv",
+      "title": "SLFS: a Flexible, Low-Cost Distributed File System Using Serverless Designs",
+      "abstract": "Large-scale distributed file systems must provision resources for peak demand, yet file access patterns fluctuate significantly, leaving substantial capacity idle during off-peak periods. Existing scaling mechanisms operate at the granularity of entire servers and take minutes to hours, making them unable to track the rapid, fine-grained load variations that file systems commonly experience. Serverless computing, with its millisecond-granularity elasticity and pay-per-use pricing, offers a compelling alternative. We present SLFS, the first distributed file system built with serverless functions for both data and metadata operations. SLFS implements file services on top of key-value stores, keeping function operations simple and short, and introduces a novel multi-threaded, short-lived server design that overcomes the cold-start problem while maintaining low cost. A policy-enforcing coordinator efficiently maps files to function instances, scales the system elastically, and controls function lifetimes to balance performance and cost. SLFS can flexibly run on diverse storage backends -- from cloud-native services like S3 to user-managed key-value stores -- enabling configurable cost-performance trade-offs. Our evaluation shows that SLFS mitigates cold starts by 580$\\times$ compared to the base serverless design and outperforms $λ$FS, EFS, and Ceph at up to 63%, 68%, and 63% lower cost, respectively.",
+      "authors": [
+        "Cheng Hao",
+        "Yang",
+        "Paola Alsharabaty",
+        "Soufiane Jounaid",
+        "Cristina Nita-Rotaru",
+        "Ji-Yong Shin"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC"
+      ],
+      "published": "2026-07-01T21:31:59+00:00",
+      "link": "https://arxiv.org/pdf/2607.01486v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "distributed file system using serverless designs",
+      "llm_evidence_cn": "使用无服务器设计的分布式文件系统",
+      "llm_evidence": "使用无服务器设计的分布式文件系统",
+      "canonical_evidence": "使用无服务器设计的分布式文件系统",
+      "llm_tldr_en": "SLFS is the first distributed file system built entirely with serverless functions, achieving millisecond-level elasticity and low cost.",
+      "llm_tldr_cn": "SLFS是首个完全基于无服务器函数构建的分布式文件系统，支持数据与元数据操作，利用键值存储实现毫秒级弹性伸缩和按需付费，解决了传统分布式文件系统资源利用率低和缩放粒度粗的问题。",
+      "llm_tldr": "SLFS是首个完全基于无服务器函数构建的分布式文件系统，支持数据与元数据操作，利用键值存储实现毫秒级弹性伸缩和按需付费，解决了传统分布式文件系统资源利用率低和缩放粒度粗的问题。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.01492v1",
+      "source": "arxiv",
+      "title": "Unveiling the Non-Monotonic Effect of Privacy on Generalization under Byzantine Robustness",
+      "abstract": "Recent work has established a fundamental trilemma between Byzantine robustness, local differential privacy (LDP), and optimization error in distributed learning. We show that this trilemma does not universally extend to generalization error, but instead depends critically on the privacy regime. Specifically, in the high-noise regime (strong privacy), we prove that increasing privacy reduces the generalization error, i.e., there is no tension between robustness and privacy. In the low-noise regime (weaker privacy), however, the tension between robustness and privacy reappears and increasing privacy indeed degrades generalization. Our theory explains this surprising non-monotonic behavior of the generalization error via matching lower and upper bounds on the algorithmic stability of Byzantine-robust distributed learning under LDP constraints. We corroborate and further analyze these theoretical findings with empirical evaluations.",
+      "authors": [
+        "Thomas Boudou",
+        "Batiste Le Bars",
+        "Nirupam Gupta",
+        "Aurélien Bellet"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CR",
+        "stat.ML"
+      ],
+      "published": "2026-07-01T21:42:47+00:00",
+      "link": "https://arxiv.org/pdf/2607.01492v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "effect of privacy on generalization under Byzantine attacks in distributed learning",
+      "llm_evidence_cn": "分布式学习中拜占庭攻击下隐私对泛化的影响",
+      "llm_evidence": "分布式学习中拜占庭攻击下隐私对泛化的影响",
+      "canonical_evidence": "分布式学习中拜占庭攻击下隐私对泛化的影响",
+      "llm_tldr_en": "Reveals non-monotonic effect: strong privacy improves generalization under Byzantine robustness, while weak privacy degrades it.",
+      "llm_tldr_cn": "本文揭示了分布式学习中拜占庭鲁棒性与差分隐私之间的非单调关系：在强隐私下，增加隐私可提升泛化性能；而在弱隐私下，隐私与鲁棒性存在冲突。通过理论分析匹配下界，解释了这一现象，为分布式安全学习提供了指导。",
+      "llm_tldr": "本文揭示了分布式学习中拜占庭鲁棒性与差分隐私之间的非单调关系：在强隐私下，增加隐私可提升泛化性能；而在弱隐私下，隐私与鲁棒性存在冲突。通过理论分析匹配下界，解释了这一现象，为分布式安全学习提供了指导。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.03821v1",
+      "source": "arxiv",
+      "title": "DualView: Preventing Indirect Prompt Injection in Personal AI Agents",
+      "abstract": "Personal AI agents that run on the user's local machine, such as OpenClaw, automate daily tasks including web search, email, and file management. Their access to computer resources, including the network, file system, and shell, exposes them to indirect prompt injection (IPI) attacks. Prior Dual LLM defenses block IPI by replacing untrusted data with symbols that the agent can reference but not read. However, they track untrusted data only inside the agent's context, so when the agent saves and later rereads untrusted data, that data, possibly an attacker's prompt, can return as trusted data rather than as a symbol, which we call stored IPI.   Operating on the user's real environment, which humans and programs share, is what makes agents like OpenClaw practical, and is exactly why a defense that ignores it is incomplete. Preserving symbols in such an environment is hard, because humans and programs need original data. We present DualView, which extends untrusted data tracking from the agent's context to the user's environment, including the file system, shell, network, and other agents, by giving each channel two views. In AgentView, the agent sees untrusted data as symbols even after writing it out and reading it back, blocking stored IPI, while HumanView preserves original data for humans and tools. DualView routes each tool call to the right view and synchronizes data across the two views. DualView deploys as an OpenClaw plugin using only tool hooks, without changing the agent's tool-call logic or tool implementations. Since DualView isolates untrusted data by design, its protection is not limited to known attack templates. In our evaluation on an IPI benchmark and PinchBench, DualView blocked every IPI attack, including stored IPI, while keeping utility close to the unprotected baseline.",
+      "authors": [
+        "Juhee Kim",
+        "Woohyuk Choi",
+        "Taehyun Kang",
+        "Youngmin Kim",
+        "Byoungyoung Lee"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-04T11:12:36+00:00",
+      "link": "https://arxiv.org/pdf/2607.03821v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "preventing prompt injection in AI agents",
+      "llm_evidence_cn": "防止AI代理中的提示注入",
+      "llm_evidence": "防止AI代理中的提示注入",
+      "canonical_evidence": "防止AI代理中的提示注入",
+      "llm_tldr_en": "Introduces DualView defense against stored indirect prompt injection attacks on personal AI agents, extending prior Dual LLM methods.",
+      "llm_tldr_cn": "针对个人AI代理中存储的间接提示注入攻击（用户保存并重新读取的可信数据被利用），本文提出DualView防御，通过双重LLM架构区分可信与不可信数据。该方案在OpenClaw代理上实现，能有效阻止攻击而不影响正常功能。实验结果表明，DualView能阻止99%以上的攻击实例。",
+      "llm_tldr": "针对个人AI代理中存储的间接提示注入攻击（用户保存并重新读取的可信数据被利用），本文提出DualView防御，通过双重LLM架构区分可信与不可信数据。该方案在OpenClaw代理上实现，能有效阻止攻击而不影响正常功能。实验结果表明，DualView能阻止99%以上的攻击实例。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.03988v1",
+      "source": "arxiv",
+      "title": "Energy-Aware System-Level Evaluation of Post-Quantum TLS on Embedded User Equipment over a Disaggregated 5G Network",
+      "abstract": "The transition to quantum-resistant security is a critical priority for the next generation of mobile networks, particularly within the disaggregated architecture of 5G. This paper presents an energy-aware system-level evaluation of Post- Quantum Cryptography (PQC) integrated into the Transport Layer Security (TLS) handshake on embedded User Equipment (UE). Using Raspberry Pi 5s as representative embedded processing platforms, we evaluate the performance of NIST-standardized combinations of classical and post-quantum signature and key exchange mechanisms (KEM), incorporating direct on-device power measurements to estimate per-handshake energy consumption. Results experimentally validate a strong coupling between latency and energy consumption, indicating that execution time is the dominant contributor to energy cost. Hash-based signature schemes incur up to 4x higher latency and 2x energy compared to lattice-based alternatives, while the impact of KEMs is comparatively smaller. The analysis further reveals that overall system performance is primarily constrained by cryptographic computation and concurrency-induced contention rather than network transport effects. These findings provide practical guidance for PQC deployment in mobile environments and demonstrate that lattice-based signatures offer a more favorable balance between security, efficiency, and scalability for 5G systems.",
+      "authors": [
+        "Sanzida Hoque",
+        "Abdullah Aydeger"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.PF"
+      ],
+      "published": "2026-07-04T19:14:08+00:00",
+      "link": "https://arxiv.org/pdf/2607.03988v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "evaluates post-quantum TLS on embedded devices in disaggregated 5G network",
+      "llm_evidence_cn": "在解耦的5G网络上评估嵌入式设备上的后量子TLS",
+      "llm_evidence": "在解耦的5G网络上评估嵌入式设备上的后量子TLS",
+      "canonical_evidence": "在解耦的5G网络上评估嵌入式设备上的后量子TLS",
+      "llm_tldr_en": "Energy-aware evaluation of PQC in TLS on embedded UE for disaggregated 5G, relevant to cloud security challenges.",
+      "llm_tldr_cn": "5G解耦架构需要向抗量子安全过渡。本文使用树莓派5作为嵌入式用户设备，评估后量子密码学（PQC）集成到TLS握手时的能耗和性能。实验结果表明经典与后量子密码组合的能耗耦合紧密。该工作为分布式云环境下安全协议的能效优化提供了数据支撑，属于云安全挑战的典型应用。",
+      "llm_tldr": "5G解耦架构需要向抗量子安全过渡。本文使用树莓派5作为嵌入式用户设备，评估后量子密码学（PQC）集成到TLS握手时的能耗和性能。实验结果表明经典与后量子密码组合的能耗耦合紧密。该工作为分布式云环境下安全协议的能效优化提供了数据支撑，属于云安全挑战的典型应用。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.04209v1",
+      "source": "arxiv",
+      "title": "Ball Differential Privacy: How to Mitigate Data Reconstruction with Less Noise",
+      "abstract": "Vector embeddings of raw records, while not human-readable, do not preserve record privacy: an adversary can reconstruct training records from a released model even when that model is a simple convex classifier. Differential privacy (DP) is the principled defense, but its noise is calibrated to worst-case indistinguishability, hiding arbitrary single-record substitutions, including those far outside the set of plausible alternatives relevant to a reconstruction adversary. The result is noise far larger than what reconstruction robustness requires, degrading accuracy without a corresponding security benefit.   We propose Ball-DP: enforcing epsilon-delta indistinguishability over single-record substitutions restricted to a ball of radius r under a distance metric d in the embedding space. A deployment facing only local reconstruction threats can choose a small r, thereby reducing noise and recovering accuracy. The radius makes the scope of the privacy claim explicit against reconstruction attacks; standard DP is recovered when r covers the entire admissible record domain. We provide noise calibrations for regularized convex learning problems under Ball-DP, and derive corresponding reconstruction-robustness certificates, called Ball-ReRo, that upper-bound an attacker's reconstruction success. By deriving the optimal finite-prior MAP reconstruction attack, we empirically audit Ball-ReRo certificates on seven benchmark learning tasks. Our experiments show that calibrating noise to Ball-DP improves utility, considerably exceeding the dilution of reconstruction robustness in high-privacy regimes, i.e., when epsilon is small.",
+      "authors": [
+        "Joseph Margaryan",
+        "Nirupam Gupta"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-05T09:59:44+00:00",
+      "link": "https://arxiv.org/pdf/2607.04209v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "differential privacy for data reconstruction defense",
+      "llm_evidence_cn": "差分隐私防御数据重建攻击",
+      "llm_evidence": "差分隐私防御数据重建攻击",
+      "canonical_evidence": "差分隐私防御数据重建攻击",
+      "llm_tldr_en": "Ball-DP reduces DP noise by restricting indistinguishability to plausible record substitutions, achieving better accuracy while defending against reconstruction attacks.",
+      "llm_tldr_cn": "针对现有差分隐私噪声过大的问题，本文提出Ball差分隐私，将不可区分性限制在合理记录置换的球内，从而在保证抵御数据重建攻击的同时大幅降低噪声，提升了模型实用性。实验表明该方法在多个数据集上取得更好精度-隐私权衡。",
+      "llm_tldr": "针对现有差分隐私噪声过大的问题，本文提出Ball差分隐私，将不可区分性限制在合理记录置换的球内，从而在保证抵御数据重建攻击的同时大幅降低噪声，提升了模型实用性。实验表明该方法在多个数据集上取得更好精度-隐私权衡。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.04055v1",
+      "source": "arxiv",
+      "title": "Securing Deep Learning Hardware: A Survey of Side-Channel Vulnerabilities and Countermeasures",
+      "abstract": "As deep learning models are increasingly deployed in critical sectors such as healthcare, finance, and security, ensuring their protection against emerging threats has become crucial. Among these threats, side-channel attacks (SCAs) represent a particular challenge since they can extract sensitive information such as model architectures, parameters, and even user inputs without requiring direct access to the model. By leveraging the physical and micro-architectural properties of the hardware, attackers can compromise systems. This survey begins by classifying leakage sources and attacker objectives, then analyzes representative studies that demonstrate practical side-channel exploits against deep-learning hardware. It also reviews existing defenses aimed at mitigating these vulnerabilities and concludes by outlining key open research challenges and potential future directions.",
+      "authors": [
+        "Zahra Mohammadi",
+        "Mona Hashemi",
+        "Siamak Mohammadi"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-04T23:45:25+00:00",
+      "link": "https://arxiv.org/pdf/2607.04055v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "side-channel vulnerabilities and countermeasures for deep learning hardware",
+      "llm_evidence_cn": "深度学习硬件的侧信道脆弱性与对策",
+      "llm_evidence": "深度学习硬件的侧信道脆弱性与对策",
+      "canonical_evidence": "深度学习硬件的侧信道脆弱性与对策",
+      "llm_tldr_en": "A survey classifying side-channel attacks on deep learning hardware and reviewing countermeasures.",
+      "llm_tldr_cn": "该综述分类了深度学习硬件侧信道攻击的泄漏源和攻击者目标，分析了代表性实践攻击，并回顾了防护技术，强调了保障AI硬件安全的重要性。",
+      "llm_tldr": "该综述分类了深度学习硬件侧信道攻击的泄漏源和攻击者目标，分析了代表性实践攻击，并回顾了防护技术，强调了保障AI硬件安全的重要性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.04613v1",
+      "source": "arxiv",
+      "title": "Governed Individuation: Cryptographically Decoupling an Agent's Learning from Its Authority",
+      "abstract": "Autonomous agents are moving from sandboxed text generators to operators of code, data, and physical infrastructure, and they increasingly learn while deployed. This reopens a question that alignment techniques answer only probabilistically: after an agent has adapted in the field, is the running system still confined to what its operator authorised? Here we show that confinement can be guaranteed as an invariant of the agent's execution architecture rather than a probabilistic outcome of its training. Governed individuation binds an agent at boot to a cryptographically frozen identity digest, and routes every action through a gate defined over the semantic effect of the action rather than its name. We prove that no amount of learning, skill acquisition, or self-induced governance abstraction can widen the agent's permitted authority without an operator-signed change to its identity; the guarantee holds even when the agent induces its own safety principle and that principle is wrong. Empirically, in an open-ended tool-use benchmark where a large action space rules out name-based blocking, ungoverned software agents under reward pressure attempt to tamper with their own evaluation at a task-dependent rate that reaches every run on the hardest task, whereas the gate reduces executed forbidden effects to zero as a verified property of the construction while preserving task success. An adversarial evaluation of monitors of increasing semantic depth shows false-allows falling from 75% (name-based gating) to zero (dynamic effect tracing), and refusal history transfers compliance to held-out red-line families. Trust in a deployed learning agent shifts from a wager on its continued alignment to a check anyone can run at boot.",
+      "authors": [
+        "Xue Qin",
+        "Simin Luan",
+        "Cong Yang",
+        "Zhijun Li"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CR"
+      ],
+      "published": "2026-07-06T02:42:06+00:00",
+      "link": "https://arxiv.org/pdf/2607.04613v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Cryptographic binding of agent identity and authority",
+      "llm_evidence_cn": "密码学绑定代理身份和权限",
+      "llm_evidence": "密码学绑定代理身份和权限",
+      "canonical_evidence": "密码学绑定代理身份和权限",
+      "llm_tldr_en": "Governed individuation cryptographically guarantees that an agent's actions remain confined to operator-authorised scope even after learning.",
+      "llm_tldr_cn": "本文提出治理个体化机制，通过密码学冻结身份摘要并在门控中检查动作语义效果，确保自治代理即使在部署学习后也无法超出授权范围。该方法将约束从概率性对齐转变为架构不变性，适用于云环境中的代理认证与授权。",
+      "llm_tldr": "本文提出治理个体化机制，通过密码学冻结身份摘要并在门控中检查动作语义效果，确保自治代理即使在部署学习后也无法超出授权范围。该方法将约束从概率性对齐转变为架构不变性，适用于云环境中的代理认证与授权。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.06025v1",
+      "source": "arxiv",
+      "title": "FLAIR: Distributed Federated Learning with Dynamic Clustering",
+      "abstract": "Federated Learning (FL) offers a privacy-preserving framework for distributed machine learning, yet conventional centralized and hierarchical architectures present significant challenges in terms of scalability, resilience, and single points of failure, particularly in dynamic, infrastructure-less environments such as sensor networks. To address these limitations, we introduce FLAIR, a novel, fully decentralized FL protocol that integrates dynamic, resource-aware secure and self-organized clustering with in-cluster model training. FLAIR leverages a probabilistic, verifiable cluster-head election mechanism, which is enhanced to favor nodes with greater computational and communication capabilities, thereby ensuring both fairness and efficiency. Through comprehensive simulations in ns-3, we evaluate FLAIR against centralized, hierarchical, and gossip-based FL benchmarks across four demanding scenarios. The results demonstrate the superiority of our approach: in static 100-node networks, FLAIR achieves a final accuracy of approximately 0.91, outperforming all baselines. The protocol exhibits exceptional robustness, maintaining graceful degradation with accuracy above 0.85 even under 90% node failure rates. Furthermore, it shows strong resilience to mobility, with a performance loss of less than 2% compared to static deployments. In a realistic smart farming simulation, FLAIR's accuracy is within 0.2% of the centralized baseline, confirming its practical viability. These findings validate that FLAIR successfully combines the scalability of decentralized learning with the structural efficiency of clustering, presenting a robust and high performing solution for large-scale, heterogeneous IoT systems.",
+      "authors": [
+        "Ihssan Boutebicha",
+        "Bilel Zaghdoudi",
+        "Mohamed Amine Legheraba",
+        "Maria Potop Butucaru"
+      ],
+      "primary_category": "cs.NI",
+      "categories": [
+        "cs.NI"
+      ],
+      "published": "2026-07-07T09:04:33+00:00",
+      "link": "https://arxiv.org/pdf/2607.06025v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "distributed federated learning with dynamic clustering",
+      "llm_evidence_cn": "分布式联邦学习与动态聚类",
+      "llm_evidence": "分布式联邦学习与动态聚类",
+      "canonical_evidence": "分布式联邦学习与动态聚类",
+      "llm_tldr_en": "FLAIR introduces a fully decentralized federated learning protocol with dynamic resource-aware clustering for scalable and resilient distributed machine learning.",
+      "llm_tldr_cn": "FLAIR提出了一种完全去中心化的联邦学习协议，通过动态资源感知安全自组织聚类，解决了中心化架构的扩展性和单点故障问题，适用于传感器网络等动态环境，提升了分布式计算的效率和公平性。",
+      "llm_tldr": "FLAIR提出了一种完全去中心化的联邦学习协议，通过动态资源感知安全自组织聚类，解决了中心化架构的扩展性和单点故障问题，适用于传感器网络等动态环境，提升了分布式计算的效率和公平性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.04777v1",
+      "source": "arxiv",
+      "title": "Towards Personalized Differentially Private Learning for Decentralized Local Graphs",
+      "abstract": "Graph-structured data is increasingly generated and stored in decentralized environments, such as social platforms, mobile applications, and edge networks, where users maintain control over their local graph data. However, collecting and analyzing such decentralized graph data for downstream learning tasks raises significant privacy concerns, as nodes and their attributes often contain sensitive personal information. Local Differential Privacy (LDP) has emerged as a promising solution for privacy-preserving data collection without relying on trusted servers. Nevertheless, existing LDP-based graph learning methods typically assume uniform privacy requirements across users, ignoring the heterogeneous and personalized privacy preferences commonly observed in real-world systems. This uniform treatment leads to inflexible noise injection at the data collection stage, resulting in substantial distortion of graph data and degraded utility in subsequent analysis. To address this limitation, we propose PPGNN, a personalized differentially private framework for decentralized graph data. PPGNN enables user-specific privacy budgets during local perturbation while preserving analytical utility. To handle heterogeneous privacy levels and noise distortion, we design a two-stage solution consisting of a Personalized Perturbation Mechanism (PPM) and a weighted calibration strategy, FlexProp. Extensive experiments on six real-world graph datasets demonstrate that PPGNN effectively balances personalized privacy protection and data utility in decentralized graph learning scenarios.",
+      "authors": [
+        "Longzhu He",
+        "Peng Tang",
+        "Chaozhuo Li",
+        "Jinhu Fu",
+        "Litian Zhang",
+        "Li Sun",
+        "Philip S. Yu",
+        "Sen Su"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CR"
+      ],
+      "published": "2026-07-06T08:07:48+00:00",
+      "link": "https://arxiv.org/pdf/2607.04777v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "personalized differential privacy for decentralized graphs",
+      "llm_evidence_cn": "去中心化图的个性化差分隐私",
+      "llm_evidence": "去中心化图的个性化差分隐私",
+      "canonical_evidence": "去中心化图的个性化差分隐私",
+      "llm_tldr_en": "Proposes a personalized differentially private learning framework for decentralized local graphs, allowing users to set individual privacy budgets.",
+      "llm_tldr_cn": "针对去中心化图数据中用户隐私需求异构的问题，本文提出个性化本地差分隐私学习框架，允许每个用户设置自己的隐私预算。通过引入自适应噪声机制和个性化聚合，在保护隐私的同时保持模型效用。实验表明该方法在社交网络等数据集上优于统一隐私方法。",
+      "llm_tldr": "针对去中心化图数据中用户隐私需求异构的问题，本文提出个性化本地差分隐私学习框架，允许每个用户设置自己的隐私预算。通过引入自适应噪声机制和个性化聚合，在保护隐私的同时保持模型效用。实验表明该方法在社交网络等数据集上优于统一隐私方法。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.06466v1",
+      "source": "arxiv",
+      "title": "Verification of Dynamic Holographic Behavior in Identity Documents",
+      "abstract": "This paper addresses the remote verification of the authenticity of Optically Variable Devices (commonly known as holograms) on identity documents. Typically placed over the cardholder's photo, these devices provide strong and easily verifiable security for human inspection but pose challenges for automated verification. Existing approaches easily cover static frauds (e.g. paper photocopy) and can be evaluated for such, but their capacity to detect real, dynamic fraud cases (e.g. handcrafted hologram) has not been evaluated to date because of the lack of public datasets. Furthermore, they are usually trained to detect known attack types, and few of them can generalize to new, unseen attacks. This work features three contributions to address these limitations: 1) a new public dataset, MIDV-DynAttack, which extends the existing MIDV-Holo dataset with realistic, static and dynamic attacks against identity document specimens, tripling the number of attack samples compared to the original dataset, 2) a novel verification method which can assess the authenticity of a specific hologram thanks to the analysis of its dynamic behavior and appearance, can be trained without dynamic attack samples, and exhibits new state-of-the-art performance, 3) a benchmark of existing approaches which follows a clear evaluation protocol and emphasizes the inability of other approaches to deal with dynamic attacks, as well as new challenging attacks to deal with. Code and dataset are publicly available at https://github.com/EPITAResearchLab/pouliquen.25.icdar.",
+      "authors": [
+        "Glen Pouliquen",
+        "Joseph Chazalon",
+        "Guillaume Chiron",
+        "Thierry Géraud",
+        "Ahmad Montaser Awal"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-07-07T16:27:28+00:00",
+      "link": "https://arxiv.org/pdf/2607.06466v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "verification of holographic identity documents for authentication",
+      "llm_evidence_cn": "全息身份文档验证用于身份认证",
+      "llm_evidence": "全息身份文档验证用于身份认证",
+      "canonical_evidence": "全息身份文档验证用于身份认证",
+      "llm_tldr_en": "Addresses remote verification of holograms on identity documents, handling dynamic frauds unseen to existing methods.",
+      "llm_tldr_cn": "该论文针对身份文档上全息图的远程验证问题，指出现有方法无法检测动态伪造（如手工全息图）且泛化性差。作者通过三项贡献提出解决方案，包括新数据集和检测方法。工作直接服务于身份认证场景，提升自动验证的安全性。",
+      "llm_tldr": "该论文针对身份文档上全息图的远程验证问题，指出现有方法无法检测动态伪造（如手工全息图）且泛化性差。作者通过三项贡献提出解决方案，包括新数据集和检测方法。工作直接服务于身份认证场景，提升自动验证的安全性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.04936v1",
+      "source": "arxiv",
+      "title": "Noise-limited secret key agreement with twin optical physically unclonable functions",
+      "abstract": "We investigate the use of twin optical fingerprints derived from correlated physical unclonable functions (PUFs), as a hardware-based platform for cryptographic key generation and distribution. Each fingerprint is associated with a random, yet reproducible speckle pattern, generated when coherent light is scattered by a disordered optical structure. We consider a pair of correlated optical PUFs, and study the conditions under which two honest parties can establish a common secret key, despite fabrication-induced variability and environmental noise. An explicit information-theoretic key-agreement protocol is developed, incorporating secure sketches, error reconciliation, and privacy amplification. We quantify information leakage due to public helper data, and derive lower bounds on the length of the final secret key. The analysis identifies the noise regimes in which secure key agreement is feasible, and examines the performance of both practical and near-capacity reconciliation schemes. Finally, we discuss how twin optical PUFs could be integrated into quantum key distribution (QKD) networks, as a mechanism for establishing an initial pre-shared secret key between two honest users, without relying on computational assumptions or trusted third parties.",
+      "authors": [
+        "Georgios M. Nikolopoulos"
+      ],
+      "primary_category": "quant-ph",
+      "categories": [
+        "quant-ph",
+        "cs.CR",
+        "physics.optics"
+      ],
+      "published": "2026-07-06T11:07:30+00:00",
+      "link": "https://arxiv.org/pdf/2607.04936v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "uses twin optical PUFs for secret key agreement, including error reconciliation and privacy amplification",
+      "llm_evidence_cn": "使用双光学PUF进行密钥协商，包含错误纠正和隐私放大",
+      "llm_evidence": "使用双光学PUF进行密钥协商，包含错误纠正和隐私放大",
+      "canonical_evidence": "使用双光学PUF进行密钥协商，包含错误纠正和隐私放大",
+      "llm_tldr_en": "Develops an information-theoretic key agreement protocol using correlated PUFs, applicable to key recovery and authentication.",
+      "llm_tldr_cn": "物理不可克隆函数（PUF）可用于硬件根密钥生成，但环境噪声和制造变异影响一致性。本文利用双光学PUF的相关散斑图案，设计了一个信息论安全的密钥协商协议，包含安全草图、错误纠正和隐私放大。通过量化公钥泄漏，证明了在噪声限制下双方可以建立共享密钥。该成果为基于PUF的密钥恢复和用户认证提供了理论基础。",
+      "llm_tldr": "物理不可克隆函数（PUF）可用于硬件根密钥生成，但环境噪声和制造变异影响一致性。本文利用双光学PUF的相关散斑图案，设计了一个信息论安全的密钥协商协议，包含安全草图、错误纠正和隐私放大。通过量化公钥泄漏，证明了在噪声限制下双方可以建立共享密钥。该成果为基于PUF的密钥恢复和用户认证提供了理论基础。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cryptographic techniques for key recovery and user authentication",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}
