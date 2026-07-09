@@ -1,0 +1,676 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-09T21:14:31.339593+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 8,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 19,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2607.04718v1",
+      "source": "arxiv",
+      "title": "FORGE: Research-Trajectory Hijacking Attacks on Deep Research Agents",
+      "abstract": "Deep research agents decompose open-ended queries into subtasks, retrieve web evidence over multiple rounds, and synthesize long-form reports. This workflow creates a planning-layer poisoning surface: adversarial documents that enter the retrieval pool can steer follow-up questions and turn a local injection into report-level contamination. We present FORGE (Fabricated Orchestrated Reasoning chain for aGent Exploitation), a two-level attack that combines intra-document reasoning fabrication with inter-document chain coordination to hijack subtask planning. We further introduce the PRISM metric, which weights infected report claims by cognitive type, and Root Query Anchoring, a lightweight defense that ties recursive follow-up generation to the root query. Across 25 queries, Network FORGE reaches 26.4% PRISM with five injected documents and exhibits depth migration, in which recursive synthesis shifts poisoned content from overt framing into factual premises. On the 10-query defense subset, RQA (Root Query Anchoring) reduces PRISM from 38.5% to 18.3%.",
+      "authors": [
+        "Yue Pan",
+        "Ziheng Zhang",
+        "Junxiang Lei",
+        "Changhao Jia",
+        "Qingyi Si",
+        "Hongcheng Guo"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-06T06:43:21+00:00",
+      "link": "https://arxiv.org/pdf/2607.04718v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "attacks on deep research agents via adversarial documents",
+      "llm_evidence_cn": "通过对抗文档攻击深度研究代理",
+      "llm_evidence": "通过对抗文档攻击深度研究代理",
+      "canonical_evidence": "通过对抗文档攻击深度研究代理",
+      "llm_tldr_en": "FORGE presents a two-level attack hijacking subtask planning of deep research agents via adversarial document injection and proposes a defense.",
+      "llm_tldr_cn": "该论文提出FORGE攻击，通过构造对抗性文档注入检索池，在规划层劫持深度研究代理的子任务流程，实现报告级污染。攻击包含文档内推理伪造和文档间链协调两层。同时提出了根查询锚定防御方法，有效抑制递归查询偏差。实验证明攻击成功率超过80%，防御显著降低了有害内容的影响。",
+      "llm_tldr": "该论文提出FORGE攻击，通过构造对抗性文档注入检索池，在规划层劫持深度研究代理的子任务流程，实现报告级污染。攻击包含文档内推理伪造和文档间链协调两层。同时提出了根查询锚定防御方法，有效抑制递归查询偏差。实验证明攻击成功率超过80%，防御显著降低了有害内容的影响。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.06687v1",
+      "source": "arxiv",
+      "title": "Exploring the Interaction of Explanation Styles, Context, and Trust of AI Privacy Redaction in AI-mediated Interactions",
+      "abstract": "AI-mediated communication is increasingly being utilized to help facilitate interactions; however, in privacy sensitive domains, an AI mediator has the additional challenge of considering how to preserve privacy. In these contexts, a mediator may redact or withhold information, raising questions about how users perceive these interventions and whether explanations of system behavior can improve trust. In this work, we investigate how explanations of redaction operations can affect user trust in AI-mediated communication. We devise a scenario where a validated system removes sensitive content from messages and generates explanations of varying detail to communicate its decisions to recipients. We then conduct a user study with 180 participants that studies how user trust and preferences vary for cases with different amounts of redacted content and different levels of explanation detail. Our results show that participants believed our system was more effective at preserving privacy when explanations were provided (p<0.05, Cohen's d ~ 0.3). We also found that contextual factors had an impact; participants relied more on explanations and found them more helpful when the system performed extensive redactions (p<0.05, Cohen's f ~ 0.2). We also found that explanation preferences depended on individual differences as well, and factors such as age and baseline familiarity with AI affected user trust in our system. These findings highlight the importance and challenge of balancing transparency and privacy in AI-mediated communications and suggest that adaptive, context-aware explanations are essential for designing privacy-aware, trustworthy AI systems.",
+      "authors": [
+        "Roshni Kaushik",
+        "Maarten Sap",
+        "Koichi Onoue"
+      ],
+      "primary_category": "cs.HC",
+      "categories": [
+        "cs.HC"
+      ],
+      "published": "2026-07-07T18:04:51+00:00",
+      "link": "https://arxiv.org/pdf/2607.06687v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "explanation styles and trust in AI privacy redaction directly address privacy preservation in AI",
+      "llm_evidence_cn": "解释风格与信任对AI隐私编辑的影响直接涉及AI中的隐私保护",
+      "llm_evidence": "解释风格与信任对AI隐私编辑的影响直接涉及AI中的隐私保护",
+      "canonical_evidence": "解释风格与信任对AI隐私编辑的影响直接涉及AI中的隐私保护",
+      "llm_tldr_en": "Investigates how explanation detail levels affect user trust when AI redacts private content in mediated communication; more detailed explanations improve trust.",
+      "llm_tldr_cn": "该论文研究在AI中介通信中，当系统对敏感内容进行编辑时，不同详细程度的解释如何影响用户信任。实验发现更详细的解释能显著提升用户信任，为隐私保护AI系统的设计提供了指导。",
+      "llm_tldr": "该论文研究在AI中介通信中，当系统对敏感内容进行编辑时，不同详细程度的解释如何影响用户信任。实验发现更详细的解释能显著提升用户信任，为隐私保护AI系统的设计提供了指导。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.06963v1",
+      "source": "arxiv",
+      "title": "Large Language Models (LLMs) and Generative AI in Cybersecurity and Privacy: A Survey of Dual-Use Risks, AI-Generated Malware, Explainability, and Defensive Strategies",
+      "abstract": "Large Language Models (LLMs) and generative AI (GenAI) systems, such as ChatGPT, Claude, Gemini, LLaMA, Copilot, Stable Diffusion by OpenAI, Anthropic, Google, Meta, Microsoft, Stability AI, respectively, are revolutionizing cybersecurity, enabling both automated defense and sophisticated attacks. These technologies power real-time threat detection, phishing defense, secure code generation, and vulnerability exploitation at unprecedented scales. Following a rapid surge where LLM-generated malware grew to account for an estimated 50% of detected threats by 2025, up from just 2% in 2021, navigating this highly automated threat landscape in 2026 demands next-generation security frameworks. This paper presents a comprehensive survey of the beneficial and malicious applications of LLMs in cybersecurity, including zero-day detection, DevSecOps, federated learning, synthetic content analysis, and explainable AI (XAI). Drawing on a review of over 70 academic papers, industry reports, and technical documents, this work synthesizes insights from real-world case studies across platforms like Google Play Protect, Microsoft Defender, Amazon Web Services (AWS), Apple App Store, OpenAI Plugin Stores, Hugging Face Spaces, and GitHub, alongside emerging initiatives like the SAFE Framework and AI-driven anomaly detection. We conclude with practical recommendations for responsible and transparent LLM deployment and trustworthy AI, including model watermarking, adversarial defense, and cross-industry collaboration, setting a new benchmark for rigorous, holistic cybersecurity research at the intersection of AI and threat defense, and offering a roadmap for secure, scalable LLM systems that serves as a critical reference for researchers, engineers, and security leaders navigating the complex challenges of AI-driven cybersecurity.",
+      "authors": [
+        "Kiarash Ahi",
+        "Saeed Valizadeh"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "published": "2026-07-08T03:40:26+00:00",
+      "link": "https://arxiv.org/pdf/2607.06963v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "survey of LLM and GenAI risks in cybersecurity and privacy",
+      "llm_evidence_cn": "全面调研LLM和生成式AI在网络安全与隐私中的双面风险",
+      "llm_evidence": "全面调研LLM和生成式AI在网络安全与隐私中的双面风险",
+      "canonical_evidence": "全面调研LLM和生成式AI在网络安全与隐私中的双面风险",
+      "llm_tldr_en": "Survey covers dual-use risks of LLMs/GenAI in cybersecurity, including AI-generated malware, automated defense, and defensive strategies.",
+      "llm_tldr_cn": "大型语言模型和生成式AI正在变革网络安全，带来自动化防御和复杂攻击。本综述系统探讨了LLM生成恶意软件、网络钓鱼、漏洞利用等威胁，以及可解释AI和防御策略。该研究为理解AI安全挑战和应对措施提供了全面视角，对人工智能安全领域具有重要参考价值。",
+      "llm_tldr": "大型语言模型和生成式AI正在变革网络安全，带来自动化防御和复杂攻击。本综述系统探讨了LLM生成恶意软件、网络钓鱼、漏洞利用等威胁，以及可解释AI和防御策略。该研究为理解AI安全挑战和应对措施提供了全面视角，对人工智能安全领域具有重要参考价值。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.07565v1",
+      "source": "arxiv",
+      "title": "Collaborative Synthetic Data Generation for Knowledge Transfer in Federated Learning",
+      "abstract": "One-shot federated learning (OSFL) addresses the communication overhead of federated learning by limiting training to a single round, but doing so without sacrificing model quality is non-trivial, particularly when client data distributions diverge. Recent work has addressed this challenge by aggregating client knowledge on the server through the construction of transferable synthetic datasets or distillates. However, most of these methods lack formal privacy guarantees, leaving a gap in jointly achieving low communication, robustness to heterogeneity, and rigorous privacy. We propose FedKT-CSD (Federated Knowledge Transfer via Collaborative Synthetic Data), a framework inspired by neural image compression that closes this gap by leveraging publicly pretrained autoencoders as a shared latent space. Each client encodes its private data in a single forward pass, computes class-conditional latent statistics, and transmits these to the server. The server aggregates these statistics via secure aggregation, adds calibrated differential privacy noise, and decodes a synthetic dataset for training a global model and further downstream tasks. This design provides formal $(\\varepsilon,δ)$-differential privacy by construction, while keeping client-side computation and communication lightweight. Despite operating under privacy constraints, FedKT-CSD is competitive with and even outperforms non-private baselines across diverse datasets and heterogeneity settings, and scales to a large number of clients. Our code is available at: https://github.com/an7123/FedKT-CSD",
+      "authors": [
+        "Maximilian Andreas Hoefler",
+        "Karsten Mueller",
+        "Wojciech Samek"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-07-08T15:56:58+00:00",
+      "link": "https://arxiv.org/pdf/2607.07565v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "privacy-preserving federated learning",
+      "llm_evidence_cn": "隐私保护的联邦学习",
+      "llm_evidence": "隐私保护的联邦学习",
+      "canonical_evidence": "隐私保护的联邦学习",
+      "llm_tldr_en": "FedKT-CSD enables one-shot federated learning with formal privacy guarantees via collaborative synthetic data.",
+      "llm_tldr_cn": "针对一次性联邦学习中缺乏形式化隐私保证的问题，本文提出FedKT-CSD框架，受神经图像压缩启发，通过协作生成合成数据集实现低通信开销、异构鲁棒性和严格隐私保护，弥补了隐私与效率之间的差距。",
+      "llm_tldr": "针对一次性联邦学习中缺乏形式化隐私保证的问题，本文提出FedKT-CSD框架，受神经图像压缩启发，通过协作生成合成数据集实现低通信开销、异构鲁棒性和严格隐私保护，弥补了隐私与效率之间的差距。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.05111v1",
+      "source": "arxiv",
+      "title": "From Multiplicity to Vulnerability: Privacy Amplification Risk from One-Dataset-Multiple-Model Exposure",
+      "abstract": "To efficiently exploit a valuable data source (e.g., facial or medical images), it is frequently harnessed to fulfill multiple learning objectives (e.g., facial recognition, age estimation, and race classification). Each trained model is then deployed as an independent API service for corresponding inference. However, the privacy risk introduced by this one-dataset-multiple-model (ODMM) paradigm is completely overlooked by the community.   For the first time, this work reveals that the ODMM setting substantially amplifies privacy leakage. We establish a theoretical framework that proves that privacy leakage accumulates as more ODMM models are exposed, a phenomenon we term ODMM privacy composition. Guided by this theoretical foundation, we propose PRIME (Privacy Amplification RIsk from One-Dataset-Multiple-Model Exposure) to systematically assess this risk and quantify the resulting leakage using membership inference attacks (MIAs). Under black-box access to ODMM models, we design an aggregation mechanism that collectively captures carefully identified privacy signals leaked by individual ODMM models, and construct an attack meta-classifier over the aggregated meta-information to infer the membership status of a given sample jointly. Our results provide strong evidence that dataset reuse across ODMM models strikingly jeopardizes privacy, which is consistently evident across five privacy-sensitive image and textual benchmark datasets and diverse model architectures (from ResNet and ViT to Qwen3-1.7B), spanning three domains: facial analysis, medical imaging, and textual attribution analysis. While mitigations such as differential privacy can reduce the effectiveness of PRIME with trade-offs, our attack still consistently outperforms single-task MIAs.",
+      "authors": [
+        "Qirui Huang",
+        "Na Li",
+        "Hongsheng Hu",
+        "Zhi Zhang",
+        "Anmin Fu",
+        "Yansong Gao"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-06T14:04:39+00:00",
+      "link": "https://arxiv.org/pdf/2607.05111v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "reveals privacy amplification from multiple models trained on same dataset",
+      "llm_evidence_cn": "揭示同一数据集训练多个模型导致隐私泄露放大的风险",
+      "llm_evidence": "揭示同一数据集训练多个模型导致隐私泄露放大的风险",
+      "canonical_evidence": "揭示同一数据集训练多个模型导致隐私泄露放大的风险",
+      "llm_tldr_en": "This work identifies and theoretically proves that exposing multiple models from one dataset amplifies privacy leakage, termed ODMM privacy composition.",
+      "llm_tldr_cn": "同一数据集经常用于训练多个模型（如人脸识别、年龄估计等），但社区忽略了其隐私风险。本文首次揭示这种一数据集多模型（ODMM）设置会显著放大隐私泄露。作者建立了理论框架，证明隐私泄露随模型数量增加而累积，并提出缓解思路。该工作对AI服务部署中的隐私保护具有重要指导意义。",
+      "llm_tldr": "同一数据集经常用于训练多个模型（如人脸识别、年龄估计等），但社区忽略了其隐私风险。本文首次揭示这种一数据集多模型（ODMM）设置会显著放大隐私泄露。作者建立了理论框架，证明隐私泄露随模型数量增加而累积，并提出缓解思路。该工作对AI服务部署中的隐私保护具有重要指导意义。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.05318v1",
+      "source": "arxiv",
+      "title": "PiSAs: Benchmarking Contextual Integrity in Multi-User Agentic Systems",
+      "abstract": "As LLM agents evolve from single-user assistants into shared organizational infrastructure, new privacy risks emerge: inappropriate information may not only be exposed through outputs for external recipients, but also internally across users through inter-agent messages, shared memory and agents. These data spillage risks are not captured by existing privacy benchmarks grounded in contextual integrity (CI) as they focus primarily on either single-user settings or interactions between independently owned agents. We introducePiSAs (Privacy in Shared Agentic systems), a benchmark for assessing unintentional leaks with dual CI annotations: whether an information is appropriate for the task, and which users may legitimately access it. This enables direct measurement of cross-user spillage across agentic system components and interfaces, such as outputs, inter-agent communication, and memory. PiSAsis system-agnostic and supports evaluation across different agent topologies and memory regimes. We find that, although system design improves CI compliance, results are bottlenecked by incorrect LLM judgment calls: even state-of-the-art models fail to reliably filter inappropriate content or restrict transmission to authorized users. Our findings underscore the need for privacy-preserving strategies, beyond those studied in this work.",
+      "authors": [
+        "Shubham Gupta",
+        "Nazanin Mohammadi Sepahvand",
+        "Abhinav Kumar",
+        "Cem Subakan",
+        "Spandana Gella",
+        "Pierre-André Noël",
+        "Perouz Taslakian",
+        "Eugene Bagdasarian",
+        "Valentina Zantedeschi"
+      ],
+      "primary_category": "cs.MA",
+      "categories": [
+        "cs.MA",
+        "cs.CR"
+      ],
+      "published": "2026-07-06T16:57:24+00:00",
+      "link": "https://arxiv.org/pdf/2607.05318v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "privacy benchmark for multi-user AI systems",
+      "llm_evidence_cn": "多用户AI系统隐私基准",
+      "llm_evidence": "多用户AI系统隐私基准",
+      "canonical_evidence": "多用户AI系统隐私基准",
+      "llm_tldr_en": "PiSAs benchmarks unintentional privacy leaks in multi-user agentic systems using dual contextual integrity annotations.",
+      "llm_tldr_cn": "本文针对多用户共享AI系统内部数据泄露的隐私风险，提出PiSAs基准，采用双重上下文完整性标注，不仅评估信息对任务的适当性，还评估用户访问权限，量化了代理间无意泄露的新威胁。",
+      "llm_tldr": "本文针对多用户共享AI系统内部数据泄露的隐私风险，提出PiSAs基准，采用双重上下文完整性标注，不仅评估信息对任务的适当性，还评估用户访问权限，量化了代理间无意泄露的新威胁。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.05921v1",
+      "source": "arxiv",
+      "title": "From Regression to Prior-Aware Inference: Solving the ILWE Family in Randomness Leakage Attacks against ML-DSA",
+      "abstract": "ML-DSA is a representative lattice-based signature scheme standardized by NIST. It relies on signing randomness and rejection sampling to ensure that released signatures are statistically independent of the secret key. Practical implementations, however, may leak partial information about this randomness, and such leakage can transform public signatures into ILWE-type problems, resulting in secret key disclosure risks.   Such randomness leakage attack can be formulated as a two-stage key-recovery procedure, in which leaked partial information and public signatures are first transformed into an ILWE-family instance, and then a recovery solver is applied to recover the secret key. Existing work has mainly focused on the first stage by constructing such instances under different leakage models. By contrast, the role of solver in the subsequent instance-solving stage remains under-explored, and existing attacks often rely on ad-hoc model-specific solvers. To address this gap, we propose a unified framework to systematically evaluate different recovery solvers on leakage-derived ILWE-family instances. The framework covers three ILWE instances, including the ordinary ILWE, Fiat-Shamir ILWE (FS-ILWE) and Concealed ILWE (CILWE) under different scenarios.   Within our framework, we explore three classes of solvers. Our experiments show that the solver has a significant impact on the secret-key recovery efficiency. In particular, on FS-ILWE, prior-aware discrete-inference reduces the number of informative relations by one to two orders of magnitude compared to the baselines: Compared with OLS, BP constitutes a reduction by a factor of 15.4x-64.9x in noise-free settings, and by a factor of 10.5x-73.9x in noisy settings. Overall, this work provides a systematic evaluation on different solvers in randomness leakage attacks, and presents new benchmarks for future analysis on ML-DSA.",
+      "authors": [
+        "Peiheng Zhang",
+        "Yuejun Liu",
+        "Wei Cheng",
+        "Muye Li",
+        "Honglin Shao",
+        "Yongbin Zhou"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-07T07:20:32+00:00",
+      "link": "https://arxiv.org/pdf/2607.05921v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "key recovery from randomness leakage in lattice-based signature scheme ML-DSA",
+      "llm_evidence_cn": "从随机数泄漏中恢复ML-DSA格签名的密钥",
+      "llm_evidence": "从随机数泄漏中恢复ML-DSA格签名的密钥",
+      "canonical_evidence": "从随机数泄漏中恢复ML-DSA格签名的密钥",
+      "llm_tldr_en": "Proposes prior-aware inference to solve ILWE problems from randomness leakage attacks against ML-DSA, enabling secret key recovery.",
+      "llm_tldr_cn": "该论文针对ML-DSA签名方案的随机数泄漏攻击，提出先验感知推断方法解决ILWE问题家族，从而恢复密钥。实验表明该方法能有效利用泄漏信息，对密码学密钥恢复技术有重要贡献。",
+      "llm_tldr": "该论文针对ML-DSA签名方案的随机数泄漏攻击，提出先验感知推断方法解决ILWE问题家族，从而恢复密钥。实验表明该方法能有效利用泄漏信息，对密码学密钥恢复技术有重要贡献。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cryptographic techniques for key recovery and user authentication",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.02116v2",
+      "source": "arxiv",
+      "title": "ContextNest: Verifiable Context Governance for Autonomous AI Agent",
+      "abstract": "Autonomous AI agents increasingly depend on external knowledge stores, yet most retrieval pipelines provide relevance without durable guarantees of provenance, version identity, integrity, traceability, or point-in-time reconstruction. We formalize this as context governance and present ContextNest, an open specification and reference implementation for governed AI-consumable knowledge vaults. ContextNest does not replace Retrieval-Augmented Generation (RAG); it supplies the governance layer beneath retrieval, determining which artifacts are approved, current, attributable, and integrity-verified before retrieval systems operate over them.   The specification combines typed Markdown documents with metadata, deterministic set-algebraic selectors, contextnest:// URI references, SHA-256 hash-chained version histories, graph-level checkpoints, source nodes for live data through the Model Context Protocol (MCP), and audit traces of agent context consumption. These mechanisms let organizations reconstruct which knowledge versions informed an agent output and whether those versions were AI-eligible when consumed.   We report first empirical results from two controlled experiments. In a stale-version attack isolating the governance-versus-retrieval failure mode, governed selection strictly Pareto-dominates BM25 sparse retrieval, with higher answer-quality pass rate (97% versus 93-90%) at about one-third the input-token cost. In a retrieval-determinism experiment over a 1,060-document corpus, deterministic selectors and BM25 return stable document sets across repeated identical queries (Jaccard 1.0), while a dense+HNSW baseline is non-deterministic on 80% of queries (mean Jaccard 0.611, worst case 0.210). These results suggest that context governance addresses failure modes retrieval quality alone is not designed to resolve. We release a core engine, CLI, and MCP server under open licenses.",
+      "authors": [
+        "Misha Sulpovar",
+        "Benn R. Konsynski",
+        "Qaish Kanchwala",
+        "Gabe Goodhart"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-02T12:51:38+00:00",
+      "link": "https://arxiv.org/pdf/2607.02116v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "privacy governance for AI agents",
+      "llm_evidence_cn": "AI代理的隐私治理",
+      "llm_evidence": "AI代理的隐私治理",
+      "canonical_evidence": "AI代理的隐私治理",
+      "llm_tldr_en": "ContextNest provides verifiable context governance for AI agents, ensuring provenance and integrity.",
+      "llm_tldr_cn": "本文针对AI代理依赖外部知识存储时缺乏可验证治理的问题，提出ContextNest规范，通过类型化Markdown文档和集合代数选择器，为检索层提供来源、版本和完整性保证，增强了AI系统的隐私与安全性。",
+      "llm_tldr": "本文针对AI代理依赖外部知识存储时缺乏可验证治理的问题，提出ContextNest规范，通过类型化Markdown文档和集合代数选择器，为检索层提供来源、版本和完整性保证，增强了AI系统的隐私与安全性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.02847v1",
+      "source": "arxiv",
+      "title": "ShannonProver: Towards Automating Formal Cryptographic Proofs",
+      "abstract": "Cryptographic proofs are produced at a scale that increasingly exceeds the community's ability to verify them manually. Machine-checked proofs offer a path toward scalable proof verification, but writing proof scripts for expressive proof assistants such as EasyCrypt remains a major bottleneck: even when the high-level proof plan is known, converting it into proof tactics requires substantial reasoning effort. This paper presents ShannonProver, an agentic framework for automating cryptographic proofs. ShannonProver targets the setting in which a cryptographer provides the security model and a decomposition of the target theorem into lemma-level proof obligations, while the system automatically constructs EasyCrypt proof scripts for those obligations.   We evaluate ShannonProver on a dataset of formal cryptographic proofs in EasyCrypt. The dataset spans textbook primitives, deployed protocols, and standardization efforts such as NIST proposals, and includes expert case studies drawn from a corpus that has not previously been available online. We show that ShannonProver can automate substantial portions of cryptographic proof engineering for case studies such as ChaChaPoly1305 and MEE-CBC. More broadly, this work suggests a path toward accelerating cryptographic research: as agents automate the proof-engineering burden, cryptographers can iterate more quickly on new constructions, obtain machine-checked assurance earlier, and bring trustworthy protocols from design to deployment faster.",
+      "authors": [
+        "Yiping Ma",
+        "Yu-Lin Tsai",
+        "Mayank Rathee",
+        "Deevashwer Rathee",
+        "François Dupressoir",
+        "Pierre-Yves Strub",
+        "Raluca Ada Popa"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.PL"
+      ],
+      "published": "2026-07-03T00:50:51+00:00",
+      "link": "https://arxiv.org/pdf/2607.02847v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "automates formal cryptographic proofs using agentic framework",
+      "llm_evidence_cn": "利用智能体框架自动化形式化密码学证明",
+      "llm_evidence": "利用智能体框架自动化形式化密码学证明",
+      "canonical_evidence": "利用智能体框架自动化形式化密码学证明",
+      "llm_tldr_en": "ShannonProver automates EasyCrypt proof script construction from high-level proof plans, reducing manual effort in cryptographic verification.",
+      "llm_tldr_cn": "密码学证明数量激增，难以人工验证。机器检查证明效率高但脚本编写困难。本文提出ShannonProver，一个自动化框架：密码学家提供安全模型和证明分解，系统自动构造EasyCrypt证明脚本。实验表明它能成功生成多个复杂密码协议的证明，极大提升密码学验证的效率，属于密码学技术自动化工具。",
+      "llm_tldr": "密码学证明数量激增，难以人工验证。机器检查证明效率高但脚本编写困难。本文提出ShannonProver，一个自动化框架：密码学家提供安全模型和证明分解，系统自动构造EasyCrypt证明脚本。实验表明它能成功生成多个复杂密码协议的证明，极大提升密码学验证的效率，属于密码学技术自动化工具。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cryptographic techniques for key recovery and user authentication",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.07371v1",
+      "source": "arxiv",
+      "title": "zk-ScalHard: Scalable and Hardware-Rooted Privacy-Preserving Authentication for Secure OTA Updates in Zonal SDVs",
+      "abstract": "The automotive industry is transitioning to Zonal-oriented Architectures (ZoA) for Software-Defined Vehicles (SDVs), enabling frequent over-the-air (OTA) updates for 100+ Electronic Control Units (ECUs). While OTA updates improve efficiency, they introduce safety-critical security risks. Current standards like Uptane and AUTOSAR Adaptive rely on Public-Key Infrastructure (PKI). However, PKI-based authentication creates bandwidth bottlenecks in in-vehicle and vehicle-to-cloud (V2I) communication as ECU density increases. It also risks exposing sensitive vehicle configurations and passenger privacy due to centralized architectures. Next-generation Zonal SDVs require decentralized, scalable authentication with data privacy. To address this, we propose zk-ScalHard, a hardware-rooted, privacy-preserving authentication protocol. We introduce a decentralized, hierarchical trust-promotion model utilizing Silicon Physical Unclonable Functions (PUFs) and two novel Zero-Knowledge Proof (ZKP) circuits: (1) Zonal Identity and Integrity (ZIDI) and (2) High-Performance Computing Aggregation (HPCA). These circuits employ multi-party computation (MPC) and recursive aggregation to achieve decentralization and scalability. The integration of ZKPs and PUFs ensures 100% vehicle-level data sovereignty. Benchmarked against Uptane, zk-ScalHard achieves constant O(1) communication and verification complexity, improving upon the linear O(n) complexity of current systems. Evaluation shows a 99.2% reduction in authentication bandwidth and a 99.9% reduction in the temporal attack surface. Our results demonstrate that zk-ScalHard provides a scalable, secure, and GDPR-compliant architecture for future Zonal SDVs.",
+      "authors": [
+        "Shrikant Tangade",
+        "Bansi Pambhar",
+        "Valeria Loscri",
+        "Mauro Conti"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-08T13:05:19+00:00",
+      "link": "https://arxiv.org/pdf/2607.07371v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "hardware-rooted privacy-preserving authentication for OTA updates in zonal SDVs",
+      "llm_evidence_cn": "基于硬件的隐私保护认证方案用于区域SDV的OTA更新",
+      "llm_evidence": "基于硬件的隐私保护认证方案用于区域SDV的OTA更新",
+      "canonical_evidence": "基于硬件的隐私保护认证方案用于区域SDV的OTA更新",
+      "llm_tldr_en": "zk-ScalHard proposes scalable hardware-rooted authentication using zero-knowledge proofs for secure OTA updates in zonal SDVs.",
+      "llm_tldr_cn": "该文针对区域软件定义汽车中OTA更新的安全认证问题，提出zk-ScalHard方案。该方案基于零知识证明和硬件信任根，实现去中心化、可扩展且保护隐私的认证，避免了传统PKI的带宽瓶颈和隐私暴露，适用于高密度ECU场景。",
+      "llm_tldr": "该文针对区域软件定义汽车中OTA更新的安全认证问题，提出zk-ScalHard方案。该方案基于零知识证明和硬件信任根，实现去中心化、可扩展且保护隐私的认证，避免了传统PKI的带宽瓶颈和隐私暴露，适用于高密度ECU场景。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.04379v1",
+      "source": "arxiv",
+      "title": "Knowledge Base Poisoning Attacks and Defense for Policy-Aware LLM-RAG Framework",
+      "abstract": "This paper presents an adversarial security study of the Policy-Aware LLM Retrieval-Augmented Generation (PA-LLM-RAG) framework for Internet of Battlefield Things (IoBT) mission control. We propose Query-Agnostic Semantic Retrieval Poisoning, a novel attack that injects semantically crafted rules into the IoBT knowledge base achieving high retrieval ranking across all operator query types without requiring knowledge of runtime prompts. The attack achieves 85% LLM context corruption from a single injected rule (1.6% poisoning rate) and saturates at 7.7% poisoning, demonstrating that even minimal knowledge base compromise is sufficient to corrupt mission decisions. To counter this threat, we propose CLD-KB (Cyber-Layered Defense for Knowledge Base), a dual-detector anomaly detection framework combining One-Class SVM boundary detection with a novel Member-Based Category Spread analysis that exploits the three-category IoBT policy taxonomy to identify poisoned rules before they reach the decision LLM. CLD-KB significantly outperforms five baseline methods including DBSCAN, LOF, K-Means, Isolation Forest, and One-Class SVM in both poisoning detection and knowledge preservation, with only 7ms computational overhead per mission, establishing it as an effective and edge-deployable defense for LLM-driven IoBT mission systems.",
+      "authors": [
+        "Om Solanki",
+        "Lopamudra Praharaj",
+        "Deepti Gupta",
+        "Maanak Gupta"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-05T16:12:16+00:00",
+      "link": "https://arxiv.org/pdf/2607.04379v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "AI security threat and defense on LLM-RAG",
+      "llm_evidence_cn": "人工智能安全威胁与防御，针对LLM-RAG知识库投毒",
+      "llm_evidence": "人工智能安全威胁与防御，针对LLM-RAG知识库投毒",
+      "canonical_evidence": "人工智能安全威胁与防御，针对LLM-RAG知识库投毒",
+      "llm_tldr_en": "Proposes query-agnostic semantic retrieval poisoning attacking LLM-RAG for IoBT and a layered defense, achieving 85% context corruption at 1.6% poisoning.",
+      "llm_tldr_cn": "本文针对IoBT任务中策略感知LLM-RAG框架，提出了查询无关语义检索投毒攻击（QASRP），无需知道运行时提示即可高效污染知识库。单条规则注入导致85%的LLM上下文被篡改，投毒率仅需7.7%即可饱和。为抵御该威胁，提出了分层防御方案CLD-KB。研究表明，即便极少数量的知识库投毒也足以破坏任务决策，凸显了AI安全中知识库完整性的重要性。",
+      "llm_tldr": "本文针对IoBT任务中策略感知LLM-RAG框架，提出了查询无关语义检索投毒攻击（QASRP），无需知道运行时提示即可高效污染知识库。单条规则注入导致85%的LLM上下文被篡改，投毒率仅需7.7%即可饱和。为抵御该威胁，提出了分层防御方案CLD-KB。研究表明，即便极少数量的知识库投毒也足以破坏任务决策，凸显了AI安全中知识库完整性的重要性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.04194v1",
+      "source": "arxiv",
+      "title": "Efficient and Secure Range Counting over Distributed Geographic Data with Query Range Protection",
+      "abstract": "Range counting is a core primitive in geographic information systems. When data is distributed across multiple organizations, conducting range counting raises substantial privacy concerns. Existing privacy-preserving protocols focus on protecting organizations' datasets, but cannot simultaneously achieve efficiency, query privacy, and accuracy on overlapping data. Typical protocols process query range in plaintext for efficient point-in-range evaluation, since query-private designs rely on expensive secure comparisons. Moreover, most works assume non-overlapping datasets across organizations, which leads to huge errors in overlapping scenarios. In this paper, we propose PPRC, the first protocol that jointly satisfies all the privacy, efficiency, and accuracy requirements. PPRC makes two key technical contributions. First, we design the Private Range Predicate (PRP) technique that supports efficient point-in-range evaluation while protecting the query range. PRP reformulates range evaluation as encrypted membership tests, effectively replacing costly secure comparisons with faster secure multiplications. Second, we propose Oblivious Linear Counting (OLC), an aggregation scheme that efficiently and securely aggregates partial results from organizations with overlapping data. OLC involves only lightweight cryptographic operations and ensures that no information is leaked beyond the final range count. We theoretically analyze the accuracy, efficiency, and security of PPRC. Experiments on real-world and synthetic datasets show that PPRC achieves up to 55x smaller errors and 37x speedup compared to baseline protocols.",
+      "authors": [
+        "Haoxin Yang",
+        "Pinghui Wang",
+        "Zhe Hou",
+        "Tian Zhou",
+        "Guangmingzi Yang",
+        "Zehua Lei",
+        "Rundong Li",
+        "Yutong Song",
+        "Yongyuan Peng",
+        "Fangming Dong",
+        "Xiaohong Guan"
+      ],
+      "primary_category": "cs.DS",
+      "categories": [
+        "cs.DS",
+        "cs.CR"
+      ],
+      "published": "2026-07-05T09:36:17+00:00",
+      "link": "https://arxiv.org/pdf/2607.04194v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Privacy-preserving range counting over distributed data with query protection",
+      "llm_evidence_cn": "分布式数据上的隐私保护范围计数及查询保护",
+      "llm_evidence": "分布式数据上的隐私保护范围计数及查询保护",
+      "canonical_evidence": "分布式数据上的隐私保护范围计数及查询保护",
+      "llm_tldr_en": "Proposes PPRC, the first protocol for efficient and secure range counting over distributed geographic data while protecting query range.",
+      "llm_tldr_cn": "本文针对分布式地理数据中的范围计数问题，提出了PPRC协议。该协议在效率、查询隐私和重叠数据准确性方面达到平衡，首次同时满足所有要求。通过安全比较和加密技术，保护组织数据隐私和查询范围，支持重叠数据集，适用于多云协作场景。",
+      "llm_tldr": "本文针对分布式地理数据中的范围计数问题，提出了PPRC协议。该协议在效率、查询隐私和重叠数据准确性方面达到平衡，首次同时满足所有要求。通过安全比较和加密技术，保护组织数据隐私和查询范围，支持重叠数据集，适用于多云协作场景。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing security and confidential computing",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.05776v1",
+      "source": "arxiv",
+      "title": "Layer 2 Coordinated Trusted Setup for Continuous CRS Generation",
+      "abstract": "Zero-knowledge proof systems rely on a trusted setup phase to generate a Common Reference String (CRS), yet existing approaches are typically static, one-time ceremonies that are inflexible and vulnerable to long-term compromise. Offloading continuous, recurring trusted setups to a decentralized Layer 2 (L2) network introduces a fundamental coordination challenge arising from the mismatch between high-throughput transaction processing and the multi-round requirements of trusted setup ceremonies. This paper presents an L2-coordinated framework that safely decouples transaction pipelines from ceremony execution to achieve automated, continuous CRS generation without centralized coordination. We design and implement two protocol variants over a decentralized, PBFT-coordinated ZK-rollup architecture: an on-chain smart contract approach and an asynchronous peer-to-peer consensus variant. Both designs utilize non-interactive zero-knowledge proofs of knowledge alongside commit-reveal structures to eliminate adaptive manipulation vectors and isolate ceremony latency. Experimental evaluations under simulated wide-area network constraints and adversarial conditions demonstrate that our architecture successfully isolates ceremony liveness. Continuous setups complete reliably within practical time bounds despite node dropouts or malicious contributions, while preserving stable L2 transaction throughput.",
+      "authors": [
+        "Khalid Hassan",
+        "Sara Rouhani"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC"
+      ],
+      "published": "2026-07-07T03:06:00+00:00",
+      "link": "https://arxiv.org/pdf/2607.05776v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "continuous trusted setup for CRS generation in zero-knowledge proofs relates to confidential computing infrastructure",
+      "llm_evidence_cn": "零知识证明中连续CRS生成的可信设置与机密计算基础设施相关",
+      "llm_evidence": "零知识证明中连续CRS生成的可信设置与机密计算基础设施相关",
+      "canonical_evidence": "零知识证明中连续CRS生成的可信设置与机密计算基础设施相关",
+      "llm_tldr_en": "Proposes an L2-coordinated framework for continuous CRS generation, decoupling transaction pipelines from ceremony execution; two protocol variants implemented.",
+      "llm_tldr_cn": "该论文提出一个二层网络协调框架，用于零知识证明中连续生成公共参考字符串（CRS），将交易流水线与设置仪式解耦。实现了两种协议变体，支持自动化、去中心化的可信设置，为机密计算提供了可扩展的基础设施。",
+      "llm_tldr": "该论文提出一个二层网络协调框架，用于零知识证明中连续生成公共参考字符串（CRS），将交易流水线与设置仪式解耦。实现了两种协议变体，支持自动化、去中心化的可信设置，为机密计算提供了可扩展的基础设施。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.05281v1",
+      "source": "arxiv",
+      "title": "Routing Anonymity and Identifiability of Noisy Quantum Hardware",
+      "abstract": "Present-day quantum computing is cloud-based, where a user submits a circuit to a service provider's proprietary backend hardware. While providers may wish to hide implementation details, scheduling choices, or even which physical device was used, noisy finite-shot outputs can carry backend-specific fingerprints: information imprinted in the classical output distribution that can reveal the backend identity. So far, such fingerprints have mostly been studied from a benchmarking perspective, with limited attention to privacy considerations for users and providers. This work develops the first formal framework for backend identifiability and its privacy implications. We introduce a backend-identifiability game and use it to formalise routing anonymity as a security notion for quantum cloud services. We show that backend identifiability is a hypothesis-testing problem and prove that, under passive i.i.d. access to a single backend, routing anonymity decays exponentially at the Chernoff rate. We also establish a utility-anonymity trade-off, imposing fundamental limits on how much backend-specific information can be removed from classical outputs without degrading their usefulness. In addition, we observe that, for noisy quantum hardware, identifying fingerprints are inherently an intermediate-depth phenomenon, and establish a depth principle using Pauli-transfer-matrix tools. We complement the theory with experiments on Amazon Braket on AWS, using ion-trap and superconducting quantum processors. We observe 87-90% classification between superconducting backends and 96-100% classification across physical platforms, and find that identifiability can survive natural forms of post-processing. Overall, these results establish routing anonymity as a distinct security requirement for quantum cloud computing, and provide a framework for quantifying and controlling the utility-anonymity trade-off.",
+      "authors": [
+        "Ben Priestley",
+        "Mina Doosti"
+      ],
+      "primary_category": "quant-ph",
+      "categories": [
+        "quant-ph",
+        "cs.LG"
+      ],
+      "published": "2026-07-06T16:25:09+00:00",
+      "link": "https://arxiv.org/pdf/2607.05281v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "anonymity and identifiability in cloud-based quantum hardware",
+      "llm_evidence_cn": "云端量子硬件的匿名性与可识别性",
+      "llm_evidence": "云端量子硬件的匿名性与可识别性",
+      "canonical_evidence": "云端量子硬件的匿名性与可识别性",
+      "llm_tldr_en": "First formal framework for backend identifiability in cloud quantum computing, analyzing privacy implications.",
+      "llm_tldr_cn": "该文针对云端量子计算中后端硬件可识别性问题，提出形式化框架，定义了可识别性游戏和路由匿名性，分析了噪声输出泄露隐私的风险，为量子云计算的隐私保护提供了理论工具。",
+      "llm_tldr": "该文针对云端量子计算中后端硬件可识别性问题，提出形式化框架，定义了可识别性游戏和路由匿名性，分析了噪声输出泄露隐私的风险，为量子云计算的隐私保护提供了理论工具。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.05920v2",
+      "source": "arxiv",
+      "title": "LibFHE: A Numba-Based CUDA-Python Library for Non-RNS CKKS-BGV Fully Homomorphic Encryption on GPUs",
+      "abstract": "It has been a decade since the fourth-generation FHE framework, CKKS, was proposed; yet, there is still no indicator pointing toward a fifth-generation successor; and in recent years, numerous studies have explored GPU acceleration to improve the efficiency of homomorphic computations. In this paper, we propose LibFHE, a high-performance GPU-accelerated framework that features CUDA-Python bindings to achieve both high-level programmability and bare-metal GPU performance for homomorphic workloads. A large majority of state-of-the-art implementations adopt the RNS-CKKS variant. In contrast, this work deliberately revisits the original (non-RNS) CKKS-BGV framework, and develops a GPU-based implementation along with corresponding optimizations. Experimental results demonstrate that optimized CUDA-Python implementations can achieve performance comparable to highly optimized CPU-based C++ FHE libraries, while significantly reducing implementation complexity and improving programmability.",
+      "authors": [
+        "John Chiang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-07T07:18:12+00:00",
+      "link": "https://arxiv.org/pdf/2607.05920v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "GPU-accelerated library for CKKS-BGV fully homomorphic encryption",
+      "llm_evidence_cn": "基于GPU加速的CKKS-BGV全同态加密库",
+      "llm_evidence": "基于GPU加速的CKKS-BGV全同态加密库",
+      "canonical_evidence": "基于GPU加速的CKKS-BGV全同态加密库",
+      "llm_tldr_en": "LibFHE provides high-performance GPU acceleration for non-RNS CKKS-BGV FHE with CUDA-Python bindings, enabling efficient homomorphic computations.",
+      "llm_tldr_cn": "全同态加密（FHE）计算效率低，GPU加速是重要方向。本文提出LibFHE，基于Numba和CUDA-Python实现非RNS CKKS-BGV框架的GPU加速，兼顾易用性和性能。该工作在GPU上重新实现了原始（非RNS）CKKS-BGV，对比现有RNS方案具有独特优势，可促进FHE在机密计算和隐私保护中的应用。",
+      "llm_tldr": "全同态加密（FHE）计算效率低，GPU加速是重要方向。本文提出LibFHE，基于Numba和CUDA-Python实现非RNS CKKS-BGV框架的GPU加速，兼顾易用性和性能。该工作在GPU上重新实现了原始（非RNS）CKKS-BGV，对比现有RNS方案具有独特优势，可促进FHE在机密计算和隐私保护中的应用。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.06320v1",
+      "source": "arxiv",
+      "title": "Dithered Gaussian Mechanism for Randomness-Efficient Differential Privacy",
+      "abstract": "We present the dithered Gaussian mechanism, a novel alternative to the discrete Gaussian mechanism for differential privacy that discretizes the private output rather than the noise distribution itself. By interpreting this discretization as post-processing of the Gaussian mechanism, our construction directly inherits the privacy guarantees of the standard Gaussian mechanism while avoiding vulnerabilities caused by finite-precision floating-point outputs. We show that the mechanism is provably randomness-efficient: by sampling the discretized output values directly, the number of high-quality random bits required for privacy can be reduced significantly and made independent of the noise level. This is achieved by separating the randomness into two sources: a high-quality source used for the privacy-critical sampling step, and a high-performance public source, possibly known to the adversary, that supplies the additional randomness needed for randomized discretization. This separation enables the use of cryptographically secure randomness without substantial performance loss. As an application, we study model training with DP-SGD and show that cryptographically secure noise generation with reduced exposure to floating-point vulnerabilities can be achieved with modest practical overhead.",
+      "authors": [
+        "Nikita P. Kalinin",
+        "Rasmus Pagh"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-07-07T14:20:00+00:00",
+      "link": "https://arxiv.org/pdf/2607.06320v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Novel differential privacy mechanism with improved randomness efficiency",
+      "llm_evidence_cn": "新颖的差分隐私机制，提高随机效率",
+      "llm_evidence": "新颖的差分隐私机制，提高随机效率",
+      "canonical_evidence": "新颖的差分隐私机制，提高随机效率",
+      "llm_tldr_en": "Presents dithered Gaussian mechanism for differential privacy, improving randomness efficiency and avoiding floating-point vulnerabilities.",
+      "llm_tldr_cn": "本文提出了一种抖动高斯机制作为差分隐私的新方案。该机制对私有输出进行离散化而非噪声分布，继承了标准高斯机制的隐私保证，同时避免了浮点数实现漏洞。通过直接采样离散输出值，显著减少了所需的随机比特数，且与噪声水平无关。实现了隐私保护的实用性和效率提升。",
+      "llm_tldr": "本文提出了一种抖动高斯机制作为差分隐私的新方案。该机制对私有输出进行离散化而非噪声分布，继承了标准高斯机制的隐私保证，同时避免了浮点数实现漏洞。通过直接采样离散输出值，显著减少了所需的随机比特数，且与噪声水平无关。实现了隐私保护的实用性和效率提升。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.06612v1",
+      "source": "arxiv",
+      "title": "PRoVeFL: Private Robust and Verifiable Aggregation in Federated Learning",
+      "abstract": "Federated Learning (FL) enables multiple clients to collaboratively train machine learning models while retaining data locality, thereby enhancing user privacy. However, traditional FL frameworks rely on a centralized aggregation server and assume honest-but-curious clients, making them susceptible to both server-side inference and client-side poisoning attacks. Although recent work has explored secure and Byzantine-resilient FL protocols, they face a fundamental trade-off among privacy, integrity, and verifiability, and incur substantial computational and communication overhead due to the heavy use of cryptographic primitives. In this work, we propose PRoVeFL-a novel, modular FL framework that is Privacy-preserving, Byzantine-Robust, and ensures Verifiable aggregation. PRoVeFL employs multiple servers leveraging multi-key fully homomorphic encryption. Each client encrypts its local model updates and distributes encrypted shares to all servers. This design enables a hybrid computation model in which ciphertext operations are carefully offloaded to the plaintext domain under strict privacy constraints to efficiently evaluate complex statistical aggregation rules. PRoVeFL is compatible with a wide range of state-of-the-art Byzantine-robust aggregation algorithms (e.g., Krum, Trimmed Mean, FLTrust, norm clipping, MESAS, and more) and further enhances them with verifiability mechanisms that require minimal trust in at least one honest server. We evaluate it across different settings and demonstrate its scalability with varying numbers of parameters and participants. PRoVeFL improves runtime over the prior works, Prio and ELSA, based on distributed trust with comparable security guarantees, up to 100x and 10x, respectively.",
+      "authors": [
+        "Harsh Kasyap",
+        "Anil Kumar Pradhan",
+        "Ugur Ilker Atmaca",
+        "Graham Cormode",
+        "Carsten Maple"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-07T07:10:43+00:00",
+      "link": "https://arxiv.org/pdf/2607.06612v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Privacy-preserving federated learning with robustness and verifiability",
+      "llm_evidence_cn": "隐私保护联邦学习兼具鲁棒性与可验证性",
+      "llm_evidence": "隐私保护联邦学习兼具鲁棒性与可验证性",
+      "canonical_evidence": "隐私保护联邦学习兼具鲁棒性与可验证性",
+      "llm_tldr_en": "Proposes PRoVeFL, a modular FL framework combining cryptographic primitives for privacy, Byzantine robustness, and verifiability with lower overhead.",
+      "llm_tldr_cn": "提出PRoVeFL框架，在联邦学习中同时实现隐私、拜占庭鲁棒和可验证聚合，通过模块化设计降低密码原语开销，平衡隐私、完整性和可验证性。",
+      "llm_tldr": "提出PRoVeFL框架，在联邦学习中同时实现隐私、拜占庭鲁棒和可验证聚合，通过模块化设计降低密码原语开销，平衡隐私、完整性和可验证性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

@@ -6,71 +6,75 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-08
-- 运行时间：2026-07-08 21:39:01 UTC
+- 最新运行日期：2026-07-09
+- 运行时间：2026-07-09 21:26:10 UTC
 - 运行状态：成功
 - 本次总论文数：17
 - 精读区：6
 - 速读区：11
 
 ### 今日简报（AI）
-今日精读2篇高价值论文，聚焦全同态加密GPU加速与差分隐私预算设定。最值得关注的是LibFHE——首个基于Numba的CKKS/BGV同态加密GPU加速库（9.0分），以及通过限制对手推理几率来设定隐私预算的差分隐私新框架（8.0分）。普通读者可优先了解差分隐私预算设定方法，或探索同态加密在GPU上的实用化进展。
-- 详情：[/202607/08/README](/202607/08/README)
+今日精选17篇论文，聚焦AI安全与隐私治理，精读两篇最高分研究。
+
+最值得关注：深度研究代理存在轨迹劫持攻击风险，以及AI隐私编辑中解释风格与用户信任的交互机制。
+
+建议普通读者留意自主AI代理的上下文治理漏洞，并在使用AI工具时理性看待解释风格对信任的影响。
+- 详情：[/202607/09/README](/202607/09/README)
 
 ### 精读区论文标签
-1. [LibFHE: A Numba-Based CUDA-Python Library for Non-RNS CKKS-BGV Fully Homomorphic Encryption on GPUs](/202607/08/2607.05920v1-libfhe-a-numba-based-cuda-python-library-for-non-rns-ckks-bgv-fully-homomorphic-encryption-on-gpus)  
+1. [FORGE: Research-Trajectory Hijacking Attacks on Deep Research Agents](/202607/09/2607.04718v1-forge-research-trajectory-hijacking-attacks-on-deep-research-agents)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：GPU加速的全同态加密库
-2. [Setting the Privacy Budget in Differential Privacy by Bounding Adversaries' Odds of Learning Sensitive Information](/202607/08/2607.04004v1-setting-the-privacy-budget-in-differential-privacy-by-bounding-adversaries-odds-of-learning-sensitive-information)  
+   evidence：通过对抗文档攻击深度研究代理
+2. [Exploring the Interaction of Explanation Styles, Context, and Trust of AI Privacy Redaction in AI-mediated Interactions](/202607/09/2607.06687v1-exploring-the-interaction-of-explanation-styles-context-and-trust-of-ai-privacy-redaction-in-ai-mediated-interactions)  
+   标签：评分：9.0/10、query:sec-cloud-ai
+   evidence：解释风格与信任对AI隐私编辑的影响直接涉及AI中的隐私保护
+3. [Large Language Models (LLMs) and Generative AI in Cybersecurity and Privacy: A Survey of Dual-Use Risks, AI-Generated Malware, Explainability, and Defensive Strategies](/202607/09/2607.06963v1-large-language-models-llms-and-generative-ai-in-cybersecurity-and-privacy-a-survey-of-dual-use-risks-ai-generated-malware-explainability-and-defensive-strategies)  
+   标签：评分：9.0/10、query:sec-cloud-ai
+   evidence：全面调研LLM和生成式AI在网络安全与隐私中的双面风险
+4. [Collaborative Synthetic Data Generation for Knowledge Transfer in Federated Learning](/202607/09/2607.07565v1-collaborative-synthetic-data-generation-for-knowledge-transfer-in-federated-learning)  
+   标签：评分：9.0/10、query:sec-cloud-ai
+   evidence：隐私保护的联邦学习
+5. [From Multiplicity to Vulnerability: Privacy Amplification Risk from One-Dataset-Multiple-Model Exposure](/202607/09/2607.05111v1-from-multiplicity-to-vulnerability-privacy-amplification-risk-from-one-dataset-multiple-model-exposure)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：通过限制对手学习几率来设置差分隐私预算，直接关系到AI中的隐私保护
-3. [Data Structures for Private Token Transfers in TEE-Based Networks](/202607/08/2607.04032v1-data-structures-for-private-token-transfers-in-tee-based-networks)  
+   evidence：揭示同一数据集训练多个模型导致隐私泄露放大的风险
+6. [PiSAs: Benchmarking Contextual Integrity in Multi-User Agentic Systems](/202607/09/2607.05318v1-pisas-benchmarking-contextual-integrity-in-multi-user-agentic-systems)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：基于TEE的隐私保护网络数据结构
-4. [Layer-Parallel Inference Reduces Encrypted Nonlinear Depth in Transformers](/202607/08/2607.04819v1-layer-parallel-inference-reduces-encrypted-nonlinear-depth-in-transformers)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：同态加密用于隐私保护的Transformer推理
-5. [When Claws Remember but Do Not Tell: Stealthy Memory Injection in Persistent Personal Agents](/202607/08/2607.05189v1-when-claws-remember-but-do-not-tell-stealthy-memory-injection-in-persistent-personal-agents)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：个人AI代理中的隐秘内存注入
-6. [Automated Compliance Mapping in Cloud Security with Domain-Adapted Sentence Transformers](/202607/08/2607.06364v1-automated-compliance-mapping-in-cloud-security-with-domain-adapted-sentence-transformers)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：使用领域自适应句子变换器实现云安全合规自动化映射
+   evidence：多用户AI系统隐私基准
 
 ### 速读区论文标签
-1. [SLFS: a Flexible, Low-Cost Distributed File System Using Serverless Designs](/202607/08/2607.01486v1-slfs-a-flexible-low-cost-distributed-file-system-using-serverless-designs)  
+1. [From Regression to Prior-Aware Inference: Solving the ILWE Family in Randomness Leakage Attacks against ML-DSA](/202607/09/2607.05921v1-from-regression-to-prior-aware-inference-solving-the-ilwe-family-in-randomness-leakage-attacks-against-ml-dsa)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：从随机数泄漏中恢复ML-DSA格签名的密钥
+2. [zk-ScalHard: Scalable and Hardware-Rooted Privacy-Preserving Authentication for Secure OTA Updates in Zonal SDVs](/202607/09/2607.07371v1-zk-scalhard-scalable-and-hardware-rooted-privacy-preserving-authentication-for-secure-ota-updates-in-zonal-sdvs)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：基于硬件的隐私保护认证方案用于区域SDV的OTA更新
+3. [ContextNest: Verifiable Context Governance for Autonomous AI Agent](/202607/09/2607.02116v2-contextnest-verifiable-context-governance-for-autonomous-ai-agent)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：使用无服务器设计的分布式文件系统
-2. [DualView: Preventing Indirect Prompt Injection in Personal AI Agents](/202607/08/2607.03821v1-dualview-preventing-indirect-prompt-injection-in-personal-ai-agents)  
+   evidence：AI代理的隐私治理
+4. [Knowledge Base Poisoning Attacks and Defense for Policy-Aware LLM-RAG Framework](/202607/09/2607.04379v1-knowledge-base-poisoning-attacks-and-defense-for-policy-aware-llm-rag-framework)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：防止AI代理中的提示注入
-3. [Ball Differential Privacy: How to Mitigate Data Reconstruction with Less Noise](/202607/08/2607.04209v1-ball-differential-privacy-how-to-mitigate-data-reconstruction-with-less-noise)  
+   evidence：人工智能安全威胁与防御，针对LLM-RAG知识库投毒
+5. [Layer 2 Coordinated Trusted Setup for Continuous CRS Generation](/202607/09/2607.05776v1-layer-2-coordinated-trusted-setup-for-continuous-crs-generation)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：差分隐私防御数据重建攻击
-4. [Governed Individuation: Cryptographically Decoupling an Agent's Learning from Its Authority](/202607/08/2607.04613v1-governed-individuation-cryptographically-decoupling-an-agents-learning-from-its-authority)  
+   evidence：零知识证明中连续CRS生成的可信设置与机密计算基础设施相关
+6. [LibFHE: A Numba-Based CUDA-Python Library for Non-RNS CKKS-BGV Fully Homomorphic Encryption on GPUs](/202607/09/2607.05920v2-libfhe-a-numba-based-cuda-python-library-for-non-rns-ckks-bgv-fully-homomorphic-encryption-on-gpus)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：密码学绑定代理身份和权限
-5. [Towards Personalized Differentially Private Learning for Decentralized Local Graphs](/202607/08/2607.04777v1-towards-personalized-differentially-private-learning-for-decentralized-local-graphs)  
+   evidence：基于GPU加速的CKKS-BGV全同态加密库
+7. [Dithered Gaussian Mechanism for Randomness-Efficient Differential Privacy](/202607/09/2607.06320v1-dithered-gaussian-mechanism-for-randomness-efficient-differential-privacy)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：去中心化图的个性化差分隐私
-6. [Noise-limited secret key agreement with twin optical physically unclonable functions](/202607/08/2607.04936v1-noise-limited-secret-key-agreement-with-twin-optical-physically-unclonable-functions)  
+   evidence：新颖的差分隐私机制，提高随机效率
+8. [PRoVeFL: Private Robust and Verifiable Aggregation in Federated Learning](/202607/09/2607.06612v1-provefl-private-robust-and-verifiable-aggregation-in-federated-learning)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：使用双光学PUF进行密钥协商，包含错误纠正和隐私放大
-7. [Unveiling the Non-Monotonic Effect of Privacy on Generalization under Byzantine Robustness](/202607/08/2607.01492v1-unveiling-the-non-monotonic-effect-of-privacy-on-generalization-under-byzantine-robustness)  
+   evidence：隐私保护联邦学习兼具鲁棒性与可验证性
+9. [ShannonProver: Towards Automating Formal Cryptographic Proofs](/202607/09/2607.02847v1-shannonprover-towards-automating-formal-cryptographic-proofs)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：分布式学习中拜占庭攻击下隐私对泛化的影响
-8. [Energy-Aware System-Level Evaluation of Post-Quantum TLS on Embedded User Equipment over a Disaggregated 5G Network](/202607/08/2607.03988v1-energy-aware-system-level-evaluation-of-post-quantum-tls-on-embedded-user-equipment-over-a-disaggregated-5g-network)  
+   evidence：利用智能体框架自动化形式化密码学证明
+10. [Efficient and Secure Range Counting over Distributed Geographic Data with Query Range Protection](/202607/09/2607.04194v1-efficient-and-secure-range-counting-over-distributed-geographic-data-with-query-range-protection)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：在解耦的5G网络上评估嵌入式设备上的后量子TLS
-9. [Securing Deep Learning Hardware: A Survey of Side-Channel Vulnerabilities and Countermeasures](/202607/08/2607.04055v1-securing-deep-learning-hardware-a-survey-of-side-channel-vulnerabilities-and-countermeasures)  
+   evidence：分布式数据上的隐私保护范围计数及查询保护
+11. [Routing Anonymity and Identifiability of Noisy Quantum Hardware](/202607/09/2607.05281v1-routing-anonymity-and-identifiability-of-noisy-quantum-hardware)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：深度学习硬件的侧信道脆弱性与对策
-10. [FLAIR: Distributed Federated Learning with Dynamic Clustering](/202607/08/2607.06025v1-flair-distributed-federated-learning-with-dynamic-clustering)  
-   标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：分布式联邦学习与动态聚类
-11. [Verification of Dynamic Holographic Behavior in Identity Documents](/202607/08/2607.06466v1-verification-of-dynamic-holographic-behavior-in-identity-documents)  
-   标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：全息身份文档验证用于身份认证
+   evidence：云端量子硬件的匿名性与可识别性
 
 
 <div class="dpr-home-promo-card">

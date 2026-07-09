@@ -1,0 +1,940 @@
+Title: ShannonProver: Towards Automating Formal Cryptographic Proofs
+
+URL Source: https://arxiv.org/pdf/2607.02847v1
+
+Published Time: Tue, 07 Jul 2026 00:18:58 GMT
+
+Number of Pages: 20
+
+Markdown Content:
+# ShannonProver: Towards Automating Formal Cryptographic Proofs 
+
+Yiping Ma †, Yu-Lin Tsai †, Mayank Rathee †, Deevashwer Rathee †,François Dupressoir ‡, Pierre-Yves Strub §, Raluca Ada Popa †¶ 
+
+> †
+
+UC Berkeley ‡University of Bristol §PQ Shield ¶Google DeepMind 
+
+Abstract —Cryptographic proofs are produced at a scale that increasingly exceeds the community’s ability to verify them manually. Machine-checked proofs offer a path toward scalable proof verification, but writing proof scripts for expressive proof assistants such as EasyCrypt remains a major bottleneck: even when the high-level proof plan is known, converting it into proof tactics requires substantial reasoning effort. This paper presents ShannonProver, an agentic framework for automating cryptographic proofs. ShannonProver targets the setting in which a cryptographer provides the security model and a decomposition of the target theorem into lemma-level proof obligations, while the system automatically constructs EasyCrypt proof scripts for those obligations. We evaluate ShannonProver on a dataset of formal cryp-tographic proofs in EasyCrypt. The dataset spans textbook primitives, deployed protocols, and standardization efforts such as NIST proposals, and includes expert case studies drawn from a corpus that has not previously been available online. We show that ShannonProver can automate substantial portions of cryptographic proof engineering for case studies such as ChaChaPoly1305 and MEE-CBC. More broadly, this work suggests a path toward accelerating cryptographic research: as agents automate the proof-engineering burden, cryptographers can iterate more quickly on new constructions, obtain machine-checked assurance earlier, and bring trustworthy protocols from design to deployment faster. 
+
+1. Introduction 
+
+Cryptographers “generate more proofs than we carefully verify” , as Halevi observed two decades ago [1]. This concern is even more pressing today. Modern cryptographic protocols are increasingly complex, their proofs are longer and more intricate, and their correctness has consequences far beyond research papers: they have become standards [2– 5], libraries [6–9], and security infrastructure [5,10–12]. Flaws discovered after publication or even standardization underscore the same point [13,14]: the community cannot manually scrutinize cryptographic proofs at the same scale at which it produces them. Machine-checked proofs offer a way to scale proof veri-fication. Once a proof is written in tactic language as a proof script 1, a proof assistant (a deterministic proof checker) 
+
+> 1. A sequence of commands which constructs definitions, declarations, theories, and proofs that a proof assistant can mechanically verify.
+
+such as EasyCrypt [15], Lean [16], and others [17–20] can mechanically check the proof script to certify the claimed theorem, without any expert examining the argument by hand. However, the bottleneck shifts to producing the proof script in the first place. Writing such proof scripts is far more exacting and effortful than writing traditional pen-and-paper proofs, and it is time-consuming even for experts. The reason is that machine-checked proof is not a line-by-line translation of pen-and-paper proof; rather, it expands the cryptographer’s shorthand of a cryptographic argument (e.g., “two games are indistinguishable”) into explicit stateful programs and precisely reasons about the program equivalence. In the past, obtaining formally verified standardized schemes used in TLS such as MEE-CBC [21], CMAC [22], and ChaCha20-Poly1305 [23] required several expert-weeks to several expert-months 2, and the effort for recent post-quantum NIST standardization efforts such as Kyber [24] and ML-KEM [13,25] is even larger, involving more than 10 experts for one or two years. A natural question is whether AI agents can accelerate writing these proofs. This setting appears to be well suited to AI agents: proof search can be heuristic, but proof checking is not. As long as an agent produces a script accepted by the proof checker (e.g. EasyCrypt), the proof script is sound and the claimed theorem is certified by the checker’s guar-antees. Thus, the agent’s hallucinations or mistakes do not compromise soundness: invalid proof attempts are rejected and the accepted final script is trusted. We began with the most direct agent setup where the agent interacts with EasyCrypt in a “checker-in-the-loop” manner: the agent proposes a tactic and submits to the checker, then it observes the resulting goal or error, and proposes the next tactic until the goal is closed (no human hints involved). In this case, however, even strong frontier AI agents repeatedly failed on routine mechanization steps that were not conceptually deep. These failures show that the raw checker-in-the-loop is far from a sufficient basis for our broader goal: automating formal cryptographic develop-ments at the scale of TLS standards or NIST proposals. In this work, we contribute ShannonProver and demon-strate that it is possible to automatically discharge a sub-
+
+> 2. Exact historical effort of ChaChaPoly development is no longer re-coverable; the expert-month estimate is based on the size and complexity of the current proof relative to comparable projects with known effort.
+
+1
+
+> arXiv:2607.02847v1 [cs.CR] 3 Jul 2026
+
+stantial part of the proof-engineering effort in these large-scale cryptographic proof developments. Usually, formaliz-ing proofs for large-scale projects proceeds in three phases (Fig. 1): cryptographers first model the protocol and secu-rity definition (Phase I), then decompose the main theo-rem into intermediate lemmas (Phase II), and finally prove each lemma with a tactic-level proof script (Phase III). The last phase is a tedious time-consuming effort that the cryptographer can now delegate to ShannonProver. In a traditional workflow, cryptographers often discovered that a decomposition choice was problematic only after spending substantial effort writing proof scripts for many lemmas. With ShannonProver, they can delegate Phase III completely to the agents: a successful proof script lets them proceed, while on a timeout or stalled proof search, ShannonProver provides feedback that helps them revise the decomposition. Experts reported a few weeks for the development of MEE-CBC; for ChaCha20-Poly1305, the proof work took a few months and required iterative interlacing of creative insight and mechanical proof engineering (§5.4). Now, given the decomposition, ShannonProver can fully automate Phase III for MEE-CBC and ChaCha20-Poly1305 in a day. To achieve such performance, ShannonProver has two critical design ideas: 1) state-aware proof context manage-ment , and 2) multi-agent tree-based proof orchestration .The first idea comes from studying the key challenge the agent faces in the direct checker-in-the-loop (left in Fig. 2). Every tactic execution mutates the state of the proof (a new goal is produced by the checker), and to come up with the next tactic, the agent not only needs to think about the proof strategy but also needs to identify what resources can be applied at the current state of the proof. The resources can be other lemmas, types, modules, and many more (App. A.1), and after identifying them, the agent must also reason about type matching and argument instantiation to see whether the found resources can match with the current state. The agent has to do this after writing each tactic, and this repeated context construction is a poor use of the agent’s reasoning budget. In principle, the agent could read all project files and source code repeatedly to infer which resources apply. In practice, we often observed the agent getting stuck or giving up because this context construction was too cumbersome. The failure is therefore not always a failure of cryptographic reasoning. It is often an interface failure: the context relevant to the next tactic is state-dependent, but the files that the agent reads are static; the agent must by itself reconstruct the state-relevant information from the static information. We found that these state-dependent contexts can be pro-duced deterministically. ShannonProver introduces a bridge between the agent and the checker (Fig. 2), which assembles state-aware proof contexts; on each tactic execution, it shows to the agent a concise panel of information relevant to the current state. Since the design of the bridge inherits classical compiler ideas [26] (e.g., state projection, name and type resolution, liveness analysis, and diagnostic reporting), we call it a proof-state compiler .The second design component aims to improve the proof strategy itself. Proof construction is not a linear process;          
+
+> PHASE 1 •MODULES / SECURITY DEFINITIONS EXPERT
+> module type IVScheme = {
+> proc keygen() : key
+> proc enc(k,iv,p) : block list
+> proc dec(k,c) : ...
+> }.
+> module CBC(P : PseudoRP) = {
+> proc enc(key,iv,p) = { ... }
+> }.
+> PHASE 2 •LEMMA STATEMENTS EXPERT
+> lemma cleanup &m : Pr...
+> lemma CBC_PRP_RF &m : ...
+> lemma CBC_upto &m : ...
+> lemma Bound_by_PRP_PRF &m : ...
+> lemma Bound_by_Birthday &m : ...
+> lemma Conclusion (A) &m : ...
+> PHASE 3 •TACTIC PROOF PER LEMMA ShannonProver
+> proof.
+> byequiv=> //=. proc. call (_: ={bad,qs}(DoubleQuery,Compute)).
+> by conseq DQ_Sample_Compute_eq. by inline *; auto.
+> qed.
+> decompose
+> feedback
+> Figure 1. Large-scale cryptographic formal proof development proceeds in three phases: security modeling, lemma decomposition, and tactic-level lemma proving.
+
+it is search over many possible checker-accepted states. ShannonProver uses a multi-agent collaborative tree-search policy: the policy maintains a tree of accepted proof pre-fixes, assigns different branches to different agents, and lets each agent extend its branch until it either makes progress, reaches a completed proof, or discovers that the current route is unproductive. When an agent finds a dead end, the failure is recorded as negative memory, so that other agents do not spend budgets retrying the same failed tactic shape at the same kind of proof state. The proof-state compiler tells a single agent what the current state means; the tree-search policy decides how multiple agents collaboratively explore the proof based on the state. This paper makes the following contributions.  
+
+> •
+
+An agent-facing system for formal proofs of cryptog-raphy. ShannonProver builds the above ideas into an end-to-end system and provides a set of MCP 3 tools that the agent can call. We build it as an open-source tool for the community, helping cryptographers write and study formal proofs.  
+
+> •
+
+The first dataset for formal cryptographic proofs. We assemble a corpus of 1.6K EasyCrypt lemmas, rang-ing from textbook primitives to deployed protocols, including examples that have not been previously available online. The corpus is designed to support systematic evaluation of agents for writing formal cryptographic proofs.  
+
+> •
+
+Case studies on real-world protocols. We evalu-ated ShannonProver on formal proof development of standardized schemes: ChaCha20-Poly1305, MEE-CBC, and CMAC (which is not public). Shannon-Prover can prove all lemmas in the two public ones and a significant portion of important lemmas in the private one. 
+
+> 3. MCP stands for Model Context Protocol, an open protocol that standardizes how LLM applications connect to external tools and data sources.
+
+2DIRECT CHECKER IN THE LOOP (BASELINE) WITH PROOF-CONTEXT MANAGER 
+
+LLM Agent      
+
+> •proof strategy
+> •name + type matching
+> •argument instantiation
+> •live resources
+> •scope lookup
+
+EasyCrypt            
+
+> •execute tactic
+> •emit goal
+> •emit error
+> tactic
+> goal
+> PROJECT FILES
+> source files •imported theories •other lemmas •modules
+> search + grep
+> WHAT THE AGENT READS BACK
+> RAW EC OUTPUT GOAL
+> &1: x : int m : msg &2: x : int m : msg –––––––––––-pre : ={x, m} M1.f(m) ~ M2.f(m) : sample r; z <@ O.h(x); return enc(m, z, r) post : ={res}
+> FORMULA TO PROVE
+> LOCAL CONTEXT
+
+LLM Agent  
+
+> •proof strategy
+
+Proof-context manager     
+
+> •name + type matching
+> •argument instantiation
+> •live resources
+> •scope lookup
+
+EasyCrypt                             
+
+> •execute tactic
+> •emit goal
+> •emit error
+> proof intent
+> panel
+> tactic
+> goal proof intent
+> probe tactic commit tactic undo to checkpoint
+> PROJECT FILES
+> source files •imported theories •other lemmas •modules
+> compiler’s input
+> WHAT THE AGENT READS BACK
+> COMPILED PROOF STATE
+> pre ={x, m}
+> post ={res}
+> frontier sample -> call O.h -> return enc
+> STRUCTURED GOAL
+> AVAILABLE PROOF RESOURCES
+> •O_h_eq : equivalence for matching O.h calls LIVE
+> >needs module param A : Adv{O}
+> •enc_eq : equivalence for matching enc calls LIVE
+> •sample_skip : sampling lemma UNAVAILABLE
+> >program already lowered by earlier wp
+> PROGRAM MATCHES
+> ›O.h(x) 7→O_h_eq
+> ›enc(m, z, r) 7→enc_eq
+> INSTANTIATION HINT
+> O_h_eq: A <- caller context ; x <- x{1}, x{2}
+
+Figure 2. Agent interaction with EasyCrypt, with and without ShannonProver’s proof-context manager. In the direct checker-in-the-loop baseline, the agent receives only goals and errors, and must recover names, types, live resources, and argument instantiations by searching the project context itself. With the proof-context manager, these mechanical tasks are compiled into a state-aware panel of live resources, program matches, and instantiation hints. The manager changes the interface seen by the agent, but not the trust and reasoning boundary: the agent still reasons about how to proceed itself , and EasyCrypt remains the authority that executes tactics and checks the final proof. 
+
+We view this work as a first step toward automating formal proofs for cryptography. A natural next step is to extend ShannonProver to assist with the decomposition phase as well. Ultimately, we hope ShannonProver helps minimize the expert effort required for formal verification, reserving human involvement for the critical judgments and automating as much of the remaining work as possible. 
+
+2. Design Overview 
+
+2.1. Observations in Agentic Proving 
+
+Writing an EasyCrypt proof script is more than choosing the next tactic that can change the current goal. A proof often moves across several abstraction levels (Fig. 3): from probability algebra and pRHL equivalences, to module or oracle calls, procedure bodies, and finally SMT side condi-tions. Higher levels are valuable because they let the prover reuse facts already proved about whole games, modules, or oracle behaviors. But a proof also has to descend at the right time, once those reusable facts have been applied and the remaining goals to prove require concrete program structure. If the agent descends too early, for example by inlining a module or opening an oracle body, the reusable high-level facts may no longer apply. In this case, the agent loses the shortcut and must reprove low-level program details that the higher-level lemma was meant to abstract away; in some cases, this can even destroy the only available route, turning an otherwise manageable goal into a dead end. Human experts usually know which level they are work-ing at, both from experience and from the intuition they gained from lemma decomposition. They descend to a lower level only when the proof really needs more concrete pro-gram structure. An AI agent has to make this judgment after every tactic: it must understand what the current goal is about, decide whether to preserve the current high-level structure, or expose more program detail. Making this decision requires assembling information scattered across project lemmas, imported theories, module arguments, and even the source code of the proof checker. In baseline runs where the agent interacts directly with the checker (left in Fig. 2), we observe three recurring failure patterns. 
+
+Unconscious lowering. The agent can mistakenly interpret a local but unhelpful goal change as real proof progress. In the raw checker loop, a tactic such as inline* is very tempting because it is easy to write and immediately produces a different-looking goal. The run then appears to be making progress: many new low-level subgoals appear, and the checker continues to provide feedback. What the agent does not see is that this change may cut off resources that are usable at the higher level: the call site, bridge lemma, or oracle equivalence that would have packaged already-proved facts no longer applies to the expanded subgoals. The run is then left either to reprove those low-level details from scratch, or to continue from a state where the intended route has become a dead end. The failure is not that the agent chose to descend; descent is often necessary. The failure is that the interface gives no state-aware information when a 3semantic / proof-structure level             
+
+> L0 Pr expression algebra
+> rewrite, congr preserve
+> resources kept
+> L1 pRHL program equivalence
+> byequiv, sim, conseq preserve
+> resources kept
+> L2 Module-level call
+> call (_: Inv) bind
+> resources kept
+> L3 Procedure instructions
+> inline f, wp, rnd, sp expose
+> some resources lost
+> L4 All-modules expansion
+> inline * destructive
+> most resources lost
+> L5 Atomic / SMT discharge
+> smt(), auto terminal
+> unchanged on fail
+> lowering
+> syntactic / verification-condition level
+> Figure 3. The tactic pyramid. The layers organize tactics by proof-state abstraction and recovery risk: downward moves expose more concrete state of the program, but may lose abstract resources such as call sites, bridge lemmas, and module equivalences. Human experts descend accurately; raw agents often jump prematurely to low-level moves.
+
+locally productive-looking move is globally destructive. 
+
+Agent flinch. An agent can identify a viable high-level proof plan in its reasoning and still abandon it when that plan has to be written as a well-typed EasyCrypt command. For example, the agent’s plan may correctly point to a probability-level bridge, a preserved call site, or a named module equivalence, but the next steps are then domi-nated by theorem lookup, module arguments, type matching, and tactic-form search. When these required bindings are exposed only through trial-and-error interaction with the checker, the agent often switches to a tactic that is easier to write, even if that tactic leads to a worse proof state. The failure is therefore not the absence of a proof idea, but the cost of carrying that idea through the sequence of actions to make the plan succeed. 
+
+Semantic mislocalization. An agent can attach a proof failure to the wrong semantic object. This is not simply a lack of information: the proof context may contain the right clues, but the agent can be pulled toward the wrong object by names that appear in the goal or by the literal wording of an error message. For example, in one run, a goal mentioning IFinRO and IndRO led the agent to treat these names as evidence for an eager/lazy random-oracle lemma and to spend the rest of the run trying to fit pr_RO_FinRO_D 
+
+which is unrelated to the proof. The same issue appears in error diagnosis. An error such as X is not callable 
+
+is factual but underspecified: after the state changes, the agent may carry the message forward as a global prohibition rather than a local precondition failure. Diagnostics should therefore be neutral and state-aware. They should report what failed at the current proof state and the condition under which the action would become applicable, without turning a local failure into a strategic recommendation. 
+
+2.2. Design Ideas 
+
+From agent failures to interface requirements. The failure modes above point to an interface problem: the agent is being asked to recover proof context that the system should expose directly. In the flinch cases, the agent often has the right high-level idea, but making that idea executable re-quires a chain of mechanical steps. Semantic mislocalization has the same root cause. The agent should not have to match a lemma to a goal mainly by names that appear in the goal or by nearby text in the source files. It should be given matches derived from the current proof state. Unconscious lowering points to another requirement: the interface should make resource applicability visible. The agent should not have to infer, after trying a tactic, whether that tactic has erased the applicability of certain proof resources. Before committing to a lowering step, it should be shown what the step is expected to expose and what resources it may consume or destroy. In particular, tactics that expose concrete program syntax should be distinguished from tactics that preserve the current call site, bridge lemma, or oracle-equivalence structure. This turns lowering from an attractive default move into an explicit grounded choice. 
+
+A compiler view. The design lesson is not to leave proof-context construction to the agent through ad hoc queries such as Grep and Read . Instead, the system should organize the proof context before the agent chooses its next tactic. ShannonProver does this through a proof-state compiler .The term is meant by analogy to classical compiler design: a compiler builds an intermediate representation, resolves names and types, tracks which facts remain valid, and reports diagnostics [26]. ShannonProver applies the same style of organization to proof states, but its purpose is not to compile code into executable form; instead, its purpose is to compile scattered proof information into an agent-facing view of what contexts are relevant to the current proof state. At each proof state, the compiler takes as input the checker output, the current proof history, and the relevant project context, including source files, imported theories, module definitions, and available lemmas. It performs struc-tured matching where possible and outputs a compact com-piled surface for the agent: the current proof layer, the relevant proof resources, their typed arguments and missing bindings, their liveness, and diagnostics or previews for candidate moves. These outputs are deterministic facts about the current proof state, not a proof strategy. The agent still decides which proof move to try, and EasyCrypt remains the authority that executes tactics and checks the final script. This boundary is crucial: the compiler makes the proof context explicit, but it does not become an oracle that tells the agent the next proof step. This compiled surface addresses the three failures above in a unified way. For agent flinch, it exposes the mechanical information needed to carry a high-level plan through, such as relevant lemmas, module arguments, type matches, and tactic forms. For unconscious lowering, it makes the cost of a move visible, especially whether the move preserves reusable high-level facts or destroys the structure they re-quire. For semantic mislocalization, it grounds resource selection by structural matching rather than by names. The compiler therefore lets the agent spend its budget on proof 4strategy, rather than on mechanical efforts. 
+
+2.3. ShannonProver Workflow 
+
+The basic unit of ShannonProver is a single agent instance interacting with the EasyCrypt checker through the proof-state compiler, which manages the proof context throughout the proof process (§3). The EasyCrypt checker remains the source of truth: a tactic only counts if the checker accepts it. Each tactic mutates the proof state, and at each state the compiler turns the current goal and project context into a structured view, shown to the agent. The agent then responds to the compiler with the next action, and the compiler forwards it to the checker. This completes one proof round; the proof process for a lemma consists of many such rounds. Then we build on this single-instance setup using recur-sive backtracking over a proof tree (§4) where the nodes of the tree represent distinct proof states. Instead of relying on one agent instance to follow a linear path to prove the lemma, ShannonProver can run multiple agent instances over different branches of the same proof tree. Different agents can explore different continuations from the same node, recover from different failures, or resume from earlier states when one branch becomes unproductive. Finally, we also maintain a lightweight node-local doc-ument model in the manager for proof-script bookkeep-ing, such as closed proof pieces, remaining subgoals, safe prefixes, and failed tactic shapes. This document model is supporting infrastructure rather than a design component; we describe it in Appendix B.1. 
+
+3. Proof-State Compiler 
+
+As discussed in Section 2, raw checker feedback gives the agent goals and errors, but not an organized view of the proof context. The proof-state compiler addresses this gap by turning each checker-produced proof state into an agent-facing view organized around four questions. 
+
+Where am I? The first question is which proof state the agent should reason from. A linear transcript does not answer this directly. It records events in the order they occurred, but nearby events may refer to different proof states: an accepted command changes the state, a failed tactic may leave it unchanged, and a rollback may return to an earlier state while stale diagnostics remain in the log. The compiler therefore projects the interaction into one current snapshot: the current proof state, last transition, and provenance information. We call the snapshot cursor : it marks the point in the proof from which the agent should read the state and choose the next action. When the cursor changes, facts attached to the old snapshot may become stale. This projection is therefore not just log cleanup; it defines which compiler facts are valid for the current state. 
+
+What is the current goal? Locating the current snapshot is not enough, because the printed goal does not by itself identify the kind of goal the agent is facing. The state may be a probability expression, a pRHL equivalence, a goal at a procedure-call boundary, a procedure-body state, or a residual SMT obligation. Human experts usually carry this level of information implicitly and use it to decide whether a tactic should preserve the current proof structure or expose more program syntax. The proof-state compiler makes this information explicit by building a typed view of the goal, rather than asking the agent to infer the proof layer from raw goal text. 
+
+What remains usable? Knowing the proof layer still does not directly tell the agent which resources can be used at the current state. A lemma, bridge resource, call-site resource, or oracle equivalence may be relevant to the proof as a whole, but usable only at certain points in the proof. The agent may not have reached the state where the resource matches yet, or it may have already moved past that state by unfolding or lowering the program structure. Our proof-state compiler therefore tracks resource live-ness and the current program frontier . The frontier is the point in the program that the proof has currently reached: before this point, a resource may be unavailable because the relevant program structure has not yet been exposed; after this point, a resource may become unavailable because the structure it needed has already been unfolded or consumed. A resource is something the agent might use, while the fron-tier tells whether the proof is currently at the right program point to use it. The compiler records which resources are live, which are not reachable yet, which became stale, and which moves preserve or destroy useful proof structure. 
+
+What can I try safely? Finally, the agent should not have to assemble the next tactic by trial and error. Once the compiler has identified the current state, proof layer, usable resources, and missing bindings, it provides the agent with small, targeted inspection and probing actions. These actions let the agent ask focused questions without changing the proof state: inspect the definition of a lemma, locate the current frontier, fill a missing binding, or ask the checker what subgoals a candidate tactic would produce. In this way, the agent can examine the local effect of a possible move before committing to it. 
+
+Technical organization. The four questions above cor-respond to four cumulative compiler passes. We use the vocabulary of classical compiler structure [26], but the input is an interactive EasyCrypt proof state rather than a program. The first pass, state projection , plays the role of a front end: it turns verifier output, session events, and tactic history into one current snapshot. The second pass, proof-state IR , gives that snapshot a typed semantic view: the current proof layer, the visible program structure, and the proof resources rele-vant at that layer. The third pass, resource analysis , refines this view by tracking which resources are live, blocked, or stale at the current cursor and frontier. The final pass, action surface , turns the resulting state information into targeted inspection and probing actions, previews, missing bindings 4,
+
+> 4. Binding means filling a discovered proof-resource template with con-crete names, arguments, side-qualified expressions, or tactic forms.
+
+5L1                   
+
+> State Projection
+> idea: canonicalize raw verifier signals into the current proof snapshot
+> role: make the proof cursor and provenance explicit
+> surface to agent: active goal open goals last transition
+> L2
+> Proof-State IR
+> idea: build a typed semantic proof-state IR
+> role: make typed proof context explicit
+> surface to agent: goal kind proof layer
+> L3
+> Resource Liveness and Program Frontier
+> idea: track resource liveness and program frontiers
+> role: make liveness and route constraints explicit
+> surface to agent: live resources program frontier
+> L4
+> Action Surface
+> idea: compile typed resources into checked local-action evidence
+> role: make local effects and risk explicit
+> surface to agent: previewed actions post-probe goals inspect options
+
+Figure 4. Cumulative layers for ShannonProver’s proof-state compiler. 
+
+and neutral diagnostics. Figure 4 shows the four layers; the rest of this section describes each layer in more detail. 
+
+3.1. Layer 1: State Projection 
+
+State projection establishes the validity boundary for the compiler. Its role is not to clean up the transcript, but to determine which verifier state each compiler fact belongs to. A failed probe may produce an after-goal that was never committed; an old diagnostic may describe a proof position that has since changed; a rollback may restore an earlier state while later failures remain in the log; and a proof attempt with no displayed subgoals is not necessarily a replay-accepted proof. Without a projection boundary, later passes may combine facts from incompatible proof states. The projection pass therefore normalizes the interaction into one current committed snapshot. The snapshot records the active proof position, current goal, open-goal structure, last accepted transition, and provenance information. We call the active proof position the cursor : it marks the point in the proof from which the agent should read the state and choose the next action. When the cursor changes, facts attached to the old position may become stale. Every later object produced by the compiler—ProofIR, liveness facts, candidate actions, diagnostics, and previews—is scoped to this snapshot and marked current, stale, speculative, or invalidated as the proof state changes. This pass does not interpret the goal, judge which re-sources are useful, or recommend tactics. It only supplies the stable state boundary on which the rest of the compiler depends. Given this boundary, the next step is to assign the current snapshot a semantic meaning. 
+
+Running example. In the example of Figure 5, the snapshot is C2 . It tells all subsequent passes that any information they produce must be scoped to C2 and that old errors, stale facts, and historical rollbacks to C2 are not relevant. 
+
+3.2. Layer 2: ProofIR 
+
+A raw EasyCrypt goal tells the agent what formula remains to be proved, but not how that formula should be un-derstood within the larger proof. Similar texts of EasyCrypt output may correspond to very different proof situations: an algebraic transformation of a probability expression, a relational pRHL equivalence between two programs, a goal at a procedure-call boundary, a local symbolic-execution state inside an opened procedure body, or a residual first-order goal to be discharged by SMT. These situations require different proof resources and different families of tactics. A human expert implicitly reads a goal together with its proof layer: they recognize when the proof is still at the game-hop level, when it has reached a procedure-call boundary, or when further inlining would destroy a call-site resource that should be preserved. A raw goal does not expose this information. ProofIR makes this implicit structure explicit. ProofIR contains three levels of information. 
+
+The first is the goal kind, or proof layer. It classifies the current state as, for example, a probability-level goal, a relational pRHL goal, a goal at a procedure-call boundary, an opened procedure-body goal, or a residual logical goal. This classification is crucial because it determines what information should be attended to and what proof actions are appropriate. 
+
+The second level is layer-specific structure. ProofIR does not expose the same information at every layer; instead, it preserves only the structure relevant to the current abstrac-tion level. At the probability layer, it records probability terms, game hops, and bridge paths. At the relational layer, it records the left and right programs together with the pre- and postconditions. At a procedure-call boundary, it records the exposed call sites and the resources that may match them. Inside a procedure body, it records the currently exposed program fragments and local obligations. For SMT residues, it records the remaining logical formulas. Thus, ProofIR is not a larger dump of the proof state. It is a compression of the current state to the right abstraction level. 
+
+The third level is a set of candidate resources. ProofIR identifies the proof resources that are worth tracking at the current layer, such as bridge lemmas, oracle equivalences, call-site resources, or probability bounds. These resources are not necessarily usable immediately. Rather, ProofIR marks them as semantically relevant to the current layer so that later passes can analyze their liveness and frontier constraints. This semantic organization is important because raw goals are only text. An agent that sees names, formulas, and local hypotheses may be misled by surface-level string similarity. For example, if a goal mentions IFinRO and 
+
+IndRO , the agent may search for an eager/lazy random-oracle lemma, even though this lemma is irrelevant to the goal. ProofIR instead organizes information by the semantic layer of the proof state, not by textual similarity. This is designed to prevent semantic mislocalization and unconscious lowering. The agent no longer guesses relevant 6RUNNING EXAMPLE — MEE-CBC lemma                          
+
+> lemma CPA_direct_eq ... : Pr[...CBC_Oracle(P)... @ &m:res] = Pr[...CBC_Oracle(P’)... @ &m:res].
+> THE WHOLE PROOF LAYERS @ CURSOR C2
+> §3.1 CURSOR
+> C0 move=> P_init_eq P_f_eq &m A.
+> C1 byequiv=> //=.
+> C2 proc.
+> C3 call (_: I (glob P){1} (glob P’){2}).
+> C4 exact/(CBC_Oracle_enc_eq P P’ I P_f_eq).
+> C5 by call P_init_eq.
+> qed.
+> §3.2 PROOF IR §3.3 LIVENESS §3.4 ACTION
+> goal_kind : relational pRHL
+> program
+> INDR_CPA_direct(O,A).main
+> O = CBC_Oracle(P) | (P’)
+> pre / post : ={glob A} ⇒={res}
+> candidates
+> CBC_Oracle_enc_eq
+> P_init_eq
+> frontier
+> O.init();
+> →b <@ A(O).distinguish()
+> →return b
+> •ILIVE
+> relational invariant
+> •CBC_Oracle_enc_eq BLOCKED
+> oracles’ enc agree
+> •P_init_eq BLOCKED
+> init sets up I (base case)
+> candidate CALLABLE
+> call (_: I)
+> probe 2 SUBGOALS
+> oracles agree;
+> init sets I
+> yours
+> the invariant I,
+> the next tactic
+
+Figure 5. The compiler view at a single proof state. Left : the whole proof as a sequence of tactics; the agent is at C2 , just after proc. , at the adversary-call frontier (§3.1, state projection). Right : the three downstream passes (§3.2, §3.3, §3.4), all computed for that one state. 
+
+lemmas primarily from names appearing in the goal, but instead sees which proof layer it is in and which resources are meaningful at that layer. When ProofIR identifies the current state as ready to apply a call-site resource, later passes know that the call-site structure must be preserved, rather than treating an arbitrary inlining step as a natural way to simplify the goal. ProofIR also separates semantic classification from ac-tionability. Its role is to answer: what kind of proof state is this, and which resources are worth tracking? The liveness and frontier analyses below then answer a different question: which of these resources are currently usable? For example, ProofIR may identify an oracle-equivalence resource as relevant to the current layer. A later pass must still determine whether the proof has reached the corresponding oracle call, whether the resource is blocked, whether it has become stale because the call was inlined away, or whether it is live at the current frontier. In this sense, ProofIR is not the final action surface. It provides the semantic coordinate system on which the subsequent compiler passes operate. 
+
+Running example. In Figure 5, ProofIR classifies the current goal as a relational pRHL goal. It parses the goal output by the checker and identifies the two programs being related: both sides are instances of INDR_CPA_direct(O,A).main , but the oracle O is instantiated with CBC_Oracle(P) on the left and CBC_Oracle(P’) on the right. It also records the pre-and postconditions: initially, the adversary’s global state is equal on both sides, and the proof must establish equality of the returned result res . Finally, it marks resources that are structurally relevant at this state. The invariant I is relevant because the current cursor is an adversary-call boundary that must be crossed by a relational invariant. The lemmas 
+
+CBC_Oracle_enc_eq and P_init_eq are relevant because their procedure shapes match oracle or initialization obli-gations that this adversary call may generate. The important point is that ProofIR only records relevance to the current proof state; it does not claim that all of these resources are immediately usable at the current frontier. 
+
+3.3. Layer 3: Resource Liveness and Program Frontier 
+
+ProofIR identifies the resources that are relevant to the current layer, but relevance is not the same as usability. A proof resource may be important for the lemma as a whole and be unusable at the current cursor. The proof may not have reached the point where the resource can apply, or it may have already moved past the point where the resource could be applied. This pass therefore tracks two related facts: resource liveness and the current program frontier. Resource liveness records whether a candidate resource is currently usable, blocked until a later proof state, or stale because the struc-ture needed has already been consumed. The frontier records where the proof currently stands in the exposed program structure. It tells whether the proof has reached the place where a resource can act, or whether that place is hidden or already gone. This distinction is important because a raw goal does not tell the agent whether a failed resource is genuinely inapplicable or merely tried at the wrong point. A lemma may fail because the proof has not yet exposed the right structure; the same lemma may also fail because an earlier lowering step erased the structure it needed. These cases require different local information, but they can look similar if the agent sees only a checker rejection. The output of this pass is a state-aware liveness view: which resources are live, which are blocked, which are stale, what frontier is currently exposed, and which local moves would preserve or destroy useful proof structure. This pass does not assemble a fully typed EasyCrypt command, choose a proof route, or commit an action. It tells the action surface what remains usable at the current cursor and what proof structure must be preserved. 
+
+Running example. ProofIR marks I, CBC_Oracle_enc_eq ,and P_init_eq as relevant to the current proof state. How-ever, at cursor C2 , among these resources, only the invariant 
+
+I is live for crossing the current frontier. The reason is that the current frontier is the adversary-call boundary: the next program point to cross is b <@ A(O).distinguish() .Crossing this call requires a relational invariant, so I is 7actionable at this state. By contrast, CBC_Oracle_enc_eq and  
+
+> P_init_eq
+
+cannot be applied directly yet. The adversary call first splits the proof into the obligations generated by the adversary interface, including oracle-agreement and initialization/base-invariant obligations. Only after this split do CBC_Oracle_enc_eq and P_init_eq become usable for their respective subgoals. 
+
+3.4. Layer 4: Action Surface 
+
+The action surface is the eventual layer exposed to the agent. The action surface turns the resource-liveness analysis (§3.3) into a compact set of small tools that the agent can inspect before committing to a proof step. Its role is not to recommend a proof route or choose the next tactic. It gives the agent state-aware entry points into the proof context. The surface contains four kinds of entries. 
+
+Resource references. These entries point to proof resources that are relevant at the current state, such as bridge lemmas, oracle equivalences, call-site resources, or local hypotheses. The panel does not dump the full surrounding file context. Instead, it shows the resource names, their status at the current cursor, and a small reference that the agent can follow if it needs more detail. For example, a live resource reference can be inspected to see its statement, type, or required arguments; a blocked resource reference can be inspected to see which frontier it is waiting for; and a stale resource reference can be inspected to see which structure is no longer present. 
+
+Binding references. Many high-level proof moves fail not because the idea is wrong, but because the corresponding EasyCrypt command requires module arguments. The action surface therefore exposes the binding state of a candidate resource: which arguments are already known, which slots are still missing, and which local objects may fill them. These entries are references, not completed proof scripts. They let the agent inspect or complete the missing informa-tion without searching the project files from scratch. 
+
+Inspection and probe tools. Some information is better obtained by a small state-aware query than by showing more text directly to the agent. The surface therefore exposes targeted inspection and probing tools. Inspection tools read information already available in the compiled context, such as a lemma type, a module argument, the current frontier, or the reason a resource is blocked. Probe tools speculatively execute a candidate tactic or short tactic chain and return a preview of the local result; a probe does not change the current proof state. 
+
+Neutral diagnostics. When the last attempts fail, the surface reports not only the error from the EasyCrypt checker but also the diagnosis . A rejection may mean that a binding is missing, that the proof has not yet reached the matching frontier, or that an earlier lowering step removed the required structure. The diagnostic states what failed at this proof state and, when available, what local condition is missing. It does not conclude that the lemma is useless, that the route is wrong, or that the goal is unprovable. Together, these entries define the action surface: a state-aware interface of resource references, binding references, inspection tools, probes, previews, and diagnostics. The surface is intentionally compact. It does not expose the entire project context, and it does not encode a proof strategy. It tells the agent what can be inspected or tried at the current cursor, and what information each entry is meant to reveal. 
+
+4. Tree-Based Proof Orchestration 
+
+Proof construction is rarely a straight line. At a given proof state, there may be several structurally different ways to proceed, and a step that looks reasonable locally may only reveal much later that it has led the proof into a dead end. A prover therefore needs more than the ability to choose the next tactic: it also needs a way to explore alternatives, recover from wrong turns, and decide which attempts are still worth pursuing. ShannonProver handles this through a tree-based search. The tree is explored at two levels. Within a single agent, the agent can backtrack and re-explore an earlier state when it discovers that the current route is unproductive. Across agents, an orchestrator manages several branches of the proof tree: it decides when to start a new agent exploring a fresh branch, when to stop an unpromising one, and how failures found on one branch should guide the others. We first introduce the basic tree concepts in Section 4.1. 
+
+4.1. Proof Tree 
+
+A node represents a proof state. Working on a proof means moving progressively between nodes. An edge is an accepted transition between states: the agent submits a tactic, the checker accepts it, and the proof state moves from current node to a child node. A rejected tactic leaves the state unchanged and creates no edge. A path is the sequence of nodes from the root to the current node, representing proof attempts. An agent is a prover instance that extends a single branch of the tree, advancing the proof one node at a time. The search space is a tree rather than a single line because the same state can be continued in more than one way. A node gains another child in two ways. First, an agent may backtrack to that node and try a different strategy; if the new tactic is accepted, it leads to a different child state (§4.2). Second, the orchestrator may spawn another agent at the same shared state, so that a different route can be explored without waiting for the current branch to finish (§4.3). The resulting branches are siblings below a common node. A branch ends at a leaf : either a closed proof ( qed. )or a state that is abandoned because it is a dead end or is pruned by the orchestrator (§4.3). 
+
+4.2. Backtracking within an Agent 
+
+At each node, the agent reads the compiled surface from Section 3. This surface gives the agent a structured view of the current proof state. Based on this view, the agent extends 8its branch one tactic at a time, then reads the newly compiled surface and continues from the resulting state. An agent does not only move forward. During proof construction, it may discover that the current route has become unproductive, or that an earlier tactic quietly led the proof into a dead end. In that case, the agent can backtrack to the earlier state, revise the proof from that point, and extend a new edge to a new child. This makes exploration less brittle: the agent does not have to make a perfect sequence of irreversible choices, but can try a route, learn from where it breaks, and return to a better branching point. However, this local backtracking is not sufficient by itself. An agent may fail to notice that it should backtrack. For example, it may misread the state and believe that the current route is still repairable, or it may keep trying variants of the same local move for a long time without making real progress. In these cases, the search needs a second layer of control beyond the individual agent. ShannonProver provides this layer through a deterministic orchestrator. 
+
+4.3. Scheduling across Agents 
+
+The backtracking described in Section 4.2 handles the case where the agent itself recognizes a wrong turn and returns to an earlier state. There are two limitations that this does not solve. First, an agent does not always backtrack when it should: it may stall at a state, repeatedly trying variants of the same failing move instead of returning to the point where the route broke. Second, a single branch explores alternatives sequentially, even when several routes are plausible enough to be worth exploring together. To address both limitations, ShannonProver uses an or-chestrator. The orchestrator is not an AI agent, but instead a deterministic algorithm that manages the same proof tree from above. It decides where to fork the search with a fresh agent, which branches should be stopped, and how failures on one branch should inform the others. The orchestrator uses three mechanisms: spawning, pruning, and negative memory. 
+
+Spawning children. At each node, the orchestrator may spawn additional children, each exploring a different path. Without control, this would quickly become infeasible: spawning two children from the root, then two children from each child, would make the number of live agents grow exponentially. ShannonProver therefore spawns new agents only when the current search behavior suggests that another route is worth trying. 
+
+❶ Persistent local failure. If an agent at a node (state) repeatedly submits tactics and the checker rejects them, this suggests that the agent may be stuck in a local neighborhood of bad moves and the current branch is unproductive. Rather than letting the agent spend more time on the same route, the orchestrator creates a sibling branch. It does so by spawning a child at the parent of the node where the agent is currently working, giving the search a chance to approach the state through a different path. 
+
+❷ Structural undo. If an agent backtracks to a previous state, and this undo is structural, then the problem is not merely a wrong tactic or a small local mistake. Instead, the agent has identified an earlier decision point whose consequences affected a large part of the later proof. Such a point is a valuable branching point: if one continuation from it led to a structural undo, another continuation may be worth exploring. In this case, the orchestrator spawns a child at that backtracked node. 
+
+Pruning. Spawning creates new opportunities, but it also creates the risk of an unbounded search. The orchestra-tor therefore prunes branches and terminates unproductive agents. The pruning decision is based on a progress gap : if an agent remains far behind the other agents in the tree, it becomes a candidate for pruning. This decision has to be made carefully. A branch that looks behind is not necessarily useless: an agent may be backtracking through earlier states that temporarily reduces its depth but eventually leads to a better proof route. The orchestrator therefore distinguishes agents that are tem-porarily behind because they are performing meaningful backtracking from agents that are behind throughout the search. In this way, pruning keeps the number of live agents bounded without discarding every branch that briefly moves backward. 
+
+Negative memory. When one agent fails to extend a path, the other agents should not blindly repeat the same exper-iment. The orchestrator therefore records failures as state-indexed negative memory . For a given node, negative mem-ory records which attempted extension led to a dead end and why. When the orchestrator later spawns a child at that node, it passes the corresponding negative memory to the new agent, so that the new branch can avoid spending budget on the same failed route. Negative memory is a search-control mechanism, not proof knowledge. It records that a particular experiment failed for a particular state shape; it does not claim that the underlying proof route is impossible. This distinction is important: negative memory guides exploration, but it does not rule out proof strategies as a matter of logic. 
+
+5. Evaluation 
+
+Implementation. ShannonProver is implemented as aPython research prototype around EasyCrypt. The core implementation contains about 143K lines of Python, di-vided along the implementation boundaries in Figure 10: about 57K lines for agent-facing search and proof-node management, which schedules branches, maintains per-node workspaces, and handles crash recovery; about 47K lines for the EasyCrypt interaction layer, which manages prover sessions, tactic execution, undo, replay, and commitment; and roughly 39K lines for proof-state compiler analyses. Concrete component names are given in App. B. 
+
+Code availability. We will release the ShannonProver source code at https://github.com/SkyShannonProver. 9(a) parallel start               
+
+> initial state
+> Agent 1 Agent 2
+> (b) both advance
+> Agent 1 Agent 2
+> (c) stall, spawn a child
+> spawn
+> stuck
+> Agent 1.0
+> Agent 2
+> (d) prune stalled branch
+> pruned
+> Agent 1.0 Agent 2
+> Figure 6. A proof tree evolving over a search. (a) Two agents start from the initial state (root) and each advances one state. (b) Both extend their branch by one more accepted edge. (c) Agent 1 stalls; the orchestrator spawns a child (Agent 1.0) from the parent node of Agent 1 to take a different edge, while Agent 2 keeps progressing. (d) The stalled branch makes no further progress and is pruned ( ×); the child continues from the shared prefix.
+
+5.1. What We Evaluate 
+
+Our evaluation has two main parts. The first part is a controlled ablation that isolates two mechanisms, the proof-state compiler and the tree-search policy. For the compiler ablation, we measure how much mechanical friction the compiled surface removes from proof search. For the tree policy, we ask how much multi-agent orchestration acceler-ates the proof writing relative to a single agent. The second part is a set of case studies on three real developments, ChaCha20-Poly1305 [23], MEE-CBC [21], and CMAC [22] 5, where the question is how much of the phase III (Fig. 1) can actually be automated. 
+
+Setup. We compare two configurations in the ablation tasks: the direct checker-in-the-loop baseline and ShannonProver. In both configurations, we use Opus 4.8 with high thinking effort, and the agent is allowed to read all project files and EasyCrypt source files, and there are no proof-strategy-related prompts injected to the agent. In the baseline, the agent uses the same MCP-based EasyCrypt interaction layer as ShannonProver, but with ablated features disabled. This factors out unrelated engineering friction, such as session management and crash recovery. We use the same stopping rule in both configurations: the agent is allowed to announce that it gives up at most three times. After each announcement, the system encourages the agent to try another route. If the agent announces three times consecutively without making actual proof progress, we count the run as a give-up. This rule prevents runs 
+
+> 5. The CMAC case study uses an EasyCrypt development obtained from a non-public corpus. Although the corresponding formal-verification result has been described in prior work, we are not aware of any publicly available release of the machine-checkable CMAC proof scripts at the time of writing.
+
+from spending unbounded budget in states where the agent repeatedly reports that it is stuck. In pilot runs, forcing the agent to continue led either to wasted tokens at the same stuck point or to behavior outside the intended proof-writing task, such as accessing unrelated files on the machine. 
+
+Data sampling. To keep the API cost for the ablation study manageable while obtaining a faithful evaluation, we sample a set of 40 lemmas (of similar size to our case-study standardization project) from our benchmark dataset, across different types and difficulty levels. We group lemmas by proof shape: procedural ( P), invariant-synthesis ( I), and game-hop/reduction ( G). This grouping is not meant to label cryptographic importance; rather, it separates qualita-tively different proof-engineering regimes. Procedural lem-mas are mostly local : once the relevant procedure body is exposed, progress is often made by a sequence of greedily discoverable symbolic-execution and simplification tactics. Invariant-synthesis lemmas require the agent to choose a relational invariant that is strong enough to carry through a call or loop boundary, but not so strong that it creates unnecessary side obligations. Game-hop and reduction lem-mas require the proof to preserve higher-level game structure long enough to apply bridge lemmas, oracle equivalences, or probability bounds. These three shapes stress the interface in different ways, so aggregating them into a single average would obscure where ShannonProver is helping. 
+
+A note on metrics used in our evaluation. Prior LLM-based theorem-proving systems usually evaluate perfor-mance using metrics such as “Pass@( N)” [27,28]. In these evaluations, the model generates up to N complete proof candidates for each theorem, and the theorem is counted as solved if at least one candidate is accepted by the checker. These metrics are designed for whole-proof generation: the system statically generates complete Lean proof scripts, and Lean is then used to check whether any of them succeeds. This does not apply to our setting, where the agent con-structs an EasyCrypt proof interactively, one tactic at a time, and each committed tactic changes the current proof state. Moreover, the metric measuring whether a lemma is proven or not is too coarse in our setting. First, it only records the final binary outcome (whether some proof was eventually accepted) and does not explain how the proof search proceeded. Second, two runs with the same final outcome can have very different routes: both may succeed, but one may do so through a short high-level route while the other succeeds only after many rejected commits, brute-forcing to proceed. We therefore introduce new metrics be-low, each tailored to the corresponding ablation we evaluate. 
+
+5.2. The Effects of the Proof-State Compiler 
+
+The baseline has the agent interact directly with the checker: after submitting each tactic to the checker it sees only the resulting goal or the error message. ShannonProver instead hands the agent the compiled proof-state panel (§3). A cheaper proof could come from two very different places, and a fair ablation has to separate them. The com-piled surface might make the model propose fewer wrong 10 0              
+
+> 0.05
+> 0.1 0.10
+> 0.07
+> P
+> (a) Error-generation rate
+> 0
+> 5
+> 10 10.8%
+> 0.0%
+> (b) Error friction (% of spend)
+> 0
+> 0.05
+> 0.1
+> 0.15
+> 0.08
+> 0.12
+> I
+> 0
+> 5
+> 10
+> 15 12.3%
+> 0.3%
+> baseline ShannonProver
+> 0
+> 0.05
+> 0.1
+> 0.15 0.11 0.13
+> G
+> baseline ShannonProver
+> 0
+> 5
+> 10 9.8%
+> 1.3%
+> Figure 7. Compiler ablation on lemma pairs that both cases proved, grouped by proof shape: P= procedural, I= invariant-synthesis, G= game-hop/reduction.
+
+tactics in the first place, or it might leave the first-attempt error rate unchanged while making those errors far less costly. We therefore have the following metrics: ❶ Error-generation rate. The fraction of the model’s distinct pro-posed tactics that the checker rejects on its first attempt. 
+
+❷ Error friction. The fraction of an agent’s total spend in API cost inside unproductive windows, i.e., the window where the agent has consecutive rejected tactics from the checker. This captures the fraction that the agent spends on debugging syntax and recovering from errors. 
+
+Collecting the metrics. Our measurement pipeline separates deterministic metrics from qualitative judgement. The first stage is a Python parser: for each run it extracts the submit-ted tactics, the checker responses, and the agent reasoning traces for each submitted tactic. The second stage uses an LLM for cases a parser cannot classify mechanically: for example, when the agent commits several steps and later reverts them with no explicit checker error, so the parser cannot tell an unproductive dead end from a deliberate restructuring; there the LLM labels those tactic moves with the corresponding qualitative cause. The final stage is de-terministic again: a script aggregates the parsed events and the labels into the reported numbers. 
+
+Results. Figure 7 shows that ShannonProver’s proof-state compiler does not primarily work by making the model intrinsically less error-prone. The error-generation rate is close between the baseline and ShannonProver across the three lemma types. This is expected, because this metric is dominated by the model’s own stochastic search behavior. The error-friction numbers show the more important effect. Across all lemma types, ShannonProver sharply re-duces the fraction of spend inside error recovery windows. This means that even when the agent still makes mistakes when it first tries a move, the agent can immediately recover from it. Meanwhile, the agent in the baseline must figure out the right move via trial-and-error. The ablation shows that the proof-state compiler is not a proof oracle that provides the right move, but an interface that provides sufficient information to free the agent from mechanical debugging. The main counter-intuitive result for the error-generation rate is invariant-synthesis lemmas, where ShannonProver has a visibly higher rate. The traces of the experiments in fact suggest interesting insights: with the richer information provided by the compiler, the agent often attempts stronger and more structured invariants, because it can see more of the live resources, frontier conditions, and required bindings. Some of these ambitious invariant attempts are rejected on first attempt. In the baseline, however, the agent is more likely to choose a weaker invariant that passes immediately, even if it leaves the proof in a worse state later. 
+
+5.3. The Effects of Search Tree 
+
+We evaluate these two layers (§4) separately. The single-agent case uses one long-lived prover, and it can still undo and backtrack within its own lineage, but it has no sibling branch racing it and no respawn after a node death. The orchestrator case adds the cross-agent tree policy: a second branch can race from a shared checkpoint, and dead or stalled nodes can be respawned with negative memory so that the next agent does not repeat the same failed route. In both cases, the agent can use the compiler. As in the com-piler ablation, we use the same proof-shape grouping: pro-cedural ( P), invariant-synthesis ( I), and game-hop/reduction (G). Figure 8a–b first shows that the need for backtracking is highly lemma-type dependent. Procedural lemmas are almost straight-line. This matches the structure of these proofs: once the relevant procedure body is exposed, the next useful tactic is often locally discoverable, and a greedy route usually suffices. In contrast, invariant-synthesis and game-hop lemmas are much less linear. 38% of solved invariant runs and 43% of solved game-hop runs backtrack at least once, with about 2.0–2.3 backtrack events per solved run. These are exactly the lemmas where a tactic accepted by the checker can cause the agent to enter an unproductive route: an invariant may be too weak or too strong, and a game-hop proof may descend too early and lose a bridge lemma or oracle-equivalence resource. For these lemmas, the ability to rewind is not a rare recovery feature; it is part of how successful proofs are found. Figure 8c–d then shows what the orchestrator adds be-yond the single-agent backtracking. Its main effect is instead on solve rate. On the invariant-synthesis and game-hop lemmas, the solve rate rises from 67% with a single agent to 90% with a group of orchestrated agents. The reason is visible in the winning paths: 80% of orchestrator wins on invariant-synthesis lemmas and 50% on game-hop lemmas were delivered by a branch that had either backtracked or been respawned after a node death. The tree ablation therefore supports two conclusions. First, proof search is not uniformly non-linear: for local procedural obligations, a single greedy lineage is often 11 P I G             
+
+> 0
+> 20
+> 40
+> 3%
+> 38% 43%
+> % of solved runs
+> (a) Solved runs that backtracked
+> PIG
+> 0
+> 1
+> 2
+> 0.04
+> 2.00 2.29
+> events / solved run
+> (b) Backtrack events per solved run
+> PIG
+> 0
+> 20
+> 40
+> 60
+> 80
+> 3%
+> 80%
+> 50%
+> % of orch. solves
+> (c) Winning path needed backtrack / respawn
+> single agent
+> orches-trator
+> 0
+> 50
+> 100
+> 67%
+> 90%
+> % of runs solved
+> (d) Solve rate (I+Glemmas)
+> Figure 8. Tree-search ablation, grouped by proof shape ( P= procedural;
+> I= invariant-synthesis; G= game-hop/reduction).
+
+enough. Second, for the proof types that matter most in cryptographic developments—invariants and game hops— the successful route is often found through backtracking and diverse path exploration. 
+
+5.4. Case Studies 
+
+ChaCha20-Poly1305 [23] is a representative case study project. It is an AEAD construction that combines the ChaCha20 stream cipher with the Poly1305 authenticator and is used in IETF protocols and deployed in TLS [5]. Its EasyCrypt formal proof contains a mixture of low-level algebraic reasoning, invariant-heavy relational proofs, and game-hop/reduction lemmas. Experts described the devel-opment as interleaving the design of new abstractions with mechanical proof engineering: abstraction choices shaped the proof structure, while mechanization difficulties fed back into the abstraction design. This case study demonstrates that AI agents today can fully automate lemma-level proof construction (Phase III in Fig. 1) at the scale and complexity of ChaChaPoly. Figure 9 shows all the lemmas in ChaChaPoly and the API cost per lemma. The procedural lemmas are generally easy and they are solved at low API cost. This is already useful because large projects contain many such lemmas, and writing them manually still consumes expert time. Importantly, Shannon-Prover solved the harder tail in invariant-synthesis lemmas (I) and game-hop/reduction lemmas ( G), while the baseline agent failed. These harder lemmas are fewer in the project, but they are also the most important: they are the points where the lemma decomposition is tested. If these lemmas can be proven, the expert gains evidence that the decomposition has the right structure. If AI agents or humans fail to prove a lemma, the thought process in the failed attempts is still informative: it often indicates that the current lemma is missing an invariant, that a game hop has not been modularized at the right boundary, or that some other part of the decomposition needs to be revised. This feedback is valuable for redoing the decomposition. We also evaluate the quality of the agent-written proofs. The C/M/S annotations in Figure 9 capture three dimen-sions: concision ( C), maintainability/readability ( M), and semantic proof idiom ( S). C measures whether the proof is compact and avoids unnecessary tactic churn or dupli-cated reasoning. M measures whether the proof structure is easy for a human to inspect, debug, and adapt when the surrounding definitions change. S measures whether the proof follows the natural EasyCrypt proof structure and uses existing proven facts, rather than relying on brittle low-level re-proving. The AI-generated proofs still leave room for improvement on invariant and game-hop lemmas, and improving them remains a promising direction for future work. The LLM API cost is also reasonable to make iter-ative proof development practical. Across the ChaCha20-Poly1305 lemmas (Fig. 9), one proof pass costs $233.36 for API calls and completes within a day of wall-clock time. The cost is concentrated in the harder tail: the 27 procedural lemmas together cost $40.69, while the invariant-synthesis and game-hop/reduction lemmas account for $76.99 and $115.68, respectively. This distribution is desirable from a workflow perspective: the system spends little on procedural lemmas, and most of the cost goes to the lemmas that are most informative for testing the decomposition. Even if a cryptographer revises the decomposition and reruns the proof pass several times, each iteration costs only a few hundred dollars and completes within at most a day, rather than taking experts weeks or months to complete the proof-engineering work. This makes ShannonProver useful not only as a one-shot proof generator, but also as a practical tool for iterating on large cryptographic formalizations. 
+
+Historical human efforts on case study projects. We consulted experts who either participated in the develop-ments or had substantial knowledge of them. We use CMAC and MEE-CBC to provide additional supporting evidence (Fig. 11, 12). 
+
+MEE-CBC. This development started from an existing proof that CBC mode is secure with uniformly random IVs, which was composed with a new proof that MAC-then-Encode-then-Encrypt is INT-PTXT secure. This new proof was formalized by an expert EasyCrypt user with a week of effort. A further proof refining the security result to an implementation model (a C-like imperative model in Easy-Crypt) took an additional week from the same expert. The main source of expert judgment in this development is in choosing the right abstractions and modularizing the proof; once this structure was fixed, much of the remaining work was mechanical proof engineering. Experts commented that the novel part of the MEE-CBC proof involved little human insight, and would have been automated with AI agents. 
+
+CMAC. The proof for CMAC required three months from EasyCrypt users. This effort also included identifying and resolving small issues in the pen-and-paper proof, as well as making nontrivial design decisions for a part of 12 $0 $1 $2 $3 $4   
+
+> pr_TPI_ok
+> pr_step4_badi
+> gen_CTR_encrypt_bytes_cons
+> make_lbad1_size_cons2
+> take_xor_map2_xor
+> chacha_enc2
+> filter_test_poly_in
+> dblock_uni
+> mk_rs_ofpair
+> chacha_enc1
+> poly_mac2
+> nth_xor
+> poly_mac1
+> iter_gen_ctr_round_S
+> iter_gen_ctr_round_nil
+> iter_gen_ctr_round_nil_cat
+> gen_CTR_encrypt_bytes0
+> dblock_fu
+> xorK1
+> nth_map2
+> dblock_ll
+> addK
+> pr_TPI_ok_filter
+> nth_zero
+> dblock_funi
+> size_map2
+> map2_zip
+> $4.19
+> $3.25
+> $2.51
+> $2.34
+> $2.11
+> $2.04
+> $1.90
+> $1.88
+> $1.88
+> $1.47
+> $1.41
+> $1.40
+> $1.40
+> $1.35
+> $1.30
+> $1.19
+> $1.04
+> $1.01
+> $0.97
+> $0.97
+> $0.96
+> $0.89
+> $0.86
+> $0.81
+> $0.67
+> $0.66
+> $0.52
+> CMS
+
+P: procedural (27)        
+
+> $0 $10 $20 $30 $40 $50
+> equiv_step4
+> step4_badi
+> UFCMA_genCC
+> equ_cc
+> CCP_OCCP
+> chacha_spec
+> pr_CCP_OCCP
+> poly_spec
+> $44.73
+> $13.94
+> $6.70
+> $4.67
+> $3.47
+> $1.65
+> $1.03
+> $0.80
+> CMS
+
+I: invariant (8)        
+
+> $0 $5 $10 $15 $20 $25
+> step4_bad2
+> step4_bad1_lbad1
+> step2_3
+> step3
+> step4_1
+> step2_2
+> step1
+> step2_1
+> step4_lbad1_sum
+> conclusion
+> step4_bad1
+> step2
+> $24.55
+> $20.60
+> $18.32
+> $12.35
+> $9.01
+> $7.73
+> $7.11
+> $4.62
+> $4.47
+> $3.35
+> $2.28
+> $1.29
+> CMS
+
+G: game hop (12) 
+
+standout agent proof quality comparable/better quality worse 
+
+ShannonProver and baseline comparable ShannonProver substantially better, or baseline gives up Figure 9. Per-lemma API cost for ChaCha20-Poly1305 project solved by AI agents, grouped by proof shape ( P/I/G). Bar color compares ShannonProver with the baseline; dots report qualitative proof quality along concision ( C), maintainability ( M), and semantic proof idiom ( S). The star marks lemmas where the agent found a “tesuji” move that makes the proof much shorter than human expert proofs (tesuji is a term from Go for a skillful local move whose effect is disproportionate to its size); see Appendix D for more details. 
+
+the argument that could not be formalized as written. (The formalized bound is looser than the pen-and-paper bound as a result.) The experts suggested that the CMAC proof could have been greatly accelerated with AI agents, not only by reducing the amount of mechanical proof work, but also by surfacing issues in the pen-and-paper proof earlier and helping inform the high-level proof decisions that affect the theorem statement. For MEE-CBC, where the decomposition fixed most of the intellectual structure, the lemmas are solved at low cost and even the baseline agent succeeds throughout (Fig. 11). CMAC shows a different story: we sample hard lemmas from the CMAC corpus, and ShannonProver provides a clearer advantage on them. 
+
+6. Discussion and Related Work 
+
+Machine-checked cryptography. Verifying game-based cryptographic security has a mature mechanization stack. EasyCrypt [15] and CertiCrypt [29] pioneered game-based proofs that represent cryptographic games as probabilis-tic programs and reason about them using probabilistic relational Hoare logic. Recent methodological work on pRHL proofs in EasyCrypt emphasizes that interactive-protocol proofs must maintain both state invariants, which support cryptographic reasoning, and temporal invariants, which track protocol structure [30]; ShannonProver can be viewed as making this kind of proof structure explicit to an agent through its compiled surface. CryptHOL [31], SSProve [32], and FCF [33] provide related foundations. Protocol-level tools occupy a different point in the de-sign space: Tamarin [20] and ProVerif [19] provide strong automation for symbolic security analysis, while Cryp-toVerif [34] targets computationally sound protocol proofs. Complementing these proof systems, high-assurance im-plementation frameworks such as HACL* [35], Ever-Crypt [9], Jasmin [36], and F* [18] verify executable crypto-graphic code. On top of this ecosystem, expert teams have produced landmark verified developments, including ML-KEM/Kyber [25], SLH-DSA/SPHINCS + [14], XMSS [37], ChaCha20-Poly1305 [23], MEE-CBC [21], and SHA-3 [38]. 
+
+On the choice of proof checker. For our current goals, EasyCrypt is the most appropriate substrate because it is closely aligned with the formal artifacts we target: crypto-graphic games, probabilistic programs, adversary modules, oracles, hybrids, pRHL equivalences, and reduction-style arguments. Our criterion is coverage of real computational cryptographic proof patterns, rather than maximizing push-button automation. In this sense, we deliberately choose a verifier with high expressive coverage since automation can be handled using AI agents. Lean-based libraries such as VCVio [39] are also promising but their infrastructure is relatively young and is still under active development. We believe that our ideas can also be applied to large-13 scale development of formal proofs in Lean. Other excellent symbolic verifiers, such as Tamarin [20] and ProVerif [19], occupy a different point in the design space: they provide strong automation for symbolic protocol analysis, but are less directly aligned with computational, game-based proofs. 
+
+LLMs for formal proofs. Using LLMs for formal proofs has advanced rapidly, but almost entirely on mathematics. One flavor is whole-proof generation [27,40–44], in which an LLM produces entire Lean proofs at one shot. Relevant benchmarks for this type of work include miniF2F [28], ProofNet [45], and PutnamBench [46]. Another flavor is interactive tactic-level generation [47–49], where LLMs generate and repair proofs. A recent work, CatCrypt [50], explores a Rust-to-Lean pipeline for cryptographic security proofs and reports extensive use of generative AI for pro-ducing Lean proof code; in contrast, ShannonProver works at the interactive proof-construction layer, compiling live EasyCrypt states into an agent-facing surface for tactic-by-tactic proof search. To our knowledge, ShannonProver is the first system to drive an LLM agent through tactic-level construction of game-based security and correctness proofs with a computational-model proof assistant. 
+
+7. Conclusion and Future Work 
+
+ShannonProver demonstrates that current AI agents can automate a substantial amount of formal cryptographic proof at reasonable cost when placed behind the right harness. We hope this work opens a broader direction for using AI to make cryptographic protocols easier to verify, standardize, and deploy. Several directions are especially promising for extending this line of work. 
+
+❶ Scaling to larger verification projects such as ML-KEM. The next immediate step is to evaluate Shannon-Prover on larger verification projects, including recent post-quantum developments such as ML-KEM. These targets stress both proof search and engineering scale: they contain many interacting definitions, implementation-level optimiza-tions, and long proof dependencies. Studying them would clarify which parts of the current proof-state compiler al-ready scale and which parts need stronger retrieval, caching, or decomposition support. 
+
+❷ Moving upward from lemma proving to theorem decomposition. Our current system assumes that experts have already decomposed the target theorem into the final set of landmark lemmas to be proved. A natural next step is to assist this decomposition loop itself. The agent could attempt Phase III on a proposed decomposition, surface where proofs succeed or get stuck, and help experts re-vise the Phase II landmarks over several iterations. In this workflow, experts would still make the critical judgments about the model, theorem statements, and proof boundaries, while ShannonProver provides fast feedback and handles the proof-engineering work between revisions. 
+
+❸ Supporting verified implementations. This paper fo-cuses on proofs about protocol design: security games, reductions, and the proof scripts that discharge them. Se-cure implementation verification is a different layer of the problem. It must connect the design-level proof to exe-cutable code with constant-time behavior, memory safety, API compatibility, and implementation-specific invariants. Extending ShannonProver to this setting will likely require new harnesses and agent interfaces that expose the right implementation context without losing the structure of the cryptographic proof. 
+
+❹ Generalizing beyond EasyCrypt. Finally, the main idea is not specific to EasyCrypt: building the right harness can be viewed as a compiler problem, where prover state and project context are translated into a compiled surface for agents. This framing should apply to other formal-verification settings where the raw proof environment is too low-level for language-model agents to use directly. Lean-based cryptographic verification, including recent systems such as VCVio [39], is a natural next target for testing whether the same harness-building approach can transfer beyond EasyCrypt. 
+
+Acknowledgments 
+
+This work is supported by gifts from Accenture, Algo-rithmic SuperIntelligence Labs, Amazon, AMD, Anyscale, Broadcom, cmpnd, Google, IBM, Intel, Intesa Sanpaolo, Lambda, Lightspeed, Mirendil, NVIDIA, Samsung SDS, and VESSL. We would like to thank Quang Dao, Shafi Goldwasser, Mohsen Lesani, Hongyi Ling, Ning Luo, Surya Mathiala-gan, Yibin Yang, the students in the security group at Sky Lab, and the participants and organizers in HACS 2026 for valuable discussions. We also thank Sebastian Angel and AWS Cryptography Group, especially Tal Rabin, Yuval Ishai, and Shai Halevi, for valuable questions and feedback on this paper and future directions. 14 References 
+
+[1] S. Halevi, “A plausible approach to computer-aided cryptographic proofs,” Cryptology ePrint Archive, Paper 2005/181, 2005. [2] National Institute of Standards and Technology, “FIPS 202: SHA-3 standard: Permutation-based hash and extendable-output functions,” Federal Information Processing Standards Publication 202, 2015. [3] National Institute of Standards and Technology, “FIPS 197: Advanced encryption standard (AES),” Federal Information Processing Stan-dards Publication 197, 2023. [4] National Institute of Standards and Technology, “FIPS 203: Module-lattice-based key-encapsulation mechanism standard,” Federal Infor-mation Processing Standards Publication 203, 2024. [5] E. Rescorla, “The transport layer security (TLS) protocol version 1.3,” RFC 8446, 2018. [6] D. J. Bernstein, T. Lange, and P. Schwabe, “The security impact of a new cryptographic library,” in Progress in Cryptology – LATINCRYPT 2012 , ser. Lecture Notes in Computer Science, vol. 7533. Springer, 2012, pp. 159–176. [7] libsodium contributors, “libsodium documentation,” https://doc. libsodium.org/, accessed 2026-05-09. [8] OpenSSL Software Foundation, “OpenSSL: Cryptography and SS-L/TLS toolkit,” https://www.openssl.org/, accessed 2026-05-09. [9] J. Protzenko, B. Parno, A. Fromherz, C. Hawblitzel, M. Polubelova, K. Bhargavan, B. Beurdouche, J. Choi, A. Delignat-Lavaud, C. Four-net, N. Kulatova, T. Ramananandro, A. Rastogi, N. Swamy, C. M. Wintersteiger, and S. Zanella-Béguelin, “EverCrypt: A fast, verified, cross-platform cryptographic provider,” in 2020 IEEE Symposium on Security and Privacy . IEEE, 2020, pp. 983–1002. [10] M. Thomson and S. Turner, “Using TLS to secure QUIC,” RFC 9001, 2021. [11] K. Cohn-Gordon, C. J. F. Cremers, B. Dowling, L. Garratt, and D. Stebila, “A formal security analysis of the Signal messaging pro-tocol,” in 2017 IEEE European Symposium on Security and Privacy (EuroS&P) . IEEE, 2017, pp. 451–466. [12] J. A. Donenfeld, “WireGuard: Next generation kernel network tun-nel,” in 24th Annual Network and Distributed System Security Sym-posium (NDSS 2017) . Internet Society, 2017. [13] J. B. Almeida, S. A. Olmos, M. Barbosa, G. Barthe, F. Dupres-soir, B. Grégoire, V. Laporte, J.-C. Léchenet, C. Low, T. Oliveira, H. Pacheco, M. Quaresma, P. Schwabe, and P.-Y. Strub, “Artifact for formally verifying kyber episode V: Machine-checked IND-CCA security and correctness of ML-KEM in EasyCrypt,” IACR Artifact Archive, crypto/2024/a3, 2024. [14] M. Barbosa, F. Dupressoir, A. Hülsing, M. Meijers, and P.-Y. Strub, “A tight security proof for SPHINCS+, formally verified,” in Ad-vances in Cryptology – ASIACRYPT 2024 , ser. Lecture Notes in Computer Science, vol. 15487. Springer, 2024, pp. 35–67. [15] G. Barthe, B. Grégoire, S. Heraud, and S. Z. Béguelin, “Computer-aided security proofs for the working cryptographer,” in Advances in Cryptology – CRYPTO 2011 , ser. Lecture Notes in Computer Science, vol. 6841. Springer, 2011, pp. 71–90. [16] L. de Moura and S. Ullrich, “The Lean 4 theorem prover and programming language,” in Automated Deduction – CADE 28 , ser. Lecture Notes in Computer Science, vol. 12699. Springer, 2021, pp. 625–635. [17] Y. Bertot and P. Castéran, Interactive Theorem Proving and Program Development: Coq’Art: The Calculus of Inductive Constructions , ser. Texts in Theoretical Computer Science. Springer, 2004. [18] N. Swamy, C. Hri¸ tcu, C. Keller, A. Rastogi, A. Delignat-Lavaud, S. Forest, K. Bhargavan, C. Fournet, P.-Y. Strub, M. Kohlweiss, J.-K. Zinzindohoué, and S. Zanella-Béguelin, “Dependent types and multi-monadic effects in F*,” in Proceedings of the 43rd Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages (POPL) . ACM, 2016, pp. 256–270. [19] B. Blanchet, “Modeling and verifying security protocols with the applied pi calculus and ProVerif,” Foundations and Trends in Privacy and Security , vol. 1, no. 1–2, pp. 1–135, 2016. [20] S. Meier, B. Schmidt, C. Cremers, and D. Basin, “The TAMARIN prover for the symbolic analysis of security protocols,” in Computer Aided Verification , ser. Lecture Notes in Computer Science, vol. 8044. Springer, 2013, pp. 696–701. [21] J. B. Almeida, M. Barbosa, G. Barthe, and F. Dupressoir, “Verifiable side-channel security of cryptographic implementations: Constant-time MEE-CBC,” in Fast Software Encryption (FSE) , 2016. [22] C. Baritel-Ruet, F. Dupressoir, P.-A. Fouque, and B. Grégoire, “For-mal security proof of cmac and its variants,” in 2018 IEEE 31st Computer Security Foundations Symposium (CSF) . IEEE, 2018, pp. 91–104. [23] J. B. Almeida, M. Barbosa, G. Barthe, B. Grégoire, A. Koutsos, V. La-porte, T. Oliveira, and P.-Y. Strub, “The last mile: High-assurance and high-speed cryptographic implementations,” in IEEE Symposium on Security and Privacy , 2020. [24] J. B. Almeida, M. Barbosa, G. Barthe, B. Grégoire, V. Laporte, J.-C. Léchenet, T. Oliveira, H. Pacheco, M. Quaresma, P. Schwabe et al. ,“Formally verifying kyber: Episode iv: Implementation correctness,” 
+
+IACR Transactions on Cryptographic Hardware and Embedded Sys-tems , vol. 2023, no. 3, pp. 164–193, 2023. [25] J. B. Almeida, S. A. Olmos, M. Barbosa, G. Barthe, F. Dupres-soir, B. Grégoire, V. Laporte, J.-C. Léchenet, C. Low, T. Oliveira, H. Pacheco, M. Quaresma, P. Schwabe, and P.-Y. Strub, “Formally verifying kyber episode V: Machine-checked IND-CCA security and correctness of ML-KEM in EasyCrypt,” in Advances in Cryptology – CRYPTO 2024 , ser. Lecture Notes in Computer Science, vol. 14921. Springer, 2024, pp. 384–421. [26] A. V. Aho, M. S. Lam, R. Sethi, and J. D. Ullman, Compilers: Principles, Techniques, and Tools , 2nd ed. Addison-Wesley, 2006. [27] S. Polu and I. Sutskever, “Generative language modeling for auto-mated theorem proving,” arXiv preprint arXiv:2009.03393 , 2020. [28] K. Zheng, J. M. Han, and S. Polu, “MiniF2F: A cross-system bench-mark for formal olympiad-level mathematics,” in ICLR , 2022. [29] G. Barthe, B. Grégoire, and S. Z. Béguelin, “Formal certification of code-based cryptographic proofs,” in POPL , 2009. [30] M. Barbosa, F. Dupressoir et al. , “Principles for pRHL proofs,” Cryptology ePrint Archive, Paper 2026/1334, 2026. [31] D. A. Basin, A. Lochbihler, and S. R. Sefidgar, “CryptHOL: Game-based proofs in higher-order logic,” Journal of Cryptology , 2020. [32] P. G. Haselwarter, E. Rivas, A. Van Muylder, T. Winterhalter, C. Abate, N. Sidorenco, C. Hri¸ tcu, K. Maillard, and B. Spitters, “Ssprove: A foundational framework for modular cryptographic proofs in coq,” ACM transactions on programming languages and systems , vol. 45, no. 3, pp. 1–61, 2023. [33] A. Petcher and G. Morrisett, “The foundational cryptography frame-work,” in Principles of Security and Trust (POST) , 2015. [34] B. Blanchet, “A computationally sound mechanized prover for se-curity protocols,” IEEE Transactions on Dependable and Secure Computing , 2008. [35] J.-K. Zinzindohoué, K. Bhargavan, J. Protzenko, and B. Beurdouche, “HACL*: A verified modern cryptographic library,” in ACM CCS ,2017. [36] J. B. Almeida, M. Barbosa, G. Barthe, A. Blot, B. Grégoire, V. La-porte, T. Oliveira, H. Pacheco, B. Schmidt, and P.-Y. Strub, “Jasmin: High-assurance and high-speed cryptography,” in ACM CCS , 2017. [37] M. Barbosa, F. Dupressoir, B. Grégoire, A. Hülsing, M. Meijers, and P.-Y. Strub, “Machine-checked security for XMSS as in RFC 8391 and SPHINCS+,” in Advances in Cryptology – CRYPTO 2023 , ser. Lecture Notes in Computer Science, vol. 14085. Springer, 2023, pp. 421–454. 
+
+15 [38] J. B. Almeida, C. Baritel-Ruet, M. Barbosa, G. Barthe, F. Dupressoir, B. Grégoire, V. Laporte, T. Oliveira, A. Stoughton, and P.-Y. Strub, “Machine-checked proofs for cryptographic standards: Indifferentia-bility of sponge and secure high-assurance implementations of SHA-3,” in ACM CCS , 2019. [39] D. Tuma, Q. Dao, J. Waters, A. Hicks, and N. Hopper, “Vcvio: Veri-fied cryptography in lean via oracle effects and handlers,” Cryptology ePrint Archive , 2026. [40] G. Lample, T. Lacroix, M.-A. Lachaux, A. Rodriguez, A. Hayat, T. Lavril, G. Ebner, and X. Martinet, “Hypertree proof search for neural theorem proving,” Advances in neural information processing systems , vol. 35, pp. 26 337–26 349, 2022. [41] H. Xin et al. , “DeepSeek-Prover-V1.5: Harnessing proof assistant feedback for reinforcement learning and monte-carlo tree search,”                                   
+
+> arXiv preprint arXiv:2408.08152 , 2024. [42] DeepSeek-AI, “DeepSeek-Prover-V2: Advancing formal mathemati-cal reasoning via reinforcement learning for subgoal decomposition,”
+> arXiv preprint arXiv:2504.21801 , 2025. [43] Y. Lin, S. Tang, B. Lyu, J. Wu, H. Lin, K. Yang, J. LI, M. Xia, D. Chen, S. Arora et al. , “Goedel-prover: A frontier model for open-source automated theorem proving,” in Second Conference on Language Modeling , 2025. [44] T. Hubert, R. Mehta, L. Sartran, M. Z. Horváth, G. Žuži´ c, E. Wieser, A. Huang, J. Schrittwieser, Y. Schroecker, H. Masoom et al. ,“Olympiad-level formal mathematical reasoning with reinforcement learning,” Nature , pp. 1–3, 2025. [45] Z. Azerbayev, B. Piotrowski, H. Schoelkopf, E. W. Ayers, D. Radev, and J. Avigad, “ProofNet: Autoformalizing and formally proving undergraduate-level mathematics,” arXiv preprint arXiv:2302.12433 ,2023. [46] G. Tsoukalas, J. Lee, J. Jennings, J. Xin, M. Ding, M. Jennings, A. Thakur, and S. Chaudhuri, “Putnambench: Evaluating neural theorem-provers on the putnam mathematical competition,” Advances in Neural Information Processing Systems , vol. 37, pp. 11 545–11 569, 2024. [47] K. Yang, A. Swope, A. Gu, R. Chalamala, P. Song, S. Yu, S. Godil, R. J. Prenger, and A. Anandkumar, “Leandojo: Theorem proving with retrieval-augmented language models,” Advances in Neural Informa-tion Processing Systems , vol. 36, pp. 21 573–21 612, 2023. [48] A. Q. Jiang, W. Li, S. Tworkowski, K. Czechowski, T. Odrzygó´ zd´ z, P. Miło´ s, Y. Wu, and M. Jamnik, “Thor: Wielding hammers to integrate language models and automated theorem provers,” Advances in Neural Information Processing Systems , vol. 35, pp. 8360–8373, 2022. [49] E. First, M. N. Rabe, T. Ringer, and Y. Brun, “Baldur: Whole-proof generation and repair with large language models,” in Proceedings of the 31st ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering , 2023, pp. 1229–1241. [50] B. Spitters et al. , “CatCrypt,” Cryptology ePrint Archive, Paper 2026/604, 2026.
+
+Appendix A. Deferred Explanations of Concepts 
+
+A.1. Proof resources 
+
+By proof resources , we mean pieces of information that can help discharge the current goal, including facts already in the proof, previously proved lemmas, module and type information, and the program structure currently exposed by the checker, such as procedure calls and remaining side conditions. The usable set changes after each tactic. More precisely, a resource is useful only relative to a particular goal and proof position: a lemma, hypothesis, or program call may be available before one tactic, blocked until more structure is exposed, or no longer applicable after the proof has moved past the point where it could be used. The first class of resources consists of logical proof resources. These include local hypotheses introduced in the current proof, previously proved lemmas, equivalence lemmas, probability rewrites and bounds, and declarations whose module or type parameters may need to be instanti-ated before use. For these resources, the relevant questions are not only whether the name exists, but also whether its statement has the right shape for the current goal and whether its arguments can be filled from the current context. The second class consists of program-structure resources exposed by the current proof state. In game-based crypto-graphic proofs, many tactics are only meaningful at partic-ular program points: for example, a call lemma can be used only when the corresponding procedure call is exposed, and a loop invariant or sampling argument becomes relevant only when the proof has reached the matching loop or sampling statement. The compiler therefore tracks the currently visible program structure, including exposed calls, oracle or proce-dure boundaries, remaining side conditions, and probability-bound obligations. This state dependence is the main reason these objects are treated as resources rather than as a static library. Each accepted tactic changes the proof state, and may expose new resources, make an existing resource finally usable, or consume the structure that a resource needed. The proof-state compiler makes this changing set of resources explicit so that the agent does not have to reconstruct it from raw checker output and source files after every step. When the compiler exposes a resource to the agent, it usually does so through a resource reference : a compact entry that points to the resource and records its liveness, required arguments, and available inspection or probing actions. Thus the resource is the proof-relevant object itself, while the reference is the agent-facing entry in the compiled surface. 
+
+Appendix B. System Architecture 
+
+ShannonProver’s managed-prover architecture is orga-nized around one rule: the agent may choose proof moves, but it should not own the proof state or decide when a proof is valid. Figure 10 implements this rule by separating the system into three layers. The top layer decides how proof attempts are explored, the middle layer manages a single proof node and the view shown to the agent, and the bottom layer talks to EasyCrypt and gates acceptance. The LOC categories in Sec. 5 follow these implementation boundaries. For the LOC accounting in Sec. 5, the agent-facing search and proof-node management category covers 
+
+ProofNodeRuntime , Orchestrator , workspace/node man-agement, and crash-recovery code. The EasyCrypt interac-16 long-lived tree control and agent-facing protocol 
+
+> manager-owned proof-node boundary
+> backend, event backbone, projection, and proof-checker-gated acceptance
+> Prover agent
+> proof choices JSON intents
+> ProofNodeRuntime
+> per-node MCP private bridge
+> Orchestrator
+> tree policy spawn/kill checkpoints
+> Auxiliary context
+> KB sources node memory
+> ProofNodeManager
+> intent repair route health phase doors
+> WorkspaceViewManager
+> order / sanitize / lint navigation adapters
+> Workspace view
+> ProverWorkspaceView current goal panels candidate moves
+> ReplSessionManager
+> start / probe commit / undo / replay
+> session runtime
+> session_runtime daemon backend
+> EasyCrypt
+> REPL / daemon semantic authority
+> Acceptance gate
+> event contract replay + verify
+> Event artifacts
+> events.jsonl commit / tactic results
+> Projection + IR
+> ToolViews ProofContextView + ProofIR
+> intent
+> view
+> replay
+
+Figure 10. ShannonProver’s current managed-prover architecture. A long-lived prover agent sees only a ProverWorkspaceView and submits proof-level JSON intents through the per-node submit_proof_intent MCP tool. ProofNodeManager owns the proof-turn boundary, while ReplSessionManager and the EasyCrypt session runtime own all probing, commitment, undo, and replay. Structured events and artifacts feed projection, ToolViews, ProofContextView ,ProofIR, and the workspace-view manager; final acceptance is gated by event-contract checking and offline EasyCrypt replay. 
+
+tion category covers ReplSessionManager , the session run-time, and EasyCrypt daemon/replay/undo/commit support. The proof-state compiler category covers the Projection + IR component, ProofContextView , ProofIR, and resource-liveness analyses. 
+
+Agent-facing search layer. The top band of Figure 10 is responsible for exploration. The prover agent receives a workspace view and proposes proof-level actions. The orchestrator decides when to continue a branch, fork from a checkpoint, restart a failed attempt, or pass useful context to another branch. This layer therefore owns strategy and search scheduling. Its boundary is equally important: it does not execute tactics, mutate the EasyCrypt state, or certify that a proof is complete. Those decisions are deliberately kept below the agent-facing layer. 
+
+Managed proof-node layer. The middle band is the bound-ary around one active proof node. Its job is to turn the agent’s high-level request into a well-formed interaction with the backend, and to turn backend evidence back into a usable workspace view. This is where ShannonProver checks that an action is appropriate for the current proof phase, tracks whether the route is healthy, orders and fil-ters the information shown to the agent, and exposes the current goal, live resources, relevant program fragments, and candidate moves. This layer does not prove the lemma for the agent. It also does not add new logical facts. Its responsibility is to make the current proof situation legible and to keep the agent from interacting with the prover through an unstructured transcript. 
+
+Proof-checker-gated backend layer. The bottom band owns all contact with EasyCrypt. It starts sessions, executes probes, commits accepted tactics, supports undo and check-point replay, and records the evidence needed to reconstruct what happened. EasyCrypt itself is the semantic authority: a tactic only changes the committed proof prefix if Easy-Crypt accepts it. The projection and IR components in this layer then summarize the resulting state for the managed proof-node layer, while the acceptance gate checks that a supposedly closed proof also replays offline. This layer is the trust boundary of the system. 
+
+Why this separation matters. The purpose of this separa-tion is to give each prover agent a clean local workspace. From the agent’s perspective, it does not need to know how raw EasyCrypt input and output are parsed, how proof-state facts are projected, how other proof nodes are sched-uled, or how replay is performed. It only sees the current workspace view for its own node and chooses the next proof action from that view. The rest of the architecture manages the machinery beneath that surface: routing the action to EasyCrypt, updating the checked proof prefix, refreshing the view, coordinating other branches, and validating the final script. This is the sense in which ShannonProver is a managed prover: it gives the agent a structured workspace for proof writing, while keeping prover control, cross-node coordination, and proof acceptance outside the agent. 
+
+B.1. Document model 
+
+We introduce a document model that lifts proof-script bookkeeping out of the agent, freeing its budget for the proof steps themselves. In a tactic-level run, a substantial share 17 of the agent’s effort goes not into choosing the next tactic but into managing the proof script itself: tracking which sub-lemmas have been closed and under what assumptions, which subgoals are still open and which have been left for later, which prefixes are safe to revisit, and which tactic shapes have already failed at the current kind of state. In a raw loop, that bookkeeping is reconstructed by the agent on every turn from the transcript, and the cost of doing so competes directly with its proof-reasoning budget. ShannonProver lifts that burden out of the agent: it collects these artifacts as node-local proof pieces in a read-only workbench, separate from the trusted proof base. The agent reads the workbench to orient against what is closed, what remains, and what should not be retried, and spends its budget on the actual proof steps. The document model thus complements the compiler and the tree policy: the compiler explains the current state, the tree policy schedules branches, and the document model carries the durable, untrusted book-keeping that lets the agent stay focused on proving. 
+
+Appendix C. A Benchmark for EasyCrypt Proofs 
+
+Today, there is no universal benchmark for cryptographic proving. Benchmarks that drive automated theorem proving target mathematics , especially competition problems such as LeanDojo [47]; however, none of these captures game-based security of cryptography: probabilistic and relational programs, adversaries and oracles, bad events, game hops, and reduction bounds. As a result, a claim that an agent “can write cryptographic proofs” could not be compared across systems or against a fixed yardstick. The benchmark we describe here is, to our knowledge, the first to fill this gap. We use a difficulty-balanced subset of it for the study in the main body, and we release the benchmark openly so that others can evaluate their own systems on the same tasks. 
+
+Building the dataset. Each task in the benchmark is a single lemma taken from a real cryptographic development in EasyCrypt, together with the surrounding context it needs (i.e., sibling definitions, cloned theories, and imported lem-mas). We remove the original proof and ask the LLM to reconstruct a proof script. This matches exactly the setting ShannonProver is designed for (§2): the cryptographers come up with the lemma decomposition, and we measure how the agent performs when writing the proof for each lemma. Each lemma is labeled with the scheme from which it comes, the cryptographic property it concerns, the proof techniques it requires, and a difficulty level. 
+
+The four parts and what each one measures. The bench-mark is organized into four parts of increasing realism and difficulty. They differ in where the proofs come from, how hard they are, and crucially whether they could have been seen during a model’s pretraining. 
+
+❶ Foundational primitives. Textbook and building-block schemes such as ElGamal and hashed-ElGamal, Schnorr, pseudorandom generators, private information retrieval, Ped-ersen commitments, and the correctness of Cramer–Shoup. These are short, local proofs, and they test whether the basic proof-state representation is adequate: finite-set and list algebra, simple relational coupling, losslessness, and single textbook reductions. This part establishes the floor of the benchmark and isolates interface issues from genuine reasoning difficulty. 
+
+❷ Deployed real-world schemes. This includes standard-ized schemes (e.g., ChaCha20-Poly1305, which we used as a case study). Unlike Part ❶, these are large, multi-lemma developments, so they test whether an AI agent can move be-yond isolated lemmas and find useful proof resources across lemmas, such as long game-hop chains, oracle invariants, bad-event probability bounds, and reasoning that depends on context established by other lemmas in the same project. 
+
+❸ Post-quantum standards. Lemmas from the machine-checked proofs of the NIST post-quantum standards: the IND-CCA security of ML-KEM (FIPS-203) [24,25], the tight security proof of SLH-DSA/SPHINCS + [14], the re-lated XMSS development [37], and the security argument of ML-DSA/Dilithium. These are the most demanding and most current proofs in the benchmark, reaching the frontier that the standardization community itself verifies: lattice hardness assumptions, the Fujisaki-Okamoto transform, and hash-based signature arguments. Because these develop-ments are recent and specialized, they also test whether an AI agent can operate on proofs that lie well outside the well-trodden textbook material. 
+
+❹ A published case study with non-public proof scripts. 
+
+The CMAC/CBC-MAC family of proofs. This part is held out specifically as a contamination control: its proof scripts have never been posted online or included in any public corpus, so no LLM could have memorized them. Success on this part therefore cannot be explained by memorization and must come from proof construction, which lets us separate genuine automation from regurgitation of training data. 
+
+How we build the dataset. Parts ❶–❸ are built from publicly available formal developments: the EasyCrypt ex-ample suite and standard libraries for the foundational and deployed schemes, and the public machine-checked artifacts for the post-quantum standards. For these parts, we will openly release our benchmark. Part ❹ is the exception: the CMAC development is private. Its proof scripts are not available in any public repository, and we obtained them directly from the development’s authors for the purpose of this benchmark. We keep this part held out rather than releasing it, so that it remains a clean, contamination-free test of proof automation both for us and for any future system evaluated against it. This public/private split is the reason the benchmark can make a memorization-versus-reasoning argument at all: when a system solves a public textbook proof we cannot rule out recall, but when it solves a CMAC obligation we can. 
+
+Scope and difficulty. In total the benchmark comprises more than 1,600 lemma-level obligations across these four parts, with the post-quantum developments contributing the largest share. Within every part, obligations span three dif-ficulty levels: “easy” obligations test local proof mechan-18 0 1 2 3 4 5 6 7 8
+
+API cost per solved lemma (USD) 
+
+> mee_encrypt_correct
+> padK
+> MEE_unfold
+> mee_decrypt_correct
+> os2bsK
+> refactor_abstract
+> oneb_neq0
+> bs2osK
+> t2osK
+> o2intK
+> andbK
+> os2tK
+> andbC
+> last_padding
+> cbc_enc_rcons
+> cbc_dec_rcons
+> size_bs2os
+> andbA
+> xorbK
+> size_pad
+> cleanup
+> xorbC
+> andbDl
+> cbc_enc_cbc_fold
+> andb1
+> dblock_uffu
+> cbc_dec_cbc_fold
+> cbc_correct
+> int2oK
+> size_t2os
+> size_os2bs
+> size_cbc_enc
+> size_padding
+> mee_correct
+> xorbA
+> padded_is_blocks
+> xorb0
+> size_padded
+> xorbE
+> andbE
+> $5.43
+> $2.80
+> $2.60
+> $2.41
+> $1.71
+> $1.46
+> $1.44
+> $1.41
+> $1.28
+> $1.24
+> $1.20
+> $1.18
+> $1.15
+> $1.00
+> $0.97
+> $0.96
+> $0.95
+> $0.92
+> $0.92
+> $0.90
+> $0.85
+> $0.83
+> $0.81
+> $0.81
+> $0.81
+> $0.81
+> $0.80
+> $0.80
+> $0.78
+> $0.78
+> $0.74
+> $0.74
+> $0.73
+> $0.71
+> $0.56
+> $0.54
+> $0.50
+> $0.49
+> $0.48
+> $0.46
+
+P: procedural (40) 
+
+> RCPA_preservation
+> RCPA_prob
+> DQ_Sample_Compute_pr
+> pr_PushBound_list
+> leak_pad
+> $2.31
+> $1.53
+> $1.43
+> $0.89
+> $0.78
+
+I: invariant (5)         
+
+> 012345678
+
+API cost per solved lemma (USD) 
+
+> MtE_security
+> PTXT_security
+> local_conclusion
+> Conclusion
+> PtE_security
+> Random_Ideal
+> doublequery_eq
+> success_eq
+> random_eq
+> success_eq_random
+> CPA_direct_eq
+> RCPA_security
+> enc_eq
+> CBC_PRP_RF
+> CBC_Oracle_enc_eq
+> CTXT_security
+> $6.82
+> $3.86
+> $3.66
+> $3.22
+> $2.40
+> $2.04
+> $1.79
+> $1.58
+> $1.50
+> $1.46
+> $1.38
+> $1.17
+> $1.16
+> $1.00
+> $0.99
+> $0.66
+
+G: game hop (16) 
+
+baseline standout agent proof Figure 11. Per-lemma API cost for MEE-CBC lemmas solved by AI agents, grouped by proof shape ( P/I/G). All the lemmas can be solved by the baseline agent alone. The star marks lemmas where the agent found a “tesuji” move that makes the proof much shorter than human expert proofs. 0 10 20 30 40 50 
+
+API cost per solved lemma (USD) 
+
+pr_Perm3to6'_Perm6 
+
+bound_proba_dom_bad 
+
+pr_PECBC_PFCBC 
+
+Pr_bad2 
+
+pr_MAC2 
+
+$40.88 
+
+$25.43 
+
+$20.27 
+
+$4.10 
+
+$2.69 
+
+G: game hop / reduction (5)      
+
+> 010 20 30 40 50
+
+API cost per solved lemma (USD) 
+
+simul_bad 
+
+eager_CBC 
+
+equiv_fwhile_fiwhile 
+
+$50.25 
+
+$20.83 
+
+$17.03 
+
+I: invariant / struct equiv (3) 
+
+baseline ShannonProver substantially better, or baseline gives up 
+
+Figure 12. Per-lemma API cost for held-out CMAC lemmas solved by AI agents, grouped by proof shape ( I/G). Blue bars are baseline successes; yellow bars mark cases where ShannonProver is substantially better or the baseline gives up while ShannonProver succeeded. 
+
+ics, “medium” ones require selecting and following a non-trivial proof route, and “hard” ones are the security-proof components—adversary and oracle reasoning, game hops, and probability-bound composition. Because some of the developments were written for older versions of the proof assistant, we port them to current EasyCrypt where feasible and record, per obligation, whether it is machine-checkable today; the obligations that remain are flagged so that the benchmark grows monotonically as porting continues. 
+
+Appendix D. Baseline Failure Modes and Standout Agent Proofs 
+
+Figure 9 marks a small number of agent-written proofs whose structure is cleaner than the public EasyCrypt ChaChaPoly proof. The following two examples compare the checked proof shape, the number of non-comment tactic lines in the proof body, and the main proof move used by the agent. 
+
+step4_badi : indexed bad-event invariant. The human ex-pert proof body contains 73 tactic lines. Its central move 19 is a large relational call invariant that carries the shared oracle state, counters, logs, lbad1 , the auxiliary predicate 
+
+inv_lbad1_i , and a final implication from equality of the selected pair in lbad1 to badi . Much of the script then preserves this invariant across the cases where the current append to lbad1 is before the selected index, after the selected index, or contains the selected index. The agent proof contains 48 tactic lines in total. Its invariant is phrased directly in the vocabulary of the target event: cbadi records whether the selected index has already been reached, and badi records equality of the selected tag pair. A representative sample is the final branch structure: the agent uses rcondf /rcondt to select the relevant branch, performs one sampling step, and then discharges the re-maining list arithmetic with smt over size and nth facts. The theorem is the same, but the proof state exposed by ShannonProver lets the agent state the invariant at the level of the bad event rather than at the level of auxiliary list bookkeeping. 
+
+step4_bad2 : probability budget partition. The human ex-pert proof body contains 119 tactic lines. After the high-level reductions through equiv_step4 and the eager/lazy random-oracle bridge, the human proof introduces an in-termediate UFCMA4 game by relational simulation and then applies two separate failure-event bounds. The two repre-sentative samples are the fel blocks for UFCMA4.cforged 
+
+and UFCMA.cbad2 ; each block has its own counter, stopping condition, oracle proof, and final sum computation. The agent proof contains 45 tactic lines in total. It keeps the same high-level reductions but avoids the separate 
+
+UFCMA4 simulation phase. Inside a single byphoare proof, it splits the remaining budget into the nonce partitions ns1 and 
+
+ns2 , proves the two loop bounds with simple while (true) 
+
+variants, and closes by showing that the two big sums over the partition add up to size Mem.lc . This is cleaner because the probability budget is expressed directly as a partition of the current log, rather than through two independent event-partitioning arguments. 
+
+TABLE 1. R ECURRING FAILURE MODES IN BASELINE RUNS 
+
+(D IRECT -C HECKER -IN -THE -L OOP ).                   
+
+> Failure mode Agent behavior and gap Agent flinch Agent reasoning: It named the right route: byequiv ,
+> pr_CCP_OCCP , and the PRF distinguishing argument.
+> Agent action: It retreated to local tactics such as proc; inline * or restart.
+> Gap: Argument binding for the bridge was too expensive without typed support. Unconscious lowering
+> Agent reasoning: equ_cc had to be used through the call layer.
+> Agent action: It tried inline * , which erased the oracle-call structure and led to a 35-minute collapse.
+> Gap: There was no liveness warning that lowering would kill the high-level resource. Semantic mislocalization
+> Agent reasoning: It searched around IFinRO /IndRO .
+> Agent action: It spent 25+ minutes around pr_RO_FinRO_D
+> and eager/lazy-loop inlining.
+> Gap: Name similarity beat the current procedure-call structure.
+
+20

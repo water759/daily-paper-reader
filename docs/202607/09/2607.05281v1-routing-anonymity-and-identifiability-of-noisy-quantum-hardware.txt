@@ -1,0 +1,1761 @@
+Title: Routing Anonymity and Identifiability of Noisy Quantum Hardware
+
+URL Source: https://arxiv.org/pdf/2607.05281v1
+
+Published Time: Tue, 07 Jul 2026 03:43:26 GMT
+
+Number of Pages: 52
+
+Markdown Content:
+# Routing Anonymity and Identifiability of Noisy Quantum Hardware 
+
+Ben Priestley 
+
+Centre for Quantum Information and Foundations, DAMTP, University of Cambridge Quantum Software Lab, School of Informatics, University of Edinburgh 
+
+Mina Doosti 
+
+Quantum Software Lab, School of Informatics, University of Edinburgh 
+
+Abstract 
+
+Present-day quantum computing—and its very likely future—is cloud-based, where a user submits a circuit to be executed by a service provider on proprietary backend hardware. While providers may wish to hide implementation details, scheduling choices, or even which physical device was used, noisy finite-shot outputs can carry backend-specific “fingerprints”—information imprinted in the classical output distribution that can reveal the backend identity. So far, such fingerprints have mostly been studied from a benchmarking perspective, for example as a tool for verification, with only limited attention to the privacy considerations for both users and providers in these scenarios. This work develops the first formal framework for backend identifiability and the corresponding privacy notion. We introduce an operational backend-identifiability game and use it to formalise 
+
+routing anonymity as a security notion for quantum cloud services. We show that backend identifiability is exactly a hypothesis-testing problem and prove that, under passive i.i.d. access to a single backend, routing anonymity decays exponentially at the Chernoff rate. We also establish a utility-anonymity trade-off, imposing fundamental limits on how much backend-specific information can be removed from classical outputs without degrading their usefulness. In addition, we observe that, for noisy quantum hardware, identifying fingerprints are inherently an intermediate-depth phenomenon, and establish a formal depth principle using Pauli-transfer-matrix tools. We complement the theory with experiments on a platform that reflects this real-life scenario, namely Amazon Braket on AWS, and run our experiments on different hardware platforms, including ion-trap and superconducting quantum processors. We observe 87–90% classification between superconducting backends and 96–100% classification across physical platforms, and find that identifiability can survive several natural forms of post-processing. Overall, these results establish routing anonymity as a distinct security requirement for quantum cloud computing, and provide a framework for quantifying and controlling the resulting utility-anonymity trade-off. 
+
+1
+
+> arXiv:2607.05281v1 [quant-ph] 6 Jul 2026
+
+# 1 Introduction 
+
+The prospect of quantum computation has long transitioned from a theoretical novelty to an active practical pursuit of useful quantum advantages across many different domains: cryptography and cryptanalysis [ 1–9]; quantum chemistry and material science [ 10 –16 ]; many-body, condensed matter, and high-energy physics [ 17 –22 ], fundamental physics and quantum gravity [ 23 –28 ], combinatorial optimisation [ 29 –31 ], quantum machine learning [ 32 –38 ], etc. Unlike the traditional (classical) computing paradigm of individual hardware ownership, 1 large-scale quantum technologies are inevitably more suited to cloud-based access and “quantum-as-a-service (QaaS)” settings [ 39 , 40 ]. In this paradigm, a user writes a description for a quantum circuit—implementing some task that she is interested in—and submits it to a service provider, who then goes off and executes this circuit for her on some quantum processing unit (QPU) and later returns a finite-shot sample output. As far as the user is concerned, cloud-based quantum computing offers an interface through which implementation details are abstracted to such an extent that the hardware itself can feel almost interchangeable. The same interface may expose superconducting, trapped-ion, neutral-atom, simulator backends, etc. often from several hardware providers all through a single high-level account [ 41 , 42 ]. Physically, of course, the QPUs are decidedly not interchangeable to the service provider, who must care a great deal about each QPU’s calibration history, native gates, topology, crosstalk, readout asymmetries, compilation path, slowly drifting environment, and such related hardware-specific details. Consequently, in the noisy near-term of quantum computation, while the provider can feign some privacy about his choice of backend by hiding the label on his execution routing, it is has been observed that a ‘fingerprint’ specific to the chosen backend will be left in the classical outputs that he returns to the user [ 43 –48 ]. There are two perspectives to take about this observation: ( user-side ) the user herself may want to be able to verify that her circuit has actually be run on the claimed backend hardware without having to rely on a promise alone; and ( provider-side )the provider may want to keep secret his choices of backend routing, with some guarantee about the user’s inability to violate that privacy. In either case, the operational question is equivalent: 
+
+How much route information is leaked by classical outputs of noisy quantum hardware? 
+
+There is a large literature on security notions and verifiability for delegated quantum computation, but its dominant emphasis is on user-side privacy and correctness. Blind quantum computation and verifiable blind quantum computation protect the user’s input, output, and computation from an untrusted quantum server, while also allowing the user to detect incorrect behaviour in the verifiable variants [ 49 –54 ]. Quantum verification protocols ask whether a classical verifier, or a verifier with limited quantum capabilities, can certify the correctness of a quantum computation performed by a quantum prover [ 55 –62 ]. Related approaches based on remote or oblivious state preparation, quantum homomorphic encryption, and hardware-assisted secure execution similarly aim to protect the user’s computation or to certify the service outcome under additional cryptographic or hardware assumptions [ 63 – 66 ]. Indeed, the aforementioned observations about backend-specific fingerprints [43 –48 ] largely take the user-side perspective in their experimental or analytical approaches. Even where provider-side concerns are discussed, the protected mathematical object is never formally given as the anonymity of the provider’s route [67].   
+
+> 1At least prior to the unprecedented demand for incredibly large-scale compute that has followed the development of large large language models; even in the classical computing world, remote/cloud services are becoming standard practice, and increasingly so!
+
+2In this work, we take the much-neglected provider-side perspective and ask the complementary security questions; namely, to what extent can the provider’s routing choice be anonymised without invalidating the promised service? It is worth emphasising the distinction of this question from the standard user-side perspective, in that we reverse the goals to describe mechanisms through which information is removed/obscured rather than inferred (either experimentally or by analysis of known/assumed noisy behaviour). Our novelty is then the proposal of a unified framework for backend identification which establishes, to our knowledge, the first formalisation of routing anonymity for cloud quantum computing, with supporting statements about how this privacy notion interacts with the information implicit in backend-specific noise fingerprints. We describe precisely how privacy depends jointly on the workload of circuits submitted by the user, the finite-shot resolution of the executing hardware, repeated access, any post-processing of the measured output, and the promised utility. In fact, for the latter, it is interesting in and of itself to describe his privacy as a property of the very service he intends to provide, which we note is explicitly missing from the current (user-side) literature. We propose a game of backend identifiability in which the provider secretly selects a backend, executes a user-chosen circuit from some agreed ensemble, and returns a classically post-processed outcome distribution from which the user should guess the backend label (Section 2.1). Our framework formalises how this game can be reduced exactly to a hypothesis testing question, and thus can be modeled statistically and sufficiently described as combinations of binary identification games (Section 2.2). Under a ‘persistent routing’ extension of the game (which assumes a fixed backend label and passive i.i.d. probing from the user), we can observe a similar reduction to see that anonymity decays at the Chernoff rate. Following this, we describe how post-processing can act as a suppression mechanism for route-specific noise, and then incorporate the promised utility of the service to place fundamental bounds on the degree of anonymity that can be obtained (Section 2.3). This is formalised as a utility-anonymity no-free-lunch theorem that informs the provider how he should mathematically model his utility with respect to the anonymity he desires. We can understand backend identifiability as existing in an ‘intermediate-depth’ window, and prove this characteristic of distinguishability in a Pauli-transfer-matrix model (Section 2.4). Finally, we also proposes a new channel (psuedo-)distance which is designed to act as a tight measure on backend distinguishabilty tailored to the user’s workload, which can then be used to provide some simple sufficient conditions on anonymity (Section 2.5). To support our framework and theoretical results, we design a series of experiments using Amazon Web Services (AWS) Braket, running on Rigetti’s Ankaa-3 , IQM’s Garnet , and IonQ’s Aria-1 , to demonstrate how finite-shot transcripts carry route-specific information in practice (Section 3). These are similar in spirit to existing fingerprinting work [ 43 –48 ], although we distinguish our experimentation in a few key ways to better suit our unique perspective. Firstly, we design multiple suites of experiments to understand different mechanisms of distinguishability; our ‘depth-varied’ experiments use random circuits of varying depth—a far more challenging classification task than we see in most existing literature—while our ‘time-varied’ experiments more closely match those of other works. Secondly, we investigate multiple forms of post-processing on classical outcomes to understand the utility-based arguments of our work, and observe the intermediate-depth principle’s reaction over different transcript forms. Thirdly, we make an explicit and unique effort to visualise how noise fingerprints are learned by simple classifiers, giving an intuition for how separability between backends presents with respect to the workload circuits. We also offer some preliminary ideas and exploration of fingerprint forecasting, in which we indicate how we may be able to predict the evolution of the fingerprint in time, without explicit assumptions on the noise model. 31.1 Security Motivations and Applications 
+
+Motivations for a notion of ‘routing anonymity’ can be relatively direct, particularly in analogy to the classical case, in which routing metadata is ubiquitously security-sensitive. For example, mix networks and onion routing aim to hide communication paths, unlink senders and receivers, or limit what observers can infer from traffic metadata [ 68 –70 ]. More generally, the provider may have any number of valid reasons for wanting to keep his routing choices hidden; e.g. keeping private his scheduling policies, confidentiality agreements that he may have with his hardware providers which require particular implementation details to be kept private from competing parties, preventing users from interpreting QPU loads or inferring times of increased stress, etc. If the reader would only humour us for a moment, we will now describe a select few toy examples in which a motivation for provider-side security is required immediately by design. The motivation need not be so contrived in typical cases of quantum cloud computation, as we note above, but it is nevertheless interesting to acknowledge specialised settings in which anonymity of routing choice is not only desirable but also application critical. The reader who is convinced about the relevance of routing anonymity can skip this section, humourlessly. In the following examples, we use the backend as a private verifier/oracle (Example 1) of a user-supplied object; as a private issuer whose signatures must be resistant to imitation (Example 2); and as a hidden target whose identity reveals vulnerabilities (Example 3). 
+
+Example 1 (Quantum Lock-and-Key) . Suppose that Alice guards a collection of locked vaults, whose contents are so valuable that even she herself is not allowed to know the secret keys which open them. She is only permitted to blindly try presented keys on the requested vault’s lock and observe whether it opens. We can model this setting as follows: define some quantum circuit to be the ‘key’ and associate with each vault a noisy quantum backend to be the ‘lock’, and allow Alice to observe the backend-specific output of the circuit prior to locking the vault. Now, when Bob comes along and presents a circuit and asks to open a particular vault, Alice routes it to the appropriate backend (assuming a private mapping between the vault and backend label), then passes the output through a decision function to decide whether the key fits the lock to open the vault. If Bob can collect decisions over an ensemble of candidate key circuits, then we better guarantee that such a collection does not provide him with enough information to identify the lock! Knowing the lock makes designing the key somewhat trivial. Hence, in this setting, the anonymity of Alice’s routing choice is critical and should be preserved, even after (finitely-)many attempts. The above quantum lock-and-key example can be viewed more generally as a private oracle whose hidden physical backend defines a decision rule, and whose output is then a backend-specific accept/reject bit. This specific set up is interesting not only for its overt requirements for routing anonymity, but also because it demonstrates a problem setting in which multiple layers of security are required. Notably, Alice is essentially asked to be a middle-woman routing a given key to a privately-known lock, thereby setting up privacy of the key for Bob (assuming that Alice cannot look at the given key, she herself is not able to unlock the vault, except maybe after many attempts) and privacy of the lock for Alice. A ‘double-blind’ security setting, if you like. 
+
+Example 2 (Noisy-Issued Tokens) . Suppose that Alice is a bank who secretly chooses one of several noisy backends to act as the active mint for each time period. To issue a token, she picks a public classical serial number s which generates a corresponding quantum circuit Cs, then executes Cs on the active backend and compresses its output into a short classical signature of the token to give to 4a customer, Bob. To later verify a presented signature, Alice can use her privileged knowledge of the then-active backend to test whether its particular fingerprint is sufficiently present in the signature. Now suppose that Bob collects a genuine token and attempts to produce a counterfeit with a new serial number s′. If he is able to identity the active mint from his valid signature, he can tailor his counterfeit to imitate its fingerprint on Cs′ . But, if the routing can be anonymised and he cannot infer the active mint, then his counterfeit signature will fail to carry the appropriate fingerprint and Alice will deem it to be invalid. 
+
+Example 3 (Selective Probing) . Suppose that Alice has a collection of N backends which are each very slow on a disjoint family of circuits, and we assume that they are arbitrarily fast at everything else. We might also assume that the union of these families covers all possible circuits; i.e. for any circuit that a user, Bob, can define, exactly one backend will execute it slowly. She allocates each backend to a distinct, non-overlapping time slot lasting (1 /N )-th of the day, and routes any of Bob’s requests to the corresponding backend whenever he happens to ask. She waits until the end of the time slot before returning the classical outcome distributions of any executions within that slot. Assume that Bob knows exactly which family each backend is slow on, but that he is only allowed to prepare M ≪ N 2 probe circuits to be submitted whenever he likes. Upon receiving a response from the backend at the end of slot t, he can look at the output and design new probes for t + 1 .His task is to overload the N -th and final backend such that it takes longer than its prescribed 1/N 
+
+time and Alice cannot go home at the end of the day. In the above example, the condition on the number of probes that Bob can submit prevents him from brute-force finding a slow circuit for each backend in turn; instead he must learn something about how his probe was routed. After N − 1 time slots, he will ideally have guessed at which backend each slot had been assigned to, and be left at the final slot with an idea about which backend remains. He can then design a probe which he knows will be slow for this final backend, and if his guess is right, he will win the game and make Alice late for bed. Clearly then, it is in Alice’s interest to ensure that Bob cannot learn how she routes his requests in each slot. This example could be viewed in analogy to a distributed denial-of-service (DDoS) attack, tailored to the quantum cloud. As a final applications remark, note that here we are not interested in quantum process tomography, due to its demanding resource requirements. Full generic process tomography scales exponentially with system size, gate-set tomography is deliberately invasive, and scalable benchmarking or noise-learning methods make structural choices about which figures of merit to estimate [ 71 –76 ]. System-level benchmarks, such as quantum volume and cycle benchmarking, compare hardware capabilities and error rates, but they are not designed from a security or privacy perspective [ 77 –79 ]. In practice, a user trying to identify a backend may succeed using a much cheaper-to-extract notion. 
+
+1.2 Contributions 
+
+We summarise our primary contributions as follows: 
+
+• Unified framework and formal privacy notion. We introduce the backend identifiability game and formally define routing anonymity as an operational privacy notion for hiding the service provider’s routing choices in the quantum cloud setting. We extend to a multi-round version of the game under assumed i.i.d. passive access and describe the rate of anonymity decay via Chernoff information. 5• Statistical characterisation of backend identifiability. We reduce optimal backend identification to classical hypothesis testing over route-induced transcript laws, allowing us to use known statistical results to describe distinguishing bias via total variation distance, and give a sufficient condition for general routing anonymity with respect to constituent binary identification games. 
+
+• Utility-anonymity trade-off. Formalising post-processing as the provider’s principal mecha-nism for suppressing route-specific information, we introduce ideas about utility preservation and prove a corresponding no-free-lunch result about its relationship with routing anonymity. 
+
+• Workload-relative conditions for anonymity. We introduce a workload-probed channel (pseudo-)distance that measures average channel separation over the permitted probe workloads, yielding a tighter practical bound on routing anonymity than worst-case diamond norm. 
+
+• Intermediate-depth principle. In a contractive Pauli-transfer-matrix model with a common mixing component and small backend-specific perturbations, we prove that route-specific noise signals initially accumulate in depth before rapidly decaying. This formalises an intermediate-depth window in which backend identification is most effective. 
+
+• Experimental implementation. Using both random and structured workloads, several forms of transcript post-processing, and designing temporal experiments, we demonstrate our framework in practice to show that finite-shot outputs from real QPUs can expose substantial route information. Routing anonymity is then of considerable practical interest. 
+
+# 2 Framework Overview and Informal Theoretical Results 
+
+In this section, we present our theoretical framework intuitively and informally to give a technical overview of our main results. The formal framework is deferred to Appendix A, and precise statements and theoretical results to Appendix B. 
+
+2.1 A Game of Routing 
+
+We formalise the discussed security notion as a game played between a user with a desire to learn backends, and a provider with the converse desire to keep secret his routing choice. In this context, a 
+
+‘backend’ is any machinery with the capacity to execute a quantum circuit and return measurements thereof; e.g. a single quantum hardware device, a cohort of devices, a portion of a device, or some subset of registers, etc. We call the provider’s choice of backend a ‘routing’ —he selects a 
+
+route through which to execute a given circuit. Generally, we use the terms ‘backend’ and ‘route’ interchangeably, but the rule of thumb is that the user wants to identify the backend that runs her computation while the provider wants to anonymise his route (to a backend) from the user. The interaction between these parties looks like the following: the user probes the provider with a 
+
+workload (quantum) circuit of her choosing, and the provider then dutifully executes that circuit through a route of his choosing over a finite precision of shots to produce an empirical probability distribution, which is thus naturally associated with both the backend and circuit. Before handing this distribution back to the user, the provider passes it through some (deterministic) post-processing map in accordance with the service that he is promising to provide. The idea is that the user is not generally interested in the raw outcome sequences of her circuit, but rather some property; e.g. 6expectations of observables, energies of Hamiltonians, ground states, correlator functions, decision outcomes, etc.; hence it is prudent on the provider’s part to reveal only the property of interest when his privacy is of concern. Following this interaction, the user has received a transcript in association with her known circuit and the unknown backend. The question—and the unmistakable fun in this game—is whether there is enough information accessible in the transcript to identify this backend. Other questions linger on the periphery; e.g. which ensemble of workload circuits makes accessible the most amount of usable information for this identification; which classes of post-processing maps are most hiding of information in the exposed transcript; what relationship does the capacity for identification have with the number of shots? All very interesting and natural aspects of the game. The security game can be described as follows: 
+
+Game 1: Backend/Route Identification Game 
+
+The user fixes a collection of n-qubit workload circuit ensembles {μd}d≥0, and a finite number 
+
+m ∈ N of shots. The provider fixes a known (deterministic) post-processing map ϕ : Y → X ,and a prior π ∈ ∆( k) over a backend set D = {D1, . . . , D k}. The game is then played like: 1. Provider randomly samples a hidden route I ∼ π.2. User chooses a circuit depth d ∈ N and randomly samples a depth-d workload circuit 
+
+C ∼ μd, then submits it to the provider. 3. Provider executes C over m independent shots on backend DI , producing a raw empirical distribution ˆpI,C ∈ ∆m({0, 1}n).4. Provider produces a transcript X = ϕ(C, ˆpI,C ), then returns it to the user. 5. User observes X and outputs a guess ˜I, winning the game if ˜I = I.We can extend this game into a more realistic setting by allowing the user to probe the backend over multiple rounds. There are many plausible constructions for a multi-round version of the above identification game; we consider a persistent routing setting in which the provider fixes a backend prior to playing, allows the user to submit multiple workload circuits to the backend, and then executes them in bulk before returning a lengthened transcript. Importantly, this is a passive and i.i.d. access model as opposed to e.g. adaptive access models that permit the user to sample her 
+
+t-th circuit after having observed the (t − 1) -th transcript. This assumption simplifies our later observations, but is certainly worth developing in future work. 7Game 2: Persistent Routing Game 
+
+The backend/route identification game can be extended over T rounds as follows: 1. The user samples a sequence (C1, . . . , C T ) of workload circuits, with each Ct ∼ μd sampled from the same depth-d ensemble, and submits them all the provider; 2. The provider then produces a sequence (X1, . . . , X T ) of independent transcripts in turn by executing and post-processing each circuit on the same fixed backend DI ; and 3. The user finally receives the lengthened transcript and again guesses ˜I.
+
+At this point, we can explicitly state the provider’s goal in this game. In contrast to the user’s goal of identifying the backend, the provider succeeds if the user cannot identify the backend with probability substantially higher than random guessing. A central contribution of this work is to show how routing anonymity emerges through different instantiations of the game and its parameters: which classes of post-processing maps, which circuit ensembles, how many shots, and related choices preserve anonymity of the route, and to what degree? First, we define the routing anonymity with respect to the described games as follows. 
+
+(Informal Definition 6) Routing Anonymity 
+
+We say that the (persistent) backend/route identification game has ε-anonymity if the user’s probability to guess the chosen route is bounded to within ε > 0 of the baseline random guess. 
+
+2.2 Identification and Anonymity via Statistical Tests 
+
+Any ensemble μ of workload circuits, executed on a particular backend Di over m shots, has an associated raw transcript law Qi(μ, m ) by which the empirical distribution is sampled. After being passed through a post-processing map ϕ, we can instead refer to an induced transcript law 
+
+Pi(μ, m, ϕ ) = ϕ#Qi(μ, m ). For brevity, write Qi and Pi when the context is clear. 
+
+(Informal Theorem 1) Backend Identifiability Reduces to Hypothesis Testing 
+
+Identifying the backend producing a received transcript X is exactly a statistical hypothesis test with hypotheses of the form Hi : X ∼ Pi; accepting Hi implies guessing backend Di.In particular, between two equally-likely backends D1 and D2, the probability p⋆s to correctly identify the backend is given by, 
+
+p⋆s = 12
+
+
+
+1 + TV( P1, P 2)
+
+
+
+,
+
+where TV (·, ·) denotes the usual total variation (TV) distance between probability distributions. Our first result, Theorem 1, makes the conceptually simple connection between classical discrimination of probability distributions from an observed sample and the backend identifiability game, as a 8security notion. The observation that bounds guessing probability is then imported immediately from the abundance of known classical literature in hypothesis testing, and allows us to obtain a clean relation for distinguishing bias βD1,D 2 in the uniform-binary case as exactly the TV distance between the respective induced laws; i.e. we have βD1,D 2 ≡ TV( P1, P 2) bias, beyond random guessing. Throughout this work, as in Theorem 1, it will be convenient to restrict our attention to this ‘uniform-binary’ setting between a pair of equally-likely backends. In fact, the following Proposition 1 should settle our nerves about this restriction by showing that pairwise indistinguishability is sufficient to obtain a global anonymity in the fully general setting among an entire set of finitely-many backends with arbitrary priors. Hence, we can reason about anonymity via simple pairwise arguments, at least in that we can provide sufficient conditions for the general setting. 
+
+(Informal Proposition 1) Pairwise Indistinguishability is Sufficient 
+
+The optimal probability to correctly identify among a set of finitely-many backends with arbitrary priors can be decomposed as a sum of pairwise distinguishing biases. In particular, the excess advantage Adv (i.e. beyond random guessing) in the fully general setting can be bounded by the worse-case distinguishing bias among pairs of backends; 
+
+Adv ≤ max  
+
+> i̸=j
+
+TV( Pi, P j ) .
+
+Our second important result, Theorem 2, then extends Theorem 1 into the persistent routing setting to observe that, under our passive i.i.d. assumptions, the provider’s anonymity decays exponentially at the Chernoff rate between the relevant induced laws. 
+
+(Informal Theorem 2) Persistent Routing Reduces to Chernoff Testing 
+
+In the passive i.i.d. access model of persistent routing over T rounds, the hypotheses of Theorem 1 become Hi : ( X1, . . . , X T ) ∼ P ⊗Ti , again with acceptance of Hi corresponding to guessing Di.Then, between two equally-likely backends D1 and D2, the probability p⋆s (T ) to correctly identify the backend after T rounds satisfies, 
+
+1 − p⋆s (T ) = exp 
+
+
+
+− T · DCh (P1, P 2) + o(T )
+
+
+
+,
+
+where DCh (·, ·) denotes the usual Chernoff information between probability distributions. 
+
+2.3 Post-Processing and a Utility-Anonymity Trade-Off 
+
+A fundamental observation about post-processing is that there do not exist deterministic maps which can increase information. Generically speaking, the information contained within a raw observation, relevant to identifying the backend, tends to be stripped out by the post-processing. A natural corollary is then that raw observations are informally maximal for backend identifiability. This reveals a very useful role for post-processing: it is perhaps the principal means by which the provider can reduce the amount of information leaked to the user in the returned transcripts, and thus improve routing anonymity. But to what end? Trivially, choosing a deliberately destructive map, 9say the constant map ϕ(· · · ) = 1 , clearly reduces both the TV distance and Chernoff information to zero and so preserves anonymity indefinitely, but there is a clear lack of utility for the user. Unless the promised service is similarly trivial, this is an abuse of power by the provider in the backend/route identification game that abandons the practical motivation for such a setting. Introduce a utility map u representing the service that user is actually looking for. Subsequently, call the induced law Pi(. . . , u ) under this map the utility law . Now, we can say that the provider’s post-processing map map ϕ exactly preserves the utility u if the user is able to decode the output of ϕ to obtain her desired utility output (as if from u). We should note that u is a quite abstract object, in much the same way that ϕ itself is left abstract, and indeed it may be natural to discuss entire classes of utility and post-processing maps, for example if the service is left reasonably flexible. We now have our third important result: that anonymity and utility have a trade-off relationship. 
+
+(Informal Theorem 3) Utility-Preserving No-Free-Lunch 
+
+If a deterministic post-processing map ϕ exactly preserves a utility u, then the induced laws 
+
+Pi(. . . , ϕ ) under ϕ must contain at least as much information as the utility laws Pi(. . . , u ). Any further loss of information necessarily degrades the utility. Hence, if the provider is restricted to choose only utility-preserving ϕ, then he is only able to remove route-specific information which is extraneous to the promised utility u; he cannot remove route-specific information already encoded in the utility output under this restriction. To be clear, by ‘degrades the utility’, we mean that the transcript that the user ultimately receives contains only partial information about the property of interest represented by the utility, and hence she can only partially reconstruct the property. For example, the provider may only be providing an estimate about the ground-state energy, with an error proportional to the degree to which the utility is not preserved. We can further note approximate versions of utility preservation and the accompanying no-free-lunch argument of Theorem 3. The definitions of such versions should be delicately crafted with respect to the utility, as the approximation measure should yield a suitable interpretation for how the utility is degraded. We further discuss this problem and suggest solutions in Appendix B.2. 
+
+2.4 Identifiability as an Intermediate-Depth Phenomenon 
+
+An important observation can at this point be made about the role of depth d in the user’s workload circuits. In writing her ensemble of circuits μd with respect to a chosen depth d, we should ask what interval she should consider choosing d to lie in. We have the following intuition: 
+
+• At very low depths (or in the noiseless setting), backends are indistinguishable because they implement very close to (or exactly) the same ideal circuit; and 
+
+• Beyond some large depth, if noise becomes dominated by a common strongly mixing component, then any route-specific information is typically washed out, yielding indistinguishability; but 
+
+• In the ‘intermediate-depth’ window, enough noise will have accumulated to reveal backend-specific structure, yet not so much that everything has collapsed to universal fixed-point behaviour—this is the interesting regime. 10 To formalise this idea, in Appendix C we record a pair of idealised theorems in a simplified Pauli-transfer/noisy-channel model. We prove these results by moving to Pauli-transfer-matrix (PTM) coordinates, wherein we can represent the effect of each noisy layer of a circuit as a linear contraction of the traceless Pauli components of the state. We assume that this contraction can be suitably decomposed into a common depolarising-like mixing component and a small backend-specific perturbation, then look at how the difference between two backends evolves with depth. 
+
+(Informal Theorem 5 and 6) Identifiability Lies in Intermediate Depths 
+
+Denote circuit depth by d, and let λ, ε ∈ (0 , 1) be noise-controlling parameters such that λ+ε < 1.At shallow depths, backend-specific noise fingerprints initially grow at a rate Ω( dλ d−1). Over all depths, they are bounded by O(d(λ + ε)d−1), vanishing exponentially at large depths. Hence, optimal backend identifiability lies in some ‘intermediate’ depth window. 
+
+d0 Circuit Depth d
+
+> Expected Distinguishing Bias  βDi,D j (d)
+
+Theorem 5; O(d(λ + ε)d−1)
+
+Theorem 6; Ω( dλ d−1)
+
+Figure 1: Illustration of the lower and upper bounds on expected distinguishing bias by circuit depth, as given by Theorem 5 and Theorem 6. The shaded region between the curves covers the perturbative range 0 ≤ d ≤ d0 of depths satisfying Theorem 6’s additional assumptions. 
+
+2.5 Noise Channel Bounds and Relation to Noise Characterisation 
+
+We observe (in Proposition 3) that the distinguishability of backends in our framework is governed by average-case notions of TV distance on only the states actually induced by the user’s probing protocol, rather than any worst-case separation of the full channels over all possible inputs and ancillas. The natural channel distance to consider is thus not e.g. diamond norm but instead a particular workload-probed channel (pseudo-)distance , denoted by δμ(·, ·) and defined with respect to the user’s chosen ensemble μ of workload circuits. Usefully, the following Proposition 4 shows that the workload-probed channel (pseudo-)distance serves as a tighter bound on the distinguishing bias than the worst-case diamond norm, and is thus 11 the more practical sufficient condition to target in the backend/route identification game. This is very much in agreement with recent ideas that these kinds of average-case distances are the more relevant quantities for NISQ-era applications than worst-case norms like diamond norm [80, 81]. 
+
+(Informal Proposition 4) 
+
+Between any two backends, Di and Dj , the workload-probed (pseudo-)distance δμ(Ni, Nj )
+
+between their associated noisy channels, Ni and Nj , is a tighter bound than the diamond norm; 
+
+βDi,D j (μ, m ) ≤ mδ μ(Ni, Nj ) ≤ m
+
+2 Ni − N j ⋄ .
+
+A natural corollary, following Proposition 4, is that two backends can be made indistinguishable by ensuring that the workload-probed (pseudo-)distance between their associated noisy channels is not too large (more immediately than ensuring the diamond norm is not too large). Recalling the pairwise argument of Proposition 1, we can then give a sufficient condition for routing anonymity in the fully general setting—that no two pair of backends among the full set have large workload-probed channel (pseudo-)distance. Again, this is an experimentally-achievable condition in the NISQ setting that often cannot be said about diamond norm. 
+
+# 3 Experimental Results 
+
+In this section, we complement the above framework with experimental evidence that real finite-shot output distributions, from QPUs offered via current quantum cloud services, carry learnable route information. It is not the intent to reconstruct device noise models, or perform full tomography, but rather to instantiate the backend identification game of Definition 1 (and its extension to persistent routing via Definition 2) in a realistic setting and exemplify the risk to privacy. Our experiments are run via AWS Braket on three QPUs: Rigetti’s Ankaa-3 and IQM’s Garnet , both superconducting devices, and IonQ’s Aria-1 , an ion-trap device. We categorise classification into two qualitatively different settings: the like-type setting between the two superconducting devices, and the differing-type setting generally between Ankaa-3 and Garnet for consistency. We also categorise experiments into two families of (5-qubit) probe circuits: varying depth circuits composed of Haar-random two-qubit gates arranged in an alternating brickwork pattern (“depth-varied”); and fixed GHZ preparation circuits repeated in time (“time-varied”). Broadly speaking, the former understands the backend identification problem in the case where the user cannot rely on hand-picked outcomes to probe deliberately, while the latter understands the extension to persistent routing and the temporal structure of noise signals. For each circuit, we obtain a finite-shot histogram over computational-basis bitstrings. We then train simple classifiers on datasets of transcript representations (“features” in the machine learning lexicon), including both for raw outcomes and several forms of problem-independent post-processing. Comparing how classification performance depends on feature type gleans empirical insight into how route-specific information may survive post-processing. Detailed experimental setup and a full account of our results is given in Appendices D–G. We find that, in the depth-varied experiments, backend labels can be learned well above random guessing, with like-type test classification accuracies around 87–90%, and differing-type essentially 12 Ankaa-3 (train) 
+
+> Ankaa-3 (val)
+> Ankaa-3 (test)
+> Garnet (train)
+> Garnet (val)
+> Garnet (test)
+> Aria-1 (train)
+> Aria-1 (val)
+> Aria-1 (test)
+
+(a) All-type classifier embeddings. Ankaa-3 (train)  
+
+> Ankaa-3 (val)
+> Ankaa-3 (test)
+> Aria-1 (train)
+> Aria-1 (val)
+> Aria 1 (test)
+
+(b) Differing-type classifier embeddings. 
+
+Figure 2: t-SNE dimensionality reduction plot visualising the 16-dimensional features extracted from the penultimate layer of the classifier, given raw depth-10 data. We plot the entire dataset, across all train-val-test splits to indicate the generality with which latent representations have been learned. perfect at around 96–98% (each for raw features). High classification performance can be observed to survive several forms of post-processing; e.g. log-ratio features yield like-type accuracies in the range 66–77% when pooling over depths. Fig. 2 visualises the latent representations learned by our classifiers in depth-varied experiments, indicating the separability that gives rise to the ease of classification on raw features. This latent space can be understood (loosely) as a subspace manifold of the full bitstring space in which intra-backend distances are minimised while inter-backend distances are maximised, giving a representation for noise signals with respect to the workload and backend set .Backend identification over a dataset of GHZ circuit data is a perfect 100% across all features, as we expect from such structured circuits persistently probed very many times. This highlights the importance of the workload choice in the backend identification game—routing anonymity can be broken far more easily with carefully selected, highly structured circuits, so service providers should be conscious to the workload circuits they release transcript about, and how often they do so. Further to backend classification, we also study temporal identifiability by grouping our time-varied GHZ data into batches and classifying by batch. A strong time-dependent fingerprint of devices can be detected among the superconducting devices at the batch-level, although classification within a batch—early vs late samples—is significantly more difficult. This could be interpreted practically as a low risk of leaking route-specific information over short-term persistent routing, particularly when coupled with the Haar-random observations that independent, random circuits probing in succession can mitigate the exponential decay of anonymity. At the very least, short-term temporal structure is dominated by long-term signal fluctuation in the QPUs we work on. 
+
+# 4 Discussion and Future Works 
+
+We have introduced routing anonymity as the provider-side security notion for cloud quantum computation, together with the more familiar user-side counterpart in backend identifiability. It is 13 understood that, in the NISQ setting, classical output distributions from quantum computations are not merely noisy approximations to the ideal distribution, but in fact laced with route-specific information that can be leveraged to violate anonymity of a service provider’s routing choice if not sufficiently obscured by post-processing. Our framework packages this intuition into an operational game, which immediately reduces backend identification to classical hypothesis testing over transcript laws, and then elevate this into a persistent-routing setting, which shows that the rate of anonymity decay via independent, repeated probing is described by the Chernoff information between laws. Post-processing emerges as the provider’s principal mechanism for obscuring route-specific information to preserve the anonymity of their routing choices. We further formalise the degree to which a provider may remove this route-specific information from their released outputs via a no-free-lunch theorem attached to the promised utility of the service; anonymity may only be preserved up to the level of the law induced by the promised utility, and any further gains in anonymity necessarily degrade the service. All of this leads to an important practical question: which workloads are most identifying? From the user’s perspective, this becomes a problem of designing workloads of probe circuits; from the provider’s perspective, it becomes a problem of identifying exposing workloads, or of designing service interfaces that carefully choose how transcripts are released to remove route-specific information while preserving the promised utility. Such questions deserve incredible attention and care from cloud service providers for the foreseeable future, and we hope that this work provides a useful framework for uncovering answers in concrete applications. We have also outlined a notable dependence on depth, proving that backend identifiability is naturally an intermediate-depth phenomenon: at shallow depths, too little backend-specific noise has accumulated, while at sufficiently large depths, common mixing can obscure route-specific structure. We do not design our experiments to explore this phenomenon directly, though nevertheless observe behaviour consistent with the principle and statements that we outline. Our experimental observations support the theoretical results, finding that finite-shot classical outputs from real cloud quantum computing platforms can reliably identify routing choices well above random guessing. This identifiability exists even between backends implemented under the same physical platform architecture (namely, between superconducting devices), indicating the granularity and uniqueness of noise in current QPUs. While post-processing can be observed to improve routing anonymity in these experiments, we see that even workloads comprised of independent, random circuits can retain good identifiability, given enough persistence of routing. Further time-dependent experimentation reveals aspects of the anonymity problem beyond those directly understood in the theoretical considerations of this work. Namely, strong classification between well-spaced batches of transcripts points to long-range temporal structure which itself may be learned effectively. This leads to practical questions about the duration of user-provider interactions, possibly indicating a preference for short-term bursts of probing to retain anonymity. Our blackbox model has a useful distinction from classical shadows [ 82 , 83 ], which require a randomised measurement toolbox, e.g. random local Paulis or global Clifford measurements, and an inverse measurement channel. Our setting, and our experiments, take only computational-basis measurements and so should not, by themselves, construct a good classical shadow of the output state. The output object is thus closer to a circuit-conditioned ‘fingerprint’ . A clean diagnostic is to compare a classifier using only the unconditioned output object with one using the circuit-conditioned pair; if the former is near chance while the latter identifies the backend, then the signal is not shadow-like state reconstruction but rather a simpler input-output hardware ‘fingerprinting’. 14 4.1 Extensions 
+
+Appendix H provides some preliminary exploration of noise forecasting ; i.e. predicting the presentation of noise in outcome distributions in future time steps by learning its evolution over a short prior. A sufficiently good forecasting model could have interesting applications, such as improving near-term error mitigation, retrospectively estimating ideal distributions, inferring the operational lifetime of a backend, detecting calibration changes, etc. However, such a model also introduces new privacy risks, such as giving users an improved capacity to pre-emptively adapt their workload when given repeated access (even without an explicitly adaptive access model). Security measures against such forecasting may look like, for example, randomly permuting the order of probe circuits. An obvious progression of this work is to formalise concrete, provide-side, routing anonymity schemes; e.g. restricting the class of allowed workloads, reducing the number of shots or interactions, coarsening output histograms via post-processing, adding controlled classical noise, etc. Perhaps the main technical challenge is to make certifications of anonymity practical; worst-case channel distances are too strong and often experimentally inaccessible, so a workload-probed distinguishability metric seems most appropriate, but estimating or bounding it from finite data remains an open problem. The suggested ‘quantum lock-and-key’ setting of Example 1 may be a nice concrete application in which to develop ideas about such a scheme. In this setting, we have ‘locks’ represented by backends, and ‘keys’ by specific circuits about which the provider only releases decision bits indicating whether they open the requested lock. We can model this under our framework as a routing-anonymity game in which the utility is a precise decision function, and the security question is whether there exist workloads which leak the identity of any lock. A correctness condition should require valid keys to be accepted with high probability, and a soundness condition that invalid keys are rejected with high probability without leaking lock information . We strongly encourage future work to develop the quantum lock-and-key idea into a complete scheme, including a concrete key distribution, acceptance rule, finite-query security bounds, and a better understanding for how the utility-anonymity trade-off can be modelled and utilised to obtain strong notions of completeness and soundness. A possible restriction of our framework as proposed, which we have not yet discussed, is the ordering of events. Currently, we allow the provider to choose his route first and foremost, before seeing the workload submitted to him. This is perfectly acceptable in many circumstances (e.g. in all three of our examples in Section 1.1), but it necessarily forbids an adaptive scheduling policy on the provider’s part that may well be extremely common in future quantum cloud practices. For example, if a provider has only one backend capable of running over some threshold number of qubits, then it could be impractical to turn away users submitting wide workload circuits simply because he has chosen the ‘wrong’ backend. Instead, we generally foresee a setting wherein the user submits a circuit, and the provider then samples a backend according to some prior conditioned on the workload . However, such a setting opens up the possibility for adversarial users to dictate the provider’s backend choice to her possible identifying advantage (e.g. she might choose the widest circuit that she can imagine to be confident that the provider is forced to use his one capable backend). This kind of complication is conceptually challenging to overcome in the provider-side privacy perspective, and a key reason that we take the agnostic approach in selecting the backend label first, but is nonetheless important to understand for the security of quantum cloud computing. 15 Acknowledgements 
+
+The authors thank James Mills for helpful discussions at the early stages of the project. BP acknowledges the financial support provided by the Jesus College Embiricos Trust Scholarship. MD acknowledges the support of the Quantum Advantage Pathfinder (QAP), with grant reference EP/X026167/1, and the UK Engineering and Physical Sciences Research Council. 
+
+# References 
+
+[1] P.W. Shor. Algorithms for quantum computation: discrete logarithms and factoring. In 
+
+Proceedings 35th Annual Symposium on Foundations of Computer Science , pages 124–134, 1994. doi: 10.1109/SFCS.1994.365700. [2] John Proos and Christof Zalka. Shor’s discrete logarithm quantum algorithm for elliptic curves. 
+
+arXiv preprint quant-ph/0301141 , 2003. [3] Markus Grassl, Brandon Langenberg, Martin Roetteler, and Rainer Steinwandt. Applying grover’s algorithm to aes: quantum resource estimates. In International Workshop on Post-Quantum Cryptography , pages 29–43. Springer, 2016. [4] Martin Roetteler, Michael Naehrig, Krysta M Svore, and Kristin Lauter. Quantum resource estimates for computing elliptic curve discrete logarithms. In International Conference on the Theory and Application of Cryptology and Information Security , pages 241–270. Springer, 2017. [5] Marc Kaplan, Gaëtan Leurent, Anthony Leverrier, and María Naya-Plasencia. Quantum differential and linear cryptanalysis. arXiv preprint arXiv:1510.05836 , 2015. [6] Marc Kaplan, Gaëtan Leurent, Anthony Leverrier, and María Naya-Plasencia. Breaking symmetric cryptosystems using quantum period finding. In Annual international cryptology conference , pages 207–237. Springer, 2016. [7] Thijs Laarhoven, Michele Mosca, and Joop Van De Pol. Finding shortest lattice vectors faster using quantum search. Designs, Codes and Cryptography , 77(2):375–400, 2015. [8] Ben Priestley and Petros Wallden. A practically scalable approach to the closest vector problem for sieving via qaoa with fixed angles. Quantum Science and Technology , 11(2):025018, mar 2026. doi: 10.1088/2058-9565/ae4cc6. URL https://doi.org/10.1088/2058-9565/ae4cc6 .[9] André Chailloux and Johanna Loyer. Lattice sieving via quantum random walks. In International Conference on the Theory and Application of Cryptology and Information Security , pages 63–91. Springer, 2021. [10] Alán Aspuru-Guzik, Anthony D Dutoi, Peter J Love, and Martin Head-Gordon. Simulated quantum computation of molecular energies. Science , 309(5741):1704–1707, 2005. [11] Alberto Peruzzo, Jarrod McClean, Peter Shadbolt, Man-Hong Yung, Xiao-Qi Zhou, Peter J Love, Alán Aspuru-Guzik, and Jeremy L O’brien. A variational eigenvalue solver on a photonic quantum processor. Nature communications , 5(1):4213, 2014. 16 [12] Abhinav Kandala, Antonio Mezzacapo, Kristan Temme, Maika Takita, Markus Brink, Jerry M Chow, and Jay M Gambetta. Hardware-efficient variational quantum eigensolver for small molecules and quantum magnets. nature , 549(7671):242–246, 2017. [13] Markus Reiher, Nathan Wiebe, Krysta M Svore, Dave Wecker, and Matthias Troyer. Elucidating reaction mechanisms on quantum computers. Proceedings of the national academy of sciences ,114(29):7555–7560, 2017. [14] Google AI Quantum, Collaborators* †, Frank Arute, Kunal Arya, Ryan Babbush, Dave Bacon, Joseph C Bardin, Rami Barends, Sergio Boixo, Michael Broughton, Bob B Buckley, et al. Hartree-fock on a superconducting qubit quantum computer. Science , 369(6507):1084–1089, 2020. [15] Vera von Burg, Guang Hao Low, Thomas Häner, Damian S Steiger, Markus Reiher, Martin Roetteler, and Matthias Troyer. Quantum computing enhanced computational catalysis. Physical Review Research , 3(3):033055, 2021. [16] Laura Clinton, Toby Cubitt, Brian Flynn, Filippo Maria Gambetta, Joel Klassen, Ashley Montanaro, Stephen Piddock, Raul A Santos, and Evan Sheridan. Towards near-term quantum simulation of materials. Nature Communications , 15(1):211, 2024. [17] Hannes Bernien, Sylvain Schwartz, Alexander Keesling, Harry Levine, Ahmed Omran, Hannes Pichler, Soonwon Choi, Alexander S Zibrov, Manuel Endres, Markus Greiner, et al. Probing many-body dynamics on a 51-atom quantum simulator. Nature , 551(7682):579–584, 2017. [18] Seth Lloyd. Universal quantum simulators. Science , 273(5278):1073–1078, 1996. [19] Esteban A Martinez, Christine A Muschik, Philipp Schindler, Daniel Nigg, Alexander Erhard, Markus Heyl, Philipp Hauke, Marcello Dalmonte, Thomas Monz, Peter Zoller, et al. Real-time dynamics of lattice gauge theories with a few-qubit quantum computer. Nature , 534(7608): 516–519, 2016. [20] Sepehr Ebadi, Tout T Wang, Harry Levine, Alexander Keesling, Giulia Semeghini, Ahmed Omran, Dolev Bluvstein, Rhine Samajdar, Hannes Pichler, Wen Wei Ho, et al. Quantum phases of matter on a 256-atom programmable quantum simulator. Nature , 595(7866):227–232, 2021. [21] Yasar Y Atas, Jinglei Zhang, Randy Lewis, Amin Jahanpour, Jan F Haase, and Christine A Muschik. Su (2) hadrons on a quantum computer via a variational approach. Nature communi-cations , 12(1):6499, 2021. [22] Michael Meth, Jinglei Zhang, Jan F Haase, Claire Edmunds, Lukas Postler, Andrew J Jena, Alex Steiner, Luca Dellantonio, Rainer Blatt, Peter Zoller, et al. Simulating two-dimensional lattice gauge theories on a qudit quantum computer. Nature Physics , 21(4):570–576, 2025. [23] Zitian Zhu, Kiera Salice, Akram Touil, Zehang Bao, Zixuan Song, Pengfei Zhang, Hekang Li, Zhen Wang, Chao Song, Qiujiang Guo, et al. Observation of quantum darwinism and the origin of classicality with superconducting circuits. Science Advances , 11(31):eadx6857, 2025. [24] Keren Li, Youning Li, Muxin Han, Sirui Lu, Jie Zhou, Dong Ruan, Guilu Long, Yidun Wan, Dawei Lu, Bei Zeng, et al. Quantum spacetime on a quantum simulator. Communications Physics , 2(1):122, 2019. 17 [25] Richard DP East, Pierre Martin-Dussaud, and John Van de Wetering. Spin-networks in the zx-calculus. arXiv preprint arXiv:2111.03114 , 2021. [26] Ben Priestley. Finite-dimensional zx-calculus for loop quantum gravity, 2025. URL https: //arxiv.org/abs/2511.15966 .[27] Jakub Mielczarek. Spin foam vertex amplitudes on quantum computer—preliminary results. 
+
+Universe , 5(8):179, 2019. [28] Reinier van der Meer, Zichang Huang, Malaquias Correa Anguita, Dongxue Qu, Peter Hooi-jschuur, Hongguang Liu, Muxin Han, Jelmer J Renema, and Lior Cohen. Experimental simulation of loop quantum gravity on a photonic chip. npj Quantum Information , 9(1):32, 2023. [29] Edward Farhi, Jeffrey Goldstone, and Sam Gutmann. A quantum approximate optimization algorithm. arXiv preprint arXiv:1411.4028 , 2014. [30] Andrew Lucas. Ising formulations of many np problems. Frontiers in physics , 2:74887, 2014. [31] Sepehr Ebadi, Alexander Keesling, Madelyn Cain, Tout T Wang, Harry Levine, Dolev Bluvstein, Giulia Semeghini, Ahmed Omran, J-G Liu, Rhine Samajdar, et al. Quantum optimization of maximum independent set using rydberg atom arrays. Science , 376(6598):1209–1215, 2022. [32] Patrick Rebentrost, Masoud Mohseni, and Seth Lloyd. Quantum support vector machine for big data classification. Physical review letters , 113(13):130503, 2014. [33] Maria Schuld and Nathan Killoran. Quantum machine learning in feature hilbert spaces. 
+
+Physical review letters , 122(4):040504, 2019. [34] Vojtěch Havlíček, Antonio D Córcoles, Kristan Temme, Aram W Harrow, Abhinav Kandala, Jerry M Chow, and Jay M Gambetta. Supervised learning with quantum-enhanced feature spaces. Nature , 567(7747):209–212, 2019. [35] Yunchao Liu, Srinivasan Arunachalam, and Kristan Temme. A rigorous and robust quantum speed-up in supervised machine learning. Nature physics , 17(9):1013–1017, 2021. [36] Hsin-Yuan Huang, Michael Broughton, Masoud Mohseni, Ryan Babbush, Sergio Boixo, Hart-mut Neven, and Jarrod R McClean. Power of data in quantum machine learning. Nature communications , 12(1):2631, 2021. [37] Hsin-Yuan Huang, Michael Broughton, Jordan Cotler, Sitan Chen, Jerry Li, Masoud Mohseni, Hartmut Neven, Ryan Babbush, Richard Kueng, John Preskill, et al. Quantum advantage in learning from experiments. Science , 376(6598):1182–1186, 2022. [38] Zhenghao Yin, Iris Agresti, Giovanni De Felice, Douglas Brown, Alexis Toumi, Ciro Pentangelo, Simone Piacentini, Andrea Crespi, Francesco Ceccarelli, Roberto Osellame, et al. Experimental quantum-enhanced kernel-based machine learning on a photonic processor. Nature Photonics ,19(9):1020–1027, 2025. [39] Hoa T. Nguyen, Prabhakar Krishnan, Dilip Krishnaswamy, Muhammad Usman, and Rajkumar Buyya. Quantum cloud computing: A review, open problems, and future directions, 2024. URL 
+
+https://arxiv.org/abs/2404.11420 .18 [40] Muhammed Golec, Emir Sahin Hatay, Mustafa Golec, Murat Uyar, Merve Golec, and Sukh-pal Singh Gill. Quantum cloud computing: Trends and challenges. Journal of Economy and Technology , 2:190–199, November 2024. ISSN 2949-9488. doi: 10.1016/j.ject.2024.05.001. URL 
+
+http://dx.doi.org/10.1016/j.ject.2024.05.001 .[41] Amazon Web Services. Amazon Braket: Supported devices. https://docs.aws.amazon.com/ braket/latest/developerguide/braket-devices.html , 2026. Accessed May 2026. [42] Amazon Web Services. Amazon Braket: Quantum cloud computing service. https://aws. amazon.com/braket/ , 2026. Accessed May 2026. [43] Stefano Martina, Lorenzo Buffoni, Stefano Gherardini, and Filippo Caruso. Learning the noise fingerprint of quantum devices, 2021. [44] Rupshali Roy, Archisman Ghosh, and Swaroop Ghosh. Forensics of transpiled quantum circuits. In Proceedings of the Great Lakes Symposium on VLSI 2025 , GLSVLSI 2025, pages 354–359. Association for Computing Machinery, 2025. doi: 10.1145/3716368.3735240. [45] Kaitlin N Smith, Joshua Viszlai, Lennart Maximilian Seifert, Jonathan M Baker, Jakub Szefer, and Frederic T Chong. Fast fingerprinting of cloud-based nisq quantum computers. In 2023 IEEE International Symposium on Hardware Oriented Security and Trust (HOST) , pages 1–12. IEEE, 2023. [46] Allen Mi, Shuwen Deng, and Jakub Szefer. Short paper: Device-and locality-specific fingerprint-ing of shared nisq quantum computers. In Proceedings of the 10th International Workshop on Hardware and Architectural Support for Security and Privacy , pages 1–6, 2021. [47] Vincent Mutolo, Devon Campbell, Quinn Manning, Henri Witold Dubourg, Ruibin Lyu, Simha Sethumadhavan, Daniel Rubenstein, and Salvatore Stolfo. Quantum computer fingerprinting using error syndromes, 2025. URL https://arxiv.org/abs/2506.16614 .[48] Jindi Wu, Tianjie Hu, and Qun Li. Q-id: Lightweight quantum network server identification through fingerprinting. Netwrk. Mag. of Global Internetwkg. , 38(5):146–152, September 2024. ISSN 0890-8044. doi: 10.1109/MNET.2024.3400893. URL https://doi.org/10.1109/MNET. 2024.3400893 .[49] Andrew M. Childs. Secure assisted quantum computation. Quantum Information and Compu-tation , 5(6):456–466, 2005. [50] Anne Broadbent, Joseph Fitzsimons, and Elham Kashefi. Universal blind quantum computation. In Proceedings of the 50th Annual IEEE Symposium on Foundations of Computer Science , pages 517–526, 2009. doi: 10.1109/FOCS.2009.36. [51] Joseph F. Fitzsimons and Elham Kashefi. Unconditionally verifiable blind quantum computation. 
+
+Physical Review A , 96(1):012303, 2017. doi: 10.1103/PhysRevA.96.012303. [52] Vedran Dunjko, Joseph F. Fitzsimons, Christopher Portmann, and Renato Renner. Composable security of delegated quantum computation. In Advances in Cryptology – ASIACRYPT 2014 ,volume 8874 of Lecture Notes in Computer Science , pages 406–425. Springer, 2014. doi: 10.1007/978-3-662-45608-8_22. 19 [53] Christian Badertscher, Alexandru Cojocaru, Léo Colisson, Elham Kashefi, Dominik Leichtle, Atul Mantri, and Petros Wallden. Security limitations of classical-client delegated quantum computing. In International Conference on the Theory and Application of Cryptology and Information Security , pages 667–696. Springer, 2020. [54] Abbas Poshtvan, Oleksandra Lapiha, Mina Doosti, Dominik Leichtle, Luka Music, and Elham Kashefi. Selectively blind quantum computation. arXiv preprint arXiv:2504.17612 , 2025. [55] Alexandru Gheorghiu, Theodoros Kapourniotis, and Elham Kashefi. Verification of quantum computation: An overview of existing approaches. Theory of Computing Systems , 63:715–808, 2019. doi: 10.1007/s00224-018-9872-3. [56] Dorit Aharonov, Michael Ben-Or, Elad Eban, and Urmila Mahadev. Interactive proofs for quantum computations, 2017. [57] Urmila Mahadev. Classical verification of quantum computations. In Proceedings of the 59th Annual IEEE Symposium on Foundations of Computer Science , pages 259–267, 2018. doi: 10.1109/FOCS.2018.00033. [58] Nai-Hui Chia, Kai-Min Chung, and Takashi Yamakawa. Classical verification of quantum computations with efficient verifier. In Theory of Cryptography Conference , pages 181–206. Springer, 2020. [59] James Bartusek, Yael Tauman Kalai, Alex Lombardi, Fermi Ma, Giulio Malavolta, Vinod Vaikuntanathan, Thomas Vidick, and Lisa Yang. Succinct classical verification of quantum computation. In Annual International Cryptology Conference , pages 195–211. Springer, 2022. [60] Jiayu Zhang. Succinct blind quantum computation using a random oracle. In Proceedings of the 53rd Annual ACM SIGACT Symposium on Theory of Computing , pages 1370–1383, 2021. [61] Yael Tauman Kalai, Dakshita Khurana, and Justin Raizes. How to classically verify a quantum cat without killing it. arXiv preprint arXiv:2602.09282 , 2026. [62] Dominik Leichtle, Luka Music, Elham Kashefi, and Harold Ollivier. Verifying bqp computations on noisy devices with minimal overhead. PRX Quantum , 2(4):040302, 2021. [63] Alexandru Gheorghiu and Thomas Vidick. Computationally-secure and composable remote state preparation. In Proceedings of the 60th IEEE Annual Symposium on Foundations of Computer Science , FOCS 2019, pages 1024–1033. IEEE Computer Society, 2019. doi: 10.1109/ FOCS.2019.00066. [64] Urmila Mahadev. Classical homomorphic encryption for quantum circuits. In Proceedings of the 59th IEEE Annual Symposium on Foundations of Computer Science , FOCS 2018, pages 332–338. IEEE Computer Society, 2018. doi: 10.1109/FOCS.2018.00039. [65] Gorjan Alagic, Yfke Dulek, Christian Schaffner, and Florian Speelman. Quantum fully homo-morphic encryption with verification. In Advances in Cryptology – EUROCRYPT 2018 , Lecture Notes in Computer Science, pages 438–467. Springer, 2018. doi: 10.1007/978-3-319-70694-8_16. [66] Yuhang Ma, Yipeng Huang, Samuele Ferracin, Robin Harper, and Swamit S. Tannu. QEnclave: A practical solution for secure quantum cloud computing. npj Quantum Information , 8:128, 2022. doi: 10.1038/s41534-022-00612-5. 20 [67] Justin Coupel and Tasnuva Farheen. Security vulnerabilities in quantum cloud systems: A survey on emerging threats, 2025. URL https://arxiv.org/abs/2504.19064 .[68] David L. Chaum. Untraceable electronic mail, return addresses, and digital pseudonyms. 
+
+Communications of the ACM , 24(2):84–90, 1981. doi: 10.1145/358549.358563. [69] Michael G. Reed, Paul F. Syverson, and David M. Goldschlag. Anonymous connections and onion routing. IEEE Journal on Selected Areas in Communications , 16(4):482–494, 1998. doi: 10.1109/49.668972. [70] Roger Dingledine, Nick Mathewson, and Paul Syverson. Tor: The second-generation onion router. In Proceedings of the 13th USENIX Security Symposium , 2004. [71] Easwar Magesan, Jay M. Gambetta, and Joseph Emerson. Scalable and robust randomized benchmarking of quantum processes. Physical Review Letters , 106:180504, 2011. doi: 10.1103/ PhysRevLett.106.180504. [72] Robin Blume-Kohout, John King Gamble, Erik Nielsen, Kenneth Rudinger, Jonathan Mizrahi, Kevin Fortier, and Peter Maunz. Demonstration of qubit operations below a rigorous fault tolerance threshold with gate set tomography. Nature Communications , 8:14485, 2017. doi: 10.1038/ncomms14485. [73] Kathleen E. Hamilton, Tyler Kharazi, Titus Morris, Alexander J. McCaskey, Ryan S. Bennink, and Raphael C. Pooser. Scalable quantum processor noise characterization. Proceedings of the IEEE International Conference on Quantum Computing and Engineering , pages 430–440, 2020. [74] Robin Harper, Steven T. Flammia, and Joel J. Wallman. Efficient learning of quantum noise. 
+
+Nature Physics , 16:1184–1188, 2020. doi: 10.1038/s41567-020-0992-8. [75] Ewout van den Berg, Zlatko K. Minev, Abhinav Kandala, and Kristan Temme. Probabilistic error cancellation with sparse Pauli–Lindblad models on noisy quantum processors. Nature Physics , 19:1116–1121, 2023. doi: 10.1038/s41567-023-02042-2. [76] Jens Eisert, Dominik Hangleiter, Nathan Walk, Ingo Roth, Damian Markham, Rhea Parekh, Ulysse Chabaud, and Elham Kashefi. Quantum certification and benchmarking. Nature Reviews Physics , 2(7):382–390, 2020. [77] Andrew W. Cross, Lev S. Bishop, Sarah Sheldon, Paul D. Nation, and Jay M. Gambetta. Validating quantum computers using randomized model circuits. Physical Review A , 100:032328, 2019. doi: 10.1103/PhysRevA.100.032328. [78] Alexander Erhard, Joel J. Wallman, Lukas Postler, Michael Meth, Roman Stricker, Esteban A. Martinez, Philipp Schindler, Thomas Monz, Joseph Emerson, and Rainer Blatt. Characterizing large-scale quantum computers via cycle benchmarking. Nature Communications , 10:5347, 2019. doi: 10.1038/s41467-019-13068-7. [79] S. Resch, A. Gutierrez, J. Smith, P. Rech, S. S. Tannu, S. Han, D. Tiwari, P. Diniz, and F. T. Chong. Benchmarking quantum computers and the impact of quantum noise. ACM Computing Surveys , 54(7):1–35, 2021. doi: 10.1145/3464420. [80] Filip B. Maciejewski, Zbigniew Puchała, and Michał Oszmaniec. Operational quantum average-case distances. Quantum , 7:1106, 2023. doi: 10.22331/q-2023-09-11-1106. 21 [81] Filip B. Maciejewski, Zbigniew Puchała, and Michał Oszmaniec. Exploring quantum average-case distances: Proofs, properties, and examples. IEEE Transactions on Information Theory ,2024. See also arXiv:2112.14284. [82] Scott Aaronson. Shadow tomography of quantum states. SIAM Journal on Computing , 49(5): STOC18–368–STOC18–394, 2020. doi: 10.1137/18M120275X. Preliminary version in STOC 2018. [83] Hsin-Yuan Huang, Richard Kueng, and John Preskill. Predicting many properties of a quantum system from very few measurements. Nature Physics , 16:1050–1057, 2020. doi: 10.1038/ s41567-020-0932-7. [84] Thomas M. Cover and Joy A. Thomas. Elements of Information Theory . Wiley, 2 edition, 2006. [85] Daniel Greenbaum. Introduction to quantum gate set tomography, 2015. [86] Matthias C. Caro. Learning quantum processes and hamiltonians via the pauli transfer matrix, 2022. [87] Jonas Helsen, Francesco Battistel, and Barbara M. Terhal. Spectral quantum tomography. npj Quantum Information , 5(1):74, 2019. doi: 10.1038/s41534-019-0189-0. [88] Maxim Raginsky. Strictly contractive quantum channels and physically realizable quantum computers. Physical Review A , 65(3):032306, 2002. doi: 10.1103/PhysRevA.65.032306. [89] Fumio Hiai and Mary Beth Ruskai. Contraction coefficients for noisy quantum channels. Journal of Mathematical Physics , 57(1):015211, 2016. doi: 10.1063/1.4936215. [90] Joel J. Wallman and Joseph Emerson. Noise tailoring for scalable quantum computation via randomized compiling. Physical Review A , 94(5):052325, 2016. doi: 10.1103/PhysRevA.94. 052325. [91] Matthew Ware, Guilhem Ribeill, Diego Ristè, Colm A. Ryan, Blake Johnson, and Marcus P. da Silva. Experimental pauli-frame randomization on a superconducting qubit. Physical Review A, 103(4):042604, 2021. doi: 10.1103/PhysRevA.103.042604. [92] Marco Schumann, Frank K. Wilhelm, and Alessandro Ciani. Emergence of noise-induced barren plateaus in arbitrary layered noise models. Quantum Science and Technology , 9(4):045019, 2024. doi: 10.1088/2058-9565/ad6285. 22 Appendix 
+
+Framework and Theoretical Results 24 
+
+A Formal Framework 24 
+
+A.1 A Game-based definition for Backend/Route Identifiability . . . . . . . . . . . . . . . 24 A.2 Describing Identifiability and Anonymity . . . . . . . . . . . . . . . . . . . . . . . . . 25 
+
+B Formal Theoretical Results 26 
+
+B.1 Reducing Identification to Classical Statistical Testing . . . . . . . . . . . . . . . . . 26 B.2 Post-Processing and the Utility-Anonymity Trade-Off . . . . . . . . . . . . . . . . . . 29 B.3 Noise-Channel Bounds and Relation to Noise Characterisation . . . . . . . . . . . . . 33 
+
+C Intermediate-Depth Principle in the PTM Model 35 
+
+C.1 Output Distributions from Traceless Pauli Signals . . . . . . . . . . . . . . . . . . . . 35 C.2 Intermediate-Depth Identifiability Principle . . . . . . . . . . . . . . . . . . . . . . . 37 
+
+Implementation Details and Experimental Results 41 
+
+D Probe Circuits 41 
+
+D.1 Depth-Varied Experiments . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41 D.2 Time-Varied Experiments . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 42 
+
+E Data Processing 43 
+
+E.1 Neurally-Guided Features . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43 E.2 Per-Outcome Features . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44 E.3 Per-Qubit Features . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 45 
+
+F Dimensionality Reduction Visualisation 45 G Classification Results 46 
+
+G.1 Device Classification . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 47 G.2 Temporal (Batch) Classification . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 49 
+
+H Distribution Forecasting 51 
+
+23 Framework and Theoretical Results 
+
+# A Formal Framework 
+
+Fix n ∈ N qubits, and let Ωn := {0, 1}n denote the set of computational-basis n-bit string outcomes. We use the convention ∆( ·) to denote sets of probability distributions; so write ∆(Ω n) to denote the set of probability distributions on n-bit strings, or ∆m(Ω n) to denote the set of empirical histograms on Ωn that can be obtained over m draws. Let Cd be a family of depth-d circuits over n qubits, and for each C ∈ C d, we will write UC to denote its ideal unitary action, producing an ideal output state ρC := UC |0n⟩⟨ 0n|U † 
+
+> C
+
+. We will denote by 
+
+C := S 
+
+> d≥0
+
+Cd the collection of all executable quantum circuits over n qubits. Consider a finite set of quantum backends (or “routes”) D = {D1, . . . , D k}, and for each Di ∈ D ,associate a family of effective noisy channels Ni := {N i,C : C ∈ C} where, 
+
+Ni,C : D(( C2)⊗n) → D (( C2)⊗n) ,
+
+is a completely positive and trace-preserving (CPTP) map. Here, we are taking the quite general perspective that allows effective noise to depend explicitly on the circuit, since real effective noise depends on compilation, layout, native gates, calibration, crosstalk, control context, time, etc. We represent measurement (without loss of generality, in the computational basis) by, 
+
+M : D(( C2)⊗n) → ∆(Ω n) ,
+
+and hence, for a given backend Di and circuit C, the idealised output law is given by, 
+
+pi,C := M(Ni,C (ρC )) ∈ ∆(Ω n) .
+
+In practice, we will only execute the circuit over m independent shots, producing random outcomes 
+
+Y1, . . . , Y m ∼ pi,C . We can then compute from these an empirical histogram like, 
+
+ˆpi,C (x) := 1
+
+m
+
+> m
+
+X
+
+> j=1
+
+1{Yj = x} ∈ ∆m(Ω n) .
+
+Now let ϕ : C × ∆m(Ω n) → X be a deterministic post-processing map taking raw observations 
+
+(C, ˆpi,C ) into a transcript space X (which we leave abstract for now). For brevity, we may sometimes refer to the raw observation space simply as Y := C × ∆m(Ω n).
+
+A.1 A Game-based definition for Backend/Route Identifiability 
+
+We now have the necessary objects to define a game of backend/route identification between a user and provider. Informally, the game is as follows: the provider privately selects a quantum backend, associated with a noisy channel, and asks the user to choose a probe circuit to be routed through 24 this channel. Dutifully, the provider then executes the circuit on the backend for a finite precision of shots, before returning to the user (a post-processed transcript of) the outcome histogram. The user’s task is to guess which backend produced the outcome returned to her—if only she could contain her excitement. More formally, we provide the following definition for a single round of the game. 
+
+Definition 1 (Backend/Route Identification Game) . Fix publicly known: circuit ensembles {μd}d≥0
+
+indexed by depth d, backend set D = {D1, . . . , D k} with prior π ∈ ∆( k), finite shot count m ∈ N,and post-processing map ϕ : Y → X . The game is then played as follows: 1. Provider randomly samples a hidden route I ∼ π.2. User chooses a circuit depth d ∈ N and randomly samples a depth-d workload circuit C ∼ μd,then submits it to the provider. 3. Provider executes C over m independent shots on backend DI , producing a raw empirical distribution ˆpI,C ∈ ∆m(Ω n).4. Provider produces a transcript X = ϕ(C, ˆpI,C ), then returns it to the user. 5. User observes X and outputs a guess ˜I, winning the game if ˜I = I.
+
+Definition 2 (Persistent Routing) . The backend/route identification game is extended over T
+
+rounds by repeating steps 2 and 3; that is, in each round t = 1 , . . . , T : the route I remains fixed (i.e. we have a “persistent route”), but a new probe circuit Ct may be sampled from the same fixed ensemble μd. Ultimately, a T -length transcript (X1, . . . , X T ) is returned and a guess is made. This work restricts to passive probing, meaning that C1, . . . , C T are all sampled and submitted before any execution, so Ct+1 cannot be biased by knowledge of X1, . . . , X t.
+
+A.2 Describing Identifiability and Anonymity 
+
+Definition 3 (Induced/Raw Laws) . Denote by Pi(μ, m, ϕ ) the induced law on the post-processed transcript space X such that, for every measurable set A ⊆ X ,
+
+Pi(μ, m, ϕ )( A) := 
+
+Z
+
+> C∈C
+
+Pr 
+
+h
+
+ϕ(C, ˆpi,C ) ∈ A
+
+i
+
+μ(dC ) .
+
+We can also denote by Qi(μ, m ) the raw law on the raw observation space Y = C × ∆m(Ω n), and then write Pi(μ, m, ϕ ) = ϕ#Qi(μ, m ) as the forward pass of Qi(μ, m ) under the map ϕ.For brevity, we will often omit the function signatures when the context is clear, and write Pi and 
+
+Qi respectively for these laws. 
+
+Definition 4 (Success Probability) . Let g : X → [k] act as a decision rule that produces a guessed backend label from an observed transcript X. The success probability for g, under a prior 
+
+π = ( π1, . . . , π k) on backends, is given by, 
+
+ps(g) := 
+
+> k
+
+X
+
+> i=1
+
+πi PX∼Pi
+
+h
+
+g(X) = i
+
+i
+
+,
+
+and the optimal success probability over all such g is denoted p⋆s := sup g ps(g).25 Definition 5 (Excess Advantage / Distinguishing Bias) . In the general setting, with prior π =(π1, . . . , π k) over k backends, the best probability we can obtain without the use of a transcript is 
+
+pb : = max i∈[k] πi, made by blindly guessing the most likely backend. We can then define an excess advantage beyond blind guessing by, 
+
+Adv := p⋆s − pb
+
+1 − pb
+
+.
+
+In the uniform-binary setting, D = {D1, D 2} and π = (1 /2, 1/2) , so pb = 1 /2 and the above excess advantage expression recovers the familiar distinguishing bias ;
+
+βD1,D 2 := p⋆s − 12
+
+1 − 12
+
+= 2 p⋆s − 1 .
+
+We can season the backend/route identification game with cryptographic implications to change its flavour from identification to anonymisation . Where before we asked how well a user can recover the provider’s routing choice, we now ask the equivalent provider-side security question: how small is user’s excess advantage, with respect to the kinds of transcript we expose? 
+
+Definition 6 (ε-Anonymity) . Begin with the backend identification game played with a set of routes 
+
+D = {D1, . . . , D k}. For security parameter ε ∈ (0 , 1) , such a setting can be called ε-anonymous with respect to a class Φ of allowed post-processing maps if, 
+
+p⋆s ≤ pb + (1 − pb)ε ,
+
+for all ϕ ∈ Φ. Equivalently, sup ϕ∈Φ Adv ≤ ε, or sup ϕ∈Φ βD1,D 2 ≤ ε in the uniform-binary setting. 
+
+# B Formal Theoretical Results 
+
+This section will present the formal theoretical results summarised informally in Section 2. We begin by showing that backend identification is exactly the problem of classical statistical hypothesis testing in Section B.1, yielding an exact characterisation of optimal binary identification with total variation distance, a pairwise sufficient condition for general routing anonymity, and describing the rate at which anonymity decays via Chernoff information. Then, in Section B.2, we focus on the role of post-processing as a means for removing backend-specific information. We then introduce utility maps and state a precise utility-anonymity trade-off relationship that establishes fundamental bounds on anonymity. Finally, we relate statistical distinguishability of routes to the underlying noisy quantum dynamics in Section B.3, showing that identification relies on average-case channel distances rather than any worst-case distance, and hence defining a new pseudo-distance for (families of) channels within our framework. We then give some simple sufficient conditions for routing anonymity with respect to this average-case distance. 
+
+B.1 Reducing Identification to Classical Statistical Testing 
+
+Theorem 1 (Backend Identifiability Reduces to Hypothesis Testing) . Consider the backend identifi-cation game, and denote by X ∈ X the returned (singleton) transcript about which the user decides on a backend label i ∈ [k]. The user’s decision is exactly equivalent to hypothesis testing with hypotheses 
+
+Hi : X ∼ Pi, where Pi is the known induced law of Di.
+
+26 Specifically, in the uniform-binary setting between backends D = {D1, D 2} with prior π = (1 /2, 1/2) ,over all binary decision rules g : X → { 1, 2}, we have that, 
+
+p⋆s := sup 
+
+> g
+
+ps(g) = 12
+
+
+
+1 + TV( P1, P 2)
+
+
+
+.
+
+Equivalently, we can write the distinguishing bias βD1,D 2 = TV( P1, P 2).Proof. Observe that any binary decision rule g splits the transcript space X into a region A ⊆ X 
+
+(corresponding to guessing D1) and its complement Ac (resp. D2). Then, under a uniform prior, 
+
+ps(g) = 12 P1(A) + 12 P2(Ac) = 12
+
+
+
+1 + P1(A) − P2(A)
+
+
+
+,
+
+hence, maximising the success looks like, 
+
+p⋆s := sup 
+
+> g
+
+ps(g) = 12 1 + sup 
+
+> A⊆X
+
+P1(A) − P2(A)
+
+!
+
+≡ 12
+
+
+
+1 + TV( P1, P 2)
+
+
+
+.
+
+and the bias βD1,D 2 easily follows by definition. In the following proposition, we observe that pairwise distinguishability, measured in the familiar total variation distance, can be seen to bound the excess advantage over any arbitrary backend set. Hence, an arbitrary collection of routes and prior can be worst-case bounded by another route identification game in the uniform-binary setting. 
+
+Proposition 1 (Pairwise Indistinguishability is Sufficient for Global Anonymity) . For an arbitrary route set with prior π, choose r⋆ ∈ arg max i πi to be a most probable route. Then for any deterministic post-processing map, we have, 
+
+p⋆s ≤ πr⋆ + X
+
+> i̸=r⋆
+
+πi TV( Pi, P r⋆ ) . (B.1) 
+
+In particular, Adv ≤ max i̸=j TV (Pi, P j ). Hence, in the general setting, ε-anonymity is guaranteed if pairwise distinguishability between any pair of distinct routes is at most ε under any deterministic post-processing map in the class of interest. Proof. Let g : X → [k] be any decision rule, with preimages Ai := g−1({i}) for each i ∈ [k]. By Definition 4, we quantify the success probability for g by, 
+
+ps(g) = X
+
+> i∈[k]
+
+πiPi(Ai) = πr⋆ Pr⋆ (Ar⋆ ) + X
+
+> i̸=r⋆
+
+πiPi(Ai) .
+
+For each i̸ = r⋆, we have by the definition of total variation, for every Ai,
+
+Pi(Ai) − Pr⋆ (Ai) ≤ TV( Pi, P r⋆ ) ,
+
+∴ Pi(Ai) ≤ Pr⋆ (Ai) + TV( Pi, P r⋆ ) ,
+
+and so substituting this gives, 
+
+ps(g) ≤ πr⋆ Pr⋆ (Ar⋆ ) + X
+
+> i̸=r⋆
+
+πiPr⋆ (Ai) + X
+
+> i̸=r⋆
+
+πi · TV( Pi, P r⋆ ) .
+
+27 Then, using πi ≤ πr∗ for every i, we can see that, 
+
+πr⋆ Pr⋆ (Ar⋆ ) + X
+
+> i̸=r⋆
+
+πiPr⋆ (Ai) ≤ πr⋆
+
+X
+
+> i∈[k]
+
+Pr⋆ (Ai) = πr⋆ ,
+
+since the {Ai}i partition X . Hence, 
+
+ps(g) ≤ πr⋆ + X
+
+> i̸=r⋆
+
+πi · TV( Pi, P r⋆ ) . (B.1) Now we prove the second statement. Note first that taking the supremum over the above to obtain 
+
+p⋆s = sup g ps(g) preserves the upper bound. Then second observe that pb = max i∈[k] πi = πr⋆ . So, using the first statement of Eq. (B.1), we have, 
+
+Adv := p⋆s − pb
+
+1 − pb
+
+≤ X
+
+> i̸=r⋆
+
+πi
+
+1 − πr⋆
+
+· TV( Pi, P r⋆ ) .
+
+Since the coefficients in this expression form a probability distribution on [k]\{ r⋆}, the weighted average is clearly bounded by the maximum term; 
+
+X
+
+> i̸=r⋆
+
+πi
+
+1 − πr⋆
+
+· TV( Pi, P r⋆ ) ≤ max  
+
+> i̸=r⋆
+
+TV( Pi, P r⋆ ) .
+
+Finally, since [k]\{ r⋆} ⊂ [k], we can loosen the bound a little further to yield, 
+
+max  
+
+> i̸=r⋆
+
+TV( Pi, P r⋆ ) ≤ max  
+
+> i̸=j
+
+TV( Pj , P j ) .
+
+Therefore, having max i̸=j TV (Pi, P j ) ≤ ε necessarily gives Adv ≤ ε, so if no pair of routes i, j have 
+
+TV( Pi, P j ) > ε under any post-processing map in the class, then ε-anonymity is satisfied. The above Proposition 1 gives a practical sufficient condition: if every pair of routes is hard to distinguish under the transcript maps that the provider returns, then the whole routing system is anonymous by Definition 6. This is particularly useful for certification because it avoids needing to solve the full k-ary decision problem. To extend Theorem 1, we can reduce extended backend identification, played over T rounds, to hypothesis testing between the product distributions over the T -length transcript space X ⊗T .Asymptotically, we can then say how quickly anonymity—the converse to distinguishability in this context—breaks down as we prolong the game over more rounds, with a rate of anonymity decay controlled exponentially by the Chernoff information between induced distributions. 
+
+Theorem 2 (Persistent Routing Reduces to Chernoff Testing) . Extend the backend identification game over T rounds of persistent routing, and denote by (X1, . . . , X T ) ∈ X ⊗T the returned T -length transcript about which the user decides on a backend label i ∈ [k]. The user’s decision is exactly equivalent to hypothesis testing with hypotheses Hi : (X1, . . . , X T ) ∼ P ⊗Ti , where Pi is the known induced distribution of backend Di.Specifically, in the uniform-binary setting between backends D = {D1, D 2} with prior π = (1 /2, 1/2) ,over all binary decision rules g : X ⊗T → { 1, 2}, we have that, 
+
+p⋆s (T ) := sup 
+
+> g
+
+ps(g) = 12
+
+
+
+1 + TV 
+
+
+
+P ⊗T 
+
+> 1
+
+, P ⊗T
+
+> 2
+
+ 
+
+,
+
+28 and the optimal success probability p⋆s (T ) over the T rounds satisfies, 
+
+lim   
+
+> T→∞
+
+− 1
+
+T log  1 − p⋆s (T ) = DCh (P1, P 2) ,
+
+where DCh (·, ·) denotes the Chernoff information between probability distributions. In particular, when DCh (P1, P 2) is nonzero and finite, we have, 
+
+1 − p⋆s (T ) = exp 
+
+
+
+− T D Ch (P1, P 2) + o(T )
+
+
+
+.
+
+Proof. Recall that we have a conditional independence enforced by Definition 2, which says that the transcripts X1, . . . , X T are drawn i.i.d. from some Pi. So, for any measurable region A1 × · · · × AT ⊆X ⊗T , we have, 
+
+Pi
+
+h
+
+(X1, . . . , X T ) ∈ A1 × · · · × AT
+
+i
+
+=
+
+> T
+
+Y
+
+> t=1
+
+P[Xt ∈ At] = 
+
+> T
+
+Y
+
+> t=1
+
+Pi(At) ,
+
+thus the law of the full T -length transcript is the product P ⊗Ti . Then, by the same argument as in Theorem 1, the reduction to hypothesis testing follows. By the standard Chernoff theorem for Bayesian binary hypothesis testing of i.i.d. observations [see e.g. 84, chapter 11], the optimal error probability, given by 1 − p⋆s,T , satisfies, 
+
+lim   
+
+> T→∞
+
+− 1
+
+T log  1 − p⋆s,T 
+
+ = DCh (P1, P 2) ,
+
+which we can rearrange like, 
+
+1 − p⋆s,T = exp 
+
+
+
+− T · DCh (P1, P 2) + o(T )
+
+
+
+.
+
+for some small term o(T ) collecting practically negligible sublinear corrections in the exponent. 
+
+B.2 Post-Processing and the Utility-Anonymity Trade-Off 
+
+In the quantum cloud setting, post-processing plays a very interesting role that deserves careful and deliberate consideration. Naively, we can imagine the provider executing a given circuit on behalf of the user and providing the raw bitstring counts, much like current cloud-based quantum services do in the present day. This represents the most flexible service, with the provider taking somewhat of a ‘no-questions-asked’ stance and allowing the user to get on with whatever she wishes to do with her outcomes. In the near future, however, as the quantum cloud setting expands into an increasingly commercialised and specialised enterprise, providers may wish to perform only a particular ‘service’ for the user. Instead of a raw empirical histogram over bitstrings, providers may prefer to release only a feature about these bitstring outcomes; e.g. if the user is interested in the ground-state energy of a particular Hamiltonian, the provider may perform quantum phase estimation on her behalf, in which case the feature of interest looks like the peak value in the histogram. In this service-centric paradigm, post-processing acts not only as a means to directly compute features of interest on behalf of the user, but also as the principal mechanism by which the provider can remove backend-specific information from the released transcript. We formalise this with the following Proposition 2 in the uniform-binary case, well understood already in classical statistics. 29 Proposition 2 (Post-Processing Cannot Increase Information) . Let Q1, Q 2 be the raw observation laws associated with backends D1, D 2, and let ϕ : Y → X be any (measurable) deterministic post-processing map. Then, 
+
+TV( P1, P 2) := TV( ϕ#Q1, ϕ #Q2) ≤ TV( Q1, Q 2) .
+
+Proof. Recall, by definition, that the total variation distance between the induced distributions 
+
+P1, P 2 is given by, 
+
+TV( P1, P 2) := sup 
+
+> A⊆X
+
+P1(A) − P2(A) ,
+
+with a supremum over all measurable subsets A of the transcript space X . Now, using that Pi = ϕ#Qi,we have for every such A,
+
+Pi(A) = Qi(ϕ−1(A)) .
+
+Denote by Yϕ : = {ϕ−1(A) : A ⊆ X } the set of all raw-space events that can be expressed as preimages of transcript-space events under ϕ. Then we have, 
+
+TV( P1, P 2) = sup 
+
+> B∈Y ϕ
+
+Q1(B) − Q2(B) .
+
+On the other hand, we also have, by definition, 
+
+TV( Q1, Q 2) = sup 
+
+> B∈Y
+
+Q1(B) − Q2(B) ,
+
+with a supremum over all measurable subsets B of the raw space Y. Importantly, observe that Yϕ ⊆ Y ,since the assumption that ϕ is measurable tells us that every preimage ϕ−1(·) is itself a measurable raw event (in Y). Hence, using the elementary fact that, if S1 ⊆ S2, then sup x∈S1 f (x) ≤ sup x∈S2 f (x)
+
+for any real-valued f ,
+
+sup 
+
+> B∈Y ϕ
+
+Q1(B) − Q2(B) ≤ sup 
+
+> B∈Y
+
+Q1(B) − Q2(B) ,
+
+and so, for any measurable ϕ, we have TV( P1, P 2) ≤ TV( Q1, Q 2) as required. More generally, note the following corollary which states that arbitrary post-processing cannot increase distinguishability. 
+
+Corollary 1. If a map ϕ′ is a ‘further’ post-processing of another map ϕ, meaning that there exists some ψ such that ϕ′ = ψ ◦ ϕ, then, 
+
+βD1,D 2 (μ, m, ϕ ′) ≤ βD1,D 2 (μ, m, ϕ ) .
+
+We can easily see that this result already implies that raw observations are informationally maximal for backend identification, since any deterministic post-processing map ϕ can clearly be called a ‘further’ post-processing of the identity map. We should now place increased scrutiny on the choice of post-processing map; of course, the provider could choose e.g. a trivial constant function so that P1 = P2 and thus achieve indefinite anonymity ,but there is obviously a lack of utility in this ‘service’. Our next natural progression is then a question of trade-off between anonymity and utility through the choice of post-processing map: the 30 provider should look to remove route-specific information as much as possible without also removing task-relevant information. In this work, we model the promised service via the following utility map —the promise of a service is the promise that a particular computation is being performed on the bitstrings, and this utility should be preserved in that its codomain remains accessible. 
+
+Definition 7 (Utility Map / Utility Law) . Let U be a measurable utility space. A utility map is a measurable deterministic map u : Y → U , where Y = C × ∆m(Ω n) is the raw observation space. For a given backend/route Di, the utility law is the distribution Pi(. . . , u ) : = u#Qi induced by the utility map u, as in Definition 3, as the forward pass of the raw distribution Qi under u.
+
+Definition 8 (Utility Preservation) . Let ϕ : Y → X be any deterministic post-processing map, and let u : Y → U be any utility map. We say that ϕ preserves the utility u exactly if there exists a (measurable) decoder ψ : X → U such that u = ψ ◦ ϕ.Under Definition 8, the provider is then constrained (perhaps contractually obligated) to choose a class 
+
+Φ of post-processing maps which exactly preserve the promised utility u. In the following theorem, we formalise a kind of no-free-lunch evident under this restriction: that if the requested utility is itself route-sensitive, then hiding the route necessarily means changing, coarsening, randomising, or otherwise degrading the utility. 
+
+Theorem 3 (Utility-Preserving No-Free-Lunch) . Let u : Y → U and ϕ : Y → X be deterministic utility and post-processing maps respectively. If ϕ preserves the utility u exactly, then for every pair of routes {D1, D 2}, we have, 
+
+TV 
+
+
+
+P1(. . . , ϕ ), P 2(. . . , ϕ )
+
+
+
+≥ TV 
+
+
+
+P1(. . . , u ), P 2(. . . , u )
+
+
+
+,
+
+and also, 
+
+DCh 
+
+
+
+P1(. . . , ϕ ), P 2(. . . , ϕ )
+
+
+
+≥ DCh 
+
+
+
+P1(. . . , u ), P 2(. . . , u )
+
+
+
+,
+
+Hence, ϕ may only remove route-specific information which is extraneous to the promised utility from 
+
+u; it cannot remove route-information already encoded in the utility output. Proof. By the exact utility preservation of ϕ (Definition 8), there exists a decoder ψ : X → U such that u = ψ ◦ ϕ. Hence, for any route Di, we can write 
+
+Pi(. . . , u ) = u#Qi = ( ψ ◦ ϕ)#Qi = ψ#(ϕ#Qi) = ψ#Pi(. . . , ϕ ) ,
+
+which is to say that the utility law is itself a deterministic post-processing of the induced transcript law. Therefore, by the same argument as in Corollary 1, deterministic post-processing cannot increase distinguishability, and we are left with, 
+
+TV 
+
+
+
+P1(. . . , ϕ ), P 2(. . . , ϕ )
+
+
+
+≥ TV 
+
+
+
+ψ#P1(. . . , ϕ ), ψ #P2(. . . , ϕ )
+
+
+
+= TV 
+
+
+
+P1(. . . , u ), P 2(. . . , u )
+
+
+
+.
+
+The second inequality can be obtained by a similar argument with Chernoff information replacing total variation, following the same idea from Corollary 1. The above Theorem 3 tells us that there is no choice of utility-preserving post-processing map that can reduce the total variation distance between the induced distributions of any two routes 31 beyond that of the utility laws without degradation. Equivalently, by Theorem 1, we can say that distinguishability cannot be reduced without also losing utility via post-processing. It is conceivable that the user will agree to a small loss of utility if it makes the provider happier about his ability to anonymise routes. It is nice to make people happy. To that end, consider approximate versions to the above ideas for utility preservation. Definition 9 is perhaps the simplest and most straightforward formulation. 
+
+Definition 9 (α-Approximate Utility Preservation) . Let ϕ : Y → X be any deterministic post-processing map, and let u : Y → U be any utility map. For α > 0, we say that ϕ preserves the utility 
+
+u to within accuracy α if there exists a (measurable) decoder ψ : X → U such that, for any route Di,we have TV( Pi(. . . , ψ ◦ ϕ), P i(. . . , u )) ≤ α.
+
+Theorem 4 (Approximate Utility-Preserving No-Free-Lunch) . Let u : Y → U and ϕ : Y → X be deterministic utility and post-processing maps respectively. If ϕ preserves the utility u to within accuracy α > 0, then for every pair of routes {D1, D 2}, we have, 
+
+TV 
+
+
+
+P1(. . . , ϕ ), P 2(. . . , ϕ )
+
+
+
+≥ TV 
+
+
+
+P1(. . . , u ), P 2(. . . , u )
+
+
+
+− 2α .
+
+Proof. By the approximate utility preservation of ϕ, there exists a decoder ψ : X → U such that, for any route Di, we have TV( Pi(. . . , ψ ◦ ϕ), P i(. . . , u )) ≤ α. Hence, by a triangle inequality, 
+
+TV 
+
+
+
+P1(. . . , u ), P 2(. . . , u )
+
+
+
+≤ TV 
+
+
+
+P1(. . . , ψ ◦ ϕ), P 2(. . . , ψ ◦ ϕ)
+
+
+
++ TV 
+
+
+
+P1(. . . , ψ ◦ ϕ), P 1(. . . , u )
+
+
+
++ TV 
+
+
+
+P2(. . . , ψ ◦ ϕ), P 2(. . . , u )
+
+
+
+≤ TV 
+
+
+
+P1(. . . , ψ ◦ ϕ), P 2(. . . , ψ ◦ ϕ)
+
+
+
++ 2 α
+
+≤ TV 
+
+
+
+P1(. . . , ϕ ), P 2(. . . , ϕ )
+
+
+
++ 2 α ,
+
+and a simple rearrangement completes the proof. In the exact setting, Theorem 3 makes it clear that the utility map itself is the most anonymising post-processing that the provider can apply—any further post-processing that preserves this utility exactly will necessarily increase distinguishability, as per Corollary 1. So, we might like to argue that the approximate setting in Theorem 4 is more interesting, and introduces the possibility for an accuracy parameter α of an acceptably small scale which dominates the term TV (P1(. . . , u ), P 2(. . . , u )) .Indeed, indefinite anonymity can be obtained with any α ≥ 12 TV( P1(. . . , u ), P 2(. . . , u )) .Note that an approximately utility-preserving map defined as in Definition 9 could be poorly considered for particular utilities. Take, for example, a binary decision rule to be the utility, and suppose that the number of positive outcomes for the rule is exponentially small in the number of possible inputs. Then a constant post-processing which takes every input to a negative output has only an exponentially small loss of accuracy under the approximate preservation of Definition 9. Clearly though, the meaningful utility—defining a small set of acceptable inputs—is destroyed here. To address this concern, it may be appropriate to define a slightly different notion of preservation for decision utilities. For example: 32 Definition 10 (α-Approximate Decision-Utility Preservation) . Let v = ψ ◦ ϕ be the decision decoded from a transcript X = ϕ(· · · ). Then we can call v close to a utility u if, 
+
+Qi(v = 1 | u = 1) ≥ 1 − α ,
+
+for all Di. Hence, among positive decision instances, the post-processed decision retains the decision with arbitrarily high probability. With such a definition for preservation, it may be possible to show that rare decision utilities are intrinsically anonymous. That is, if the probability Qi(u = 1) for a positive outcome is exponentially small, then any approximately-preserving post-processing map can improve the anonymity exponentially in m. Extended over multiple rounds, this then looks like a polynomial increase in in the number of rounds we can play until anonymity is lost. For now, this is only conjecture; we encourage interesting future work in this direction. 
+
+B.3 Noise-Channel Bounds and Relation to Noise Characterisation 
+
+Now we explore the relationship between successful identification in the uniform-binary setting and the underlying effective channel noise. Our basic operational quantity for this is the single-shot, raw distinguishing bias, as give in the following Proposition 3. 
+
+Proposition 3 (Distinguishing Bias is an Average-Case Notion) . The single-shot ( m = 1 ) distin-guishing bias on raw observations ( ϕ = id ) over a circuit ensemble μ ∈ ∆( C) is given by, 
+
+βD1,D 2 (μ, 1, id) = EC∼μ
+
+h
+
+TV( p1,C , p 2,C )
+
+i
+
+.
+
+Proof. With only a single shot, the raw observation is a pair (C, Y ), with a circuit C ∼ μ and conditionally-sampled outcome Y ∼ pi,C . Hence, 
+
+Qi(dC, y ) = μ(dC ) pi,C (y) .
+
+Then, since ϕ = id , we have by Theorem 1 and Corollary 1, 
+
+βD1,D 2 (μ, 1, id) = TV( Q1, Q 2) ,
+
+and expanding the total variation over Y = C × Ωn completes the proof; 
+
+TV( Q1, Q 2) = 12
+
+Z
+
+> C
+
+X
+
+> y∈Ωn
+
+p1,C − p2,C μ(dC ) = EC∼μ
+
+h
+
+TV( p1,C , p 2,C )
+
+i
+
+.
+
+This motivates a very practical distance measure. We can see that what matters is not any worst-case separation of the full channels over all possible inputs and ancillas, but actually the average separation on the states actually induced by the probing protocol. Hence, we introduce a workload-probed channel (pseudo-)distance accordingly, to give us a very natural distance measure for our setting, tailored to the workload ensemble μ used in any experiment. 33 Definition 11 (Workload-Probed Channel Pseudo-Distance) . Let μ ∈ ∆( C) be any ensemble of circuits. Then define the workload-probed channel pseudo-distance by, 
+
+δμ(Ni, Nj ) := EC∼μ
+
+12
+
+
+
+Ni,C − N j,C 
+
+
+
+(ρC ) 1 ,
+
+where each Ni = {N i,C }C∈C is a family of circuit-dependent noise channels. This is a pseudo -distance since it does not generally satisfy an identity of indiscernibles, though note that is is non-negative, symmetric, and satisfies a triangle inequality. Experimentally, it can also be seen to be a more useful measure; a poorly designed ensemble (from an adversarial user’s perspective) may have a very small workload-probed channel pseudo-distance and hence fail to distinguish backends accurately, but there may exist other workloads that have a much easier time of it. Distinguishability of backends is thus relative to the workload, in the most practical sense. 
+
+Lemma 1. For any two induced noisy distributions pi,C = M(Ni,C (ρC )) (resp. pj,C ), 
+
+TV( pi,C , p j,C ) ≤ 12 N1,C (ρC ) − N 2,C (ρC ) .
+
+Proof. Immediately follows by the contractivity of trace distance under measurement M.
+
+Proposition 4 (Workload-Probed Distances are Tighter than Worst-Case Distances) . For any fixed ensemble μ ∈ ∆( C) ,
+
+βD1,D 2 (μ, 1, ϕ ) ≤ δμ(N1, N2) ≤ 12 sup 
+
+> C∈C
+
+N1,C − N 2,C ⋄ .
+
+Proof. These bounds can easily be seen via elementary facts and above results; 
+
+βD1,D 2
+
+> 3
+
+= EC∼μ
+
+h
+
+TV( p1,C , p 2,C )
+
+i
+
+≤ EC∼μ
+
+12 N1,C (ρC ) − N 2,C (ρC ) 1 (B.2) 
+
+> 11
+
+= δμ(Ni, Nj )
+
+≤ EC∼μ
+
+12 N1,C − N 2,C ⋄ (B.3) 
+
+≤ 12 sup 
+
+> C∈C
+
+N1,C − N 2,C ⋄ . (B.4) In the above, Eq. (B.2) follows by Lemma 1; then Eq. (B.3) follows by definition of the diamond norm as a supremum over input states and thus a bound on the trace distance of any ρC ; and finally Eq. (B.4) is a simple use of the fact that the expectation over a set is trivially bounded by the supremum over that set. Establishing the above relationship in Proposition 4 allows us to immediately suggest some practically useful sufficient conditions to achieve a desired degree of routing anonymity. 
+
+Corollary 2. Under any deterministic post-processing map, Adv ≤ m · max i̸=j δμ(Ni, Nj ), therefore a sufficient condition for ε-anonymity with respect to any map class is, 
+
+max  
+
+> i̸=j
+
+δμ(Ni, Nj ) ≤ εm .
+
+34 Corollary 3. Suppose that there exist channels Λi such that Ni,C = Λ i for every backend Di
+
+and circuit C. Then, for any post-processing map, Adv ≤ m 
+
+> 2
+
+max i̸=j Λi − Λj ⋄ hence a sufficient condition for ε-anonymity is, 
+
+max  
+
+> i̸=j
+
+Λi − Λj ⋄ ≤ 2εm .
+
+# C Intermediate-Depth Principle in the PTM Model 
+
+Let Pn denote the n-qubit Pauli basis. Every n-qubit density operator ρ can be expanded like, 
+
+ρ = 12n
+
+I + X 
+
+> P∈P n\{ I}
+
+Tr( P ρ )P
+
+ ,
+
+and we call the vector ⃗r (ρ) := ( Tr (P ρ )) P̸ =I ∈ R4n−1 the traceless Pauli vector of ρ, recording its non-identity Pauli expectation values. A quantum channel N can be represented in the same basis by its Pauli Transfer Matrix (PTM) ,which, for a trace-preserving channel, takes the block form, 
+
+1 0
+
+tN NN
+
+!
+
+,
+
+where NN is the block acting on the traceless Pauli coordinates, and tN is an affine, non-unital drift. Therefore, the traceless part transforms as ⃗r (ρ) 7 → tN + NN⃗r (ρ), and if the channel is unital, then 
+
+tN = 0 and evolution cleans up to ⃗r(ρ) 7 → N N⃗r(ρ).PTMs have been widely used across the literature because they give a concrete linear representation of quantum processes in the Pauli basis. We see them in gate-set tomography and quantum process characterisation, where they provide a useful diagnostic representation of gate errors [ 85 ]; in learning problems, wherein it can often be easier to learn entries and expectation values associated with the PTM of unknown quantum processes [ 86 ]; and spectral quantum tomography, where eigenvalues of the PTM of a noisy gate can act as useful gate diagnostics [ 87 ]. These applications motivate the use of PTMs to yield a simple coordinate system wherein differences between noisy processes can be represented, learned, and compared. 
+
+C.1 Output Distributions from Traceless Pauli Signals 
+
+Let ⃗r C :=⃗r (ρC ) denote the traceless Pauli vector of the ideal output state ρC for a given depth-d
+
+circuit C. Under the execution of a backend Di, the computational-basis output distribution pi,C 
+
+can be modelled like, 
+
+pi,C = q + M N di⃗r C ∈ ∆(Ω n) , (C.1) where q ∈ ∆(Ω n) is a common asymptotic fixed-point distribution, M : R4n−1 → R2n
+
+is a fixed linear map transforming traceless Pauli coordinates into computational-basis probability deviations, and Ni is the effective traceless PTM block describing the noisy action of Di per circuit layer. We can thus view N di⃗r C as the residual circuit-dependent traceless Pauli signal after d noisy layers. There are several simplifying assumptions present in Eq. (C.1): (1) noisy evolution is treated as Markovian and depth-homogeneous at the level of an effective layer noise map, applying the same 35 traceless PTM block Ni after each layer; (2) Ni is assumed diagonal, or effectively diagonal after Pauli twirling; (3) affine non-unital effects are either negligible or common among compared backends and thus absorbed into q; (4) the measurement map is assumed to be backend-independent so that backend-specific readout effects are either negligible or common and thus absorbed into q; and (5) we assume either that the effective layer noise is unital, or that all compared backends share a common fixed point and we work in coordinates centred at this fixed point (in the latter case, q denotes the corresponding computational-basis fixed-point distribution and ⃗r C should be interpreted as the centred ideal signal). Sufficiently mixing noisy dynamics are often modelled by traceless PTM blocks whose relevant eigenvalues lie strictly inside the unit circle; e.g. simple depolarising channels act as ⃗r (ρ) → λ⃗ r (ρ)
+
+with λ ∈ (0 , 1) and thus have corresponding traceless PTM block λI , and amplitude-damping noise has subunit eigenvalues like √1 − p and 1 − p with damping rate p > 0 [87 ]. Raginsky [88] define these kinds of strictly contractive channel as those which reduce trace distance by a factor less than 
+
+1, interpreting them as making quantum states less distinguishable. This motivates a key dominant-mixing assumption for the intermediate-depth principle: decompose the traceless PTM block Ni of a backend Di like, 
+
+Ni = λI + Ei , (C.2) where λI is a common depolarising-like contraction with λ ∈ (0 , 1) , and Ei is a backend-specific perturbation with ∥Ei∥1→1 ≤ ε such that λ + ε < 1. That is, we will assume that the backend-specific perturbation Ei is sufficiently small so as not to destroy the common contraction on the traceless PTM subspace. This is a standard form of modelling assumption for analysing noisy quantum dynamics. Strictly contractive quantum channels have long been used as mathematical models of non-ideal quantum evolution, especially for settings wherein finite experimental precision and repeated noise make perfectly reversible dynamics unrealistic [ 88 ]. The broader theory of quantum contraction coefficients similarly studies how noisy channels contract operational distances and divergences between states [89 ]. Moreover, randomised benchmarking and randomised compiling provide both theoretical and experimental support for replacing complicated coherent hardware errors by effective stochastic Pauli or depolarising-like noise models: randomised compiling was introduced to tailor coherent errors into stochastic Pauli errors [ 90 ]; and Pauli-frame randomisation has been experimentally demonstrated on superconducting hardware to suppress non-Markian and non-Pauli signatures while leaving the computation unchanged [ 91 ]. Recent noisy-circuit analyses also use strict contractivity as a depth-dependent mixing hypothesis, with amplitude damping and suitable Pauli channels appearing as canonical examples of strictly contractive noise maps [92]. The following Lemma 2 formally presents the corresponding strict contractivity statement in our PTM model’s ℓ1-coordinate norm as a consequence of our assumptions about the norm gap ∥Ei∥1→1 < 1−λ
+
+in Eq. (C.2). Note that this is a coordinate-level contraction assumption in the traceless Pauli representation. It should not be confused with trace-norm contractivity unless additional norm-comparison constants are introduced. 
+
+Lemma 2. Let Ni = λI + Ei be a linear map on a traceless PTM coordinate space equipped with an 
+
+ℓ1-norm. If λ ∈ (0 , 1) and ∥Ei∥1→1 ≤ ε such that λ + ε < 1, then ∥Ni∥1→1 ≤ λ + ε < 1.Consequently, for any traceless PTM vector ⃗r and d ≥ 0, ∥N di⃗r ∥ 1 ≤ (λ + ε)d∥⃗r ∥ 1. Hence, we have that N di⃗r → 0 in ℓ 1-norm as d → ∞ .
+
+36 Proof. For any ⃗r , write Ni⃗r = λ⃗ r + Ei⃗r . By a triangle inequality and the definition of the induced operator norm, we then have, 
+
+∥Ni⃗r ∥ 1 ≤ λ∥⃗r ∥ 1 + ∥Ei⃗r ∥ 1 ≤ (λ + ∥Ei∥1→1)∥⃗r ∥ 1 ≤ (λ + ε)∥⃗r ∥ 1 .
+
+Taking the supremum over ⃗r̸ = 0 yields the first result; ∥Ni∥1→1 ≤ λ + ε < 1. Then, by submulti-plicativity of induced norms, ∥N di ∥1→1 ≤ ∥ Ni∥d 
+
+> 1→1
+
+≤ (λ + ε)d. Hence, the second result; 
+
+∥N di⃗r ∥ 1 ≤ ∥ N di ∥1→1∥⃗r ∥ 1 ≤ ∥ Ni∥d
+
+> 1→1
+
+∥⃗r ∥ 1 ≤ (λ + ε)d∥⃗r ∥ 1 .
+
+Finally, since 0 < λ + ε < 1, the factor (λ + ε)d → 0 as d → ∞ , hence ∥N di⃗r ∥ 1 → 0.
+
+C.2 Intermediate-Depth Identifiability Principle 
+
+We now show that the contraction statement of Lemma 2, following our standard strict contractivity assumption, leads to a useful practical intuition about the relationship between depth and backend identifiability. The quantity of interest is the expected total variation distance between output distributions produced by two backends over an ensemble μd of depth-d circuits, as the average single-shot distinguishing behaviour constrained to a particular depth. The following theorem formalises the idea that, under the dominant-mixing PTM model, the backend-specific contribution to distinguishing bias is necessarily suppressed at large depths, leading to a degradation of backend identifiability. 
+
+Theorem 5 (Identifiability Degrades at Large Depths) . Fix any two backends Di and Dj , and let μd
+
+be an ensemble of depth-d circuits. Suppose that, for every C ∼ μd, the computational-basis output distributions for Di (similarly for Dj ) satisfy, 
+
+pi,C = q + M N di⃗r C ,
+
+where q is common to both backends, M is a fixed linear map, and we assume that, 
+
+Ni = λI + Ei , with ∥Ei∥1→1 ≤ ε s.t. λ + ε < 1 ,
+
+and that the ideal traceless Pauli vectors ⃗r C are bounded on average; i.e. EC∼μd ∥⃗r C ∥1 ≤ R.Denoting by βDi,D j (d) : = EC∼μd TV (pi,C , p j,C ) the expected distinguishing bias between Di and Dj
+
+over depth-d circuit ensemble μd, we have, for every d ≥ 1,
+
+βDi,D j (d) ≤ 12 ∥M ∥1→1R d (λ + ε)d−1∥Ni − Nj ∥1→1 = O(d(λ + ε)d−1) .
+
+In particular, βDi,D j (d) → 0 as d → ∞ .Proof. Fix a circuit C ∼ μd. Under our PTM model, after d noisy layers, 
+
+pi,C − pj,C = q + M N di⃗r C − q − M N dj⃗r C , = M (N di − N dj )⃗r C ,
+
+hence the distinguishing bias for C can be written, 
+
+TV( pi,C , p j,C ) = 12 ∥M (N di − N dj )⃗r C ∥1 ≤ 12 ∥M ∥1→1∥N di − N dj ∥1→1∥⃗r C ∥1 .
+
+37 By the telescoping identity, 
+
+N di − N dj =
+
+> d−1
+
+X
+
+> ℓ=0
+
+N ℓi (Ni − Nj )N d−1−ℓj ,
+
+thus, by then taking induced norms and using submultiplicity, we get, 
+
+∥N di − N dj ∥1→1 ≤
+
+> d−1
+
+X
+
+> ℓ=0
+
+∥N ℓi ∥1→1∥Ni − Nj ∥1→1∥N d−1−ℓj ∥1→1 .
+
+Now, we can utilise our assumptions; by Lemma 2, ∥N ki ∥1→1 ≤ (λ + ε)k for any k ≥ 0 (similarly for 
+
+Nj ). Hence, each summand in the above satisfies, 
+
+∥N ℓi ∥1→1∥Ni − Nj ∥1→1∥N d−1−ℓj ∥1→1 ≤ (λ + ε)ℓ∥Ni − Nj ∥1→1(λ + ε)d−1−ℓ
+
+= ( λ + ε)d−1∥Ni − Nj ∥1→1 ,
+
+yielding, 
+
+∥N di − N dj ∥1→1 ≤
+
+> d−1
+
+X
+
+> ℓ=0
+
+(λ + ε)d−1∥Ni − Nj ∥1→1 ≤ d(λ + ε)d−1∥Ni − Nj ∥1→1 .
+
+Substituting this into the distinguishing bias at depth d and taking its expectation over C ∼ μd,
+
+βDi,D j (d) := EC∼μd TV( pi,C , p j,C ) ≤ 12 ∥M ∥1→1d(λ + ε)d−1∥Ni − Nj ∥1→1EC∼μd ∥⃗r C ∥1 ,
+
+then using the assumed bound EC∼μd ∥⃗r C ∥1 ≤ R gives the targeted expression. And finally, since 
+
+0 < λ + ε < 1, the term d(λ + ε)d−1 → 0 as d → ∞ , hence βDi,D j (d) → 0.This establishes that distinguishability is not a high-depth phenomenon. Next, we formalise the shallow-depth side of the picture by showing that, over a perturbative range, the leading distinguishable signal builds up with depth and thus is not a low-depth phenomenon either (relatively speaking). We do this in the following theorem by presenting a lower bound for the same expected distinguishability object that holds over a perturbative range of shallow depths. Some work is offloaded into the preceding lemma. 
+
+Lemma 3. Let Ni = λI + Ei with ∥Ei∥1→1 ≤ ε (similarly for Nj ). Then, 
+
+∥R d∥1→1 := 
+
+> d
+
+X
+
+> k=2
+
+dk
+
+
+
+λd−k(Eki − Ekj )
+
+> 1→1
+
+≤ dλ d−1
+
+"
+
+1 + ελ
+
+d−1
+
+− 1
+
+#
+
+∥Ni − Nj ∥1→1 .
+
+Proof. For each k ≥ 2, the telescoping identity gives that, 
+
+Eki − Ekj =
+
+> k−1
+
+X
+
+> ℓ=0
+
+Eℓi (Ei − Ej )Ek−1−ℓj ,
+
+38 then taking induced ℓ1 → ℓ1 norms and using submultiplicativity, 
+
+∥Eki − Ekj ∥1→1 ≤
+
+> k−1
+
+X
+
+> ℓ=0
+
+∥Ei∥ℓ
+
+> 1→1
+
+∥Ei − Ej ∥1→1∥Ej ∥k−1−ℓ 
+
+> 1→1
+
+≤ kε k−1∥Ei − Ej ∥1→1 ,
+
+thus we can write, 
+
+∥R d∥1→1 ≤
+
+> d
+
+X
+
+> k=2
+
+dk
+
+
+
+λd−k∥Eki − Ekj ∥1→1 ≤
+
+> d
+
+X
+
+> k=2
+
+dk
+
+
+
+λd−kkε k−1∥Ei − Ej ∥1→1 .
+
+Now we can use Pdk=1 
+
+ dk
+
+kλ d−kεk−1 = d(λ + ε)d−1 and remove the k = 1 summand to yield, 
+
+∥R d∥1→1 ≤ d(( λ + ε)d−1 − λd−1)∥Ni − Nj ∥1→1 ,
+
+and finally factor out dλ d−1 to leave the stated bound. 
+
+Theorem 6 (Identifiability Grows at Small Depths) . Assume the same hypotheses as in Theorem 5, and further suppose that for some perturbative range of depths 1 ≤ d ≤ d0 satisfying, 
+
+∥M ∥1→1
+
+"
+
+1 + ελ
+
+d−1
+
+− 1
+
+#
+
+R ≤ κ
+
+2 ,
+
+the ensemble μd of depth-d circuits is κ-nondegenerate, in the sense that, 
+
+EC∼μd ∥M (Ni − Nj )⃗r C ∥1 ≥ κ∥Ni − Nj ∥1→1 .
+
+Then, for every 1 ≤ d ≤ d0,
+
+βDi,D j (d) ≥ κ
+
+4 dλ d−1∥Ni − Nj ∥1→1 = Ω( dλ d−1) .
+
+Proof. Fix 1 ≤ d ≤ d0 and a circuit C ∼ μd. Under our PTM model, after d noisy layers, 
+
+pi,C − pj,C = q + M N di⃗r C − q − M N dj⃗r C = M (N di − N dj )⃗r C .
+
+Since I commutes with Ei, a binomial expansion of Ni = λI + Ei gives, 
+
+N di = λdI + dλ d−1Ei +
+
+> d
+
+X
+
+> k=2
+
+dk
+
+
+
+λd−kEki ,
+
+and similarly for Nj . Taking the difference of the two expansions gives, 
+
+N di − N dj = dλ d−1(Ei − Ej ) + 
+
+> d
+
+X
+
+> k=2
+
+dk
+
+
+
+λd−k(Eki − Ekj )
+
+| {z }  
+
+> Higher-order remainder =: Rd
+
+.
+
+Note that Ei − Ej = Ni − Nj . Now write the distinguishing bias for C,
+
+12 ∥pi,C − pj,C ∥1 = 12 ∥M (N di − N dj )⃗r C ∥1
+
+≥ 12 dλ d−1∥M (Ni − Nj )⃗r C ∥1 − 12 ∥M Rd⃗r C ∥1
+
+≥ 12 dλ d−1∥M (Ni − Nj )⃗r C ∥1 − 12 ∥M ∥1→1∥R d∥1→1∥⃗r C ∥1
+
+39 using a reverse triangle inequality. Then, taking the expectation over C ∼ μd,
+
+βDi,D j (d) ≥ 12 dλ d−1 EC∼μd ∥M (Ni − Nj )⃗r C ∥1 − 12 ∥M ∥1→1∥R d∥1→1 EC∼μd ∥⃗r C ∥1
+
+≥ κ
+
+2 dλ d−1∥Ni − Nj ∥1→1 − 12 ∥M ∥1→1∥R d∥1→1R
+
+> 3
+
+≥ κ
+
+2 dλ d−1∥Ni − Nj ∥1→1 − 12 dλ d−1∥M ∥1→1
+
+"
+
+1 + ελ
+
+d−1
+
+− 1
+
+#
+
+R∥Ni − Nj ∥1→1
+
+≥ κ
+
+2 dλ d−1∥Ni − Nj ∥1→1 − κ
+
+4 dλ d−1∥Ni − Nj ∥1→1
+
+= κ
+
+4 dλ d−1∥Ni − Nj ∥1→1 .
+
+Together, Theorem 5 and Theorem 6 present our formal intuition for the intermediate-depth principle; shallow circuits may not accumulate enough backend-specific noise to separate, while very deep circuits are dominated by common mixing, hence optimal distinguishability lies between these extrema. Recall Fig. 1 from the main text, which illustrates this mechanism. 40 Implementation Details and Experimental Results 
+
+# D Probe Circuits 
+
+Our experiments are run remotely on three different quantum processors (‘ devices ’) via AWS Braket: two superconducting QPUs (Ankaa-3 and Garnet) and one ion-trap QPU (Aria-1). These devices are deployed by Rigetti, IQM, and IonQ respectively. Throughout this section, we refer to comparisons between the superconducting devices as like-type , and to comparisons between superconducting and ion-trap devices as differing-type .At the high level, each individual call to a device takes the following simple form: (1) a circuit of depth d is defined; (2) the device is remotely prepared with the circuit; (3) the circuit is executed numerous times, specified by the number of shots ; then (4) a histogram of final measurements is returned, which we read as an outcome probability distribution over discrete bitstrings. Our experiments in this work use circuits at a fixed width of n = 5 qubits, and hence lead to outcome distributions over 25 = 32 possible bitstrings. A sensible choice for the number of shots is much larger than this. For example, consider that each bitstring has an equal probability of 1/32 ≈ 0.03125 
+
+to be measured. Then 26 = 64 shots is expected to give us only 2 measured outcomes per bitstring and so is extremely vulnerable to random noise greatly skewing our estimated probabilities; e.g. if only a single measurement error is made, then one outcome will falsely be perceived to have triple probability of another. On the other hand, with 28 = 256 shots, we have 8 measurements per outcome, and so errors in measurement can be tolerated more comfortably. The number of shots thus dictates the resolution with which we describe noise apparent in each call, and subsequently influences how precisely we may learn that description. Following preliminary experimentation, we have used our best judgment to select an appropriate number of shots. In an effort to explore many different questions about device noise, it becomes necessary to run different forms of experiment. We categorise our device calls into two suites of experiments: depth-varied and time-varied .
+
+D.1 Depth-Varied Experiments 
+
+This suite of experiments explores questions about circuit depth, and whether the relationship between noise and depth depends strongly on the device. In each call to a device, we define a depth-d circuit by sampling Haar-random unitaries to be stacked together in an alternating brickwork pattern of d layers (see Fig. 3a). Importantly, note that the circuit seen in each individual call to a device is independently sampled (and almost certainly unique), thus in any given run it cannot easily be inferred how much noise is present—or how it presents—in the outcome distribution until we provide knowledge about the circuit. Designing the experiments in this way allows us the opportunity to ask more nuanced questions about the noise fingerprints both implicitly (without circuit knowledge) and explicitly (accounting for the circuit). Another motivation for the randomness of our circuits is to remove bias. With sufficiently many ex-41 L1 L2 L3 . . . Ld−1 Ld         
+
+> . . .
+> . . .
+> . . .
+> . . .
+> ....... . ....
+> . . .
+> . . .
+> q1
+> q2
+> q3
+> q4
+> qn−1
+> qn(a) Brickwork architecture (depth-varied). . . .
+> . . .
+> . . .
+> .... . .
+> . . .
+> q1H
+> q2X
+> q3X
+> qnX(b) GHZ circuit (time-varied).
+
+Figure 3: Probe circuit structures used in our cloud experiments. We have: (a) brickwork circuit architecture , wherein each layer Li comprises (roughly) n/ 2 two-qubit unitaries, which offset-interlock with those in layers Li−1 and Li+1 , randomly sampled from the unitary Haar measure, and we call such a circuit “depth d” if it has d layers L1, . . . , L d; and (b) GHZ circuit which prepares the state 
+
+|GHZ n⟩ = 1√2 (|0 n. . . 0⟩ + |1 n. . . 1⟩) over n qubits. periment calls, and increasingly with deeper circuits, we can expect that our probability distributions approach uniformly random. This opens the possibility to ask whether well-spread distributions, as we increasingly expect from deeper and deeper circuits, dilute the influence of a device’s unique character. And perhaps most usefully for the name-sake objective of this suite of experiments, we can roughly expect the same true outcome distribution (i.e. in the noise-free setting) beyond a sufficiently large depth, and thus we can better understand how noise fingerprints change and become harder to effectively describe with increased depth. On each of the two superconducting devices (Ankaa-3 and Garnet), we make calls with 500 random depth-d circuits, with 29 = 512 shots of resolution, at depths d = 5 , 10 , 15 , 20 . On the ion-trap device (Aria-1), we make 350 calls, with the same resolution, at depths d = 5 , 10 . This choice of minimum depth is sufficient to allow for roughly uniformly random outcome distributions at our chosen resolution, and further allows the possibility for each qubit to interact with every other. 
+
+D.2 Time-Varied Experiments 
+
+This suite of experiments explores questions about the dynamics of device noise, both in the short(er)-term and long(er)-term. Being frugal, we can—and will—look toward classification tasks with data from these experiments, but they are primarily run with the purpose of understanding how well we can reason about the progression of noise in and between devices. Every call to a device is made with the same circuit preparing a GHZ state over our n = 5 qubits (illustrated in Fig. 3b); the true probability distribution is known to be an equal weighting between the all-0s bitstring and the all-1s bitstring. These circuits are constrained to a linear depth in n, plus measurement, and so (since our n is reasonably small) we should not expect much deviation from the true distribution. For this reason, we judge it necessary to increase our resolution to 210 = 1024 
+
+shots to capture the far smaller probabilities leaking into the remaining 30 possible bitstrings. Note that this identical circuit preparation has the contrasting setup to our Haar-random circuits from the depth-varied suite of experiments; we can ask contrasting questions about whether highly concentrated distributions are easier to learn, as well as tie in temporal questions to understand 42 whether the concentration of the distribution spills out in a predictable way, with respect to the device or its physical platform. Experiments in this suite are grouped into three batches ; a batch of calls are made in a series of contiguous time steps within the same day, with reasonably small and similar delays between successive steps. Calls between batches are separated by days or more, with the interval between batches being significantly larger than any interval between calls within the same batch. In the first two batches, each superconducting device (Ankaa-3 and Garnet) is called in 100 contemporaneous time steps, which we sort chronologically according to completion time. As a post-processing step, we can take each completion time relative to some fixed time to assign to each call a single numerical quantity. The final batch is similar, and further includes 45 time steps of calls to the ion-trap device (Aria-1) at the same resolution. For clarity, note that each time step is an independent call, with freshly prepared initial states and GHZ circuit. 
+
+# E Data Processing 
+
+Suppose we have run, on some quantum device, an n-qubit circuit whose theoretical output dis-tribution should be given by y = ( y1, . . . , y N ) for N = 2 n, but for which we actually measure an output distribution of y′ = ( y′
+
+> 1
+
+, . . . , y ′ 
+
+> N
+
+). There are two things we want to do with these data: in the 
+
+implicit case, we would like to directly apply ML techniques to y; and in the explicit case, we would like to find a suitable function f (y, y′) which produces an input feature vector effectively isolating and describing some aspect of noise particular to that device. The implicit case is specified by the trivial function f (y, y′) = y, so we should ask the more interesting question: which functions best isolate “noise” in the explicit case? In particular, it would be useful to discover how best we can specify and/or enhance the characteristics of a given device’s noise fingerprint that make it unique/distinctive. The nature of f then helps us to decorate any learned characteristics, and representations thereof, with useful theoretical interpretations. To structure the discussion, we will discern three categories for the form of function f , which increase in the strictness of the imposed structure, though do so with an increasing interpretability: 
+
+neurally-guided , per-outcome , and per-qubit .
+
+E.1 Neurally-Guided Features 
+
+Sitting at the lenient end, we can use any arbitrary neural network architecture to transform some combination of y and y′ (ideally, retaining most information from each) directly into a feature vector without any premonition for its interpretation. In fact, the only ‘strictness’ involved in this approach is to enforce a dimensionality, call it N ′, for the desired latent representation. At its simplest, we might like to feed, as input to our “neural network” f , the concatenation 
+
+x : = ( y1, . . . , y N , y ′
+
+> 1
+
+, . . . , y ′ 
+
+> N
+
+). Any neural network is suitable; e.g. in this work, we will remain general and use a standard multilayer perceptron (MLP). At the output of f is an N ′-dim vector representation of x, which we can then pass through a final fully-connected layer g (or a secondary model accepting a latent representation for input) to perform a final classification task. Then we have some “full-model” g ◦ f which, once trained to classify between devices given these input x, contains a “sub-model” f transforming the concatenation of two probability distributions 43 (true and obtained) into an N ′-dim feature vector which can be used to distinguish two devices. In this way, the feature vector obtained from f is an optimal description of a noise fingerprint for some device with respect to other devices . Moreover, g can be understood to be reading the character of a given fingerprint’s representation for backend identification. Fig. 2 in the main text presents these kinds of neurally-guided feature from our later experiments. A less task-dependent alternative to produce a representation of the noise fingerprint in arbitrary dimension is to use a compressing architecture, such as a variational autoencoder (VAE). These models do not use a secondary process for contextualising how the representations should be learned, but instead work by composing an “encoder” with a “decoder”. The encoder works to reduce the input to some latent space, and the decoder works in reverse to reconstruct the original input from the latent space. Hence, the latent representation we learn is specifically designed to retain as much information as possible in lower dimensions. Such approaches can also be combined with a downstream task (e.g. classifying between devices) by re-purposing the encoder in a new model once trained (i.e. used as f in our above discussion). We leave the use of VAE-type noise fingerprint representation to future work. As a final note before moving on to other approaches: the interpretation we can draw from f is thus inexplicably tied to which devices are used for training the full-model, as well as the nature of the training data. Especially, the set of circuits C used to generate the data is of extreme importance, and allows us to enforce an interpretation on our representations. For example, if we choose C to be a suitably general set of circuits, then we might expect that our latent representations will also be very general in nature—most likely learned to be as distinguishable per-device as possible without bias. On the other hand, we could choose C to be very specific (e.g. stabiliser circuits, quantum Fourier transforms, low-depth random circuits, etc.) to hone in on some precise aspect of noise with respect to a specific task/computation . If we have two devices performing a particular task in some controlled context, then learning how their noise fingerprints differ with respect to this context could be extremely useful. The beauty of this neurally-guided approach is that it affords us the flexibility to change the set of circuits C, the downstream task, the latent dimension N ′, etc. 
+
+E.2 Per-Outcome Features 
+
+Increasing the strictness somewhat, we can instead opt to act directly on the probability distributions, retaining their shape and ordering. The most straightforward things we could want to do are to take residuals. We can then weight them in interesting ways to come up with different interpretations on the data. A per-outcome feature x = f (y, y′) works pairwise on elements as xi = f (yi, y ′
+
+> i
+
+). For example, 
+
+• Standard residuals; 
+
+xi = y′ 
+
+> i
+
+− yi or xi = |y′ 
+
+> i
+
+− yi| ;
+
+• Relative residuals; for some small ε > 0,
+
+xi = y′ 
+
+> i
+
+− yi
+
+yi + ε or xi = |y′ 
+
+> i
+
+− yi|
+
+yi + ε ;
+
+• Log-ratios; again, for some small ε > 0,
+
+xi = log y′ 
+
+> i
+
++ εyi + ε ;
+
+44 • Z-scores, which may be useful for isolating noise beyond sampling fluctuations: for m the number of shots, compute the variance as σ2 
+
+> i
+
+= y′
+
+> i
+
+(1 − y′
+
+> i
+
+)/m , then for small ε > 0,
+
+xi = y′ 
+
+> i
+
+− yi
+
+√σ2 + ε .
+
+We use the first three (together with their absolute versions) in this work, and leave other transfor-mations, such as Z-scores, to future work. 
+
+E.3 Per-Qubit Features 
+
+Now we restrict f to considerations on the qubit-scale, operating on qubit indices to define marginal distributions over our bitstrings for computing features. We can, as before, look toward residual-based features, taking sums with respect to each qubit index to produce n-dim representations. Assume that outcomes are ordered as bitstrings b = bn−1, . . . , b 0. Then we can operate directly on these bits in e.g. the following ways: 
+
+• Single-qubit marginals; for a qubit i,
+
+xi = X
+
+> b:bi=0
+
+y′ 
+
+> b
+
+− yb or xi = X
+
+> b:bi=0
+
+|y′ 
+
+> b
+
+− yb| ;
+
+• Pauli-Z expectation per qubit; 
+
+xi = ⟨Zi⟩′ − ⟨ Zi⟩ = X
+
+> b
+
+(−1) bi (y′ 
+
+> b
+
+− yb) ;
+
+• Two qubit correlators; producing n(n − 1) /2 features, with the i-th and j-th qubits giving, 
+
+xi,j = ⟨ZiZj ⟩′ − ⟨ ZiZj ⟩
+
+= X
+
+> b
+
+(−1) bi⊕bj (y′ 
+
+> b
+
+− yb) ;
+
+• And so on into higher orders; 
+
+xi1,...,i m = ⟨Zi1 · · · Zim ⟩′ − ⟨ Zi1 · · · Zim ⟩
+
+= X
+
+> b
+
+(−1) bi1 ⊕···⊕ bim (y′ 
+
+> b
+
+− yb) .
+
+We only extend into two-qubit correlator features in our experimentation, leaving higher orders to future work; with just n = 5 qubits, two-qubit correlations are sufficient. 
+
+# F Dimensionality Reduction Visualisation 
+
+We now visualise embeddings of our experimental data in two dimensions using two common techniques: principal component analysis (PCA) and t-distributed stochastic neighbour embedding 
+
+45 Raw Residual (Absolute)    
+
+> Residual (per Qubit) Two-Qubit Correlator
+> Ankaa-3 Aria-1 Garnet
+
+(a) t-SNE plots for data produced on Haar-random circuits at a depth d = 5 .(Var: 0.864)   
+
+> Residual (per Qubit)
+> (Var: 0.981)
+> Residual (Absolute, per Qubit)
+> Pauli-Z Expectation
+> (Var: 0.864)
+> Two-Qubit Correlator
+> (Var: 0.920)
+> Ankaa-3 Aria-1 Garnet
+
+(b) PCA plots for data produced on GHZ circuits over all batches. 
+
+Figure 4: Example dimensionality reduction plots of quantum device feature vectors, hue by device. All features are shown via out repository, for both t-SNE and PCA reductions. In our PCA plots, the variance explained by the first two principal components (plotted) is given in parentheses. 
+
+(t-SNE) . The former is a linear dimensionality reduction technique, which will allow us to understand the variance of our data projected into principal components and gauge the linear separability of the data classes (device membership, batch, etc.); the latter is a non-linear reduction which will much better allow us to understand the clustering of data classes as an indication for trainability. Such clustering patterns simply may not present in linear spaces, but can be exploited via the nonlinearity of deeply-layered neural networks with chained activation functions. Fig. 4a demonstrates higher-dimensional clustering via t-SNE for the shallowest of the Haar-random circuit experiments, for a select few example features. It is immediately evident that like-type data points occupy similar neighbourhoods over many features, whereas differing-type data points indicate that at least a partial separation can be observed. Similarly, see Fig. 4b and Fig. 5. 
+
+# G Classification Results 
+
+We now consider some experimental classification tasks designed to empirically demonstrate that output distributions carry learnable route information. In the context of the backend identification game of Definition 1, a classifier is a concrete decision rule for guessing the route that produced a given feature vector (representing a transcript derived from a finite-shot histogram). The test accuracies that we report here are then an empirical lower bound on the success probability achievable 46 Raw 
+
+> (Var: 0.286)
+> Residual
+> (Var: 0.286)
+> Residual (Absolute)
+> (Var: 0.286)
+> Residual (Relative)
+> (Var: 0.286)
+> Residual (Absolute, Relative)
+> (Var: 0.286)
+> Log Ratio
+> (Var: 0.234)
+> Residual (per Qubit)
+> (Var: 0.851)
+> Residual (Absolute, per Qubit)
+> (Var: 0.928)
+> Pauli-Z Expectation
+> (Var: 0.851)
+> Two-Qubit Correlator
+> (Var: 0.597)
+> Batch
+> 1
+> 2
+> 3
+
+Figure 5: Dimensionality reduction visualisation (PCA) of quantum device feature vectors, hue by batch, for data produced on GHZ circuits. from the corresponding transcript class. 
+
+G.1 Device Classification 
+
+Device classification experiments use a multilayer perceptron with two hidden layers of widths 256 and 64 respectively, using batch normalisation, ReLU activation, and dropout after each layer, followed by a final classification layer. Table 1 shows that device identity can be recovered well above chance from finite-shot output data, most accurately from raw histogram features (as indicated by Proposition 2). High like-type classification accuracies are particularly interesting, as they indicate that the distinguishability is not only a platform-level effect and can exist between even physically very similar backends. Differing-type classification is expectedly near-perfect in the raw case; distinguishing differing physical platforms is likely made relatively easy due to different native noise mechanisms etc. It is also experimentally event that backend information is able to survive several lower-dimensional or more interpretable post-processing transformations, most notably log ratio features. While the quantity and range of depths probed in these experiments is modest, the intermediate-depth principle formalised in Appendix C is supported by observations in Table 1. Several features exhibit a non-negligible improvement in performance as we jump from depth d = 5 to 10 , particularly residual-based features in differing-type classification, and a general trend of decaying distinguishability thereafter can be observed across all features in the deeper like-type experiments. In fact, for almost all post-processing features computed in this work (excluding raw transcripts), we can observe convergence on near-zero distinguishing bias (i.e. test accuracy exceeding 1/2) in increasing depth. We have trained classifiers with both a single probed depth (“at depth”) and a cumulative pooling across depths (“up to depth”) to demonstrate more clearly this additional variance introduced that is not route-specific—incorporating deeper observations into the training set often degrades the 47 Experimental Backend Identification Success Probability                                                                                     
+
+> Like-Type Differing-Type Feature d= 5 d= 10 d= 15 d= 20 GHZ d= 5 d= 10
+> Two-Qubit Correlator —/.69 .52/.63 .50/.60 .51/.59 1. —/.79 .70/.76 Pauli-Z Expectation —/.68 .53/.63 .56/.65 .59/.61 1. —/.78 .60/.74 Residual (Abs., Qubit) —/.60 .56/.60 .58/.57 .59/.62 1. —/.66 .61/.60 Residual (Qubit) —/.68 .51/.64 .56/.65 .59/.61 1. —/.79 .67/.71
+> Log Ratio —/.77 .59/.73 .51/.67 .53/.66 1. —/.96 .86/.90
+> Residual (Abs., Rel.) —/.55 .50/.54 .50/.52 .54/.52 1. —/.56 .54/.58 Residual (Rel.) —/.54 .49/.51 .51/.55 .54/.52 1. —/.56 .49/.65 Residual (Abs.) —/.65 .61/.67 .53/.64 .49/.62 1. —/.79 .79/.81 Residual —/.73 .51/.67 .60/.62 .53/.63 1. —/.78 .81/.83
+> Raw —/.89 .90/.84 .89/.82 .87/.80 1. —/.96 1./.98
+
+Table 1: Binary classification test accuracies. Columns 1–4 and 6–7 are depth-varied (i.e. with 
+
+d-layer brickwork circuit) experiments, while column 5 is the GHZ circuit (selecting best batch). Columns 1–5 are classification between like-type devices (Ankaa-3 vs Garnet); columns 6–7 are classification between differing-type (Ankaa-3 vs Aria-1). A column with depth label d indicates accuracy obtained by a classifier trained on data at depth d / up to depth d.classification performance exactly due to this intermediate-depth principle punishing the addition of less-distinguishable, high-depth transcripts. In further support of the principle, some features are aided/hindered by pooling across depths at different rates, owing to their specific optima for the most distinguishable depth (their peak in Fig. 1). It is worth briefly noting the perfect classification we observe when distinguishing devices via the GHZ circuit (column 5 in Table 1). Here we have a fixed and highly structured circuit with a particularly non-uniform ideal outcome distribution, all of which makes the task of distinguishing as direct as possible. This is an unsurprising result, but it should not be overlooked; in the context of our theoretical discussions of pseudo channel distances, this emphasises the role of the workload ensemble in allowing users to violate routing anonymity, and the ease with which they may do so. Recall Fig. 2, which visualises the latent representations learned by the above classifiers (on raw transcripts). Similar clusterings across train, validation, and test data splits serves as a comforting visual marker of the generality with which backend-dependent noise signals can be learned. Fig. 2a gives some particularly interesting insight about how separable our classifiers understand the like-type superconducting devices to be from the ion-trap device; Ankaa-3 and Aria-1 (of differing type) separate their representations very strongly in the latent space (strengthened in the differing-type-only classifier’s embeddings in Fig. 2b), with the other superconducting device occupying the middle ground between the two, and densely mixing with its like-type counterpart while only sparsely mixing with the differing type. 48 Experimental Batch Classification (and Negative Control)                                                                                                                                                                            
+
+> Batch Classification Control Feature Ankaa-3 Garnet Combined Ankaa-3 Garnet
+> Bell Summary .61 ±.048 .61 ±.036 .46 ±.034 .28 ±.022 .36 ±.049 Two-Qubit Correlator .92 ±.021 .78 ±.051 .74 ±.030 .33 ±.059 .30 ±.056 Pauli-Z Expectation .92 ±.024 .59 ±.085 .62 ±.043 .33 ±.035 .30 ±.073 Residual (Abs., Qubit) .89 ±.027 .43 ±.032 .57 ±.044 .36 ±.069 .36 ±.052 Residual (Qubit) .92 ±.024 .59 ±.085 .62 ±.043 .33 ±.035 .30 ±.073 Log Ratio .98 ±.015 .81 ±.039 .84 ±.012 .32 ±.036 .33 ±.022 Residual (Abs., Rel.) .99 ±.013 .80 ±.047 .83 ±.007 .29 ±.045 .34 ±.020 Residual (Rel.) .99 ±.013 .80 ±.047 .83 ±.007 .29 ±.045 .34 ±.020 Residual (Abs.) .99 ±.013 .80 ±.047 .83 ±.007 .29 ±.045 .34 ±.020 Residual .99 ±.013 .80 ±.047 .83 ±.007 .29 ±.045 .34 ±.020
+> Raw .99 ±.013 .80 ±.047 .83 ±.007 .29 ±.045 .34 ±.020
+
+Table 2: Three-way temporal (batch) classification test accuracies for the time-varied GHZ experi-ments, together with a randomly permuted-label negative control experiment. We report the mean test accuracy over 5 runs ± one standard deviation. Column 3 is a combined and balanced dataset on both Ankaa-3 and Garnet. 
+
+G.2 Temporal (Batch) Classification 
+
+Now we ask whether time itself—the dynamics of backend-specific noise—imprints a learnable fingerprint in output distributions. Rather than asking which backend produced a given transcript, we fix the backend and ask when the transcript was produced (in a relative sense). Specifically, we classify a device’s transcripts by batch; since batches are separated by substantially longer intervals than calls within a batch, successful classification in the context of these experiments implies a long-range dynamic character to backend-specific noise signals. These GHZ experiments are supplemented with an additional feature: bell summary , consisting of the two GHZ peak probabilities, total leakage into the remaining outcome states, peak imbalance, 
+
+ℓ1-distance from the ideal GHZ distribution, and entropy. The intent here is to introduce a feature that understands broadly how much noise there is with respect to leakage away from the bell state’s support, but which is agnostic to specific detail about where that noise has ended up. If we see more specific features classifying better than bell summaries, then we can infer that our classifiers are identifying device-specific noise signals in shape and character, rather than simply learning that one device is ‘noisier’ than another. Table 2 presents logistic-regression classifiers on balanced device-batch groups, with standardised input features evaluated over five random stratified train-test splits. Note that we have three distinct batches (for the two superconducting devices), so performance is measured against a majority baseline 
+
+1/3. We observe an extremely strong temporal structure. Retaining high classification accuracies in the combined dataset indicates that this temporal signal is not merely an artefact of training separate per-device classifiers; batch-dependent structure persists largely independently of apparent 49 Experimental Intra-Batch (Early vs Late) Classification                                                                                              
+
+> Ankaa-3 Garnet Aria-1 Feature B= 1 B= 2 B= 3 B= 1 B= 2 B= 3 B= 3
+> Bell Summary .54 .53 .49 .70 .45 .47 .41 Two-Qubit Correlator .51 .54 .49 .64 .44 .56 .50 Pauli-Z Expectation .46 .55 .54 .58 .50 .53 .55 Residual (Abs., Qubit) .47 .52 .41 .52 .50 .58 .53 Residual (Qubit) .46 .55 .54 .58 .50 .53 .55 Log Ratio .53 .57 .46 .55 .46 .58 .56 Residual (Abs., Rel.) .49 .61 .45 .54 .48 .57 .53 Residual (Rel.) .49 .61 .45 .54 .48 .57 .54 Residual (Abs.) .49 .61 .45 .54 .48 .57 .53 Residual .49 .61 .45 .54 .48 .57 .54 Raw .49 .61 .45 .54 .48 .57 .54
+
+Table 3: Within each batch, early vs late classification for time-varied GHZ experiments. We order data chronologically by completion time, then split batch data into two groups and classify membership between them. Similar to Table 2, these are logistic-regression classifiers over 5 random stratified samples, with mean test accuracy reported (standard deviations omitted for readability). Aria-1’s B = 3 means that its runs were scheduled alongside Ankaa-3 and Garnet’s B = 3 batch. device signal. We include a control experiment in Table 2 wherein the dataset’s labels are randomly permuted. The same logistic-regression models fall to no better than majority guessing, supporting the conclusion that our high batch-classification accuracies are not caused by data leakage, class imbalance, or overparameterised classifiers. These results naturally follow the persistent routing setting of Definition 2, in which we repeatedly probe a fixed backend. In practice, we expect the induced law associated with a backend to drift over time, which can then produce the kind of temporal signal that we show above can be extremely identifying about the route. Great care should be taken with persistent routing to ensure that such identifying temporal structure is not also leaked via transcripts. We also consider a shorter time-scale control by splitting each batch into an ‘early’ section and ‘late’ section, then perform a binary classification between the two. This gives us an empirical view for the learnability of the perhaps more erratic yet muted short-term drift over the lifespan of a contiguous batch. The intra-batch results presented in Table 3 yield a better prospect for short-term routing anonymity than the long-term identification in Table 2. It is clear, then, that the dominant temporal effect in these data are batch-scale effects rather than any drift within batches. This is useful insight for the difficulty of forecasting backend-specific noise in the short-term, as we do next. 50 |00000     
+
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> .
+> |11111
+> 10 3
+> 10 2
+> 10 1
+> Outcome Probability
+> True Predicted
+
+Figure 6: Forecasting time-varied experimental data for Ankaa-3 using an LSTM model; given a prior of sequential measurement steps (here, 10), predict the next chronological step. 
+
+# H Distribution Forecasting 
+
+Our final experiment is exploratory and not intended to be a central contribution of the present work. The purpose of this section is to illustrate a natural continuation of the persistent routing formulation: if backend-specific noise signals have a strong (long-term) temporal structure, then is it possible to estimate precisely how noise will present in the future (that is, to “forecast” the noise fingerprint)? There are some intriguing possibilities surrounding this question; e.g. can we pre-emptively correct noisy outcome distributions consistently, or can we reverse-forecast to an early time to predict ideal distributions? Such questions make for interesting future work—we only indicate at the possibility for forecasting in this section. We take the same time-ordered GHZ data and train a long short-term memory (LSTM) recurrent model to predict the next empirical outcome distribution from a short prior of previous distributions. Concretely, for a sequence of length L, an input prior takes the form (y′
+
+> t−L
+
+, . . . , y′
+
+> t−1
+
+) and ask for a prediction of y′ 
+
+> t
+
+(note, we forecast the measured outcome distribution, not the true distribution). Our exploratory model uses 10 hidden layers of 512 dimensions, dropout, and a softmax normalised output layer, using a KL-divergence-based loss function. An example prediction, alongside the actual measured distribution, is presented in Fig. 6, taking a prior window of L = 10 previous successive measurement steps in batch . Perhaps unsurprisingly, we are able to near-perfectly capture the precise leakage away from the all-0s and all-1s states, but more impressively, the rough localisation of the leakage across the remaining states can be broadly understood even at this short-term window scale. At this stage, the result of Fig. 6 is merely a proof-of-concept. More complete study would ideally evaluate the correctness of forecasted distributions over many more metrics (we only use KL divergence here), and account for the irregularity of cloud-based computation times. In the context of routing anonymity, the forecasting problem presents an additional security vulnerability—that 51 users may be able to strategically adapt their expectations about backend signals over time, even without an adaptive access model. Conversely, a provider looking to retain anonymity of their routing choices should not only be concerned about the distinguishability of fixed transcript laws, but also the temporal stability and predictability of their released transcripts over repeated service calls (particularly over longer time intervals). 52
