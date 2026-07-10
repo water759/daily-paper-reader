@@ -1,0 +1,677 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-10T20:35:02.442988+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 6,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 15,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2607.06643v1",
+      "source": "arxiv",
+      "title": "The Power of Backdoor Absorption in Community Training",
+      "abstract": "Backdoor attacks severely threaten large-scale AI models. When model owners delegate training to external compute providers within a decentralized training paradigm, adversaries can craft stealthy, low-frequency triggers to inject malicious behavior while evading standard audits. Traditionally, detecting these attacks requires a full re-computation of the training steps--a prohibitive overhead that directly contradicts the owner's resource constraints. To address this, we investigate the resilience of continuous optimization dynamics under Byzantine perturbations, where adversaries are forced to compete against a continuous influx of honest updates. Under a threat model where an adversary compromises f out of n total trainers, we quantify the minimum auditing overhead required by the model owner to probabilistically bound the attack success rate. We formalize this injection-absorption dynamic as a Discrete-Time Markov Chain (DTMC). Using this framework, we prove that the success probability of any bounded adversary asymptotically collapses to zero under a defense strategy combining natural absorption, a randomized scheduler, and lazy verification oracle. Empirical results demonstrate significant backdoor suppression with zero utility degradation even when invoking the verification oracle on merely 10% of the total training steps. This approach yields a provably sound and computationally efficient defense for safety-critical AI.",
+      "authors": [
+        "Issam Seddik",
+        "Sami Souihi",
+        "Mohamed Tamaazousti",
+        "Sara Tucci Piergiovanni"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-07-07T15:19:20+00:00",
+      "link": "https://arxiv.org/pdf/2607.06643v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "backdoor attacks and defenses in AI model training",
+      "llm_evidence_cn": "AI模型训练中的后门攻击与防御",
+      "llm_evidence": "AI模型训练中的后门攻击与防御",
+      "canonical_evidence": "AI模型训练中的后门攻击与防御",
+      "llm_tldr_en": "Investigates resilience of continuous optimization under Byzantine perturbations for backdoor attacks, quantifying minimum auditing overhead.",
+      "llm_tldr_cn": "论文研究去中心化训练中后门攻击的韧性。通过分析对抗者与诚实更新的竞争，量化了最小审计开销，提出后门吸收现象，可在降低审计成本的同时检测恶意行为。",
+      "llm_tldr": "论文研究去中心化训练中后门攻击的韧性。通过分析对抗者与诚实更新的竞争，量化了最小审计开销，提出后门吸收现象，可在降低审计成本的同时检测恶意行为。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.08226v1",
+      "source": "arxiv",
+      "title": "Threshold Authorization Without Threshold Signatures: Signature-Agnostic MPC Custody",
+      "abstract": "Digital-asset custody has been built on threshold multi-party approval: no operation proceeds unless $t$ of $n$ parties approve, and fewer than t compromised parties can neither authorize nor learn the authorization secret. Threshold signature schemes (TSS) have been the standard mechanism, but the post-quantum transition disrupts this model: standardized hash-based signatures resist efficient threshold signing, and lattice-based threshold protocols remain an emerging research track.   We present a dual-gate architecture that separates member authentication from threshold authorization. Each member signs its approval with an ordinary signature under any EUF-CMA scheme; the quorum jointly produces a threshold seal from Shamir-shared secrets bound to the operation. The seal is the base instance of a programmable authorization computation: simple quorum is the minimal policy, while richer policies can evaluate secret-shared state without making the member-signature scheme part of that computation. The signature scheme is a deployment parameter: migrating from ECDSA to SLH-DSA or ML-DSA is a key rotation, not a protocol redesign, and members holding keys in commodity HSMs participate through the standard sign API. The architecture can be deployed wherever the asset-control path supports programmable verification, such as smart contracts, vault modules, or HSMs guarding a master key, and produces an enforcement-layer authorization rather than a native chain signature. Below-threshold secrecy is information-theoretic; an adversary holding $\\geq t$ signing keys but no coefficient shares still cannot produce the seal.",
+      "authors": [
+        "Dariia Porechna"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-09T08:20:45+00:00",
+      "link": "https://arxiv.org/pdf/2607.08226v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Threshold authorization without threshold signatures, using MPC and Shamir secret sharing for key custody.",
+      "llm_evidence_cn": "基于MPC和Shamir秘密共享的阈值授权方案，无需阈值签名，适用于密钥托管。",
+      "llm_evidence": "基于MPC和Shamir秘密共享的阈值授权方案，无需阈值签名，适用于密钥托管。",
+      "canonical_evidence": "基于MPC和Shamir秘密共享的阈值授权方案，无需阈值签名，适用于密钥托管。",
+      "llm_tldr_en": "A dual-gate architecture for threshold authorization that separates authentication from authorization using ordinary signatures and Shamir-secret MPC, enabling post-quantum compatibility.",
+      "llm_tldr_cn": "针对后量子时代阈值签名方案受限的问题，本文提出一种双门架构，将成员认证与阈值授权分离。每个成员使用任意EUF-CMA方案签名批准，然后通过Shamir秘密共享的安全多方计算共同产生阈值封印。该方法不依赖特定阈值签名，兼容后量子密码，为云计算中的密钥托管和用户认证提供了高效灵活的密码技术。",
+      "llm_tldr": "针对后量子时代阈值签名方案受限的问题，本文提出一种双门架构，将成员认证与阈值授权分离。每个成员使用任意EUF-CMA方案签名批准，然后通过Shamir秘密共享的安全多方计算共同产生阈值封印。该方法不依赖特定阈值签名，兼容后量子密码，为云计算中的密钥托管和用户认证提供了高效灵活的密码技术。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cryptographic techniques for key recovery and user authentication",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.08042v1",
+      "source": "arxiv",
+      "title": "Degree-Constrained Interval Optimization for Minimax Polynomial Approximation in Homomorphic Encryption",
+      "abstract": "Homomorphic encryption (HE) enables privacy-preserving inference under arithmetic constraints that restrict encrypted evaluation to additions and multiplications. As a result, non-polynomial activation functions must be replaced by polynomial approximations. Among polynomial approximation methods, minimax approximation, typically computed by the Remez algorithm, is a standard approach because it minimizes the maximum approximation error over a given design interval. For minimax polynomial design, the approximation interval is a critical hyperparameter: a wider interval improves robustness to large-magnitude inputs while increasing the minimax approximation error under a fixed degree budget. In this paper, we formulate this trade-off as a distribution-aware interval optimization problem, where the approximation interval is chosen to minimize the mean-squared error (MSE) with respect to the pre-activation distribution of interest. To effectively control outside-interval inputs, we combine minimax polynomials with domain extension functions (DEFs) and their HE-realizable polynomial counterparts, domain extension polynomials (DEPs), which approximate a clipping operation outside the design interval and thereby suppress uncontrolled polynomial extrapolation. We first derive an analytically tractable DEF-based proxy objective that captures the trade-off between within-interval minimax approximation error and outside-interval clipping error. We then connect this idealized objective to HE-realizable DEP constructions through an implementation-error decomposition with an accompanying upper bound.",
+      "authors": [
+        "Jiheon Woo",
+        "Donggyun Ryu",
+        "Yongjune Kim"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-09T01:33:24+00:00",
+      "link": "https://arxiv.org/pdf/2607.08042v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "polynomial approximation optimization for homomorphic encryption, enabling confidential computing",
+      "llm_evidence_cn": "同态加密中的多项式近似优化，支持机密计算",
+      "llm_evidence": "同态加密中的多项式近似优化，支持机密计算",
+      "canonical_evidence": "同态加密中的多项式近似优化，支持机密计算",
+      "llm_tldr_en": "This paper proposes a degree-constrained interval optimization method for minimax polynomial approximation in homomorphic encryption, reducing approximation error under fixed degree.",
+      "llm_tldr_cn": "本文针对同态加密中非多项式激活函数需要多项式近似的问题，提出度约束区间优化方法。通过优化逼近区间，在固定多项式次数下最小化最大逼近误差。该方法直接提升了同态加密上神经网络推理的精度，对隐私保护机器学习有重要价值。",
+      "llm_tldr": "本文针对同态加密中非多项式激活函数需要多项式近似的问题，提出度约束区间优化方法。通过优化逼近区间，在固定多项式次数下最小化最大逼近误差。该方法直接提升了同态加密上神经网络推理的精度，对隐私保护机器学习有重要价值。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.08197v1",
+      "source": "arxiv",
+      "title": "MLQENABLER: Enabling Secure Machine Learning Queries over Encrypted Database in Cloud Computing",
+      "abstract": "In cloud computing, the public cloud service providers (CSPs) can provide cloud storage as the primary service while providing additional machine learning (ML)-based services by using the clients' data in storage. This business model extends the border of cloud computing services and brings in new business growth possibilities. Although it is promising, the model also brings in security concerns since the public commercial cloud cannot be fully trusted. For example, the public commercial clouds may sell clients' sensitive data to the government or other companies. To address the security concerns, an immediate solution is to require clients to encrypt their datasets before outsourcing to the cloud. However, if a database is formally encrypted, then the database contains only pseudorandom numbers, making it impossible to enable ML over it. In this project, we propose MLQENABLER (ML Queries Enabler) scheme to enable secure ML queries over encrypted database in cloud storage. MLQENABLER employs an index-aid approach to achieve security and ML capability simultaneously. Our initial experiments show that MLQENABLER achieves an acceptable security level while incurring only a slight ML performance degradation.",
+      "authors": [
+        "Xu Zhou",
+        "Haoyang Chen",
+        "Xinyu Lei"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-07-09T07:54:42+00:00",
+      "link": "https://arxiv.org/pdf/2607.08197v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "secure ML queries over encrypted database in cloud",
+      "llm_evidence_cn": "云中加密数据库上的安全机器学习查询",
+      "llm_evidence": "云中加密数据库上的安全机器学习查询",
+      "canonical_evidence": "云中加密数据库上的安全机器学习查询",
+      "llm_tldr_en": "Proposes MLQENABLER to enable secure machine learning queries over encrypted cloud databases, addressing privacy concerns of untrusted cloud providers.",
+      "llm_tldr_cn": "云服务商可能泄露客户数据，加密数据库后仍需支持机器学习查询。MLQENABLER提出一种在加密数据库上执行安全ML查询的方案，允许客户加密数据后外包，云服务器在不解密的情况下完成查询任务。该方法解决了云安全中的隐私与可用性矛盾。",
+      "llm_tldr": "云服务商可能泄露客户数据，加密数据库后仍需支持机器学习查询。MLQENABLER提出一种在加密数据库上执行安全ML查询的方案，允许客户加密数据后外包，云服务器在不解密的情况下完成查询任务。该方法解决了云安全中的隐私与可用性矛盾。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.08232v1",
+      "source": "arxiv",
+      "title": "Mini-Programs, Mega-Problems: Unveiling OAuth-based Authentication Misuses in Mini-Programs via Dynamic Analysis",
+      "abstract": "Mini-programs have become a dominant paradigm for lightweight application deployment within super apps such as WeChat. To support seamless integration, super apps provide OAuth mechanisms for user login. However, improper integration of OAuth-based Authentication (OBA) flows by third-party developers can lead to critical security flaws. In this paper, we discover three new types of runtime OBA misuses that differ from prior static-code-based studies, enabling attackers to impersonate victims. To assess their real-world impact, we design and implement MINIAUTH, the first analysis framework for systematically analyzing OBA misuse at scale. MINIAUTH automatically pinpoints the OBA login page of a mini-program, executes the workflow dynamically, and analyzes its runtime behaviors. This enables it to handle obfuscated mini-programs and uncover vulnerabilities that existing approaches cannot detect. Applying MINIAUTH to 44,273 WeChat and 2,721 Baidu mini-programs, we uncover 1,834 misuse cases, including critical logic flaws that enable client-side identity forgery via exposed credentials and authentication bypass through static or plaintext identifiers. Our cross-platform evaluation further shows that such misuses are not confined to a single ecosystem but consistently appear across different mini-program platforms. We also identify a cryptographic design flaw in Baidu's OBA APIs that allows brute-forcing of session keys. We responsibly disclosed our findings to the developers and platforms, receiving acknowledgments and assigned CNVD/CNNVD IDs. These results underscore the need for more robust developer guidance and enhanced platform-level safeguards.",
+      "authors": [
+        "Zidong Zhang",
+        "Zhentao Xie",
+        "Lingyun Ying",
+        "Qinsheng Hou",
+        "Yacong Gu",
+        "Wenrui Diao",
+        "Jianliang Wu"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-09T08:28:57+00:00",
+      "link": "https://arxiv.org/pdf/2607.08232v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "OAuth authentication misuse in mini-programs",
+      "llm_evidence_cn": "小程序中OAuth身份认证误用",
+      "llm_evidence": "小程序中OAuth身份认证误用",
+      "canonical_evidence": "小程序中OAuth身份认证误用",
+      "llm_tldr_en": "MINIAUTH dynamically analyzes OAuth-based authentication flows in mini-programs, uncovering three new runtime misuses that enable impersonation, providing a scalable detection framework.",
+      "llm_tldr_cn": "针对小程序中OAuth认证集成不当导致的安全问题，本文提出MINIAUTH动态分析框架。该框架自动定位OBA登录页面，系统分析认证流程，发现三种新型运行时误用，攻击者可利用这些漏洞冒充用户。实验验证了误用的普遍性，为云环境下的身份认证安全提供了重要警示。",
+      "llm_tldr": "针对小程序中OAuth认证集成不当导致的安全问题，本文提出MINIAUTH动态分析框架。该框架自动定位OBA登录页面，系统分析认证流程，发现三种新型运行时误用，攻击者可利用这些漏洞冒充用户。实验验证了误用的普遍性，为云环境下的身份认证安全提供了重要警示。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.08651v1",
+      "source": "arxiv",
+      "title": "Secure Decentralized Federated Learning via Gossip and Virtual Voting",
+      "abstract": "Decentralized federated learning (DFL) removes the central server by letting nodes exchange model updates through peer-to-peer gossip, but existing gossip-based methods often lack provenance finality and resilience to Byzantine or lazy participants. Ledger-assisted federated learning (FL) improves auditability, yet blockchains, shards, or settlement committees can reintroduce global coordination costs that conflict with DFL locality. This paper proposes \\emph{gspDAG-FL}, a secure DFL framework that derives consensus from the same gossip history used to disseminate models. Nodes exchange model payloads only with neighbors, while full nodes collect event certificates and receiver-endorsed accepted gossip proofs, reconstruct a compact Topology directed acyclic graph (DAG), and run Hashgraph-style virtual voting followed by compact full-node certificates. Finality is over unique model-origin tuples, not identical local parameter states. To improve resilience, gspDAG-FL combines payload validation, accepted-proof validation, and private semantic audit before aggregation. We formalize the adversarial setting, prove safety and conditional liveness of the control plane, and give a convergence guarantee for certified perturbed gossip under time-varying effective mixing. Experiments on MNIST classification and Penn Treebank language modeling, using fair held-out validation/audit data and networks up to \\(N=100\\), show that gspDAG-FL achieves learning quality close to validation-based ledger FL while reducing coordination bottlenecks, improving throughput, and maintaining high invalid-origin detection under mixed Byzantine and lazy participation.",
+      "authors": [
+        "Amirhossein Taherpour",
+        "Xiaodong Wang"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.DC"
+      ],
+      "published": "2026-07-09T16:21:13+00:00",
+      "link": "https://arxiv.org/pdf/2607.08651v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "secure decentralized federated learning with gossip and virtual voting",
+      "llm_evidence_cn": "安全的去中心化联邦学习，结合八卦协议和虚拟投票",
+      "llm_evidence": "安全的去中心化联邦学习，结合八卦协议和虚拟投票",
+      "canonical_evidence": "安全的去中心化联邦学习，结合八卦协议和虚拟投票",
+      "llm_tldr_en": "gspDAG-FL is a secure decentralized FL framework that derives consensus from gossip history, providing Byzantine resilience without global coordination.",
+      "llm_tldr_cn": "论文提出gspDAG-FL，一种安全去中心化联邦学习框架。利用节点间八卦历史推导共识，结合虚拟投票和拓扑有向无环图，在无需全局协调的情况下实现拜占庭容错和审计追踪。",
+      "llm_tldr": "论文提出gspDAG-FL，一种安全去中心化联邦学习框架。利用节点间八卦历史推导共识，结合虚拟投票和拓扑有向无环图，在无需全局协调的情况下实现拜占庭容错和审计追踪。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing security and confidential computing",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.06608v1",
+      "source": "arxiv",
+      "title": "Security and Privacy in Agentic AI: Grand Challenges and Future Directions",
+      "abstract": "We present key challenges and future research directions in the security and privacy of agentic AI, based on a horizon-scanning exercise that brought together thirty leading international experts from academia, industry, and government to engage in focused discussions and collaborative exercises on the emerging risks associated with the growing agency of AI.",
+      "authors": [
+        "Adam Jenkins",
+        "Agnieszka Kitkowska",
+        "Caterina Maidhof",
+        "Diego Paracuellos",
+        "Francesco Sovrano",
+        "Gonzalo Gabriel Mendez",
+        "Guillermo Suarez-Tangil",
+        "Hana Kopecka",
+        "Isabel Wagner",
+        "Isabel Barbera",
+        "Javier Carnerero-Cano",
+        "Jide Edu",
+        "Jose Luis Martin-Navarro",
+        "Jose Such",
+        "Josep Domingo-Ferrer",
+        "Juan Carlos Carrillo",
+        "Kopo Marvin Ramokapane",
+        "Mark Cote",
+        "Pablo Vellosillo",
+        "Ramon Ruiz-Dolz",
+        "Rongjun Ma",
+        "Ruba Abu-Salma",
+        "Sameer Patil",
+        "William Seymour",
+        "Xiao Zhan"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.HC"
+      ],
+      "published": "2026-07-07T05:45:29+00:00",
+      "link": "https://arxiv.org/pdf/2607.06608v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Key challenges in security and privacy of agentic AI",
+      "llm_evidence_cn": "自主AI的安全与隐私关键挑战",
+      "llm_evidence": "自主AI的安全与隐私关键挑战",
+      "canonical_evidence": "自主AI的安全与隐私关键挑战",
+      "llm_tldr_en": "A horizon-scanning exercise with 30 experts identifies grand challenges and future directions for security and privacy in agentic AI.",
+      "llm_tldr_cn": "本文通过组织30位国际专家进行地平线扫描，系统识别了自主AI领域的安全与隐私重大挑战，包括新兴风险、防护策略和未来研究方向。该工作为学术界和工业界提供了重要的研究路线图，对云环境下AI安全防护具有指导意义。",
+      "llm_tldr": "本文通过组织30位国际专家进行地平线扫描，系统识别了自主AI领域的安全与隐私重大挑战，包括新兴风险、防护策略和未来研究方向。该工作为学术界和工业界提供了重要的研究路线图，对云环境下AI安全防护具有指导意义。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.02116v1",
+      "source": "arxiv",
+      "title": "ContextNest: Verifiable Context Governance for Autonomous AI Agent",
+      "abstract": "Autonomous AI agents increasingly depend on external knowledge stores, yet most retrieval pipelines provide relevance without durable guarantees of provenance, version identity, integrity, traceability, or point-in-time reconstruction. We formalize this as context governance and present ContextNext, an open specification and reference implementation for governed AI-consumable knowledge vaults. ContextNext does not replace Retrieval-Augmented Generation (RAG); it supplies the governance layer beneath retrieval, determining which artifacts are approved, current, attributable, and integrity-verified before retrieval systems operate over them.   The specification combines typed Markdown documents with metadata, deterministic set-algebraic selectors, contextnest:// URI references, SHA-256 hash-chained version histories, graph-level checkpoints, source nodes for live data through the Model Context Protocol (MCP), and audit traces of agent context consumption. These mechanisms let organizations reconstruct which knowledge versions informed an agent output and whether those versions were AI-eligible when consumed.   We report first empirical results from two controlled experiments. In a stale-version attack isolating the governance-versus-retrieval failure mode, governed selection strictly Pareto-dominates BM25 sparse retrieval, with higher answer-quality pass rate (97% versus 93-90%) at about one-third the input-token cost. In a retrieval-determinism experiment over a 1,060-document corpus, deterministic selectors and BM25 return stable document sets across repeated identical queries (Jaccard 1.0), while a dense+HNSW baseline is non-deterministic on 80% of queries (mean Jaccard 0.611, worst case 0.210). These results suggest that context governance addresses failure modes retrieval quality alone is not designed to resolve. We release a core engine, CLI, and MCP server under open licenses.",
+      "authors": [
+        "Misha Sulpovar",
+        "Benn R. Konsynski",
+        "Qaish Kanchwala",
+        "Gabe Goodhart"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-02T12:51:38+00:00",
+      "link": "https://arxiv.org/pdf/2607.02116v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "privacy and governance for autonomous AI agents",
+      "llm_evidence_cn": "自主AI代理的隐私与上下文治理",
+      "llm_evidence": "自主AI代理的隐私与上下文治理",
+      "canonical_evidence": "自主AI代理的隐私与上下文治理",
+      "llm_tldr_en": "ContextNest provides a governance layer for AI-consumable knowledge vaults, ensuring provenance, integrity, and versioning before retrieval.",
+      "llm_tldr_cn": "自主AI代理依赖外部知识库，但现有检索缺乏可追溯性和完整性保证。ContextNest提出上下文治理规范，在检索之前对知识工件进行审批、版本控制和完整性验证。该方案结合类型化Markdown文档与确定性选择器，为AI代理提供可验证的上下文。",
+      "llm_tldr": "自主AI代理依赖外部知识库，但现有检索缺乏可追溯性和完整性保证。ContextNest提出上下文治理规范，在检索之前对知识工件进行审批、版本控制和完整性验证。该方案结合类型化Markdown文档与确定性选择器，为AI代理提供可验证的上下文。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.06700v1",
+      "source": "arxiv",
+      "title": "CILC: Cryptographically-secure Inter-agent Loop Closure Candidate Detection for Multi-Agent Collaborative SLAM",
+      "abstract": "Multi-agent Simultaneous Localization and Mapping (SLAM) and collaborative SLAM (CSLAM) require robots to continuously exchange global descriptors (GDs) to detect inter-agent loop closures (ILCs). While encrypted radios protect this traffic from external eavesdroppers, they offer no protection against a compromised swarm member. We show this threat is concrete by demonstrating how a corrupted agent can reconstruct approximations of an honest agent's imagery and trajectory from its public GD broadcasts. To address this, we propose CILC (Cryptographically-secure Inter-agent Loop Closure candidate detection), a first-of-its-kind system leveraging Secure Multi-Party Computation (SMPC) to detect ILC candidates without exchanging GDs in the clear. Rather than securing the entire CSLAM pipeline, we apply SMPC only to ILC candidate detection (i.e., GD similarity comparison), a privacy-sensitive yet computationally lightweight step, yielding an advantageous privacy-to-overhead trade-off. We validate in both simulation and hardware experiments that CILC remains real-time and communication-feasible across multimodal GDs (visual and LiDAR), while mitigating information leakage to a compromised swarm agent.",
+      "authors": [
+        "Andrew Fishberg",
+        "Yixuan Jia",
+        "Jonathan P. How"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-07-07T18:20:09+00:00",
+      "link": "https://arxiv.org/pdf/2607.06700v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "secure multi-party computation for loop closure detection in SLAM",
+      "llm_evidence_cn": "使用安全多方计算实现SLAM中的环闭合检测",
+      "llm_evidence": "使用安全多方计算实现SLAM中的环闭合检测",
+      "canonical_evidence": "使用安全多方计算实现SLAM中的环闭合检测",
+      "llm_tldr_en": "CILC uses secure multi-party computation to detect loop closure candidates between robots without revealing global descriptors, preventing privacy leakage from corrupted agents.",
+      "llm_tldr_cn": "本文针对多机器人协同SLAM中恶意成员通过全局描述子推断他人轨迹和图像的隐私威胁，提出CILC系统。该系统利用安全多方计算（SMPC）在加密状态下检测环闭合候选，不泄露任何描述子信息。实验显示其检测精度与明文方法相当，同时保证了隐私。",
+      "llm_tldr": "本文针对多机器人协同SLAM中恶意成员通过全局描述子推断他人轨迹和图像的隐私威胁，提出CILC系统。该系统利用安全多方计算（SMPC）在加密状态下检测环闭合候选，不泄露任何描述子信息。实验显示其检测精度与明文方法相当，同时保证了隐私。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.06451v2",
+      "source": "arxiv",
+      "title": "Lower Bounds for PIR with Preprocessing from Blackbox Cryptography",
+      "abstract": "(shortened for arXiv metadata)   We study the limits of single-server private information retrieval (PIR) with preprocessing. Prior work has shown that single-server PIR with sublinear communication requires a linear number of (public-key) server operations per query [DMO00, DH24]. Recent breakthrough works, including [CHK22, ZPZS24, LMW23], circumvent these lower bounds by critically leveraging preprocessing to construct single-server PIR with sublinear query computation.   Our work presents computation lower bounds for any single-server PIR with preprocessing that makes blackbox usage of {\\em any} cryptography (such as random oracles and virtual blackbox obfuscation). For any client preprocessing scheme where the client stores $s$ bits about an $n$-bit database, we prove the online amortized computation must be $Ω(n/s)$ across $k = Ω(s)$ queries (even if performed in a single batch query). In more detail, we prove that they must have either $Ω(n/s)$ amortized online communication or the server must perform $Ω(n/s)$ cryptographic operations. Our lower bounds are optimal as there exist PIRs with client preprocessing matching exactly one of the above requirements while outperforming the other. Furthermore, our lower bounds also rule out the existence of doubly efficient PIR from blackbox cryptography with sublinear query computation. Our proof framework also supports $Ω(n/s)$ communication lower bounds for three mildly restricted classes of single-server PIR.   We also prove lower bounds for symmetric private information retrieval (SPIR) with client preprocessing in the random oracle model and present a matching SPIR construction with client preprocessing using only OWFs during queries.",
+      "authors": [
+        "Alexander Hoover",
+        "Giuseppe Persiano",
+        "Kevin Yeo"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.CC",
+        "cs.DS"
+      ],
+      "published": "2026-07-07T16:12:48+00:00",
+      "link": "https://arxiv.org/pdf/2607.06451v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "private information retrieval (PIR) with preprocessing, related to confidential computing",
+      "llm_evidence_cn": "私有信息检索与预处理，与机密计算相关",
+      "llm_evidence": "私有信息检索与预处理，与机密计算相关",
+      "canonical_evidence": "私有信息检索与预处理，与机密计算相关",
+      "llm_tldr_en": "This paper proves lower bounds for single-server PIR with preprocessing from blackbox cryptography, showing that sublinear communication still requires linear server computation.",
+      "llm_tldr_cn": "本文研究单服务器私有信息检索（PIR）在预处理下的计算下界。前期工作通过预处理实现了次线性查询计算，本文证明任何基于黑盒密码的预处理方案都无法突破线性服务器操作的下界。该结果对理解机密计算中隐私保护的数据检索有重要意义。",
+      "llm_tldr": "本文研究单服务器私有信息检索（PIR）在预处理下的计算下界。前期工作通过预处理实现了次线性查询计算，本文证明任何基于黑盒密码的预处理方案都无法突破线性服务器操作的下界。该结果对理解机密计算中隐私保护的数据检索有重要意义。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.06815v1",
+      "source": "arxiv",
+      "title": "Behavioral Privacy Leakage in Agentic Negotiation: Formalizing and Mitigating Inference Attacks via Randomized Policies",
+      "abstract": "Autonomous negotiation agents are increasingly deployed in high-stakes settings such as insurance and procurement. While cryptographic techniques protect explicitly disclosed constraint values, they fail to address a subtler threat: behavioral privacy leakage, where an adversary infers private constraints from observable negotiation dynamics such as concession trajectories, timing, and convergence patterns. This paper investigates behavioral differential privacy in multi-round negotiation protocols. We design an adaptive stochastic negotiation policy that jointly guarantees $(\\varepsilon, δ)$-differential privacy, almost-sure convergence of the offer sequence (reaching agreement when the counterparty's reservation value permits), and high negotiation utility. Evaluated on 3,000 synthetic bilateral negotiations, our mechanism reduces adversarial inference accuracy by 43-50% while maintaining a negotiation success rate and utility above 90%, demonstrating that strong privacy guarantees can be achieved without significant loss of performance.",
+      "authors": [
+        "Barkha Rani"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-07T21:22:28+00:00",
+      "link": "https://arxiv.org/pdf/2607.06815v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "behavioral differential privacy for autonomous negotiation agents",
+      "llm_evidence_cn": "面向自主谈判代理的行为差分隐私",
+      "llm_evidence": "面向自主谈判代理的行为差分隐私",
+      "canonical_evidence": "面向自主谈判代理的行为差分隐私",
+      "llm_tldr_en": "Formalizes behavioral privacy leakage in agentic negotiation and proposes randomized policies guaranteeing differential privacy and convergence.",
+      "llm_tldr_cn": "本文形式化了自主谈判代理中的行为隐私泄露问题——对手可从谈判动态（如让步轨迹）推断私有约束。作者设计了自适应随机谈判策略，同时保证(ε,δ)-差分隐私和几乎必然收敛。理论证明该策略在隐私预算和协商成功率间取得平衡。该工作首次将差分隐私引入谈判代理的隐私保护，对AI代理的隐私安全有重要意义。",
+      "llm_tldr": "本文形式化了自主谈判代理中的行为隐私泄露问题——对手可从谈判动态（如让步轨迹）推断私有约束。作者设计了自适应随机谈判策略，同时保证(ε,δ)-差分隐私和几乎必然收敛。理论证明该策略在隐私预算和协商成功率间取得平衡。该工作首次将差分隐私引入谈判代理的隐私保护，对AI代理的隐私安全有重要意义。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.07461v1",
+      "source": "arxiv",
+      "title": "Mitigating Taint-Style Vulnerabilities in MCP Servers via Security-Aware Tool Descriptions",
+      "abstract": "Large language models (LLMs) are increasingly deployed as autonomous agents that interact with external tools and services via the Model Context Protocol (MCP), a standardized interface for dynamic tool invocation. While MCP simplifies integration, it also expands the attack surface and enables generic exploits across multiple servers. Despite prior work on malicious MCP servers, the vulnerability landscape of MCP servers remains underexplored. In this work, we systematically analyze MCP server vulnerabilities, focusing on metadata characteristics, vulnerable code patterns, and community responses. Our study reveals that taint-style vulnerabilities constitute a substantial fraction of MCP server vulnerabilities, require significant code modifications to remediate, and are met with slow community responses. Motivated by these findings, we propose SPELLSMITH, presenting a novel textbased avenue for shielding taint-style vulnerabilities in MCP servers. In particular, SPELLSMITH analyzes the high-risk capabilities exposed by an MCP server and combines them with tool descriptions and parameter semantics to identify potential taint-style vulnerability risks, thereby constructing a tool-level risk profile. Then, SPELLSMITH leverages the Description property of the protocol to embed behavioral guidance (Description Enhancement Module) and exploits LLMs' self-reflection capabilities (Self-Reflection Module) to iteratively evaluate and refine outputs. By strengthening LLM internal decision-making, SPELLSMITH provides an active and unified mitigation strategy that generalizes across multiple vulnerabilities, reducing reliance on context-specific code-level fixes. Our experiments demonstrate that SPELLSMITH effectively mitigates taint-style vulnerability exploitation in MCP servers, highlighting its practical applicability and advantages over traditional code-level mitigations.",
+      "authors": [
+        "Yang Shi",
+        "Jiaheng Fu",
+        "Yihe Huang",
+        "Ruixiang Wu",
+        "Chengyao Sun",
+        "Kaifeng Huang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.SE"
+      ],
+      "published": "2026-07-08T14:29:23+00:00",
+      "link": "https://arxiv.org/pdf/2607.07461v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "LLM agent security vulnerabilities in MCP servers",
+      "llm_evidence_cn": "LLM代理MCP服务器安全漏洞",
+      "llm_evidence": "LLM代理MCP服务器安全漏洞",
+      "canonical_evidence": "LLM代理MCP服务器安全漏洞",
+      "llm_tldr_en": "Systematically analyzes taint-style vulnerabilities in MCP servers used by LLM agents, proposing security-aware tool descriptions to mitigate risks.",
+      "llm_tldr_cn": "LLM代理通过MCP协议调用外部工具，但MCP服务器存在污点类漏洞，威胁AI系统安全。本文系统分析MCP服务器漏洞模式，发现污点类漏洞占很大比例。提出安全感知工具描述方法，在描述中嵌入安全约束，从根源减少注入风险。该工作为保障LLM代理安全提供了实用指导。",
+      "llm_tldr": "LLM代理通过MCP协议调用外部工具，但MCP服务器存在污点类漏洞，威胁AI系统安全。本文系统分析MCP服务器漏洞模式，发现污点类漏洞占很大比例。提出安全感知工具描述方法，在描述中嵌入安全约束，从根源减少注入风险。该工作为保障LLM代理安全提供了实用指导。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.07314v1",
+      "source": "arxiv",
+      "title": "FedCVESA: Taking Away Training Data in Federated Learning via Correlation Value Encoding and Segmented Aggregation",
+      "abstract": "Federated learning (FL) avoids explicit data exposure by keeping raw data on local clients, yet privacy risks remain in the training process and the learned model itself. Recently, centralized Taking Away Training Data (TATD) attacks have shown that malicious training could abuse the memorization capacity of deep models to store and later recover training data. However, this memorization-based threat has not been systematically studied under FL environments, where multi-client averaging could overwrite encoded training data. In this paper, we study a white-box TATD attack in which a malicious server selects n target clients from K participating clients and actively writes private training data into the global model during federated training. We propose FedCVESA, a federated variant of Correlation Value Encoding Attack (CVEA), by adding a Pearson-correlation regularizer to the loss function of target clients, so that private training data are gradually encoded into selected model parameters, referred to as carrier parameters. To reduce the overwriting of carrier parameters during server aggregation, we further propose segmented aggregation over dispersed carrier parameters, preserving selected carrier parameters while keeping standard averaging on the remaining parameters. Experiments on MNIST, Fashion-MNIST, and CIFAR-10 under Dirichlet non-IID partitions show that the proposed method can steal semantically meaningful private training images from the trained model while maintaining acceptable main-task utility in a controlled proof-of-concept setting. These results demonstrate that FL can become a parameter-level memorization channel for active TATD attack under the studied white-box malicious-server setting.",
+      "authors": [
+        "Chongkai Li",
+        "Bang Zhang",
+        "Wenjian Luo"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CR"
+      ],
+      "published": "2026-07-08T11:55:00+00:00",
+      "link": "https://arxiv.org/pdf/2607.07314v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Privacy attack in federated learning, violating privacy preservation",
+      "llm_evidence_cn": "联邦学习中的隐私攻击，侵犯隐私保护",
+      "llm_evidence": "联邦学习中的隐私攻击，侵犯隐私保护",
+      "canonical_evidence": "联邦学习中的隐私攻击，侵犯隐私保护",
+      "llm_tldr_en": "Proposes a white-box TATD attack in federated learning where a malicious server encodes training data into the global model for later recovery.",
+      "llm_tldr_cn": "本文研究了联邦学习环境下的训练数据窃取攻击（TATD），恶意服务器通过相关值编码和分段聚合策略，将目标客户端的私有训练数据写入全局模型，并成功在后续步骤中恢复，揭示了联邦学习在隐私保护方面的严重漏洞，尽管其设计初衷是保护数据。",
+      "llm_tldr": "本文研究了联邦学习环境下的训练数据窃取攻击（TATD），恶意服务器通过相关值编码和分段聚合策略，将目标客户端的私有训练数据写入全局模型，并成功在后续步骤中恢复，揭示了联邦学习在隐私保护方面的严重漏洞，尽管其设计初衷是保护数据。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.07635v2",
+      "source": "arxiv",
+      "title": "Unlearning to Protect: A Distilled Reinforcement Learning Framework with Privacy-Preserving Feature Unlearning and XAI for IoT Security",
+      "abstract": "Botnets pose a significant cybersecurity threat, enabling attacks such as DDoS, data theft, and service disruptions on IoT devices. These devices often lack built-in botnet traffic filtering, leaving them highly exposed. Existing AI-based solutions improve detection capabilities but have limitations: (i) they are too heavy for IoT deployment, and (ii) they lack unlearning capabilities to forget sensitive or outdated features without retraining. To address these challenges, we propose DiRLU, a lightweight, reinforcement learning driven framework, while ensuring privacy by selectively unlearning sensitive or outdated features without requiring retraining. The framework leverages knowledge distillation to transfer knowledge from a teacher model into a lightweight student model, with both models trained using A2C. A post-hoc unlearning mechanism modifies weights to remove targeted features, while restored features show negligible performance loss, confirming reversibility. Unlike many benchmark models that used only 5% of the BoT-IoT dataset, this research leverages 25%, allowing us to develop a strong teacher model. Both the teacher and student models were trained using the A2C reinforcement learning algorithm, achieving impressive results, with the student model achieving 99.60% accuracy and a 99.80% F1 score. To enhance transparency, we integrated Explainable AI (XAI), particularly LIME, which helps interpret the model's decisions and identify the key features influencing its predictions. Moreover, DiRLU requires only 2,370 FLOPS, approximately 3.87x more efficient than the state-of-the-art model, highlighting its efficiency for edge deployment. DiRLU combines efficiency with privacy, aligning with GDPR standards (right to be forgotten) to provide practical and scalable IoT security solution.",
+      "authors": [
+        "Md. Nahid Hasan",
+        "Md. Golam Rabiul Alam"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-08T16:52:35+00:00",
+      "link": "https://arxiv.org/pdf/2607.07635v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Privacy-preserving feature unlearning for IoT security",
+      "llm_evidence_cn": "面向物联网安全的隐私保护特征遗忘",
+      "llm_evidence": "面向物联网安全的隐私保护特征遗忘",
+      "canonical_evidence": "面向物联网安全的隐私保护特征遗忘",
+      "llm_tldr_en": "DiRLU uses reinforcement learning and knowledge distillation to enable selective unlearning of sensitive features in IoT botnet detection, balancing privacy and efficiency.",
+      "llm_tldr_cn": "针对物联网设备计算资源有限且缺乏隐私遗忘机制的问题，本文提出DiRLU框架。该框架结合强化学习与知识蒸馏，实现选择性遗忘敏感或过时特征而无需重新训练，同时保持高检测率。在物联网僵尸网络检测任务上验证了其轻量级和隐私保护有效性，为AI安全中的隐私保护提供了新思路。",
+      "llm_tldr": "针对物联网设备计算资源有限且缺乏隐私遗忘机制的问题，本文提出DiRLU框架。该框架结合强化学习与知识蒸馏，实现选择性遗忘敏感或过时特征而无需重新训练，同时保持高检测率。在物联网僵尸网络检测任务上验证了其轻量级和隐私保护有效性，为AI安全中的隐私保护提供了新思路。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.07635v1",
+      "source": "arxiv",
+      "title": "Unlearning to Protect: A Distilled Reinforcement Learning Framework with Privacy-Preserving Feature Unlearning and XAI for IoT Security",
+      "abstract": "Botnets pose a significant cybersecurity threat, enabling attacks such as DDoS, data theft, and service disruptions on IoT devices. These devices often lack built-in botnet traffic filtering, leaving them highly exposed. Existing AI-based solutions improve detection capabilities but have limitations: (i) they are too heavy for IoT deployment, and (ii) they lack unlearning capabilities to forget sensitive or outdated features without retraining. To address these challenges, we propose DiRLU, a lightweight, reinforcement learning driven framework, while ensuring privacy by selectively unlearning sensitive or outdated features without requiring retraining. The framework leverages knowledge distillation to transfer knowledge from a teacher model into a lightweight student model, with both models trained using A2C. A post-hoc unlearning mechanism modifies weights to remove targeted features, while restored features show negligible performance loss, confirming reversibility. Unlike many benchmark models that used only 5% of the BoT-IoT dataset, this research leverages 25%, allowing us to develop a strong teacher model. Both the teacher and student models were trained using the A2C reinforcement learning algorithm, achieving impressive results, with the student model achieving 99.60% accuracy and a 99.80% F1 score. To enhance transparency, we integrated Explainable AI (XAI), particularly LIME, which helps interpret the model's decisions and identify the key features influencing its predictions. Moreover, DiRLU requires only 2,370 FLOPS, approximately 3.87x more efficient than the state-of-the-art model, highlighting its efficiency for edge deployment. DiRLU combines efficiency with privacy, aligning with GDPR standards (right to be forgotten) to provide practical and scalable IoT security solution.",
+      "authors": [
+        "Md. Nahid Hasan",
+        "Golam Rabiul Alam"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-08T16:52:35+00:00",
+      "link": "https://arxiv.org/pdf/2607.07635v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "AI security defense for IoT botnet with privacy-preserving unlearning",
+      "llm_evidence_cn": "面向物联网僵尸网络的AI安全防御与隐私保护遗忘",
+      "llm_evidence": "面向物联网僵尸网络的AI安全防御与隐私保护遗忘",
+      "canonical_evidence": "面向物联网僵尸网络的AI安全防御与隐私保护遗忘",
+      "llm_tldr_en": "Proposes DiRLU, a lightweight reinforcement learning framework with feature unlearning and XAI for privacy-preserving botnet detection on IoT devices.",
+      "llm_tldr_cn": "物联网设备缺乏内置僵尸网络过滤，现有AI检测模型过于笨重且缺乏遗忘能力。本文提出DiRLU，一种轻量级强化学习框架，结合知识蒸馏和选择性特征遗忘，在不重训练的情况下保护敏感数据隐私。实验表明，DiRLU在保持高检测率的同时显著降低模型大小，并支持可解释性。该工作为资源受限环境下的AI安全提供了一种隐私保护方案。",
+      "llm_tldr": "物联网设备缺乏内置僵尸网络过滤，现有AI检测模型过于笨重且缺乏遗忘能力。本文提出DiRLU，一种轻量级强化学习框架，结合知识蒸馏和选择性特征遗忘，在不重训练的情况下保护敏感数据隐私。实验表明，DiRLU在保持高检测率的同时显著降低模型大小，并支持可解释性。该工作为资源受限环境下的AI安全提供了一种隐私保护方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.08383v1",
+      "source": "arxiv",
+      "title": "Secure QR Codes: Authenticity Verification via EdDSA Signatures and CBOR Certificates",
+      "abstract": "QR codes are a ubiquitous part of daily life, widely trusted by millions. However, their lack of inherent security features has given rise to critical attack vectors, such as spoofing (quishing) on public infrastructure like self-service parking machines. To address this, we present a comprehensive evolution of secure QR code architectures. First, we evaluate a fully offline proof-of-concept leveraging EdDSA signatures (instantiated on the Ed25519 curve), CBOR-encoded certificates, and ZLIB compression, demonstrating that robust cryptographic integrity can be achieved within the QR code's strict static capacity. However, recognizing the scalability limitations of fully offline models-specifically the inability to perform immediate key revocation in massive smart-city IoT deployments-we subsequently propose a scalable Hybrid Web PKI architecture. This forward-looking model utilizes standardized JWKS endpoints, a Central Trust Registry, and URL fragments to ensure seamless backward compatibility with standard native cameras while providing dynamic, real-time validation for compliant applications. This dual-mode approach offers a practical, deployable path toward eliminating QR spoofing.",
+      "authors": [
+        "Wojciech Jonderko",
+        "Wojciech Wodo"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-09T12:02:47+00:00",
+      "link": "https://arxiv.org/pdf/2607.08383v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Cryptographic techniques for QR code authentication, key recovery not directly",
+      "llm_evidence_cn": "二维码认证的密码技术，未直接涉及密钥恢复",
+      "llm_evidence": "二维码认证的密码技术，未直接涉及密钥恢复",
+      "canonical_evidence": "二维码认证的密码技术，未直接涉及密钥恢复",
+      "llm_tldr_en": "Proposes secure QR codes using EdDSA signatures and CBOR certificates for authenticity, exploring offline and online models.",
+      "llm_tldr_cn": "本文针对二维码缺乏安全特性导致的欺骗攻击，提出基于EdDSA签名和CBOR证书的安全二维码架构，首先评估了离线方案（满足容量约束），然后扩展到在线模型以支持密钥撤销，为二维码身份认证提供了密码学解决方案。",
+      "llm_tldr": "本文针对二维码缺乏安全特性导致的欺骗攻击，提出基于EdDSA签名和CBOR证书的安全二维码架构，首先评估了离线方案（满足容量约束），然后扩展到在线模型以支持密钥撤销，为二维码身份认证提供了密码学解决方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cryptographic techniques for key recovery and user authentication",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.08092v1",
+      "source": "arxiv",
+      "title": "Equivariant Quantum Clustering with Differential Privacy: Parameter-Efficient Privacy-Preserving Analysis Across Heterogeneous Sensitive Datasets",
+      "abstract": "Privacy-preserving clustering is critical for analyzing sensitive data in healthcare, cybersecurity, and enterprise applications, where maintaining data confidentiality must be balanced with analytical performance. This paper presents Equivariant Quantum Clustering (EQC), a parameter-efficient framework that integrates symmetry-aware quantum circuits with differential privacy to improve the privacy-utility tradeoff. EQC employs p4m equivariant parameter sharing to reduce circuit complexity while preserving informative feature representations. The framework is evaluated on three privacy-sensitive datasets: NSL-KDD, CERT Insider Threat v6.2, and a synthetic MIMIC-III clinical dataset. On the NSL-KDD benchmark, EQC achieves 79.3% clustering accuracy while reducing membership inference attack success to 38.3% under a privacy budget of ε = 1.0 and δ = 10^-5, outperforming representative classical and quantum baselines. Ablation studies indicate that the performance gains primarily arise from parameter-efficient circuit design combined with differential privacy. The results demonstrate that EQC provides a practical quantum-ready framework for secure and privacy-preserving clustering across heterogeneous sensitive datasets.",
+      "authors": [
+        "B. M. Taslimul Haq",
+        "Md Arifur Rahman",
+        "Tawfiq Al Islam Foysal",
+        "Abdullah Al Noman",
+        "Abir Ahmed"
+      ],
+      "primary_category": "quant-ph",
+      "categories": [
+        "quant-ph",
+        "cs.CV"
+      ],
+      "published": "2026-07-09T04:01:25+00:00",
+      "link": "https://arxiv.org/pdf/2607.08092v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "privacy-preserving clustering with differential privacy",
+      "llm_evidence_cn": "差分隐私保护下的聚类分析方法",
+      "llm_evidence": "差分隐私保护下的聚类分析方法",
+      "canonical_evidence": "差分隐私保护下的聚类分析方法",
+      "llm_tldr_en": "Equivariant Quantum Clustering integrates symmetry-aware quantum circuits with differential privacy for privacy-preserving analysis on sensitive datasets.",
+      "llm_tldr_cn": "论文提出等变量子聚类框架，将对称性感知量子电路与差分隐私结合，实现参数高效的隐私保护聚类。在NSL-KDD等三个敏感数据集上评估，改善了隐私-效用权衡。",
+      "llm_tldr": "论文提出等变量子聚类框架，将对称性感知量子电路与差分隐私结合，实现参数高效的隐私保护聚类。在NSL-KDD等三个敏感数据集上评估，改善了隐私-效用权衡。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

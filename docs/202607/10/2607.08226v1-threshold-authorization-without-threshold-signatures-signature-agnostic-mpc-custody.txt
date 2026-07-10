@@ -1,0 +1,827 @@
+Title: Threshold Authorization Without Threshold Signatures: Signature-Agnostic MPC Custody
+
+URL Source: https://arxiv.org/pdf/2607.08226v1
+
+Published Time: Fri, 10 Jul 2026 00:37:08 GMT
+
+Number of Pages: 25
+
+Markdown Content:
+# Threshold Authorization Without Threshold Signatures: Signature-Agnostic MPC Custody 
+
+Dariia Porechna [0009-0009-8834-4652] 
+
+EternaX Labs 
+
+dariia.p@eternax.ai 
+
+Abstract. Digital-asset custody has been built on threshold multi-party approval: no operation proceeds unless t of n parties approve, and fewer than t compromised parties can neither authorize nor learn the authoriza-tion secret. Threshold signature schemes (TSS) have been the standard mechanism, but the post-quantum transition disrupts this model: stan-dardized hash-based signatures resist efficient threshold signing, and lattice-based threshold protocols remain an emerging research track. We present a dual-gate architecture that separates member authentication from threshold authorization. Each member signs its approval with an ordinary signature under any EUF-CMA scheme; the quorum jointly produces a threshold seal from Shamir-shared secrets bound to the op-eration. The seal is the base instance of a programmable authorization computation: simple quorum is the minimal policy, while richer policies can evaluate secret-shared state without making the member-signature scheme part of that computation. The signature scheme is a deployment parameter: migrating from ECDSA to SLH-DSA or ML-DSA is a key rotation, not a protocol redesign, and members holding keys in commodity HSMs participate through the standard sign API. The architecture can be deployed wherever the asset-control path sup-ports programmable verification, such as smart contracts, vault modules, or HSMs guarding a master key, and produces an enforcement-layer au-thorization rather than a native chain signature. Below-threshold secrecy is information-theoretic; an adversary holding ≥ t signing keys but no coefficient shares still cannot produce the seal. 
+
+Keywords: Threshold cryptography · MPC custody · Post-quantum migration · Secret sharing · Digital-asset custody 
+
+# 1 Introduction 
+
+1.1 The post-quantum custody problem 
+
+Digital-asset custody faces the post-quantum transition as a control-plane prob-lem as much as a transaction-signature problem. A custodian cannot make Bitcoin, Ethereum, or any other chain accept a new signature scheme before arXiv:2607.08226v1 [cs.CR] 9 Jul 2026 2 D. Porechna 
+
+the protocol does, but it can make the layers it controls post-quantum ready and cryptographically agile: member authentication, policy enforcement, vendor integrations, backups, and the signing infrastructure that will extend to future on-chain schemes. That is highlighted in the Taurus June 2026 report [ 18 ]: readi-ness means avoiding architecture choices that lock the authorization layer to one classical signature protocol while standards, vendors, and chains are in active research and transition. The pressure is concrete on both the regulatory and the protocol side. Ex-ecutive Order 14412 (June 2026) mandates the transition of federal high-value and high-impact systems to post-quantum digital signatures by the end of 2031 and extends post-quantum FIPS compliance to federal contractors through pro-curement rules [ 19 ]. The FIPS-approved hash-based signatures appear on major blockchain migration paths and make the problem more pressing for MPC custody stacks [7,18]. The cryptographic promise of threshold-signature MPC custody concerns key material: no compromise of fewer than t of the n key shares yields the signing key or a signature. Threshold ECDSA (GG18/GG20, CMP, FROST [ 8,4 ,12 ]) delivers this for classical signatures by bundling member authentication and threshold authorization into one cryptographic object. The post-quantum migration breaks that bundle. Lattice-based threshold sig-natures (ML-DSA, Falcon) are an active research and standardization track [ 16 ,17 , 5]but not the production baseline occupied by threshold ECDSA. For hash-based signatures (SLH-DSA [ 15 ], LMS/HSS), Kondi, Kumar, and Vanegas [ 13 ] rule out black-box threshold protocols, so any threshold signing must evaluate the hash function inside MPC at prohibitive cost. The remaining options are non-black-box MPC for hash evaluation and a trusted setup with large preprocessing state [ 11 ], neither of which are practical product paths for institutional custody. HSM-based custody can adopt standardized post-quantum signatures as vendor firmware and protocol support arrive; custody built around threshold ECDSA does not have a comparable production path to signature agility. The question is therefore whether the operational properties of distributed authorization with below-threshold secrecy and share refresh can be preserved for MPC custody without thresholding the signature itself. 
+
+1.2 Separating authentication from authorization 
+
+A threshold signature bundles two distinct functions: (a) member authentication (“who approved”) and (b) threshold authorization (“did enough parties approve”). Only (b) requires the threshold property; only (a) requires a signature. Separating the two is an existing custody practice. Production stacks already run an off-chain authorization step ahead of the blockchain signature: in HSM-based dual control, a rule engine verifies each approver’s ordinary signature over the transaction intent and, once the policy is satisfied, creates and signs the transaction under a master key [ 18 ]. That separation is procedural. The authorization gate relies on ordinary signature unforgeability plus trusted policy code that counts approvals; it introduces no independent threshold secret hidden Threshold Authorization Without Threshold Signatures 3
+
+from below-threshold coalitions. Consequently, compromising t approver signing keys is sufficient to pass the gate, and partial key compromise is handled by key rotation rather than share refresh. The dual gate makes the authorization gate itself cryptographic, backing each of the two functions with the primitive where the required property is native. Members authenticate with ordinary signatures; threshold authorization comes from a seal reconstructed from Shamir-shared secrets, information-theoretically hidden below threshold and proactively refreshable. This second gate is not merely another signature count: it is a joint evaluation over setup-bound shares, with simple quorum as the degree-1 base case and confidential policy evaluation as the natural extension. An adversary holding t approver signing keys but not the corresponding coefficient shares passes any signature-counting gate, procedural or on-chain, but cannot produce the seal. In the classical setting there was no pressure to unbundle the signature itself: threshold ECDSA served custody well, and the bundled signature was the deliverable. The post-quantum transition changes this. For hash-based schemes the bundling is precisely what obstructs migration, since the threshold property can no longer be obtained over the signature at practical cost [ 13 ]. Subsequent work has accordingly focused on thresholdizing the signature schemes themselves [ 13 , 11 ]. The dual gate takes the complementary route: the signature is never thresholded, and the threshold property is provided by the gate where it is native and information-theoretic. What MPC custody provides operationally is an authorization model, dis-tributed authorization with below-threshold secrecy and share refresh, rather than the specific technique of jointly evaluating a signing algorithm. The dual gate recovers these functional properties without MPC over the signing func-tion, and provides the cryptographic agility for the post-quantum transition: the member-signature scheme is a deployment parameter, so the authorization layer is post-quantum ready ahead of, and independently of, each chain’s own signature migration. 
+
+1.3 Contributions 
+
+1. A decoupled cryptographic authorization gate. A dual-gate protocol: an operation passes only through both gates, the signature check (each member authenticates with an ordinary signature) and the seal check (at least t Shamir-shared evaluations reconstruct a threshold seal bound to the operation). Neither gate alone authorizes: stolen member keys satisfy any signature-counting policy but cannot pass the seal check. 2. Ordinary member signatures plus threshold seal. Per-operation ap-proval is non-interactive: each member computes one affine evaluation and one ordinary signature. The seal is a Shamir-shared Wegman–Carter one-time authenticator [ 20 , 14 ]; below-threshold secrecy is information-theoretic, and the nontrivial engineering is confined to setup (a JRSS/VSS run). This realizes MPC-like authorization semantics without MPC over the signing algorithm: 4 D. Porechna 
+
+the members jointly evaluate the authorization layer, while signatures only authenticate who contributed. 3. PQ/HSM-friendly migration. The member-signature scheme appears only in the signature check, so it is a deployment parameter. Migrating from ECDSA to SLH-DSA or ML-DSA is a key rotation; members in commodity HSMs participate through the standard sign API; mixed-scheme quorums are possible during migration. 4. Programmable enforcement-layer deployment. The construction deploys wherever the asset-control path can run programmable verification logic, such as chain consensus, smart contracts, vaults, account-abstraction layers, or an HSM guarding a master key. The output is an enforcement-layer authorization rather than a native signature. The seal generalizes from quorum counting to joint computation of authorization policies over secret-shared state, including confidential policy evaluation (Section 2.5). 
+
+1.4 Context: threshold PQ signatures and multisig 
+
+The dual gate addresses a gap between two available approaches. 
+
+Threshold PQ signatures. Lattice-based threshold signing is an active research track [ 16 , 17 , 5 ] but not yet the production baseline. For hash-based signatures, black-box threshold protocols are ruled out [ 13 ]: threshold signing must evaluate the hash inside MPC. Kelsey, Lang, and Lucks [ 11 ] construct distributed hash-based signatures with a trusted setup or large common reference state, but these still produce threshold signatures; our construction avoids thresholding the member-authentication signature entirely. 
+
+Multisig. A t-of-n multisig under a post-quantum scheme is deployable wher-ever the control path can run custom verification logic, whether as smart-account verifier code, future signature precompiles, or the off-chain dual-control pattern above [ 7]. It provides threshold authorization and attribution but no below-threshold secrecy and no share refresh: a leaked signing key stays leaked until a public key rotation, and compromising t signing keys is total compromise. Sections 6.2 and 6.3 detail what the dual gate adds. The next section presents the construction itself. 
+
+# 2 The dual-gate architecture 
+
+The construction instantiates the separation above by requiring an operation M
+
+to pass two independent gates over the same canonical message. The signature check verifies that each contribution carries a valid ordinary signature from a registered member. The seal check verifies that at least t setup-bound Shamir shares reconstruct the correct threshold seal —the operation-bound evaluation of a jointly held affine map. Neither gate alone authorizes: signing keys without shares cannot produce the seal; shares without signatures fail the signature check. The seal is a Shamir-shared instance of the Wegman–Carter one-time authen-ticator over Fp [ 20 , 14 ]: σν = k1x + k2 is a pairwise-independent MAC evaluated Threshold Authorization Without Threshold Signatures 5
+
+Setup (once per slot batch): JRSS distributes slot shares ([ k1]i, [k2]i); share commitments recorded un-der the setup root; member public keys registered 
+
+Member Cj
+
+policy check; reserve slot 
+
+[σν ]j = [ k1]j x + [ k2]j
+
+sign envelope Aj
+
+Member Ci
+
+policy check; reserve slot 
+
+[σν ]i = [ k1]i x + [ k2]i
+
+sign envelope Ai
+
+Member Ck
+
+policy check; reserve slot 
+
+[σν ]k = [ k1]k x + [ k2]k
+
+sign envelope Ak
+
+Relay (untrusted) collects ≥ t signed envelopes 
+
+Enforcement layer (holds no secret) (C1) verify member signatures → (C2) verify openings vs. setup root 
+
+→ (C3) interpolate the seal σν → (C4) consume coeffid ν under finality 
+
+Authorization receipt : seal σν ,custody metadata, finality evidence   
+
+> slot shares (offline, batched)
+> (Ai,sig i)
+> quorum of envelopes for μM,ν
+
+Fig. 1. One dual-gate authorization end to end. Members act in parallel with no member-to-member interaction; the relay is untrusted; the enforcement layer verifies both gates and holds no secret. 
+
+at the operation-bound point x, which is why coefficient slots are single-use by construction rather than by policy choice (Section 7.2). Figure 1 traces one authorization end to end. 
+
+2.1 Primitives – Fp, p ≈ 2256 .
+
+– H : {0, 1}∗ → Fp, domain-separated. 
+
+– SSS t,n : Shamir secret sharing, degree-(t − 1) polynomials. 
+
+– Sig = ( KeyGen , Sign , Verify ): any EUF-CMA-secure scheme with deterministic verification. 
+
+– Π = ( Com , Vf ): a non-interactive commitment scheme, the share-correctness profile (Definition 1); the recommended instantiation is the salted-hash com-mitment Com (m; ρ) = H(“custody-commit” ∥ ρ ∥ m).For the post-quantum profile, Sig must satisfy EUF-CMA against quantum polynomial-time adversaries with classical signing-oracle access, the standard 6 D. Porechna 
+
+notion claimed for FIPS 205 (SLH-DSA) and FIPS 204 (ML-DSA). Where the analysis refers to EUF-CMA without qualification, the applicable notion is that of the deployed scheme. 
+
+2.2 Setup (dealer-free JRSS/VSS) 
+
+Setup provisions a batch of B single-use coefficient slots, indexed by ν ∈ [B]; the steps below run once per slot, with fresh randomness for every slot. 
+
+– For each slot ν, each Cj samples random a(ν) 
+
+> j
+
+, b (ν) 
+
+> j
+
+∈ Fp, Shamir-shares each at threshold t.
+
+– Each Ci sums received shares: [k(ν)1 ]i = P 
+
+> j
+
+[a(ν) 
+
+> j
+
+]i, [k(ν)2 ]i = P 
+
+> j
+
+[b(ν) 
+
+> j
+
+]i; the summed sharings define degree-(t − 1) polynomials f (ν)1 , f (ν)2 with [k(ν)1 ]i =
+
+f (ν)1 (i), [k(ν)2 ]i = f (ν)2 (i).
+
+– k(ν)1 = P 
+
+> j
+
+a(ν) 
+
+> j
+
+, k(ν)2 = P 
+
+> j
+
+b(ν) 
+
+> j
+
+are unknown to any individual party. 
+
+– For every slot ν and member Ci, the setup records the share commitment com (ν) 
+
+> i
+
+= Com (([ k(ν)1 ]i, [k(ν)2 ]i); ρ(ν) 
+
+> i
+
+) under the setup root; the opening ran-domness ρ(ν) 
+
+> i
+
+is held by Ci alongside the shares. 
+
+– Each member registers a member-authentication public key; the enforcement layer stores the setup transcript root and the selected share-correctness profile. 
+
+– Production setup must guarantee consistency of the live degree-(t − 1) polyno-mials before coefficients can be activated, and must bind each contributor’s randomness before any dealing is revealed (commit-then-reveal); detailed in assumption S (Section 5.1). Because every slot uses fresh randomness, the slot polynomials are mutually independent, and exposure of one slot’s polynomials reveals nothing about any other. Batching amortizes setup cost across B operations. Where the slot is fixed by context we drop the superscript and write [k1]i, [k2]i.
+
+2.3 Per-operation protocol – Message binding: 
+
+μM,ν = H(“custody-op” ∥ address ∥ policyid ∥ optype ∥ ν ∥ H(M )) 
+
+– Common scalar: 
+
+x = H(“custody-affine-x” ∥ μM,ν ∥ coeffid ν )
+
+– Each approving Ci:1. Check local policy and reserve the single-use coefficient slot (signer-side reservation / HSM state), exactly as a presignature is reserved before use. 2. Evaluate: [σν ]i = [ k1]i · x + [ k2]i
+
+3. Form envelope Ai over address, policyid, coeffid ν , i, μM,ν , the evaluation 
+
+[σν ]i, and the share-correctness opening (the revealed slot shares and opening randomness ρ(ν) 
+
+> i
+
+), under a canonical injective encoding. 4. Sign: sig i = Sig.Sign (sk i, A i)Threshold Authorization Without Threshold Signatures 7
+
+2.4 Acceptance rule – (C1) Signature check: ∃Q ⊆ C , |Q| ≥ t: all member signatures verify. 
+
+– (C2) Seal check, share correctness: verify each share via the operation-time opening check: Vf (com (ν) 
+
+> i
+
+, ([ k1]i, [k2]i), ρ (ν) 
+
+> i
+
+) = 1 against the setup root, and check [σν ]i = [ k1]ix + [ k2]i.
+
+– (C3) Seal check, reconstruction: Lagrange-interpolate accepted shares to recover the seal σν (Lemma 2). 
+
+– (C4) Freshness: coeffid ν not yet consumed; on success, consume it under finality. 
+
+2.5 Programmable authorization 
+
+The affine map of σν = k1x + k2 is the degree-1 instance of a more general capability: the seal is the evaluation of a function over secrets fixed at setup and bound to the operation. Representative policies beyond simple quorum include weighted and hierarchical access structures, risk-dependent authorization (the required threshold changes with transaction value), and confidential running state (cumulative limits enforced without revealing the current balance to any individual party). The security analysis (Appendix A) treats the affine instance; richer policies inherit the authentication-check and secrecy arguments but require a per-policy correctness analysis. 
+
+# 3 End-to-end authorization flow 
+
+Having specified the cryptographic checks, we next place them in the operational lifecycle of a custody system, demonstrating which parts replace threshold signing and which parts remain ordinary custody maintenance. 
+
+3.1 The custody authorization lifecycle 
+
+A custody authorization system generally exposes five operations: 1. Setup (C, t, n ): register members, distribute key material, set policy. No party learns the full authorization secret. 2. Approve (i, M ): member Ci produces a contribution for operation M . Below threshold: zero leakage. 3. Authorize (M, (i, c i)i∈Q, |Q| ≥ t): produce a verifiable authorization proof bound to M .4. Verify (M, π ): a programmable enforcement layer checks the proof. Verifier holds no secret. 5. Maintain () : refresh shares, rotate members, update policy without revealing the authorization secret. 8 D. Porechna 
+
+These map directly onto Section 2: Setup runs the JRSS sharing and registers member public keys; Approve is the per-operation protocol; Authorize collects t
+
+envelopes and runs the acceptance rule; Verify is performed by the enforcement layer; Maintain refreshes coefficient shares or rotates member keys, each itself an authorized custody operation. The authorization artifact is an enforcement-layer receipt (the reconstructed seal, custody metadata, finality evidence), not a signature under the member scheme. 
+
+3.2 Key material and where it lives 
+
+The construction manages three kinds of material with different lifecycles. 
+
+Member signing keys (long-term). One keypair per member under any EUF-CMA scheme, used only to sign contribution envelopes. The key can live in a commodity HSM, an enclave, or a signer service: the protocol needs nothing beyond the standard sign API. Rotation is a Maintain operation and does not touch the threshold layer. 
+
+Coefficient shares (per-slot, single-use). Each JRSS batch yields B slots; a member stores its slot shares ([ k1]i, [k2]i) and commitment opening randomness alongside a reservation flag. A slot is consumed by exactly one accepted operation; its shares are dead thereafter. Proactive refresh re-shares unconsumed slots on a schedule. 
+
+Public setup material. The setup transcript root, share commitments, member public keys, and policy state are public to the enforcement layer. The enforcement layer holds no secret and can verify but never produce an authorization. 
+
+3.3 Scope 
+
+The construction replaces the custody authorization workflow wherever the asset-control path can run programmable verification logic and enforce both gates. Smart-contract deployments implement both gates directly. It does not produce a native threshold signature under any member scheme, and does not transparently control assets whose only control path is a legacy native-account signature verifier. 
+
+# 4 Deployment: signature agility and HSMs 
+
+The lifecycle view isolates the signature primitive from the threshold layer. This section records the resulting deployment consequences, especially for post-quantum migration and HSM-based custody. 
+
+4.1 The signature scheme is a deployment parameter 
+
+The seal’s field arithmetic, Shamir sharing, and reconstruction are defined over 
+
+Fp with zero coupling to the member-signature primitive. This yields the crypto-graphic agility the post-quantum transition demands. Threshold Authorization Without Threshold Signatures 9
+
+Scheme choice. The construction works with SLH-DSA, ML-DSA, ECDSA, EdDSA, or any future EUF-CMA scheme. 
+
+Migration is key rotation. Moving a member from ECDSA to SLH-DSA is a Maintain operation (register the new public key, retire the old); the threshold layer, policy engine, and audit pipeline are untouched. 
+
+Hybrid quorums. The verifier checks each envelope under that member’s registered key, so members on different schemes can coexist in one quorum, permitting a staged migration. 
+
+Post-quantum posture. The seal relies only on hash commitments and information-theoretic Shamir secrecy; once every member key is post-quantum, the whole deployment is, with no discrete-logarithm or pairing assumptions. The security analysis (Appendix A) consumes only the EUF-CMA advantage of each registered key. A mixed quorum inherits the weakest deployed scheme: an operation approved by a quorum containing even one classical key carries the classical bound for that operation. By contrast, changing the signature scheme under a threshold signature protocol means a new DKG, a new presignature lifecycle, a new combination algorithm, and a new security analysis. 
+
+4.2 Working with HSMs 
+
+The construction naturally composes with HSM custody. 
+
+Member keys in commodity HSMs. Member signing keys can live in commodity HSMs: the protocol requires only an ordinary signature over the contribution envelope, so any device exposing a standard sign API for a supported scheme participates directly, and as vendor firmware ships FIPS 204/205 support, HSM-resident post-quantum member keys work without protocol changes. This differs from threshold signing, where each member’s contribution is a scheme-specific partial-signature computation that commodity HSM firmware does not imple-ment. 
+
+Custody state beyond the key. Standard HSM firmware protects the signing key only: coefficient shares, opening randomness, and reservation state live in the member’s signer service or in a device with custom firmware. This storage separation is a feature of the deployment (Section 6.2), but it must be provisioned deliberately. 
+
+The HSM as enforcement layer. The enforcement layer itself can be an HSM-hosted policy module: it needs signature verification, field arithmetic, and a hash, but no secret key material. 10 D. Porechna 
+
+Master-key custody. Where an asset master key is held inside one HSM, unlocked by a quorum of approver signatures [ 18 ], the HSM is the enforcement layer. At setup it stores the setup root and registered member keys; at operation time it runs C1–C4 and releases the master-key signature only when the seal verifies. This upgrades the unlock condition from “count t approver signatures” to the two-factor quorum of Section 6.2, and the output is a native signature under the master key, recovering drop-in compatibility with legacy chains at the cost of the master key’s hardware trust anchor. The practical consequence for the HSM-vs-MPC framing [ 18 ]: distributed 
+
+t-of-n authorization with below-threshold secrecy no longer requires giving up HSM-resident, standardized signature keys. 
+
+4.3 Enforcement-layer requirements 
+
+The construction requires the enforcement layer to provide the following compo-nents: (1) signature verification for the signature check, (2) Fp arithmetic and a hash for the seal check, (3) an operation-time share-correctness opening check (hash-committed openings need only a collision-resistant hash; no pairings, no lattice arithmetic, no discrete-log assumption), (4) ordered finality for single-use coefficient-id consumption (Section 7.2), (5) policy-state binding. 
+
+4.4 Deployment surfaces 
+
+The target is rare, high-value custody operations: withdrawals, mint/burn, key rotation, delegation. Both gates can serve as consensus-level validity conditions on a native chain, or as acceptance logic in a smart-contract custody module. Gas cost is the practical boundary for on-chain deployment. 
+
+# 5 Security rationale 
+
+The deployment claims above rely on the two gates composing in the intended way: signatures provide attribution, while the seal provides threshold authorization and secrecy. The formal scheme, share-correctness profile definitions, security experiments, theorem statements, and all proofs are collected in Appendices A and B. This section states the system model, the custody guarantees, and the attack matrix that deployments should evaluate. 
+
+5.1 System and adversary model 
+
+Parties. n custody members C1, . . . , C n, each holding a long-term member signing key and per-slot coefficient shares with their opening randomness; an untrusted relay that proposes operations and transports contribution envelopes; and an enforcement layer (chain consensus, contract, vault, or issuer module) that executes C1–C4 over public state. Threshold Authorization Without Threshold Signatures 11 
+
+Enforcement layer. Trusted for integrity only : it executes C1–C4 correctly and consumes coefficient identifiers atomically in a total order (ordered finality). It holds no custody secret. A compromised verifier learns nothing beyond public data and can verify the seal but never produce one (Remark 2). 
+
+Relay and network. The relay and network are adversarial: the adversary observes, delays, drops, reorders, and injects envelopes at will. Withholding envelopes affects liveness only; the guarantees below establish safety. 
+
+Corruption model. The adversary corrupts members statically, before setup, at two grades: 
+
+– Key-only corruption (i ∈ K): the adversary learns the signing key sk i; the member itself continues to guard its slot shares and follow signer-side single-use reservation. 
+
+– Full corruption (i ∈ F ): the adversary learns sk i and the member’s entire slot state and acts arbitrarily on its behalf. 
+
+K and F are disjoint subsets of [n]. The custody threshold assumption is that fewer than t members are fully compromised; the formal analysis quantifies exactly what mixed corruptions ( K̸ = ∅) can and cannot do. 
+
+Setup assumption (S). Setup is modeled as an ideal sharing functionality: for every slot ν it fixes degree-(t − 1) polynomials whose constant terms are uniform and independent across slots, delivers shares and commitment randomness to each member, and publishes commitments under the setup root. The production JRSS must satisfy: (a) at least one contributor is honest; (b) contributor ran-domness is bound before reveal (commit-then-reveal); (c) the VSS sub-protocols enforce agreement on the dealt polynomials; (d) share commitments are derived deterministically from the transcript, so all parties compute the same root. 
+
+5.2 Custody guarantees 
+
+To provide the expected custody functionality, the construction should provide the following guarantees: 
+
+– (I0) Threshold authorization. No set of fewer than t effectively corrupted custody parties can produce an accepted authorization (Theorem 1). 
+
+– (I1) Threshold secrecy. Below-threshold corruption yields no information about the secrets of any unused coefficient slot (Theorem 2). 
+
+– (I2) Per-operation binding. An accepted authorization is bound to M and to one coefficient slot, and cannot be retargeted or replayed (Proposition 1). 
+
+– (I3) Member attribution. Each accepted contribution is attributable to a registered member, and honest members cannot be framed (Proposition 2). Additionally, the deployment should ensure that the following conditions are met: 12 D. Porechna                       
+
+> Table 1. Dual-gate composition: representative adversaries.
+> Attacker capability Authorize? Why
+> Steal one member’s sk i
+> only No Still needs that member’s slot opening and t−1additional signed contributions (Theorem 1) Compromise < t custody parties No Below-threshold shares give zero information about coefficients (Theorem 2) and cannot reconstruct the seal Steal ≥tmember signing keys but not coefficient shares No †Operation-time openings bind each share to setup; a fabricated opening forges the profile commitment (Theorem 1). †Per slot: holds for slots with no prior approval by a stolen-key member (Remark 1) Compromise ≥tcustody parties Yes They can sign envelopes and evaluate the affine map; this is the intended custody threshold ( |F| ≥ t)Compromise validators only No Validators verify both gates but hold no custody coefficient shares (Remark 2)
+
+– (D1) Share correctness. The share-correctness profile must be hiding and opening-unforgeable (Definition 1); the recommended salted-hash profile satis-fies both (Lemma 1). 
+
+– (D2) Single-use coefficient slots. Signer-side reservation (each honest member evaluates each slot for at most one message) and enforcement-side consumption of coeffid ν under ordered finality. The end-to-end security level is min (hash security, member-signature EUF-CMA). The formal statements and reductions appear in Appendix A; all proofs in Appendix B. 
+
+5.3 Attack matrix 
+
+Table 1 instantiates the formal results against representative adversaries. The custody threshold is the security boundary: the signature check prevents attribu-tion and relay-substitution attacks; the seal check prevents a below-threshold set of valid member identities from authorizing. 
+
+Remark 1 (The stolen-keys guarantee is per-slot). The third row’s “No” is scoped: a key-compromised member that has approved any message on slot ν has pub-lished its slot-ν opening, and from that point only its signature—which the adversary holds—protected its slot-ν contribution. If some t stolen-key members have all previously approved on one unconsumed slot, the adversary can re-sign the published openings under fresh envelopes for a message of its choice. The Threshold Authorization Without Threshold Signatures 13 
+
+row’s guarantee therefore covers slots on which no stolen-key member has ap-proved, which includes every slot of a fresh batch; consumed slots are closed by C4 regardless. Operationally, discovered key compromise should trigger an imme-diate freeze of unconsumed slots carrying prior approvals from the compromised members. 
+
+Remark 2 (Verifier independence). The enforcement layer’s state is public and its algorithm is deterministic; a compromised verifier learns nothing beyond public data. What verifier compromise can do is violate the integrity assumption itself—accepting without running C1–C4—which is the standing assumption on the layer that ultimately moves the asset, identical for any custody design including threshold signatures. 
+
+# 6 Comparison with deployment baselines 
+
+The comparison below clarifies what the presented construction changes relative to the nearest deployment baselines: threshold signing, on-chain multisig, and off-chain dual control. 
+
+6.1 Workflow mapping 
+
+Table 2 maps each custody lifecycle operation to threshold ECDSA and the dual gate. The key structural difference: migrating the signature primitive under threshold ECDSA means rebuilding the entire threshold protocol, DKG profile, presignature lifecycle, and integration surface. Under the dual gate, migration is a key rotation. 
+
+6.2 On-chain multisig as a baseline 
+
+A t-of-n multisig under a post-quantum scheme is the simplest programmable baseline: register n member keys and have the verifier count t valid signatures. On Ethereum today this means a smart-account or account-abstraction path until future signature precompiles or native signature verification are deployed; deployment is limited by gas cost, signature size, and the keys that control up-grades or account recovery [ 7]. It provides threshold authorization, per-operation binding, and attribution, and no threshold-signing problem arises because nothing is thresholded. The dual gate keeps that simplicity and adds what a signature count cannot provide. 
+
+A second, independent authorization factor. In multisig, compromising t signing keys is total compromise. In the dual gate, an adversary holding ≥ t stolen signing keys still fails the seal check (Table 1): coefficient shares are separate material, typically in separate storage, with information-theoretic below-threshold secrecy. 
+
+Confidential, programmable policy. Multisig policy is public verifier code over public identities. The seal evaluates policy over state that is itself secret-shared, which no single member or verifier can read or unilaterally alter (Section 2.5). 14 D. Porechna 
+
+Table 2. Threshold ECDSA vs. dual gate across the custody lifecycle. 
+
+Op Threshold ECDSA Dual gate 
+
+Setup DKG distributes ECDSA key shares VSS/AVSS/JRSS distributes affine coefficient shares; each member registers a signature public key Approve Produce partial ECDSA signature share Produce a signed contribution envelope: member signature over (μM,ν , coeffid ν , i, [σν ]i)
+
+and the share opening Authorize Combine partial signatures into one ECDSA signature Reconstruct the seal σν from authenticated evaluation shares after opening verification Verify Verify the combined ECDSA signature against the public key Verify member signatures (C1) and the reconstructed seal (C2–C3) Maintain Proactive key-share refresh, re-sharing for member rotation Proactive coefficient refresh, member key rotation, policy update (each itself an authorized custody op) Output Native threshold ECDSA signature verifiable by any ECDSA checker Enforcement-layer authorization receipt; not a native signature, unless the enforcement layer is an HSM guarding a master key (Section 4.2) 
+
+Below-threshold recovery. Proactive refresh re-randomizes coefficient shares, so below-threshold share exfiltration is neutralized by the next refresh. Multisig has no analogous recovery: a leaked signing key stays leaked until a public key rotation. 
+
+6.3 Off-chain dual control as a baseline 
+
+The same quorum logic is implemented today as an off-chain product pattern: a rule engine, typically hosted in an HSM, verifies each approver’s ordinary signature over the transaction intent and, once t valid approvals are counted, creates and signs the blockchain transaction under a master key [ 18 ]. Cryptographically this is the multisig of Section 6.2 relocated behind a trust anchor, and it inherits the same limits: compromising t approver keys is total compromise, the policy is trusted code over public identities, and there is no below-threshold secrecy or share refresh. It also concentrates trust beyond what on-chain multisig requires: the rule engine and the master key form a single point whose compromise bypasses the quorum entirely. Threshold Authorization Without Threshold Signatures 15 
+
+The dual gate composes with this deployment rather than competing with it. Where the control path is programmable, the enforcement layer runs both gates and holds no secret at all. Where a master key deployment is preferable, Section 4.2 keeps the HSM as the enforcement layer but upgrades its unlock condition from “count t approver signatures” to the two-factor quorum: an adversary holding t
+
+approver keys still satisfies the rule engine’s signature count but cannot produce the seal. 
+
+6.4 Strengths 
+
+Cryptographically simpler. No curve arithmetic, no multi-round signing MPC, no zero-knowledge machinery in the signing path: one field evaluation and one ordinary signature per member, verified by hashing and interpolation. 
+
+More efficient per operation. Approval is non-interactive given a slot; the online phase is one round of envelope collection. 
+
+Signature-scheme agnostic. Any EUF-CMA scheme, including hash-based schemes for which threshold signing is prohibitively expensive [13]. 
+
+No long-lived joint algebraic key. Threshold ECDSA publishes a group public key whose discrete log is the joint signing key, a standing target for a future quantum adversary. The dual gate publishes no joint key; member keys are individually replaceable and below-threshold secrecy of the seal coefficients is information-theoretic. 
+
+HSM-compatible. Members and verifiers need only standard primitives (Sec-tion 4.2). 
+
+# 7 Operational requirements and limitations 
+
+Separating authorization from native threshold signing moves some costs into operational deployment and enforcement instead of absorbing them inside the signature abstraction. 
+
+7.1 Limitations 
+
+Not a signature. The output is a seal plus metadata, verifiable by an enforcement layer that implements both gates; TSS outputs a native signature any standard verifier accepts. Assets controlled solely by a legacy native-account verifier are out of scope unless the enforcement layer is an HSM guarding the account’s master key (Section 4.2). 
+
+Custom verifier logic. The enforcement layer must implement the acceptance rule (Section 4.3); TSS verification is a stock signature check. 16 D. Porechna 
+
+Per-operation state. Single-use coefficient slots must be provisioned and their consumption tracked under finality—the same discipline as presignatures, but it is state a stateless-verification design would not carry. 
+
+Quorum visibility. Accepted envelopes identify the approving members to the enforcement layer. Attribution is a custody feature, but a combined threshold signature can hide the approving quorum from the verifier. 
+
+Setup requirements. Production deployments need a VSS/AVSS/JRSS setup that exports the per-share commitment material the opening check consumes. 
+
+Economic quorum capture. Bribing or coercing t members defeats the construction exactly as it defeats multisig and threshold signing; the custody threshold is an assumption about member independence that no authorization cryptography replaces. 
+
+7.2 Single-use coefficient slots 
+
+A coefficient slot is the analog of a presignature in production threshold ECDSA and must be consumed exactly once. Enforcement is two-layered: enforcement-layer coeffid consumption under ordered finality prevents a second accepted 
+
+operation, and signer-side reservation prevents a policy-conforming signer from emitting two evaluations of one slot. Reuse burns the affected slot’s ephemeral authorizer only; unlike ECDSA nonce reuse it does not leak any long-term key. Batch pre-sharing amortizes setup cost for frequent operations; just-in-time sharing suits rare, high-value custody ops. The batch cost is modest: the JRSS round count is independent of B (one commit round, one dealing round, and the consistency rounds of the chosen VSS), and bandwidth is linear in B; at n = 20 ,
+
+B = 10 4, and 32-byte field elements a member transmits ∼12 MB per batch, an unremarkable offline run. Ordered finality requires that for each slot ν, the enforcement layer produces exactly one accept decision, atomic with the consumption of coeffid ν , in one total order visible to every system that acts on authorizations. On multi-shard or rollup architectures, slot consumption must live at one serialization point common to all surfaces that can accept operations. Slot exhaustion is a liveness consideration, never a safety one: an empty batch stalls new authorizations until the next JRSS run and forfeits nothing. 
+
+7.3 Setup root management 
+
+The setup transcript root anchors every share-correctness opening. It is authenti-cated to the enforcement layer at deployment: a chain state variable, a contract storage variable, or HSM state provisioned at commissioning. Exactly one root is live per custody wallet. Proactive refresh re-shares unconsumed slots and re-commits them under a new root; the rotation is itself an authorized custody operation, consuming a slot under the old root. Threshold Authorization Without Threshold Signatures 17 
+
+7.4 Open questions – Refresh and root rotation: how refreshed shares re-commit under a new root without an authorization gap, including dual-root acceptance windows and cross-root replay analysis. 
+
+– Slot management under asynchrony: availability tradeoffs of signer-side reservation versus just-in-time setup, particularly for small thresholds. 
+
+– Setup instantiation: which VSS/AVSS/JRSS protocols export the per-share verification material the hash-commitment profile consumes. Natural candidates are the Cachin–Kursawe–Lysyanskaya–Shoup AVSS framework [ 3]for post-quantum deployments and KZG polynomial-commitment AVSS [ 10 ]for classical; verifying a specific production protocol against assumption S conditions (a)–(d) remains open. 
+
+– Adaptive corruption: the model is static; lifting to adaptive corruption faces the usual commit-and-guess obstacles. 
+
+# 8 Reference implementation 
+
+To validate that these requirements are implementable with standard components, we include a compact Rust demonstrator of the full dual-gate protocol with a pluggable share-correctness profile. The implementation uses the secp256k1 scalar field for seal-check arithmetic and Ed25519 for the signature check; both are classical stand-ins chosen for demonstrator convenience. A production post-quantum profile pairs a post-quantum member scheme (SLH-DSA or ML-DSA) with the hash-commitment profile. Three share-correctness profiles are implemented: the hash-committed opening profile (recommended, post-quantum), the secp256k1 Pedersen commitment profile (classical discrete-log demonstrator), and an external-AVSS-transcript adapter for existing setups that do not export public operation-time openings. The test suite covers Shamir roundtrips, happy-path custody (2-of-3, 3-of-5), quorum consistency, message binding, rejection of the keys-without-shares adversary under the hash-commitment profile, rejection of tampered evaluations, and standard rejection cases. The reference implementation is publicly available [6]. 
+
+# 9 Conclusion 
+
+Digital asset custody needs threshold multi-party approval, and threshold signa-tures have been the default way to get it. The post-quantum transition changes the price on that default: for standardized hash-based schemes, any threshold signing protocol must evaluate the hash function inside MPC at prohibitive cost [ 13 ]. The dual gate does not pay that price, because it never thresholds the signature: members sign ordinarily, and the threshold property is provided by a seal jointly computed from Shamir-shared secrets, where it is native and 18 D. Porechna 
+
+information-theoretic. The result is custody authorization from standard primi-tives in which the signature scheme is a deployment parameter: post-quantum migration is a key rotation, hybrid quorums need no flag day, and the same protocol runs at consensus level, in a smart contract, or inside an HSM guarding a master key. What a threshold signature provides and the dual gate does not is a native signature any stock verifier accepts; where an enforcement layer can check two gates instead of one signature, the migration becomes routine. 
+
+Acknowledgments. The author thanks Paarrthhh Sharad Birla (EternaX Labs), whose early identification of the Taurus report [ 18 ] and the post-quantum gap in MPC custody prompted this line of work; Jean-Philippe Aumasson (Taurus) for feedback on the post-quantum custody landscape and the practical deployment considerations; and Chen Feng (University of British Columbia) for detailed discussions on the security model and the relationship to threshold and MPC primitives. 
+
+# References 
+
+1. Ambainis, A., Hamburg, M., Unruh, D.: Quantum security proofs using semi-classical oracles. In: Advances in Cryptology—CRYPTO 2019 (2019) 2. Boneh, D., Dagdelen, Ö., Fischlin, M., Lehmann, A., Schaffner, C., Zhandry, M.: Random oracles in a quantum world. In: Advances in Cryptology—ASIACRYPT 2011 (2011) 3. Cachin, C., Kursawe, K., Lysyanskaya, A., Shoup, V.: Asynchronous verifiable secret sharing and proactive cryptosystems. In: Proceedings of the 9th ACM Conference on Computer and Communications Security (CCS) (2002) 4. Canetti, R., et al.: UC non-interactive, proactive, threshold ECDSA with identifiable aborts. In: Proceedings of the 2020 ACM SIGSAC Conference on Computer and Communications Security (CCS) (2020) 5. Celi, S., del Pino, R., Espitau, T., Niot, G., Prest, T.: Efficient threshold ML-DSA. Cryptology ePrint Archive, Paper 2026/013 (2026), https://eprint.iacr.org/ 2026/013 
+
+6. EternaX Labs: Dual-gate MPC: Reference implementation. https://github.com/ eternax-ai/dual-gate-mpc (2026) 7. Ethereum Foundation: Post-quantum ethereum. https://pq.ethereum.org/ (Jun 2026), last updated June 27, 2026 8. Gennaro, R., Goldfeder, S.: Fast multiparty threshold ECDSA with fast trustless setup. In: Proceedings of the 2018 ACM SIGSAC Conference on Computer and Communications Security (CCS) (2018) 9. Hülsing, A., Rijneveld, J., Song, F.: Mitigating multi-target attacks in hash-based signatures. In: Public-Key Cryptography—PKC 2016 (2016) 10. Kate, A., Zaverucha, G.M., Goldberg, I.: Constant-size commitments to polynomials and their applications. In: Advances in Cryptology—ASIACRYPT 2010 (2010) 11. Kelsey, J., Lang, N., Lucks, S.: Turning hash-based signatures into distributed signatures and threshold signatures. IACR Communications in Cryptology (2024) 12. Komlo, C., Goldberg, I.: FROST: Flexible round-optimized schnorr threshold signatures. In: Selected Areas in Cryptography (SAC) (2020) Threshold Authorization Without Threshold Signatures 19 13. Kondi, Y., Kumar, N., Vanegas, H.: Threshold signing for standard hash-based signatures is expensive. In: Mathematical Problems in Threshold Cryptography (MPTS) (2026) 14. Krawczyk, H.: LFSR-based hashing and authentication. In: Advances in Cryptology— CRYPTO 1994 (1994) 15. National Institute of Standards and Technology: FIPS 205: Stateless hash-based digital signature standard (SLH-DSA). Tech. rep., NIST (2024) 16. del Pino, R., Katsumata, S., Maller, M., Mouhartem, F., Prest, T., Saarinen, M.J.: Threshold Raccoon: Practical threshold signatures from standard lattice assumptions. In: Advances in Cryptology—EUROCRYPT 2024 (2024). https: //doi.org/10.1007/978-3-031-58723-8_8 
+
+17. del Pino, R., Niot, G.: Finally! a compact lattice-based threshold signature. In: Public-Key Cryptography—PKC 2025 (2025). https://doi.org/10.1007/ 978-3-031-91826-1_6 
+
+18. Taurus SA: Quantum computing risk in digital asset custody: HSM vs. MPC. Industry report (Jun 2026), https://www.taurushq.com/reports/ quantum-computing-risk-in-digital-asset-custody-hsm-vs-mpc/ 
+
+19. The White House: Executive order 14412: Securing the na-tion against advanced cryptographic attacks (Jun 2026), 
+
+https://www.whitehouse.gov/presidential-actions/2026/06/ securing-the-nation-against-advanced-cryptographic-attacks/ 
+
+20. Wegman, M.N., Carter, J.L.: New hash functions and their use in authentication and set equality. Journal of Computer and System Sciences 22 (3), 265–279 (1981) 21. Zhandry, M.: A note on the quantum collision and set equality problems. Quantum Information and Computation 15 (7–8), 557–567 (2015) 
+
+# A Formal security model and results 
+
+For completeness, this appendix records the formal scheme definition, share-correctness profile, security experiments, and all theorem statements supporting Section 5. All proofs are collected in Appendix B. Throughout, λ is the security parameter, adversaries are probabilistic polynomial time (PPT), members are indexed by i ∈ [n], and coefficient slots by ν ∈ [B].
+
+A.1 The share-correctness profile Definition 1 (Share-correctness profile). A share-correctness profile is a non-interactive commitment scheme Π = ( Com , Vf ) over message space F2 
+
+> p
+
+and randomness space Rλ: Com (m; ρ) outputs a commitment, Vf (com , m, ρ ) ∈ { 0, 1}
+
+is deterministic, and Vf (Com (m; ρ), m, ρ ) = 1 for all m, ρ . The profile must satisfy: 
+
+– Hiding. For every PPT D choosing m0, m 1,
+
+Adv hide  
+
+> Π
+
+(D) = Pr[ D(Com (m0; ρ)) = 1] − Pr[ D(Com (m1; ρ)) = 1] , ρ ← Rλ,
+
+is negligible. 20 D. Porechna 
+
+– Opening unforgeability (OU). For every PPT A,
+
+Adv ou  
+
+> Π
+
+(A) = Pr m ← A ; ρ ← Rλ;(m′, ρ ′) ← A (Com (m; ρ)) : Vf (Com (m; ρ), m ′, ρ ′) = 1 
+
+is negligible. 
+
+OU is the binding-style property the acceptance rule actually consumes: a commitment cannot be opened at all without its opening information, even by an adversary that already knows the committed message. This is what defeats the keys-without-shares adversary. 
+
+A.2 Deployed profiles Lemma 1 (Deployed profiles). (i) The salted-hash profile, with ρ ← { 0, 1}λ
+
+and ℓ-bit output, 
+
+Com (m; ρ) = H(“custody-commit” ∥ ρ ∥ m),
+
+satisfies, with H modeled as a random oracle that is only observed and never programmed, 
+
+Adv hide ≤ qH 2−λ and Adv ou ≤ qH 2−λ + ( qH + 1) 2 −ℓ
+
+for adversaries making qH oracle queries. (ii) The Pedersen profile in a prime-order group with independent generators, 
+
+Com (( m1, m 2); ρ) = gm1 
+
+> 1
+
+gm2 
+
+> 2
+
+hρ,
+
+is perfectly hiding, and Adv ou is bounded by the discrete-log advantage in that group. Proof. (i) Hiding: the commitment is the oracle’s output on an input containing the uniform salt ρ; the distributions for m0 and m1 differ only if the distinguisher queries an input with prefix “custody-commit” ∥ρ, an event of probability at most 
+
+qH 2−λ. OU: a valid opening satisfies H(“custody-commit” ∥ρ′∥m′) = com ; the adversary either queries the challenge preimage itself (probability at most qH 2−λ
+
+over ρ), or one of its other queries or its final unqueried output collides with the ℓ-bit value com (probability at most (qH +1)2 −ℓ). (ii) Perfect hiding is standard ( hρ
+
+is uniform). For OU, a valid opening (m′, ρ ′) satisfies gm′ 
+
+> 1
+> 1
+
+gm′ 
+
+> 2
+> 2
+
+hρ′
+
+= gm1 
+
+> 1
+
+gm2 
+
+> 2
+
+hρ:if (m′, ρ ′) = ( m, ρ ) the adversary has computed the discrete logarithm ρ of com · g−m1 
+
+> 1
+
+g−m2 
+
+> 2
+
+to base h; otherwise it has produced a nontrivial discrete-logarithm relation among g1, g 2, h .
+
+Remark 3 (Quantum adversaries and the QROM). Lemma 1(i) is stated in the classical random-oracle model. A quantum adversary evaluates H in superposition, so the post-quantum profile must be assessed in the quantum random-oracle model (QROM) [ 2]. Both properties lift with the generic square-root degradation. Threshold Authorization Without Threshold Signatures 21 
+
+Hiding: by the one-way-to-hiding lemma [ 1], Adv hide = O(qH 2−λ/ 2). OU: by the average-case search bounds of [ 9], Adv ou = O(q2 
+
+> H
+
+2−ℓ + q2 
+
+> H
+
+2−λ), and the multi-target variant across all nB commitments is O(q2 
+
+> H
+
+nB 2−ℓ). At λ = ℓ = 256 the single-target bounds retain ≈128 bits of quantum security, and the multi-target bound stays above 100 bits even for nB = 2 40 slots. The collision advantage 
+
+Adv cr  
+
+> H
+
+of Theorem 1 is O(q3 
+
+> H
+
+2−ℓ) in the QROM [ 21 ]; a deployment wanting this term at 128 bits instantiates the operation-binding hash at ℓ = 384 . Because every reduction in this paper only observes the oracle and never programs or rewinds it, the lifting is a term-by-term replacement of the classical lemmas by these QROM bounds. 
+
+Remark 4 (The salt is load-bearing). A deterministic hash commitment over uniform shares is hiding and one-way in the random-oracle model, but it is 
+
+not opening-unforgeable against an adversary that knows the shares: whoever reconstructs a member’s shares can recompute the commitment and open it. That adversary is reachable: t − 1 fully corrupted shares plus one honest approval of a 
+
+different message on the same slot determine the slot polynomials. The per-share salt ρ closes this: knowing the shares does not yield an opening, so cross-message exposure of a slot never escalates beyond the members whose own keys are stolen. 
+
+A.3 Scheme and acceptance 
+
+Write DG = ( Setup , Approve , Accept ) for the construction of Section 2: Setup is the ideal functionality of assumption S together with member key registration; 
+
+Approve (i, M, ν ) produces member i’s signed envelope per Section 2.3; Accept is the stateful acceptance rule of Section 2.4. On submission of an operation (M, ν )
+
+with envelopes {(Ai, sig i)}i∈Q for a set Q of distinct member indices, |Q| ≥ t,
+
+Accept recomputes μM,ν and x and checks C1: each sig i verifies under the regis-tered pk i and the fields of Ai match (μM,ν , coeffid ν , i ); C2: Vf (com (ν) 
+
+> i
+
+, s ′
+
+> i
+
+, ρ ′
+
+> i
+
+) = 1 
+
+for the opened shares s′ 
+
+> i
+
+= ( k′
+
+> 1,i
+
+, k ′
+
+> 2,i
+
+), and [σν ]i = k′ 
+
+> 1,i
+
+x + k′
+
+> 2,i
+
+; C3: interpolate 
+
+σν ; C4: coeffid ν /∈ Consumed , and on acceptance add it. 
+
+Lemma 2 (Quorum consistency). Under assumption S, honest envelopes for the same (M, ν ) from any two quorums Q, Q ′ ⊆ [n] of size t are accepted and reconstruct the same seal σν = k(ν)1 x + k(ν)2 .Proof. Honest evaluations are values g(i) = xf (ν)1 (i) + f (ν)2 (i) of the polynomial 
+
+g = xf (ν)1 + f (ν)2 of degree at most t − 1; any t distinct points determine g, and C3 returns g(0) = xk (ν)1 + k(ν)2 for either quorum. 
+
+A.4 Security experiments 
+
+All experiments share the following environment. The adversary A first outputs parameters (t, n, B ) and disjoint corruption sets K, F ⊆ [n]. The challenger runs 
+
+Setup , hands A the public state, the signing keys {sk i}i∈K∪F , and the full slot state {(s(ν) 
+
+> i
+
+, ρ (ν) 
+
+> i
+
+)}i∈F, ν ∈[B], and then answers two oracles: 22 D. Porechna 
+
+– OApprove (i, M, ν ) for i / ∈ F : returns Approve (i, M, ν ), which reveals (s(ν) 
+
+> i
+
+, ρ (ν) 
+
+> i
+
+)
+
+by design. At most one query per pair (i, ν ) is answered (D2). 
+
+– OAccept (·): runs the stateful Accept on an adversarial submission, returns the result, and updates Consumed .
+
+Definition 2 (Effective approver set). For a message M and slot ν, the 
+
+effective approver set at any point of an experiment is 
+
+G(M, ν ) = F
+
+∪ { i ∈ K : OApprove (i, ·, ν ) was queried }∪ { i / ∈ K ∪ F : OApprove (i, M, ν ) was queried }.
+
+A fully corrupted member effectively approves everything; an honest member effectively approves exactly what it signed; and a key-compromised member effectively approves anything on slot ν once it has exposed its slot-ν opening by approving some message on that slot. 
+
+Definition 3 (Security experiments). – Threshold unforgeability ( TA -UF ). A wins if some OAccept query accepts an operation (M ∗, ν ∗) while |G(M ∗, ν ∗)| < t . Adv uf (A) is its winning probability. 
+
+– Unused-slot secrecy ( TA -Priv ). A announces a challenge slot ν∗ with |F | ≤ 
+
+t − 1, never queries OApprove (·, ·, ν ∗). The challenger samples b ← { 0, 1} and gives A either z0 = k(ν∗) or z1 ← F2
+
+> p
+
+; A outputs b′, and Adv priv (A) = Pr [b′ =1 | b = 0] − Pr[ b′ = 1 | b = 1] .
+
+– Attribution ( TA -Attr ). A wins if some accepted submission contains a veri-fying envelope attributed to some i / ∈ K ∪ F although OApprove (i, M ∗, ν ∗) was never queried. 
+
+A.5 Threshold unforgeability (I0) Theorem 1 (Threshold unforgeability). Under setup assumption S, for every PPT adversary A against TA -UF there are reductions B1, B2, B3, each with running time close to A’s, such that 
+
+Adv uf (A) ≤ n · Adv euf -cma Sig (B1) + nB · Adv ou  
+
+> Π
+
+(B2) + Adv cr  
+
+> H
+
+(B3).
+
+The statement needs no bound on |F |: if |F | ≥ t then |G(M, ν )| ≥ t for every operation and the game is unwinnable by definition, the intended custody threshold. The proof (Appendix B) splits on the corruption grade of a member the forged quorum must contain: an honest member’s envelope yields an EUF-CMA forgery or a hash collision, and a key-compromised member’s envelope requires forging a commitment opening. 
+
+Remark 5 (Concrete bounds). With the salted-hash profile the OU term is at most 
+
+nB (qH 2−λ + ( qH + 1) 2 −ℓ), negligible even for large slot batches at λ = ℓ = 256 .The information-theoretic floor is that a blind guess of an opening-consistent share pair succeeds with probability p−2 ≈ 2−512 per attempt. The end-to-end forgery level is min( member-signature EUF-CMA , profile security ).Threshold Authorization Without Threshold Signatures 23 
+
+A.6 Threshold secrecy (I1) Theorem 2 (Unused-slot secrecy). Under setup assumption S, for every PPT A against TA -Priv with |F | ≤ t − 1 there is a hiding distinguisher D with comparable running time such that 
+
+Adv priv (A) ≤ 2 ( n − | F |) · Adv hide  
+
+> Π
+
+(D).
+
+The advantage is 0 for the perfectly hiding Pedersen profile and at most 2( n −|F |) qH 2−λ for the salted-hash profile in the random-oracle model; given the shares alone, ignoring the commitment layer, secrecy is information-theoretic. Remark 6 (Used and exposed slots). Secrecy is claimed only for unused slots. A consumed slot’s shares are public by design, and harmlessly so: C4 guarantees no future operation depends on them. A slot on which an honest member has approved some message is partially exposed, since that member’s shares travel in its envelope. Operators should time slot lifecycles from envelope publication rather than acceptance, and proposal flow should keep at most one live operation per slot. Theorem 1 keeps the exposure confined: computing the slot polynomials yields neither the per-member opening randomness that C2 demands (Remark 4) nor any signature, so the exposed contribution remains protected by the member’s signature, escalates to effective approval only when that member’s signing key is also stolen, and never affects other slots or any long-term key. 
+
+A.7 Operation binding (I2) and member attribution (I3) Proposition 1 (Per-operation binding). (a) An accepted authorization for 
+
+(M, ν ) cannot be retargeted: a submission for (M ′, ν ) with M ′̸ = M that reuses any of its envelopes either fails C1 or yields a collision in H. (b) At most one operation is ever accepted per coefficient slot. (c) The binding covers the custody metadata (address, policy id, operation type), which are inputs to μM,ν .
+
+Proposition 2 (Attribution and non-frameability). For every PPT A
+
+against TA -Attr ,
+
+Pr[ A wins ] ≤ n · Adv euf -cma Sig + Adv cr  
+
+> H
+
+.
+
+A.8 Composition Corollary 1 (Custody authorization guarantees). Let Sig be any EUF-CMA signature scheme and Π a hiding, opening-unforgeable share-correctness profile, and let the enforcement layer satisfy the integrity assumption of Section 5.1. Then the construction of Section 2 realizes the custody lifecycle of Section 3.1 with guarantees I0–I3 and the concrete bounds of Theorems 1 and 2 and Propositions 1 and 2, and maintenance can refresh coefficient shares or rotate member keys without changing the authorization logic. Sig appears in the bounds only through its EUF-CMA advantage, so it is a deployment parameter rather than a protocol parameter. 24 D. Porechna 
+
+# B Deferred proofs 
+
+Proof of Theorem 1 (threshold unforgeability) 
+
+Proof. Condition on a win: some OAccept query accepted (M ∗, ν ∗) with a quorum 
+
+Q of at least t distinct indices, all of C1–C4 passing, while |G(M ∗, ν ∗)| < t at that moment. Since |Q| ≥ t > |G(M ∗, ν ∗)|, there is an index i† ∈ Q \ G(M ∗, ν ∗);fix the smallest. As F ⊆ G(M ∗, ν ∗) we have i† /∈ F , leaving two exhaustive cases. Write εsig and εopen for the probabilities of a win with i† /∈ K and i† ∈ K
+
+respectively, so Adv uf (A) ≤ εsig + εopen .
+
+Case 1: i† /∈ K ∪ F (signature forgery or hash collision). By C1 the submis-sion carries a valid signature sig i† under pk i† on an envelope Ai† whose fields include (μM ∗,ν ∗ , coeffid ν∗ , i †). Honest Ci† signed only the envelopes returned by OApprove (i†, ·, ·), and i† /∈ G(M ∗, ν ∗) means the query (i†, M ∗, ν ∗) never oc-curred. The envelope encoding is canonical and injective, so Ai† coincides with a previously signed envelope only if that envelope was produced for some (M, ν )
+
+with coeffid ν = coeffid ν∗ (hence ν = ν∗) and μM,ν ∗ = μM ∗,ν ∗ despite M̸ = M ∗;the latter exhibits distinct inputs with equal outputs in the computation of 
+
+μM,ν ∗ , and B3 outputs the colliding pair. Otherwise Ai† was never signed by the oracle and (Ai† , sig i† ) is an EUF-CMA forgery. Reduction B1 picks j uniformly in [n] \ (K ∪ F ), installs the EUF-CMA challenge key as pk j , runs the rest of setup itself, answers OApprove (j, ·, ·) through its signing oracle, and on a win with 
+
+i† = j outputs the forgery. So εsig ≤ n · Adv euf -cma Sig (B1) + Adv cr  
+
+> H
+
+(B3).
+
+Case 2: i† ∈ K \ G(M ∗, ν ∗) (opening forgery). By Definition 2 no query 
+
+OApprove (i†, ·, ν ∗) occurred, so the opening randomness ρ(ν∗) 
+
+> i†
+
+was never released. The adversary may well know the shares s(ν∗) 
+
+> i†
+
+themselves, but C2 accepted an opening (s′, ρ ′) with Vf (com (ν∗) 
+
+> i†
+
+, s ′, ρ ′) = 1 , and producing any valid opening without the dealt randomness is exactly the OU game of Definition 1. Reduction 
+
+B2 guesses (j, μ ) ← K × [B], runs setup itself, submits m = s(μ) 
+
+> j
+
+to the OU challenger, and installs the returned commitment as com (μ) 
+
+> j
+
+. It can answer every oracle query: the only value it lacks is ρ(μ) 
+
+> j
+
+, needed only for OApprove (j, ·, μ ), and if that query arrives then j ∈ G(·, μ ) and the guess was already wrong, so B2 aborts. In the salted-hash instantiation the random oracle requires no simulation: H is a public oracle shared by A, B2, and the OU challenger, and B2 only observes it, so the embedding is exact. In particular, an adversary that queries H on the challenge preimage “custody-commit” ∥ ρ(μ) 
+
+> j
+
+∥ s(μ) 
+
+> j
+
+, thereby learning the withheld salt, has not evaded the reduction; it has produced a valid opening, the event already charged inside Adv ou  
+
+> Π
+
+by the qH 2−λ term of Lemma 1. On a win with a correct guess it outputs (s′, ρ ′), so εopen ≤ nB · Adv ou  
+
+> Π
+
+(B2).
+
+Proof of Theorem 2 (unused-slot secrecy) 
+
+Proof. Let h = n − | F | and let i1 < · · · < i h enumerate [n] \ F . Consider hybrids H0, . . . , Hh, where H0 is the b = 0 experiment and Hj replaces the Threshold Authorization Without Threshold Signatures 25 
+
+challenge-slot commitments com (ν∗) 
+
+> i1
+
+, . . . , com (ν∗) 
+
+> ij
+
+by commitments to (0 , 0) under fresh randomness. Adjacent hybrids are simulatable from a hiding challenge: the reduction samples all setup secrets itself, submits m0 = s(ν∗) 
+
+> ij
+
+and m1 = (0 , 0) ,and embeds the challenge commitment as com (ν∗) 
+
+> ij
+
+. It never needs the challenge opening: approvals on ν∗ are disallowed by the experiment, and OAccept only runs the public Vf on adversary-supplied openings. Since the reduction knows k(ν∗)
+
+it can hand over the challenge value for either bit, so | Pr [Hj−1 = 1] − Pr [Hj =1] | ≤ Adv hide  
+
+> Π
+
+(D).In Hh the view of A before the challenge depends on slot ν∗ only through the shares {s(ν∗) 
+
+> i
+
+}i∈F delivered at setup: the ν∗-commitments are now independent of the slot, no ν∗-envelope exists, and all other slots use independent polynomials (assumption S). These are at most t − 1 evaluations of each of two degree-(t − 1) 
+
+polynomials, so by perfect secrecy of Shamir sharing they are jointly independent of the uniform k(ν∗). Hence in Hh the real challenge z0 = k(ν∗) is uniform and independent of the view, exactly the distribution of z1, and the b = 0 and b = 1 
+
+experiments coincide. Walking the same hybrids back inside the b = 1 experiment gives the factor 2.
+
+Proof of Proposition 1 (per-operation binding) 
+
+Proof. (a) Every envelope fixes μM,ν under the member’s signature; acceptance for M ′ recomputes μM ′,ν from the submitted operation and C1 requires the signed field to equal it, so a reused envelope forces μM ′,ν = μM,ν , i.e. distinct inputs with equal H-outputs. (b) is the C4 state machine: coeffid ν enters the monotone consumed set at the first acceptance, and the enforcement layer evaluates C4 atomically in finality order, so a second acceptance is impossible unconditionally. (c) is immediate from the definition of μM,ν .
+
+Proof of Proposition 2 (attribution and non-frameability) 
+
+Proof. A win is precisely Case 1 of Theorem 1 for the framed member: a verifying envelope under pk i with i / ∈ K ∪ F for an operation (M ∗, ν ∗) never queried for i; the reductions B1 and B3 apply verbatim. Conversely, every accepted contribution names its member index inside the signed envelope, so accepted quorums are attributable by construction, and relay substitution, share swapping, and impersonation all invalidate sig i.
