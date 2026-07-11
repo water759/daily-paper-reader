@@ -1,0 +1,444 @@
+Title: Modeling Failure Dynamics in Time-Constrained Authentication Systems: Evidence of a Success Cliff in USSD Workflows
+
+URL Source: https://arxiv.org/pdf/2607.07650v1
+
+Published Time: Thu, 09 Jul 2026 01:12:35 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Modeling Failure Dynamics in Time-Constrained Authentication Systems: Evidence of a Success Cliff in USSD Workflows 
+
+Aklile Seyoum Mamo, Amanuel Kebede, Anny Christelle Irakoze, Jema Ndibwile ∗
+
+College of Engineering, Carnegie Mellon University Africa, Kigali, Rwanda Email: amamo@alumni.cmu.edu, akebede@alumni.cmu.edu, cirakoze@andrew.cmu.edu, jndibwil@andrew.cmu.edu *Corresponding author 
+
+Abstract —Time-constrained interactive systems such as USSD (Unstructured Supplementary Service Data)-based financial ser-vices operate under strict session limits and sequential user interaction. While stronger authentication mechanisms improve security, they also increase interaction complexity and time burden, potentially reducing transaction completion. In this work, we model the failure dynamics of such systems and investigate how authentication complexity interacts with user response time and network round-trip time to influence session success rate. We propose and implement a simulation-based framework to investigate these failure dynamics and formally define a non-linear failure phenomenon, termed the Success Cliff , where session success rates sharply decline beyond acritical complexity threshold. Through controlled experiments, we quantify the trade-off between security and usability and identify conditions under which secure authentication workflows become operationally unreliable. 
+
+I. I NTRODUCTION 
+
+USSD-based systems enable critical services such as mobile money, balance inquiries, and bill payments. However, USSD interactions are constrained by short session durations (typi-cally around 120 seconds), sequential menu navigation, and reliance on user input. To enhance security, authentication mechanisms such as PIN verification, confirmation prompts, verification requiring deliv-ery from external subsystems (e.g., SMS OTP) are commonly introduced. While these mechanisms strengthen security, they also increase interaction complexity and time requirements. This creates a fundamental challenge: secure authentica-tion workflows may become difficult to complete within the constraints of the system. For users navigating a multi-step authentication flow under an invisible session timer [9], each additional prompt compounds cognitive load [7] and reduces the available time margin for error recovery, a dynamic that our results demonstrate can tip from manageable degradation into abrupt session failure. Despite this, existing research primarily focuses on improving authentication mechanisms rather than understanding when and why these systems fail in practice. In this paper, we move beyond system design and instead model failure dynamics in time-constrained authentication systems. We identify the Success Cliff as the point at which session completion collapses non-linearly once authentication complexity exceeds a critical threshold, and show that out-of-band blocking delay, not step complexity alone, is the necessary condition for its emergence, with direct implications for authentication design in resource-constrained deployments. II. R ELATED WORK 
+
+A. Authentication in USSD and Mobile Financial Systems 
+
+USSD-based financial systems are widely used to provide banking and mobile money services in regions with limited smartphone penetration. These systems rely on menu-driven interaction and session-based communication, requiring users to complete transactions within a fixed time window [3]. Prior work has primarily focused on strengthening authenti-cation protocols and identifying vulnerabilities in USSD com-munication. For example, Lamoyero and Fajana [1] analyze USSD banking systems and show that many platforms rely on weak or single-factor authentication, making them vulnerable to attacks. Other studies propose improved authentication mechanisms, such as dynamic knowledge-based authentication models that generate user-specific challenge questions to enhance secu-rity [2]. Similarly, research on mobile authentication systems highlights the increasing use of multi-factor authentication techniques to mitigate risks such as SIM swapping and social engineering [4]. 
+
+B. Limitations of Existing Approaches 
+
+Despite advances in authentication mechanisms, existing studies rarely evaluate how these systems perform under real-world interaction constraints. USSD systems operate under strict temporal and structural limitations, including short ses-sion durations, sequential menu navigation, and dependence on user response time. In practice, each additional authentication step increases both cognitive and temporal burden. User interaction delays, network round-trip time, and input errors accumulate over the course of a session, increasing the likelihood of exceeding the system time limit or user abandonment. However, most prior work evaluates authentication mech-anisms in isolation, without considering the combined effect of these factors on session success rate. For instance, while Lamoyero and Fajana [1] highlight weaknesses in authentica-tion design, they do not analyze how interaction complexity impacts usability or success rates. arXiv:2607.07650v1 [cs.CR] 8 Jul 2026 Studies on mobile authentication often focus on improving security properties without modeling user interaction con-straints or time-bound system behavior [4]. As a result, the operational reliability of secure authenti-cation workflows in USSD systems remains under-explored, and system design has largely emphasized security guarantees while treating user interaction constraints as secondary con-siderations. 
+
+C. Research Gap 
+
+Existing research focuses primarily on the design and secu-rity of authentication mechanisms but does not systematically measure when and why these mechanisms fail under real-world constraints. In particular, there is limited understanding of how authen-tication complexity interacts with user behavior and network conditions to influence session outcomes. Furthermore, prior studies do not capture potential non-linear failure behavior, where small increases in complexity may lead to dispropor-tionate drops in transaction success. This gap motivates the need for a system-level analysis of failure dynamics in time-constrained authentication systems. In this work, we address this gap by modeling the interaction between authentication complexity, time accumulation, and user response time, and by identifying the conditions under which system performance collapses, referred to as the Success Cliff .III. P ROBLEM FORMULATION 
+
+We study USSD authentication workflows under strict time constraints to determine the point at which increasing authenti-cation complexity becomes operationally non-viable, modeling the relationship between authentication complexity and session success to identify critical thresholds beyond which usability collapses. III-A–III-C establish the session model and core notation; III-D adapts the standard Keystroke-Level Model [5] to estimate user interaction time, while III-E–III-G model network round-trip time and blocking delay as stochastic processes calibrated to documented USSD conditions; III-H defines our complexity metric; and III-I–III-K introduce our primary modeling contributions, the abandonment models and the formal Success Cliff definition. 
+
+A. System Model 
+
+We model a USSD session as a sequence of N interaction steps consisting of base navigation steps and authentication steps. Each step contributes to the total session time. 
+
+B. Variable Definition 
+
+Core session variables are defined in Table I. 
+
+C. Session Time Model 
+
+A session consists of a sequence of step attempts. Each step attempt k incurs a total time cost defined as: 
+
+tk = Uk + Rk + Dk + Hk. (1)                                   
+
+> TABLE I VARIABLE DEFINITIONS FOR USSD S ESSION MODEL
+> Symbol Description
+> kIndex of the current interaction step
+> BNumber of base navigation steps
+> ANumber of authentication steps
+> NTotal number of steps ( N=A+B)
+> TkCumulative session time elapsed after step ktkTime elapsed at step kUkUser response time at step kRkNetwork round-trip time at step kHkBlocking delay at step k; nonzero only for steps requiring delivery from a subsystem external to the active USSD session or out-of-band authentication (e.g., SMS OTP)
+> DkRetry delay incurred at step kZkBinary indicator of abandonment at step k(Zk∈{0,1})
+> Pabandon (k)Probability of user abandonment at step kτsFixed session timeout threshold
+> τuFixed user response timeout threshold
+> τaFixed application timeout threshold
+
+The components Uk, Rk, Dk, and Hk are summarized here and are defined in detail in the following subsections. The total session time is given by: 
+
+Tsession =
+
+> K
+
+X
+
+> k=1
+
+tk, (2) where K is the total number of steps attempted, including retries. 
+
+D. User Response Time Model 
+
+User response time is modeled using a formulation inspired by the Keystroke-Level Model (KLM) [5]: 
+
+Uk = ( tread ,k + tinput ,k + tcontext ,k ) . (3) 
+
+E. Network Round Trip Time 
+
+Network round-trip time Rk represents the elapsed time between a user submitting a response and the next prompt being displayed. This includes network transmission, backend processing, and platform delays. It is modeled as a stochastic variable drawn from a Gamma distribution, with parameters chosen to produce mean latencies consistent with documented USSD response times under stable, congested, and degraded network conditions respectively [3], [8]. 
+
+F. Blocking Delay 
+
+For authentication steps requiring delivery from external subsystems such as SMS OTP, the session incurs a blocking delay Hk representing the time between the system dispatch-ing the one-time code and the user receiving it. During this interval the USSD session timer continues to elapse, but neither user interaction nor system USSD processing occurs. This delay is distinct from Rk and Uk.
+
+Hk is modeled as a stochastic variable: Hk =
+
+(
+
+WSMS if step k is an SMS OTP step 
+
+0 otherwise , (4) where WSMS is drawn from a predefined distribution reflect-ing SMS delivery latency. Based on SMS OTP delivery times under normal network conditions, we model: 
+
+WSMS ∼ U (5 , 30) seconds . (5) 
+
+G. Retry Mechanism and Error Modeling 
+
+When an error occurs, the user may retry the step, incurring an additional Uk, Rk, and Dk, with authentication steps car-rying higher error probability than base steps due to increased interaction complexity. 
+
+H. Complexity Definition 
+
+Complexity is defined as a time-based proxy that reflects the cognitive and physical effort required by the user. We model the complexity of an authentication step type j as a relative measure based on expected user response time in comparison to a baseline authentication method: 
+
+Cj = E[Uj ]
+
+E[Ubaseline ] , (6) where: 
+
+Ubaseline corresponds to a baseline authentication method (e.g., a 4-digit PIN) and Cj is defined as a step-type prop-erty evaluated for the average user, in order to ensure user-independent comparability across authentication mechanisms. 
+
+I. Session Termination Conditions 
+
+A session may terminate under the following conditions:  
+
+> •
+
+Successful completion  
+
+> •
+
+Session timeout: if Tsession > τ s 
+
+> •
+
+User response timeout: if Uk + Hk > τ u 
+
+> •
+
+Application timeout: if Rk > τ a 
+
+> •
+
+Abandonment 
+
+J. Abandonment Models 
+
+We do not claim that abandonment is independent of time pressure. Instead, we model abandonment as a pre-timeout disengagement process and evaluate whether its behavior differs from timeout under controlled variations of error count normalized by the number of auth steps A and network round trip time. If abandonment were merely a proxy for timeout, its prevalence would scale uniformly with elapsed time. Our experiments test whether this assumption holds. These models are intended to provide transparent and con-servative representations of pre-timeout disengagement rather than precise behavioral prediction. Consequently, we define three alternative abandonment models. At each step attempt k,the user may abandon the session with probability Pabandon (k):
+
+a) Model A: Time-Based: 
+
+Pabandon (k) = min 
+
+
+
+a · Tk
+
+τs
+
+, p max 
+
+
+
+. (7) 
+
+b) Model B: Event-Based: 
+
+Pabandon (k) = min 
+
+
+
+b · Ek
+
+Ak + 1 , p max 
+
+
+
+. (8) where:  
+
+> •
+
+Ek is the cumulative number of errors up to step k, 
+
+> •
+
+Ak is the cumulative number of attempts of authentication steps up to step k (including retries). 
+
+c) Model C: Combined: 
+
+Pabandon (k) = min 
+
+
+
+c1
+
+Tk
+
+τs
+
++ c2
+
+Ek
+
+Ak + 1 , p max 
+
+
+
+. (9) These assumptions are intended to provide a tractable and interpretable model rather than an exact behavioral represen-tation. 
+
+K. Success Cliff 
+
+Under fixed time constraints, failure does not accumulate along a single path: beyond a critical complexity threshold, small increases produce disproportionate collapse through con-current timeout mechanisms rather than gradual degradation, a phenomenon we term the Success Cliff . We formalize this as follows. Let Psuccess (C) denote the probability of successful session completion at complexity level C. We first define the consec-utive drop in the success rate as: 
+
+∆( C) = Psuccess (C) − Psuccess (C + 1) , C ≥ 1. (10) To capture whether this is an accelerated degradation, we define: 
+
+Γ( C) = ∆( C) − ∆( C − 1) , C ≥ 2. (11) The Success Cliff is then defined as: 
+
+Q = min {C : ∆( C) ≥ δ and Γ( C) ≥ γ} , (12) where:  
+
+> •
+
+C is the authentication complexity level, determined by the complexity values Cj of the authentication steps present in that session,  
+
+> •
+
+Q is the detected Success Cliff,  
+
+> •
+
+∆( C) is the drop in the success rate between consecutive complexity levels,  
+
+> •
+
+Γ( C) is the increase in degradation between consecutive drops,  
+
+> •
+
+δ is the minimum drop threshold,  
+
+> •
+
+γ is the minimum acceleration threshold. IV. R ESEARCH QUESTIONS 
+
+To systematically investigate the failure behavior of time-constrained authentication systems, we define the following research questions:  
+
+> •
+
+RQ1: How does the complexity of authentication affect the session success rate under realistic delay conditions?  
+
+> •
+
+RQ2: At what point does increasing authentication com-plexity cause a sharp degradation in session success rate (Success Cliff)?  
+
+> •
+
+RQ3: How do authentication complexity and network round-trip time jointly influence system reliability? V. M ETHODOLOGY 
+
+A. Step Type Parameterization 
+
+Step interaction times are derived using a KLM-inspired de-composition [5], adapted for the USSD feature phone context. Each step is decomposed into three components: a cognitive processing time tread ,k corresponding to the M (mental prepa-ration) operator, a physical input time tinput ,k corresponding to the K (keystroke) operator, and a context-switching time 
+
+tcontext ,k corresponding to the H (homing) operator. Standard KLM operator values are used: M = 1.35s, K = 0.28s per keypress, and H = 0.40s [5], [6]. These values are adapted to the feature phone numeric keypad context, where pointing operators are absent and interaction is limited to numeric input and menu selection. The 4-digit PIN baseline interaction time is anchored to empirical measurements from Panjwani and Cutrell [7], who report mean task completion times for plain PIN entry in a developing-world mobile banking context with 34 participants. Remaining authentication step times are KLM-derived esti-mates scaled to this empirical baseline. The three base navigation steps advance the transaction without verifying identity: menu navigation selects a service from the numeric menu, amount enters the transaction value, and confirm approves the assembled transaction. Error probabilities perror are estimated based on interaction complexity, following the principle established in the authen-tication usability literature that longer and more cognitively demanding input sequences incur higher error rates [7]. 
+
+TABLE II BASE STEP TYPE PARAMETERS FOR AVERAGE USER 
+
+Step Type tread tinput tcontext ¯U (s) Cj perror 
+
+Menu navigation 1.35 0.56 0.00 2.78 — 0.02 Amount 1.35 1.68 0.00 4.41 — 0.02 Confirm 1.35 0.28 0.00 2.37 — 0.02 TABLE III AUTHENTICATION STEP TYPE PARAMETERS FOR AVERAGE USER 
+
+Step Type tread tinput tcontext ¯U (s) Cj perror 
+
+4-digit PIN 1.35 1.40 0.00 4.00 1.00 0.05 6-digit PIN 1.35 1.96 0.00 4.80 1.20 0.08 SMS OTP (6-digit) 1.35 1.96 2.15 7.92 1.98 0.12 Challenge Response † 2.70 1.12 0.00 5.54 1.39 0.10 
+
+> †
+
+Models a typed challenge-response step requiring memory recall (e.g., last three digits of registered phone number). 
+
+B. Parameterization 
+
+Simulation parameters are defined in Table IV. Where possi-ble, values are anchored to documented operator thresholds or reported empirical ranges. Parameters lacking direct empirical support are set conservatively and are subject to the sensitivity analysis described in Section V-C. 
+
+TABLE IV SIMULATION PARAMETERS AND JUSTIFICATION                                                                     
+
+> Parameter Symbol Value Justification
+> Session timeout τs120s Standard MNO limit for third-party USSD services [8], [3] User response timeout τu30s Conservative operator-side threshold [3]. 30s reflects apermissive upper bound. Application timeout τa15s Reflects documented backend re-sponse limits imposed by MNO’s on application server response time [3] Simulation runs —50,000 Sufficient for stable estimation of session success rates at ±0.44% precision at 95% confidence Network RTT (low) RkGamma (2 ,0.50) s, mean ≈1sReflects stable urban GSM con-ditions [3] Network RTT (medium) RkGamma (2 ,1.25) s, mean ≈2.5sReflects intermittent connectivity typical of peri-urban or congested network conditions in African de-ployments [8] Network RTT (high) RkGamma (2 ,2.50) s, mean ≈5sReflects degraded or rural GSM conditions Max abandonment prob. pmax 0.3 Conservative cap ensuring aban-donment models remain bounded and do not dominate session out-comes at low complexity levels Model A coefficient a0.3 Conservative value ensuring
+> Pabandon reaches pmax only near session timeout; set symmetrically with pmax
+> Model B coefficient b0.4 Slightly higher than Model A to reflect that event-driven abandon-ment is more sensitive to errors than passive time pressure Model C coefficients c1, c 20.2,0.3Weights assign primary burden to error accumulation ( c2), sec-ondary burden to time pressure (c1); sum kept below 1.0 to avoid
+> pmax saturation at low complex-ity
+
+C. Sensitivity Analysis 
+
+Since error probabilities perror and several interaction time estimates are derived from KLM decomposition rather than direct empirical measurement in USSD contexts, we conduct a sensitivity analysis to assess whether key findings are robust to variation in these parameters. For each experiment, simulations are repeated under three parameter regimes: a baseline configuration using the val-ues defined in Table III, a low-error regime in which all 
+
+perror values are reduced by 50%, and a high-error regime in which all perror values are increased by 50%. A second analysis sweeps the γ detection threshold across four values (γ ∈ { 0.01 , 0.02 , 0.03 , 0.04 }) with δ fixed at 0.02 . Since γ has no external operational anchor, this sweep tests whether the cliff detection outcome is an artifact of the chosen threshold value or a stable structural property of the authentication flow. VI. E XPERIMENTAL DESIGN 
+
+To evaluate the impact of authentication complexity and network conditions on USSD session success, we design four controlled experiments. Each experiment varies one primary factor while holding all others constant, enabling causal inter-pretation of results. Authentication Complexity Configurations: We define four authentication complexity configurations corresponding to common USSD transaction scenarios, as shown in Table V. 
+
+A. Experiment 0: Baseline 
+
+• Complexity: C1, TABLE V AUTHENTICATION COMPLEXITY CONFIGURATIONS .Level Scenario Workflow steps C1 Standard / Low complexity Mn, Am, P, Co C2 Sensitive / Moderate complexity Mn, Am, P, Mn, P, Co C3 Account recovery / High complexity Mn, P, Mn, P, CR, Co C4 High-value / High complexity Mn, Am, P, Mn, P, OTP, Co   
+
+> †Mn=menu navigation, Am=amount, P=4-digit PIN, Co=confirm, CR=challenge response, OTP=SMS OTP.
+> •
+
+User behavior: average user,  
+
+> •
+
+Network condition: medium round-trip time,  
+
+> •
+
+Abandonment: all three models applied. 
+
+B. Experiment 1: Authentication Complexity  
+
+> •
+
+Variable: Complexity (C1, C2, C3, C4).  
+
+> •
+
+Fixed: 
+
+– Network condition: medium network round-trip time, 
+
+– User behavior: average user, 
+
+– Abandonment: all models applied. 
+
+C. Experiment 2: Network Round Trip  
+
+> •
+
+Variable: Round-trip time (low, medium, high).  
+
+> •
+
+Fixed: 
+
+– Complexity: C1, 
+
+– User behavior: average user. 
+
+D. Experiment 3: Combined Conditions  
+
+> •
+
+Variables: 
+
+– Complexity: C1, C2, C3, C4, 
+
+– Round-trip time: low, medium, high.  
+
+> •
+
+Fixed: 
+
+– User behavior: average user. VII. E VALUATION METRICS 
+
+We evaluate system performance using outcome based met-rics derived directly from the session model. The following metrics are used:  
+
+> •
+
+Session Success Rate: The proportion of sessions that successfully reach the final step of the workflow before any termination condition is triggered.  
+
+> •
+
+Timeout Rate: The proportion of sessions that terminate due to exceeding system-defined time constraints, includ-ing τs, τu, τa. 
+
+> •
+
+Abandonment Rate: The proportion of sessions termi-nated voluntarily by the user prior to timeout, as deter-mined by the abandonment models.  
+
+> •
+
+Average Completion Time: The mean total session time 
+
+Tsession computed over successfully completed sessions only, capturing the effective interaction duration under each configuration.  
+
+> •
+
+Input Error Rate: The average number of input errors per session, derived from cumulative error counts Ek, re-flecting the interaction difficulty associated with different authentication configurations. VIII. R ESULTS 
+
+A. Baseline Experiment Results (Experiment 0) 
+
+To establish a reference point for the behavior of the system, we first simulate the standard low-complexity flow (C1) under medium network round-trip time with an average user. Across all three abandonment models, the baseline session success rate ranges from 98.30% to 99.19%. Session timeouts are negligible at 0.00% and application timeouts account for at most 0.04% of sessions. Abandonment accounts for the small residual failure rate, ranging from 0.78% under Model A to 1.66% under Model C, reflecting the models’ differing sensi-tivity to time pressure and error accumulation, respectively. These results confirm that a standard single-PIN USSD authentication flow is operationally viable under typical net-work conditions, and establish a stable reference point for subsequent experiments. We evaluate results against a 98% session completion threshold, which we adopt as a conservative lower bound for operational viability. The ITU-T Focus Group on Digital Financial Services proposed USSD completion failure ratios of 0.1%–1% as target ranges for network-level KPIs, implying expected success rates of 99%–99.9% under normal operating conditions[9]. Our 98% threshold deliberately sits below this range, representing the point at which failure rates become materially disruptive to users who depend on USSD as their primary financial channel. Results falling below this threshold are therefore interpreted as conditions under which an authen-tication workflow would be operationally non-viable even by conservative standards. 
+
+B. Effect of Authentication Complexity Without Blocking De-lay (Experiment 1) 
+
+Across C1 through C4, session completion declines grad-ually from 98.48%–99.17% to 95.23%–96.88%, a total drop of approximately 2.3–3.3 percentage points. No Success Cliff is detected under any abandonment model or error regime. Consecutive-level drops remain within 1–1.5 percentage points throughout, and session timeouts stay negligible. Abandon-ment grows gradually from ≈ 0.8% at C1 to ≈ 3.7% at C4, reflecting increasing interaction burden rather than abrupt disengagement. These results establish that authentication complexity alone even including the cognitive and input costs of multi-step ver-ification produces predictable, manageable degradation. The system remains operationally viable across the full complexity range tested. The source of non-linear collapse must therefore lie in the delivery mechanism rather than step complexity itself. 
+
+C. Effect of Network Round Trip Time (Experiment 2) 
+
+Session success rates remain above 98% under both low and medium latency, confirming that typical network conditions do not meaningfully threaten session viability for standard authentication flows. Under high latency, however, completion drops sharply to 91.64%–92.20%, falling below the 98% op-erational viability threshold. This degradation is driven almost Fig. 1. Authentication Complexity Vs. Success Rate without Blocking Delay 
+
+entirely by application timeouts, which rise to 6.59%–7.05% as individual round-trip times approach the application timeout threshold τa = 15 s. Abandonment remains largely stable across all three latency conditions, indicating that users do not disengage in response to latency alone. No Success Cliff is detected under any latency condition. The degradation pattern is linear and attributable to a sin-gle mechanism, application timeout pressure, rather than the accelerated multi-factor collapse the cliff represents. These results confirm that high network latency is a meaningful independent threat to session viability, but that it operates differently from complexity-driven failure. Its effect is gradual and mechanistically distinct, which is important to interpret the combined conditions in the next experiment.  
+
+> Fig. 2. Network RTT vs Session Success Rate
+
+D. Combined Conditions and the Role of Blocking Delay (Experiment 3) 
+
+Experiment 3 jointly varies the complexity of authentication and the network round-trip time. We report results from both simulation conditions, with and without blocking delay, as the contrast between them identifies the mechanism driving non-linear failure. 
+
+Without blocking delay , the cliff emerges only under high network round-trip time at C4, where completion drops to 82.36%–83.27%. Under low and medium network round-trip time, completion remains above 95% across all complexity levels with no cliff detected. Failure under high RTT is driven almost entirely by application timeouts (11.49%–11.91%), consistent with the pattern established in Experiment 2. 
+
+With blocking delay , a Success Cliff is detected across every network round-trip time condition tested, including low network round-trip time where network pressure alone produced no cliff. In each case, complexity level 3.39 (C3) represents the last viable operating point, with the sharp drop occurring at C4 (complexity 3.99) when the SMS OTP blocking delay is introduced. The C4 floor drops to 88.67%–89.48% under medium network round-trip time and collapses to 74.88%–75.28% under high network round-trip time. The blocking delay accounts for an additional 7–8 percentage points of failure on top of what network conditions alone produce.  
+
+> Fig. 3. Authentication Complexity vs. Success Rate (With Blocking Delay)
+
+The failure composition reveals a mechanistic detail absent from the no-blocking-delay condition. Across all C4 block-ing delay configurations, the four reported metrics: success, session timeout, application timeout, and abandonment, sum to approximately 95% rather than 100%, leaving a consistent residual of 4–5% attributable to user response timeout. This residual is absent without the blocking delay. The explanation is architectural: when WSMS draws a large value from U(5 , 30) ,the blocking delay consumes a significant portion of the per-step time budget before the user begins responding. Normal user response times that would otherwise complete success-fully then push past τu = 30 s, triggering the user response timeout as a secondary failure mode. The blocking delay there-fore generates two distinct failure pathways simultaneously: session timeout through cumulative time exhaustion, and user response timeout through per-step budget compression.  
+
+> Fig. 4. Failure Taxonomy with Blocking Delay
+
+Together, these results demonstrate that the Success Cliff is not a product of complexity or latency acting independently. It emerges specifically when stochastic blocking delay inter-acts with the fixed session time budget, exhausting available Fig. 5. Failure Taxonomy without Blocking Delay 
+
+time through multiple concurrent mechanisms, and producing failure rates that exceed the sum of their independent contri-butions. 
+
+E. Effects of the Sensitivity Analysis 
+
+With blocking delay , the cliff location is perfectly robust across both analyses. The transition from C3 to C4, where blocking delay is introduced via SMS OTP, is detected as the cliff boundary under all three error regimes and across all 12 gamma threshold combinations (3 models × 4 values). The Q range across all combinations is 0.000. This confirms that within our experimental configurations, the cliff at the C3-to-C4 transition is insensitive to error probability assumptions and independent of the specific gamma threshold chosen, indicating it is driven by the structural introduction of blocking delay rather than by parameter choices or detection thresholds. 
+
+Without blocking delay , neither analysis detects a cliff under baseline conditions. In the error probability analysis, a cliff emerges only under the high-error regime, when all perror 
+
+values are artificially elevated by 50% and is absent in both the baseline and low-error regimes. In the gamma threshold sweep, no cliff is detected across any of the 12 combinations. However, the absence of a cliff does not imply the system remains fully viable at high complexity. Without blocking delay, session success rates at C4 still fall to 95.23%–96.88% under baseline error assumptions, dropping below the 98% 
+
+operational viability threshold. The degradation is gradual and predictable rather than abrupt, but it is real, meaning that even in-band multi-step authentication imposes a meaningful oper-ational cost on session completion as complexity accumulates.                       
+
+> TABLE VI CROSS -CONDITION ROBUSTNESS OF CLIFF DETECTION ACROSS BOTH SENSITIVITY ANALYSES . R OBUSTNESS CRITERION :CLIFF LOCATION RANGE ≤ρ= 0 .1.
+> Condition Analysis Comb. Cliff Robust
+> With blocking delay Error probability 99/9 Yes Gamma sweep 12 12/12 Yes Without blocking delay Error probability 91/9 †No Gamma sweep 12 0/12 No
+> †Cliff detected only under the high-error regime.
+
+These results sharpen the primary finding in two ways. First, the robustness of the C3-to-C4 cliff transition under blocking delay conditions confirms it is not a detection artifact of threshold selection or parameter uncertainty, but a structural consequence of introducing blocking delay into the session. Second, the contrast between conditions reveals two distinct failure regimes: a gradual, manageable degradation driven by in-band complexity accumulation, and a non-linear collapse triggered specifically by the stochastic delivery wait of out-of-band authentication. Without blocking delay, authentication complexity alone degrades session viability incrementally. With it, the same complexity configurations can produce abrupt, operationally unacceptable failure rates. IX. D ISCUSSION 
+
+A. Blocking Delay as the Primary Architectural Threat 
+
+The central finding is that blocking delay is the necessary condition for non-linear session failure. Complexity accumu-lation alone produces gradual, manageable degradation. A cliff emerges only under the most extreme network conditions when blocking delay is absent, confirming that it is the interaction between an uncontrollable delivery wait and a fixed session time budget that produces the abrupt collapse characterized by the Success Cliff. 
+
+B. Two Distinct Failure Regimes 
+
+The results reveal two qualitatively distinct failure regimes in time-constrained USSD authentication. The first is grad-ual degradation, where increasing authentication complexity incrementally consumes the session time budget, producing predictable declines in session success rate that remain de-tectable and bounded. The second is non-linear collapse, where the introduction of blocking delay creates a discrete, uncon-trollable time cost that interacts with accumulated complexity and network latency to exhaust the session budget through multiple concurrent mechanisms simultaneously. These two regimes are not points on a continuum but structurally different failure modes, as evidenced by the sensitivity analysis: without blocking delay, a cliff is detected only when error rates are artificially elevated by 50% beyond baseline estimates, sug-gesting the system sits near but below the cliff threshold under adverse parameter assumptions alone. With blocking delay, the cliff is invariant across all parameter variations tested. The transition between these regimes is therefore governed primarily by whether blocking delay is present, not by the magnitude of error or complexity assumptions. It is also worth noting that even within the gradual degrada-tion regime, sufficiently complex configurations are not with-out operational consequence: without blocking delay, session success rates at C4 fall to 95 .23% − 96 .88% under baseline assumptions, dropping below the 98% viability threshold. This suggests that while complexity accumulation alone does not produce catastrophic failure, it is not operationally neutral either, and warrants attention independently of blocking delay considerations. C. Implications for Financial Inclusion 
+
+The failure rates observed under combined blocking delay and high network latency, reaching as low as 74 .88% session completion, represent a material threat to operational reliability in exactly the deployment contexts where USSD is most critical. Rural deployments characteristically exhibit degraded network conditions and higher user response times relative to the urban averages most authentication benchmarks assume [11], [12], meaning the worst-case conditions modeled here are realistic rather than hypothetical for these populations. SMS OTP based step-up authentication is not yet widely deployed for feature phone users in these contexts, so the cliff identified here does not represent a current exclusion risk. However, increasing fraud pressures and regulatory trends toward stronger authentication [13], [14] suggest such mech-anisms may be extended to these populations, making the failure dynamics identified here prospectively significant for financial inclusion. 
+
+D. Limitations 
+
+This study employs simulation rather than field measure-ment. KLM-derived interaction times use an empirical scaling factor anchored to PIN entry [7], which may overestimate times for simpler steps and underestimate them for more cognitively demanding ones. Two mechanisms absent from the model would further increase failure rates in real deploy-ments: per-step retry limits (e.g., MTN Uganda terminates sessions after three failed PIN attempts [10]), and higher SMS delivery variability in rural or congested environments. The abandonment models are similarly conservative, though their consistency across all three formulations strengthens confidence in the structural finding even if absolute failure magnitudes are underestimated. Taken together, the failure dynamics reported here are likely conservative relative to real-world conditions. 
+
+E. Future Work 
+
+The most important next step is empirical validation. Field studies with real USSD users in contexts such as Rwanda, Uganda, Ghana, and Nigeria would ground key parameters user response times, error rates, blocking delay distributions, and abandonment behavior in observed rather than estimated data. Following validation, a natural extension is a design-time verification tool allowing USSD flow designers to evaluate whether a proposed authentication configuration is opera-tionally viable for their target population before deployment. X. C ONCLUSION 
+
+This work models failure dynamics in time-constrained USSD authentication systems and identifies a non-linear col-lapse in session completion dubbed the “Success Cliff” that emerges specifically when authentication requires a stochastic delivery wait from a subsystem external to the active session. In-band complexity alone produces gradual and manageable degradation. It is the interaction between an uncontrollable blocking delay and a fixed session time budget that produces abrupt failure rates that fall well below operational viability thresholds. For populations that depend on USSD as their primary financial channel and for whom degraded network conditions are common, these findings suggest that authenti-cation mechanisms intended to strengthen security may carry meaningful usability costs that warrant careful evaluation before deployment. REFERENCES [1] Z. A. Lamoyero and O. Fajana, “Exposed: Critical vulnerabilities in USSD banking authentication protocols,” in Proc. IEEE Int. Conf. Cyber Security and Resilience (CSR) , Venice, Italy, Jul. 2023, pp. 275–280, doi: 10.1109/CSR57506.2023.10224933. [2] M. W. Njuguna, “Dynamic knowledge based authentication model for enhancing security of USSD banking transactions,” M.S. the-sis, Strathmore University, Nairobi, Kenya, 2020. [Online]. Available: http://hdl.handle.net/11071/12089 [3] P. Dayang and A. Hamza, “Using USSD-based mobile payment in context of low internet connection,” Int. J. Wireless Com-mun. Mobile Comput. , vol. 9, no. 1, pp. 1–6, Sep. 2021, doi: 10.11648/j.wcmc.20210901.11. [4] A. Kinai, F. Otieno, N. Bore, and K. Weldemariam, “Multi-factor authentication for users of non-internet based applications of blockchain-based platforms,” in Proc. IEEE Int. Conf. Blockchain (Blockchain) , Rhodes Island, Greece, Nov. 2020, pp. 525–531, doi: 10.1109/Blockchain50366.2020.00076. [5] S. K. Card, T. P. Moran, and A. Newell, The Psychology of Human-Computer Interaction . Hillsdale, NJ, USA: Lawrence Erlbaum Asso-ciates, 1983. [6] D. Kieras, “Using the keystroke-level model to estimate execution times,” Dept. Elect. Eng. Comput. Sci., Univ. Michigan, Ann Ar-bor, MI, USA, Tech. Rep. EECS-2001-53, 2001. [Online]. Available: http://www.eecs.umich.edu/ kieras/klm.html [7] S. Panjwani and E. Cutrell, “Usably secure, low-cost authentication for mobile banking,” in Proc. Sixth Symp. Usable Privacy and Se-curity (SOUPS) , Redmond, WA, USA, Jul. 2010, pp. 1–12, doi: 10.1145/1837110.1837116. [8] ITU-T Focus Group on Digital Financial Services, “Security testing for USSD- and STK-based digital financial services applications,” Int. Telecommun. Union, Geneva, Switzerland, Tech. Rep., 2017. [Online]. Available: https://www.itu.int/pub/T-TUT-DFS [9] J. Pomy and W. Balzer, “QoS and QoE aspects of digi-tal financial services,” ITU-T Focus Group on Digital Finan-cial Services, Int. Telecommun. Union, Geneva, Switzerland, Tech. Rep., May 2016. [Online]. Available: https://www.itu.int/en/ITU-T/focusgroups/dfs/Documents/09 2016/FGDFSQoSReport.pdf [10] G. Ali, M. A. Dida, and A. E. Sam, “Two-factor authentication scheme for mobile money: A review of threat models and countermeasures,” Fu-ture Internet , vol. 12, no. 10, p. 160, Sep. 2020, doi: 10.3390/fi12100160. [11] P. Mwale et al., “From disconnection to inclusion: Advancing financial services in Zambia through USSD technology,” Int. J. Social Sci. Humanit. Manag. Res. , vol. 4, no. 1, pp. 83–95, Jan. 2025. [Online]. Available: https://ijsshmr.com/v4i1/Doc/11.pdf [12] C. M. Okafor, V. C. Osuji, and O. F. Dako, “Driving large-scale digital channel adoption through behavioral change, USSD innovation, and customer-centric strategies,” Shodhshauryam Int. Sci. Refereed Res. J. ,vol. 5, no. 6, pp. 346–366, Nov. 2022, doi: 10.32628/SHISRRJ. [13] O. Adewusi, W. S. Msagusa, J. P. Imanirumva, O. Obadofin, and J. D. Ndibwile, “Beyond SSO: Mobile money authentication for inclusive e-government in Sub-Saharan Africa,” Sep. 2025, arXiv: arXiv:2509.20592. doi: 10.48550/arXiv.2509.20592. [14] P. Mutabazi, F. E. Ndalama, Y. Taenaka, and Y. Kadobayashi, “Mitigat-ing SIM swap fraud in mobile money platforms in SSA: A zero trust identity and access management architecture,” in Proc. 8th Int. Conf. Inf. Commun. Technol. (ICOIACT) , Yogyakarta, Indonesia: IEEE, Dec. 2025, pp. 220–225, doi: 10.1109/ICOIACT67584.2025.11344857.

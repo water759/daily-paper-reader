@@ -1,0 +1,598 @@
+Title: Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols
+
+URL Source: https://arxiv.org/pdf/2607.05016v1
+
+Published Time: Tue, 07 Jul 2026 03:42:31 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+# Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 
+
+Arslan Brömme 1
+
+Chain Horizon GmbH Version 0.9.5.20 (Working Draft) 
+
+Preprint / working paper. This version is a work in progress and may be updated. Comments are welcome. This document is an English translation of the corresponding German version (v0.9.5.17) of this paper. 
+
+Abstract 
+
+This paper develops a representation-theoretic perspective on cryptographic protocols. The focus is not solely on the computability of the abstract value as an extensional property, but on the algorithmic structure of its presentation in a representation system: for operational use in protocols, algorithmic accessibility of the value does not suffice; in addition, its fixed presentation is decisive. We distinguish three representation-theoretic notions — algorithmically approximable ( Aapp , the computable real numbers), finitely exactly describable in a system ( Afin (S)), and canonical normalizability of a system — and show that there is no computable extensional canonicalizer that uniformly transforms arbitrary approximation programs of computable real numbers into unique finite value encodings. As the operational rational core presentation we use the rational system with its canonical encoding specification 
+
+ΣQ (the fixed rules for valid fraction descriptions, canonical codes, and normalization); the associated value set is Aex = Q. The notion of a canonically serializable object class transfers this core idea to practical protocol objects (concrete files as byte sequences, hash values, transaction IDs, and normatively serialized payloads). We illustrate the consequences for interoperability, well-definedness, and verification with fully worked-out toy examples from symmetric and asymmetric encryption as well as hashing, and with a real-world application example, the snaproot hash-anchoring protocol for blockchain-based file integrity verification. The paper thereby shows that the mathematical determinacy of a value and its operational uniqueness as a protocol object are two different requirements. Once a normative representation specification has been fixed, byte-level correctness and well-definedness arguments can be carried out without further implementation-dependent serialization or rounding decisions. 
+
+Keywords — computable real numbers, canonical serialization, representation theory, cryptographic protocols, canonicalization barrier, computable analysis, protocol interoperability 
+
+# 1 Introduction and Motivation 
+
+Real numbers are central objects of analysis and of many mathematical models. In cryptography and theoretical computer science, however, there is a fundamental tension between mathematical uniqueness and algorithmic reproducibility: real numbers are uniquely defined as mathematical objects, but in general possess no finite, canonical representation. Cryptographic protocols, by contrast, process finite byte sequences. If these byte sequences are understood as representations of semantic objects, then a uniquely specified encoding is helpful for representation-invariant processing. If semantically equal objects are to produce identical protocol bytes independently of their initial representation, a canonical encoding or normalization is additionally required; we call this stronger requirement 
+
+byte-input invariance .Since this paper connects notions from computable analysis and from cryptography, we first fix some basic terminology. A cryptographic primitive is a basic building block such as a hash function, an encryption scheme, or a signature scheme. By a protocol we mean a normative specification of inputs,   
+
+> 1Dipl.-Inform., B.Sc., CISSP, CISA, CISM, CAISE. arslanb@chain-horizon.com
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 1
+> arXiv:2607.05016v1 [cs.CR] 6 Jul 2026
+
+representations, and algorithmic processing steps. A semantic object is the abstract entity meant by a description (for instance a number, a file, or a metadata record). Extensional means: depending only on the represented value, not on the concrete description or the program text; intensional or syntactic, conversely, is our term for properties that depend on the chosen description, notation, or program. Presentations are, in this sense, intensional or syntactic objects; the value they denote constitutes the extensional level. Representation-invariant means: semantically equal presentations lead to the same specified operational result. The stronger requirement that semantically equal presentations are mapped to the same operational bit or byte sequence is what we call byte-input invariance . Byte-input invariance requires a canonical encoding (or an equivalent normalization); general representation invariance can also be achieved by directly extensional processing of the decoded value. Uniform means a single procedure that works for all inputs of a class (as opposed to the mere existence of individual solutions for each input). An object class denotes, in what follows, a fixed class of semantic objects to be encoded in a uniform manner, such as rational numbers, files as byte sequences, hash values, transaction IDs, or structured payloads; protocol objects are those semantic or serialized objects that are operationally processed in a protocol, such as key parameters, files, hash values, transaction IDs, or payloads. This paper addresses this discrepancy by distinguishing different forms of algorithmic accessibility of real values and of their presentations. The goal is not the introduction of new cryptographic primitives, but a structural clarification of which classes of numbers are suitable as operational protocol parameters and which occur primarily in analysis, modeling, and error estimation. The cryptographic literature implicitly assumes that keys, hash inputs, and protocol parameters are given as well-defined, finitely representable objects. The question of which classes of numbers themselves satisfy this property is, however, rarely analyzed explicitly. In particular, it usually remains unstated that real numbers, while uniquely defined as mathematical objects, possess no canonical algorithmic representation without normative specifications. This paper makes this implicit assumption explicit and examines the consequences for cryptographic protocols. “Canonical” here denotes a uniquely fixed, algorithmically reproducible representation which, once the encoding has been fixed, requires no further implementation-dependent additional decisions. The contribution of this paper does not lie in a new undecidability result — the notion of computable real numbers, the undecidability of their equality, and the establishment of canonical serialization in cryptographic standards are classical — but in the systematic transfer of known representation-theoretic limits to the specification of cryptographic protocol objects: in the joint framing of computable analysis and cryptographic serialization, in the distinction between analysis values and operational protocol representations, and in the didactic illustration by means of encryption, hashing, hash anchoring, and commitment semantics. Concretely, the paper makes three contributions. First, it sharpens the notion of an algorithmically presented number for the context of cryptographic protocol objects by explicitly separating the real value from its effective presentation. Second, it formulates the classical undecidability of equality of computable real numbers as a canonicalization barrier for a universal extensional value encoding (Theorem 1) and condenses its design consequence into a design trilemma. Third, it transfers this perspective to cryptographic protocols and proposes a taxonomy of operational representations that distinguishes between exact byte identity, fixed serialization, and canonical value presentation. Figure 1 summarizes this perspective schematically: between the abstract value, its description, a normal form, and the operational bit/byte encoding lie separate representation decisions in each case; only the bit/byte encoding constitutes the immediate input of the cryptographic protocol step. 
+
+# 2 Related Work 
+
+The notion of computable real numbers goes back to Turing [ 1 ], who gave a fundamental formal definition; it forms the foundation of modern computability theory. A systematic treatment of effective analysis and of representations of real numbers can be found in Weihrauch [ 2]. Pour-El and Richards [ 3 ]study examples in which computable input data lead to non-computable solutions of analytic problems,        
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 2abstract value →description →normal form →
+> operational bit/byte encoding
+> →cryptographic protocol step
+
+Figure 1: From the abstract value via the operational representation to cryptographic processing. The highlighted bit/byte encoding already is the operational protocol object; the cryptographic protocol step processes it but is not a further form of representation. At each upstream stage, missing uniqueness, missing computability, or divergent encoding rules can lead to different protocol bytes. in particular for differential equations; this underlines the strict inclusion Aapp ⊂ R.In constructive analysis [ 4 ], mathematical existence is tied to explicit construction procedures. The present paper takes up this idea but focuses explicitly on canonical representability for algorithmic and cryptographic protocols. The notion of a representation system used here is deliberately more special and tailored to decidable languages of finite protocol descriptions; it does not replace the more general theory of represented spaces but isolates the subquestion relevant for canonical byte encodings. Modern surveys of the general theory of represented spaces can be found, for instance, in Pauly [ 16 ]; the computability of translations between representations is there itself a separate, often non-trivial problem [ 18 ] — we deliberately consider the narrower case of finite canonical codes. Practical systems of verified exact real arithmetic [ 17 ] moreover show that real values can be processed operationally via effective names and approximation procedures; this, however, does not solve the question studied here of a unique finite value encoding. Cryptographic primitives are traditionally defined over discrete, exactly representable structures [ 5,6]. Hash functions are formalized as mappings of bit strings [ 7 , 8], which emphasizes the importance of unique input representations. The practical necessity of deterministic serialization is documented in detail in individual standards: RFC 8785 (JSON Canonicalization Scheme) [ 12 ] explicitly motivates canonical JSON by the fact that hash and signature schemes require an invariant data format; RFC 8949 (CBOR) [ 13 ] gives rules for deterministic binary encoding, including the stipulation of which number representation is to be used; ASN.1/DER [10] is an established canonical encoding rule. Less frequently, however, is this necessity explicitly connected with the representation theory of computable real numbers [ 1, 2 ]. It is precisely this representation-theoretic perspective — at the interface of computability [ 1, 2 ] and the bit-string nature of cryptographic primitives [5, 6] — that the present paper adopts. 
+
+# 3 Algorithmically Presented Numbers 
+
+3.1 Basic Assumptions 
+
+The following basic assumptions apply to the approximation, evaluation, and normalization algorithms considered in Sections 3 and 4, on which the computability statements rest. We use a model-independent notion of deterministic algorithms. For a fixed approximation algorithm Mx (which approximates the value x), n is the only input and precision parameter; the value-dependent information is contained in the program code of Mx. In a representation system, by contrast, Eval (d, n ) explicitly relies on a value-carrying finite description d. Oracles, randomness, and external system states are not part of these computability statements; real cryptographic protocols may use them in addition (for instance external blockchain states or randomized commitments, cf. Sections 7.5 and 11). 
+
+Bit and byte convention. Finite bit strings {0, 1}∗ serve throughout as the abstract encoding model. Concrete serializations we understand as byte sequences over {0, . . . , 255 }∗; via the usual eight-bit representation these can in turn be modeled as bit strings. Where we formally write {0, 1}∗,concrete byte or ASCII encodings are thus included as a special case.  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 3
+
+3.2 Representation Systems 
+
+The central notion of this paper is not a set of numbers but the manner in which a real value is described. The computability of a value is an extensional property of the value itself; its operational suitability for protocols, by contrast, depends on the chosen presentation. The focus therefore lies on the algorithmic structure of the presentation, not solely on the computability of the value. 
+
+Terminology. In this paper, “presentation” (or “description”) denotes the concrete finite description 
+
+d itself by which a value is given; the algorithmically presented number , by contrast, is the pair ([[ d]] , d ).Here [[ d]] denotes the semantic value represented by the description d (the double brackets read as “the value denoted by d”). “Representation” or “encoding”, by contrast, denotes the operational mapping of a semantic object to a fixed form or byte sequence. A canonical representation is such an encoding with exactly one valid form per object. 
+
+Definition 1 (Representation system) . A representation system is a pair S = ( L, Eval ), where 
+
+L ⊆ { 0, 1}∗ is a decidable language of finite descriptions and Eval is a total algorithm (total meaning here: Eval terminates for all inputs of its specified domain, hence for all d ∈ L and n ∈ N) that assigns to each d ∈ L and n ∈ N a rational number Eval (d, n ) such that a uniquely determined value [[ d]] ∈ R
+
+exists with |Eval( d, n ) − [[ d]] | < 2−n for all n.
+
+Definition 2 (Algorithmically presented number) . An algorithmically presented number in S is a pair 
+
+([[ d]] , d ) with d ∈ L. Its value is [[ d]] ∈ R, its presentation is d. The same real value can be canonical and protocol-ready in one system, accessible only via approximations in another, or represented by several semantically equivalent descriptions. 
+
+Notational convention. Where no confusion is possible, we write the value for short (e.g. “ k =13 /37 ”) and understand the associated presentation as given along with it. 
+
+3.3 Three Representation-Theoretic Notions 
+
+We distinguish three interrelated representation-theoretic notions that are located on different levels: a property of values (approximability), a relation between a value and a representation system (finite describability), and a property of an entire representation system (canonical normalizability). They are not ordered within a single space of properties. 
+
+(i) Approximability. A value x ∈ R is algorithmically approximable if there exists an algorithm M
+
+with M (n) ∈ Q and |M (n) − x| < 2−n. The class Aapp of these values is exactly that of the computable real numbers (Turing [ 1 ], Weihrauch [ 2 ]); convergence is effectively controlled by n. Such an algorithm 
+
+M , which outputs for every n ∈ N a rational approximation M (n) with |M (n) − x| < 2−n, we call a 
+
+fast rational Cauchy name of the real value x.
+
+(ii) Finite exact describability. A value x is finitely exactly describable in S if there exists a d ∈ L
+
+with [[ d]] = x. The class is called Afin (S). It depends on the system and can substantially exceed 
+
+Q — for instance, an algebraic system (description = minimal polynomial and isolating interval [ 14 ]) contains values such as √2. For a canonical representation, the polynomial would additionally have to be normalized and the isolating interval chosen according to a unique rule; a minimal polynomial together with an arbitrary isolating interval is only an exact, not yet a canonical, description. 
+
+(iii) Canonical normalizability of the system. The system S is called canonically normalizable 
+
+if there exists a total computable algorithm nf : L → L with [[ nf (d)]] = [[ d]] and nf (d1) = nf (d2) ⇔
+
+[[ d1]] = [[ d2]] . This is a property of the entire system, not of a subclass within S: if S is canonically normalizable, then every value represented by S possesses a computably determinable unique normal form.  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 4
+
+The three notions are genuinely distinct because they lie on different logical levels: approximability is a property of values, finite describability a relation between a value and a representation system, canonical normalizability a property of representation systems. They therefore do not form nested subclasses of one common system. A representation system in the sense of Definition 1 has a decidable 
+
+L and a total Eval ; it thus describes a uniformly computable family of real numbers. The totality of all approximation programs, by contrast, does not form a representation system in this sense: the set of programs that are total and satisfy the Cauchy condition is not decidable; this follows from classical index-set results of recursion theory (for instance Rice-style undecidability theorems) [ 22 ] or from halting-problem reductions; cf. [ 2] for the computable-analysis context. We therefore treat this totality as an external, non-decidable name space — it assigns to every computable real number at least one index, but is itself not a system with a decidable description language. The negative statement of Section 4 concerns exactly this name space: there is no computable extensional canonicalization of arbitrary approximation programs. 
+
+3.4 Canonical Encoding and the Operational Core Class 
+
+For protocols that require identical canonical bytes for semantically equal objects, property (iii) is the decisive system property, supplemented by the requirement that the normal form is uniquely given in bytes. We capture this as a canonical encoding. 
+
+Definition 3 (Canonical encoding) . A canonical encoding of an object class K consists of a decidable language of valid codes C ⊆ { 0, 1}∗, an encoder enc : K → C and a decoder dec : C → K, both total computable with respect to the fixed representations, such that dec ( enc (x)) = x holds for all x ∈ K
+
+and, for each x, the only valid representation is enc (x), i.e. dec −1({x}) = {enc (x)}. Canonicity is always to be understood relative to a normatively fixed encoding specification. The computability of encoder and decoder is here always to be understood relative to fixed effective input and output representations of the object classes involved: an algorithm does not receive an abstract object directly, but already a description of it (for instance a syntactically valid fraction for an element of Q). 
+
+Deterministic versus canonical. This distinction is central: a deterministic serialization produces, for a fixed input, reproducibly the same output. Canonicity additionally demands that every semantic object possesses exactly one valid encoding within the specification. An encoder may, for instance, always output “1/2” (deterministic) while the associated decoder also accepts “2/4” — the procedure is then deterministic, but the code language is not canonical. The expression dec −1({x}) here denotes the set of all valid codes that the decoder interprets as x; canonicity demands that this set is a singleton for every x. That this distinction is practically relevant is shown, for instance, by Base64: several distinct encodings can decode to the same data and thereby break string uniqueness [21]. The last condition is the actual substance: it excludes that several valid byte sequences denote the same object — a problem that the mere function property of enc does not capture. For Q, one separates two languages for this purpose: the language of all syntactically valid fraction descriptions LQ = { p/q :
+
+p ∈ Z, q ∈ Z \ { 0} } and the language of canonical codes CQ = { p/q : q > 0, gcd (|p|, q ) = 1 }. The normalization nf Q : LQ → CQ is the computable reduction to lowest terms with sign normalization; it satisfies nf Q(“1/2” ) = nf Q(“2/4” ) = nf Q(“50/100” ) = “1/2” , i.e. it maps all descriptions of the same value to the same code. For CQ ⊆ { 0, 1}∗ to actually fix a unique byte sequence per fraction (Definition 3), the lexical rules belong to the specification: ASCII encoding, exactly one slash, the ASCII minus only as the sign of p, no leading plus, no leading zeros (except for the digit 0 itself), no spaces, positive denominator. For the rational value r = p/q with q > 0 and gcd (|p|, q ) = 1 ,concretely: enc Q(r) = ASCII ( int (p), “/” , nat (q)) , where int denotes the normatively fixed decimal syntax for integers with an optional minus sign and nat the normatively fixed decimal syntax for positive natural numbers without a sign, and dec Q(“p/q” ) = p/q — on the left stands a code (a string), on the right the denoted rational number; then dec Q(enc Q(r)) = r and dec −1 
+
+> Q
+
+({r}) = {enc Q(r)}. 
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 5
+
+The injectivity lemma in Section 4 merely shows that the encoder must be injective; that different implementations choose the same bytes requires the previously jointly fixed specification (CQ, enc , dec ).The rational system SQ with the specification ΣQ (valid descriptions LQ, canonical codes CQ,normalization nf Q) is canonically normalizable. The set of its represented values is Q. This rational core presentation, the pair (Q, ΣQ), we call for brevity the operational core class ; its value set is 
+
+Aex = Q (= Afin (SQ)). It is not membership in Q but membership in the fixed presentation (Q, ΣQ)
+
+that guarantees the unique encoding — the rational number 1/2 could otherwise appear as 2/4, as a decimal number, or as an IEEE value. Aex = Q is here a deliberately chosen operational rational core class and not the totality of all finitely exactly describable or canonically presentable real numbers (√2, too, possesses suitable exact finite descriptions, cf. Section 3.3(ii)). The operational uniqueness follows not from mere membership in Q but from the pair (Q, ΣQ).The term “exact” here carries two meanings that must be distinguished: in “finitely exactly describable” (Section 3.3(ii)) it merely means that the value is described without approximation error — an exact description is not yet a canonical one. In the notation Aex , by contrast, it refers to the canonical determinability of the presentation. In both cases it denotes no special status of the mathematical value. Q is also not the simplest canonically normalizable value set — Z, N, or the dyadic fractions are simpler, whereas algebraic systems (minimal polynomial and isolating interval) are larger. Rather, Q is the smallest subfield of R and thus closed under addition, subtraction, multiplication, and division by nonzero elements: the smallest operational core class within R with a complete field structure. This motivates the choice Aex = Q for arithmetic protocol parameters. The class boundary concerns uniform determinability, not the nameability of individual values: a number such as π can very well occur as an operational parameter if a protocol defines the fixed identifier “PI” as a normative symbol. What is impossible is merely to transform an arbitrary computable real number, given solely by an arbitrary approximation procedure, uniformly into a unique finite value encoding. Terminologically, we distinguish normalization and canonicalization as follows: a normalizer 
+
+nf : L → L works within a fixed representation system and maps valid descriptions to a normal form of the same system; a canonicalizer denotes, more generally, a procedure that maps presentations or names of a value to a unique value-dependent code. In the rational system, the two perspectives practically coincide; for arbitrary approximation programs of computable real numbers, however, such a universal extensional canonicalization fails due to the undecidability of value equality (Section 4). Table 1 summarizes the representation-theoretic notions introduced above and assigns them to their respective logical levels.                      
+
+> Notion Level Core statement
+> Aapp value effectively rationally approximable
+> Afin (S)value relative to Spossesses a finite exact description in S
+> canonically normalizable Ssystem value-equal descriptions receive the same normal form
+> Aex =Qvalue set rational operational core class
+> ΣQspecification normative encoding and normalization rules for rational numbers
+> (Q,ΣQ)presented structure rational values together with their normative encoding canonically serializable ob-ject class protocol level exactly one valid encoding per object (Sec-tion 3.5)
+
+Table 1: The central representation-theoretic notions and their levels. The notions deliberately lie on different logical levels and do not form a simple hierarchy of sets of numbers. 
+
+3.5 Canonically Serializable Object Classes and Structural Properties 
+
+Definition 4 (Canonically serializable object class) . An object class K is called canonically serializable 
+
+with respect to a specification Σ if Σ fixes a canonical encoding (C, enc Σ, dec Σ) (Definition 3) for all  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 6
+
+elements of K. The object o ∈ K is then given in Σ-conformant representation by the code enc Σ(o).To avoid misunderstandings, we formally use exclusively the term “canonically serializable object class”; the informal shorthand “ Aex -compatible” means nothing other than “canonically serializable with respect to a named specification”, and the analogy to Aex consists merely in the fact that such object classes, too, are encoded finitely, uniquely, and reproducibly under a specification. The requirement concerns an entire class under a fixed (C, enc Σ, dec Σ), not a single object — for a single object, canonical encoding would be trivially satisfiable. Canonically serializable classes need not themselves be real numbers: concrete files as byte sequences, hash values, transaction IDs, and normatively serialized payloads share with Aex the property of canonical, finite, reproducible representability under a fixed specification, provided that this specification fixes a unique encoding per object. This transfers the operational core idea from numbers to arbitrary protocol objects. For the value classes, Aex = Q ⊊ Aapp ⊊ R holds; both inclusions are strict: π ∈ Aapp but π / ∈ Q
+
+(π is computably approximable but not rational), and non-computable real numbers lie in R but not in Aapp . On Aapp we consider the arithmetic operations (+ , −, ×) inherited from R and division by nonzero elements; the usual laws of arithmetic are inherited from R, and what is non-trivial in each case is closure. For orientation: familiar constants such as π, e, or √2 are computably approximable; non-computable real numbers can be constructed, for instance, via binary sequences that encode an undecidable problem such as the halting problem. 
+
+Remark (countability). Every algorithm possesses a finite description over a finite alphabet, and the set of these descriptions is countable. A machine index here denotes the number of a program, or of a Turing machine, in a fixed effective numbering; in what follows we use “index” as short for such a machine index. Since at least one finite machine index is assigned to every computable real number, 
+
+Aapp is countable as the image of a countable set; several indices may describe the same number. 
+
+# 4 Limits of Canonical Normalization 
+
+Representation systems permit a precise statement about which presentations qualify as operational parameters of executable protocols. The core is a limit: there is no computable extensional canonical-ization that uniformly transforms arbitrary approximation programs of computable real numbers into unique finite value encodings. It follows that protocols which are to map semantically equal values to identical protocol bytes independently of their initial representation must rely on a previously fixed, canonically normalizable presentation. 
+
+Lemma 1 (Undecidability of equality on Aapp ). There is no algorithm that decides, for two arbitrary elements x, y ∈ Aapp given by approximating algorithms Mx, My, whether x = y. This result is classical [2]; we sketch the proof for self-containedness. 
+
+Proof sketch (reduction from the halting problem). Let M be a Turing machine. Define the rational sequence ak = 2 −t if M halts within k steps (with t ≤ k the halting step), and ak = 0 otherwise. This sequence is computable, since it only requires simulating M for k steps; it is monotone and satisfies |xM − ak| ≤ 2−k; by outputting an+1 one obtains the required strict bound < 2−n. The limit is xM = 2 −t (if M halts at step t) or xM = 0 (if M never halts). Hence xM ∈ Aapp . We have 
+
+xM = 0 exactly if M never halts. An equality test “ xM = 0 ?” would thus decide the halting problem. Contradiction. The following result constitutes the formal limit of the approach. It is an immediate consequence of the classical undecidability of equality of computable real numbers (Lemma 1), formulated here as a limit of universal extensional value canonicalization; the original contribution lies not in the undecidability result itself but in this representation- and protocol-theoretic reading.  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 7
+
+Theorem 1 (Canonicalization barrier — no universal extensional canonicalization) . Let Iapp be the set of machine indices that produce fast rational Cauchy names of computable real numbers (index e
+
+denotes the value xe); these are exactly the approximating algorithms considered in Lemma 1, now regarded as input objects. There exists no partially computable function c : N ⇀ {0, 1}∗ that is defined on all e ∈ Iapp and there satisfies c(e) = c(f ) ⇔ xe = xf . (On invalid indices, c may diverge; the validity of an index need not be decidable.) 
+
+Proof. Such a function c takes the machine indices themselves as input and produces the same finite code for value-equal programs — including syntactically different ones (extensionality). If c existed, the finite string comparison c(e) = c(f ) would decide the equality of two arbitrary computable real numbers given by indices, contradicting Lemma 1. What is decisive is the effective availability of c on the indices: the mere existence of value-canonical descriptions does not suffice, since it provides no algorithm that constructs them from the given programs. 
+
+Interpretation. The barrier does not concern the existence of finite names for individual computable numbers — every single one possesses such names. It concerns the uniform, computable, and extensional derivation of a unique code from arbitrary approximation programs. Equivalently formulated, a design trilemma results: a protocol over arbitrary computable real numbers cannot simultaneously (1) accept arbitrary valid approximation programs as inputs, (2) treat syntactically different programs for the same value identically (value-equal programs receive the same code), and (3) map value-distinct programs computably to distinct finite codes. Conditions (2) and (3) capture exactly the two directions of c(e) = c(f ) ⇔ xe = xf ; at least one of these three requirements must be given up or restricted — the design consequences of this are discussed in Section 9. 
+
+Corollary 1 (No computable universal translation; operational core class) . There exists no repre-sentation system S that represents all values from Aapp by finite canonical codes, together with a partially computable extensional translation, defined on all valid approximation programs, that maps each program to the canonical code of its value in S. (Individual systems with finite canonical value descriptions do exist — for instance SQ for Q; what is excluded is only the pair consisting of such a system and an effective translation covering all of Aapp .) If a protocol is to map semantically equal values to identical protocol bytes independently of their initial representation, it must therefore restrict its input interface to a previously fixed, canonically normalizable presentation or provide an equivalent additional representation rule, instead of operating directly on all of Aapp . The choice SQ yields the rational core presentation (Q, ΣQ) with value set Aex = Q — the smallest core class within R with a complete field structure; larger ones are possible (for instance algebraic systems) but require a correspondingly richer normative specification. 
+
+Proof. A computable universal translation would be an extensional canonicalizer in the sense of Theorem 1 and therefore cannot exist. For the fixed system SQ, by contrast, normalization is effectively computable by computing the greatest common divisor and normalizing the sign; the set of its represented values is Q = Aex .
+
+Lemma 2 (Injectivity lemma for reproducible implementations) . Let E : K → Y be an injective evaluation function on a parameter class K. If a reproducibly correct computable implementation 
+
+(enc , ˆE) of E exists — that is, enc : K → { 0, 1}∗ and ˆE : {0, 1}∗ → Y are total and computable, and 
+
+ˆE(enc( o)) = E(o) holds for all o ∈ K — then enc is total, computable, finite, and injective. 
+
+Proof. Totality and computability of enc hold by assumption, finiteness of the output by the codomain 
+
+{0, 1}∗. For injectivity, let enc (o1) = enc (o2). Since ˆE is a function, it follows that ˆE( enc (o1)) = ˆE(enc (o2)) , hence by the correctness condition E(o1) = E(o2), and by the injectivity of E finally 
+
+o1 = o2.The lemma yields only the injectivity of enc , not yet a canonical encoding in the sense of Definition 3: if, in addition, the code language C = enc (K) is decidable and a computable inverse decoder dec is  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 8
+
+given, then (C, enc , dec ) forms a canonical encoding. The uniqueness of the valid byte sequence is thus an additional property to be fixed normatively, not a corollary of mere injectivity. The lemma isolates a necessary condition for a correct implementation of injective abstract evalua-tions: the operational encoding must not identify objects that the abstract evaluation E distinguishes. Equivalently — via the separation of the abstract evaluation E and the implemented evaluation ˆE ◦ enc 
+
+— the encoding must inherit the injectivity of the abstract function; this is a necessary (not yet sufficient) condition of canonical encoding. 
+
+Scope (representation layer vs. hash layer). The injectivity requirement does not concern cryptographic hash functions themselves: due to their finite codomain, these cannot be injective, and collision resistance merely means that collisions are practically hard to find. The requirement rather concerns the upstream representation layer: if semantically equal objects are to produce the same hash or signature input independently of their initial representation, they must first be mapped to the same byte sequences by a fixed canonicalization. The lemma is here applied not to the hash function but to an upstream, value-distinguishing representation mapping; the hash function processes only its byte output. Its collision resistance is a cryptographic property separate from this. The lemma thus concerns the well-definedness of the generation and comparison steps, not the security of the hash layer. With this, the question raised in the introduction — which classes of numbers qualify as operational protocol parameters — is answered on the level of computability. The statement is to be phrased with care: a protocol can certainly operate in a well-defined manner on byte sequences even if several byte sequences denote the same semantic entity — for instance, by having a decoder accept different notations and subsequently operate on the decoded value. A canonicalization is required, however, if the protocol is to represent semantic object equality by equality of the serialized byte sequences, or to map semantically identical objects to the same hash or signature input independently of their initial representation. For this class of protocols, the rational core presentation (Q, ΣQ) or a canonically serializable object class provides an immediately available solution. 
+
+# 5 Symmetric Encryption: A Comparison (Stream Cipher via XOR) 
+
+5.1 A Key in Rational Core Presentation (Fully Worked Example) 
+
+We consider a stream-cipher construction based on XOR. Let the key be k = 13 /37 ∈ Aex . From the canonical rational normal form 13 /37 , the local toy example extracts the mathematical integer pair 
+
+pair toy (13 /37) = ( p, q ) = (13 , 37) ; this is not the general specification ΣQ. The following generator works directly on this pair (p, q ) — a concrete byte encoding of the pair is not needed here. The keystream is generated deterministically as a byte sequence S = ( s0, . . . , s L−1). The following generator is deliberately not cryptographically secure; it serves exclusively to make the representation question visible in a fully traceable example: 
+
+si = ( p + 31 · q + i) mod 256 
+
+p = 13 , q = 37 
+
+p + 31 · q = 13 + 31 · 37 = 13 + 1147 = 1160 
+
+i = 0 : s0 = 1160 mod 256 = 136 (0x88) 
+
+i = 1 : s1 = 1161 mod 256 = 137 (0x89) 
+
+i = 2 : s2 = 1162 mod 256 = 138 (0x8A) 
+
+i = 3 : s3 = 1163 mod 256 = 139 (0x8B) 
+
+i = 4 : s4 = 1164 mod 256 = 140 (0x8C) 
+
+S (hex) = [88, 89, 8A, 8B, 8C] 
+
+Let the plaintext P be “HALLO” in ASCII (hexadecimal): P = [48, 41, 4C, 4C, 4F] . Encryption is performed bytewise by XOR with the keystream: Ci = Pi ⊕ si. 
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 9
+
+48 ⊕ 88 = C0 41 ⊕ 89 = C8 4C ⊕ 8A = C6 4C ⊕ 8B = C7 4F ⊕ 8C = C3 
+
+C (hex) = [C0, C8, C6, C7, C3] 
+
+Decryption proceeds identically: P = C ⊕ S. Reproducibility is guaranteed because the rational normal form 13 /37 is uniquely fixed according to ΣQ and the generator operates deterministically on the mathematical pair (p, q ) extracted from it. (If k is instead to be transmitted or hashed as a byte sequence, a byte encoding of the pair must additionally be fixed — with tuple delimitation and integer encoding; cf. the separate byte variant bytes toy in Section 7.2.) 
+
+5.2 A Comparison: A Real Key Without a Normatively Fixed Presentation 
+
+For comparison, we consider the same approach with a key for which no normative presentation is prescribed, say k = π, where the protocol is given only an approximation procedure but no fixed rounding or precision. It is not the value π that is the problem, but its unfixed presentation: for the generator G to work, k must be transformed into a finite byte sequence, e.g. as a decimal string (“3.14”, “3.1416”) or as a floating-point number (IEEE 754 float/double [ 15 ]). Within a fixed IEEE 754 format and for finite non-NaN values, the decoding of a given bit string is indeed unique; the non-uniqueness arises, however, in the implementation-dependent choice of the mapping of the intended parameter to a finite approximation, which additionally depends on format, precision, and rounding rule (for instance π in single vs. double precision, or after different rounding) and yields different bit strings. This representation is therefore not canonical without additional stipulations. 
+
+# 6 Asymmetric Encryption: A Comparison (Toy RSA) 
+
+6.1 RSA with a Fixed Integer Encoding (Fully Worked Example) 
+
+All mathematical RSA values lie in Z ⊂ Q. Their operational reproducibility, however, does not follow from this set-theoretic inclusion but additionally presupposes a fixed encoding of the integers and key structures (the rational core presentation (Q, ΣQ) or a corresponding integer specification). This classification is not meant to redefine RSA but to emphasize that RSA operates exclusively with numbers that are finitely and — given a fixed encoding — canonically representable. The following parameters are deliberately small and serve illustration only (toy). 
+
+p = 11 
+
+q = 17 
+
+n = p · q = 187 
+
+φ(n) = ( p − 1)( q − 1) = 10 · 16 = 160 
+
+e = 7 
+
+Determine d with e · d ≡ 1 (mod 160) :
+
+7 · 23 = 161 ≡ 1 (mod 160) ⇒ d = 23 
+
+Public key: (n, e ) = (187 , 7) 
+
+Private key: d = 23 
+
+Encryption of a block m = 42 (< n ): c = me mod n. Decryption: m = cd mod n.Encryption: c = 42 7 mod 187 = 15 
+
+Decryption: m = 15 23 mod 187 = 42 
+
+All mathematical intermediate values are exact and deterministically reproducible; an operational representation reproducible in all specification-conformant implementations additionally presupposes the aforementioned integer and key-structure encoding. Concretely: the modulus n = 187 becomes a unique byte sequence only through a fixed integer encoding rule. Under the rule “unsigned, big-endian, fixed length 2 bytes” we have  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 10
+
+187 = 0x00BB → [0x00, 0xBB] (big-endian, 2 bytes, unsigned) Without such a rule it would remain open whether 187 is serialized as one byte ( [0xBB] ), as two bytes in big- or little-endian ( [0x00, 0xBB] vs. [0xBB, 0x00] ), or as an ASCII digit string (“187” = 
+
+[0x31, 0x38, 0x37] ). Thus even exact integers do not by themselves determine concrete protocol bytes; endianness, length, and sign rule belong to the operational specification. 
+
+6.2 A Comparison: Real Numbers as Key Material (the R → Z Problem) 
+
+An approach that derives RSA keys from real numbers requires a mapping R → Z (e.g. via decimal digits, rounding, or hashing of an approximation). Without canonical rules, different approximations of the intended real parameter can and in general will lead to different integers and hence to different keys (with rounding, two approximations may also yield the same integer). Key generation without additional encoding or specification rules is therefore implementation-dependent and not well-defined. 
+
+# 7 Hash Functions: A Comparison (Toy Hash) 
+
+7.1 A Toy Hash Function (Fully Computable) 
+
+Since cryptographic hash functions such as SHA-256 are too large for a manual worked example, we use a fully computable toy hash function to make the representation question visible (no security): 
+
+H(x) =  
+
+> (L−1∑
+> i=0
+
+(i + 1) · xi
+
+> )
+
+mod 256 , where x is a byte sequence. 
+
+7.2 Rational Normal Form with a Fixed Local Toy Byte Encoding 
+
+Let k = 13 /37 ∈ Aex and let a local toy byte encoding be bytes toy (13 /37) = [13 , 37] (decimal as bytes; this byte mapping is to be distinguished from the pair mapping pair toy of Section 5.1). This local toy byte encoding suffices only for the example: it encodes one byte each for numerator and denominator and is unsuitable as a general encoding of rational numbers, since numerator and denominator can be arbitrarily large and negative (a general encoding requires a sign rule, variable lengths, and unique tuple delimitation). Then: 
+
+H([13 , 37]) = (1 · 13 + 2 · 37) mod 256 = (13 + 74) mod 256 = 87 
+
+The hash value is uniquely determined because the input is uniquely fixed. 
+
+7.3 A Comparison: A Real Value (Representation Dependence) 
+
+Let k = π without a normatively fixed encoding. Two plausible finite approximations intended to serve as operational inputs for the intended parameter π are then the ASCII strings “3.14” and “3.1416”. They represent different rational values ( 157 /50 and 3927 /1250 , respectively); the resulting byte sequences differ and produce different hash values — the cause is not the value π but the absence of a fixed presentation. “3.14” → [51 , 46 , 49 , 52] 
+
+H = (1 · 51 + 2 · 46 + 3 · 49 + 4 · 52) mod 256 = (51 + 92 + 147 + 208) mod 256 = 498 mod 256 = 242 
+
+“3.1416” → [51 , 46 , 49 , 52 , 49 , 54] 
+
+H = (1 · 51 + 2 · 46 + 3 · 49 + 4 · 52 + 5 · 49 + 6 · 54) mod 256 = 1067 mod 256 = 43  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 11
+
+The hash here depends on the chosen operational byte sequence and not directly on the intended abstract parameter π. The same holds for an IEEE 754 encoding: within a fixed format and for finite non-NaN values, the decoding of a given bit string is unique, but the mapping of the intended irrational parameter to such a bit string additionally depends on format, precision, and rounding rule (single vs. double precision, different rounding) and yields different byte sequences and hence different hash values. This motivates a normative representation rule and — where byte-input invariance is demanded — a canonical representation or equivalent normalization. 
+
+7.4 Transfer to Real SHA-256 
+
+The representation dependence made visible with the toy hash occurs unchanged with real hash functions. Here, SHA-256(“3.14”) denotes the hash of the ASCII/UTF-8 byte sequence 33 2e 31 34 
+
+(without quotation marks), and SHA-256( [13 , 37] ) the hash of the two raw bytes 0d 25 . For SHA-256: SHA-256(“3.14”) = 2efff126...43500215 
+
+SHA-256(“3.1416”) = 23741492...75a42602 
+
+Both strings are plausible finite approximations that could be used as operational inputs for the intended parameter π. Since they represent different rational values and different byte sequences, they yield different hash values. For the fixed local toy encoding, by contrast, the input byte sequence is uniquely determined: SHA-256( [13 , 37] ) = 51698d9a...2f94f015 
+
+The example does not illustrate the internal workings of SHA-256, but the fact that real hash functions hash concrete byte sequences — not abstract mathematical objects. (The full 256-bit values are given in Appendix A.) The examples from symmetric encryption, RSA, and hashing jointly show that the mathematical determinacy of a value does not guarantee operational byte uniqueness; the latter arises only through fixed encoding, serialization, or canonical normalization. 
+
+7.5 A Real-World Hash-Anchoring Protocol: snaproot 
+
+Before the example, it is helpful to separate three related but distinct situations — a small taxonomy of operational representations that otherwise easily merge in discussion: (a) exact byte identity — an object is exactly one byte sequence F ∈ { 0, 1}∗, which is hashed as such; no further canonicalization is needed, since the protocol deliberately commits to the bytes. (b) Fixed serialization of structured objects — a structured object is transformed into bytes according to a fixed rule. Within (b) we distinguish further: deterministic or explicitly specified (the rule reproducibly produces the same bytes from a given structured value) and additionally canonical (there exists exactly one valid encoding per semantic object, so that different initial representations of the same object also produce the same bytes). (c) Canonical value presentation of real numbers — several descriptions of the same real value are to be reduced to the same normal form. snaproot combines two of these levels: the file hash is a case of (a), the structured SR1 memo payload a case of (b), namely — as elaborated below — in the sense of a prescribed, not necessarily canonical, serialization. Table 2 summarizes this taxonomy and assigns to each of the three levels its reference object and an example.          
+
+> Level Reference object Example
+> (a) exact byte identity concrete bytes file F
+> (b) fixed serialization structured data SR1 payload (c) canonical value presentation semantic value reduced fraction
+
+Table 2: Three operational representation levels. Levels (a)–(c) are different requirements, not stages of a ranking. The examples so far are deliberately small. The same representation problem, however, also occurs in real cryptographic protocols. One example is snaproot [ 9 ], a blockchain-based hash-anchoring  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 12
+
+protocol for file integrity verification; it is the author’s own case study, not independent external evidence. Insofar as the term “commitment” is used below, it is meant in the practical protocol sense of a public, later verifiable commitment to a concrete file byte sequence or its hash (a public hash commitment); the classical hiding property of cryptographic commitment schemes is not claimed thereby. A file is treated there not as an abstract mathematical object but as a finite byte sequence 
+
+F ∈ { 0, 1}∗. The hash algorithm SHA-256 deterministically maps this byte sequence to a 256-bit value 
+
+H:
+
+H = SHA-256 (F )
+
+What is hashed is not the semantic content, not the file name, and not the visual rendering, but exactly the concrete byte sequence of the file. The value H is subsequently anchored on the blockchain in a structured SR1 payload with a prescribed format. The SR1 payload is the memo payload serialized according to the snaproot SR1 format, anchored as the memo content of a transaction; the terms SR1 structure and SR1 parser rule refer in what follows to the layout of this payload and to the rule for its unique evaluation. “SR1” is snaproot-specific format terminology. The payload is a case of fixed serialization of structured data (version prefix, hexadecimal hash, client timestamp, and further metadata fields); the user wallet is here the signer of the transaction, not a field of the payload: 
+
+payload = enc SR1 (H, timestamp , metadata) txid = Anchor wallet (payload) 
+
+The later verification is likewise a purely finite algorithm: 
+
+Verify( F, txid) :
+
+H′ = SHA-256 (F )
+
+Hchain = ExtractHash(txid) 
+
+return H′ = Hchain 
+
+All relevant objects here possess finite and reproducible representations: the file F as a byte sequence (exact byte identity), the hash H as a 256-bit string, the transaction ID txid as a finite character string, and the SR1 payload as an explicitly specified structured string; the wallet address acts as the signer of the transaction. In the terminology of this paper, the operational level of the protocol therefore lies entirely on the side of fixed finite representations — the hash input is the exactly fixed byte sequence of the file (exact byte identity on the input side), the SR1 payload a case of fixed serialization of structured data. (Whether the SR1 payload is canonical in the strong sense of Definition 3 — exactly one valid encoding per metadata object — depends on uniqueness rules for separators, GPS and null values, capitalization, etc., which the fixed pipe format does not necessarily determine completely; we therefore speak of a payload whose format is prescribed but not necessarily canonical.) The snaproot example thus shows that real hashing and verification protocols require a uniquely specified operational representation — depending on the object level, either exact byte identity or a fixed serialization of structured data. snaproot thereby illustrates two different operational levels: the file is committed as a concrete byte sequence, while the metadata enter the payload via a fixed structured serialization. A direct commitment to an abstract real value, by contrast, would be well-defined only after fixing a representation or approximation rule. 
+
+# 8 Representation, Well-Definedness, and Correctness Arguments 
+
+Beyond their operational significance for cryptographic protocols, fixed algorithmic presentations also have a conceptual advantage for correctness arguments: a fixed operational presentation turns the algorithm executed on it into a uniquely determined function, so that elementary correctness proofs become possible without representation-dependent auxiliary assumptions. The correctness proof for XOR in Section 8.2 does not directly illustrate the injectivity lemma (Lemma 2) of Section 4 — it  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 13
+
+requires no injectivity of the keystream generator — but this more general point: with a fixed encoding of the key, the generator is deterministic and the procedure uniquely determined. The further connection — that byte-input-invariant processing requires a canonical encoding — concerns the verification and comparison steps (Section 8.3), not the XOR correctness proof itself. The counterexamples in Sections 5.2, 6.2, and 7.3 show what goes wrong without a fixed presentation: different operational approximations of the same intended real parameter lead to different byte sequences and hence to non-reproducible results. 
+
+Three properties to be separated. Throughout, we distinguish three different requirements: 
+
+correctness (a procedure yields the specified result — for this, a deterministic encoding already suffices), 
+
+byte-input invariance (semantically equal presentations produce the same operational byte input — for this, a canonical encoding is required; the more general representation invariance of the same result can also be achieved without byte equality by extensional processing), and cryptographic security (secrecy, collision or second-preimage resistance). None of these properties implies another; in particular, a canonical encoding does not make a toy generator or a toy hash construction secure. That the standard security of a signature primitive (existential unforgeability) does not automatically guarantee all properties expected by the surrounding protocol layer is also shown by the applied security literature — for instance regarding the unique binding of signatures to public keys [19]. 
+
+8.1 Abstract Encryption Step 
+
+Given a message m ∈ { 0, 1}∗ and a deterministic keystream generator G : {0, 1}∗ × N → { 0, 1}∗ with 
+
+|G(b, L )| = L, which from an encoding b and a length L produces a keystream of exactly this length. With Sk,m = G( enc (k), |m|), the XOR-based encryption is (bitwise; m and Sk,m are bit strings of equal length): 
+
+Enc( k, m ) = m ⊕ Sk,m , Sk,m = G(enc( k), |m|)Dec( k, c ) = c ⊕ G(enc( k), |c|)
+
+8.2 Correctness Proof for a Fixed Key Encoding 
+
+Let K be a key class with a fixed deterministic operational encoding enc : K → { 0, 1}∗ and let G be the above keystream generator. Then Sk,m = G(enc (k), |m|) is, for every k ∈ K and every message m,well-defined, deterministic, and of length |m|. For XOR correctness this determinacy suffices; neither injectivity of G nor semantic canonicity is required. Even if two different keys produced the same keystream, (m ⊕ S) ⊕ S = m would remain correct. 
+
+Theorem (Correctness) . For every key class K with a fixed deterministic encoding, for all k ∈ K and all messages m: Dec( k, Enc( k, m )) = m.
+
+Proof. 1. Sk,m = G(enc( k), |m|) is uniquely determined and |Sk,m | = |m|.2. c = Enc( k, m ) = m ⊕ Sk,m , hence |c| = |m|.3. Dec( k, c ) = c ⊕ G(enc( k), |c|) = c ⊕ Sk,m .4. (a ⊕ b) ⊕ b = a (involutivity of XOR, bitwise). 5. ⇒ Dec( k, c ) = ( m ⊕ Sk,m ) ⊕ Sk,m = m.Thus Dec( k, Enc( k, m )) = m.A canonical encoding becomes additionally relevant here only when semantically equal key presen-tations are to produce the same keystream independently of their initial notation — that is, when representation invariance rather than mere determinacy is demanded. The rational core presentation 
+
+(Q, ΣQ) provides a concrete instance of such an encoded key class; Q appears here not as a mathematical prerequisite of XOR correctness but as a concrete choice with an immediately available canonical encoding.  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 14
+
+8.3 Well-Definedness of the snaproot Verification 
+
+The snaproot hash-anchoring protocol provides a real instance of the same principle. The verification function is well-defined because its inputs are given as uniquely specified finite representations: F as a concrete byte sequence and the payload according to the fixed SR1 structure. 
+
+Theorem (Well-definedness) . Let F be a finite byte sequence and txid a transaction ID that refers to a uniquely retrievable on-chain memo payload with stored hash Hchain . Here the blockchain network, a finalized ledger view — that is, a stable, confirmed on-chain state — and the SR1 parser rule are assumed to be fixed. Then Verify (F, txid ) yields a deterministic result that is, under these fixed assumptions and for an identical byte sequence, reproducible independently of the implementation. 
+
+Proof idea. Since F is a finite byte sequence, SHA-256( F ) is uniquely determined. Since txid is a finite character string and the payload structure is fixed, ExtractHash (txid ) is also uniquely determined. Verification thus reduces to the comparison of two finite bit strings. Equality of finite bit strings is decidable. Consequently, the result TRUE or FALSE is well-defined. The result TRUE here denotes the equality of the two SHA-256 values, not an information-theoretic proof of the equality of the files: from H′ = Hchain it does not follow mathematically that the verified file is byte-identical to the originally anchored file, since hash collisions are possible in principle. The interpretation as an integrity proof rests on the cryptographic assumption of the second-preimage or collision resistance of SHA-256 — a property separate from the representation and well-definedness question treated here. For an abstract real object x ∈ R, this statement does not hold without an additional encoding. Since R is uncountable but {0, 1}∗ is countable, no injective finite encoding of all real numbers exists; operational protocols must therefore either be restricted to a canonically encodable subclass K ⊆ R or fix an explicit approximation or canonicalization. It is important to separate this cardinality argument from the result of Section 4: it concerns all of 
+
+R (|R| > |{ 0, 1}∗|). For the countable class Aapp , cardinality is not the obstacle — here, instead, the impossibility of a computable extensional canonicalization from Theorem 1 applies. Both arguments lead to the same design consequence but rest on different foundations. Only an encoding fixed for the respective protocol purpose — injective where value distinguishability is demanded and canonical where byte-input invariance is demanded — transforms the elements of an operationally used subclass K into operational protocol bytes. Different choices of encoding in general lead to different commitments. Precisely herein lies the role of canonically serializable representations (Definition 4): they make hashing, anchoring, and verification mathematically and practically well-defined operations as soon as byte-input-invariant processing is demanded. 
+
+8.4 Why the Operational Instantiation Is Not Well-Defined Without a Fixed Presentation 
+
+Now let the key k be a real value, say k = π. To execute G(k), k must be transformed into a finite representation (e.g. a decimal string or an IEEE 754 floating-point number). Without normative specifications (format, rounding, precision, normal form), this representation is not unique. Here, too, the non-uniqueness lies not in the decoding of a concrete bit string within a fixed IEEE 754 format, but in the mapping of the irrational value to a finite approximation. The operational instantiation of 
+
+G(k) is therefore not well-defined. The premises of the correctness theorem of Section 8.2 are thus not fulfilled as long as no representation rule has been fixed. 
+
+8.5 Conclusions 
+
+• A fixed effective representation makes the operational inputs and the protocol steps defined on them uniquely determined; canonical representations moreover guarantee byte-input invariance. Under deterministic further processing, representation invariance follows from this.  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 15
+
+• Once the representation specification has been fixed, correctness proofs can be carried out without further unstated or implementation-dependent representation assumptions (e.g. divergent floating-point formats or rounding rules). 
+
+• The direct operational use of real values requires an explicit representation, approximation, or canonicalization rule; these are mathematically formalizable components of the protocol specification. 
+
+• The central advantage concerns byte-level well-definedness without additional serialization or rounding premises; no statement about cryptographic security in the sense of secrecy, collision or second-preimage resistance is implied thereby. 
+
+# 9 Advantages of Fixed Algorithmic Presentations 
+
+This section summarizes the insights gained above and puts them into systematic order. The comparisons and the snaproot example show that the decisive difference lies not in the numerical value but in the algorithmic representability and canonicity of the representation. 
+
+• Canonical representations: values in the rational core presentation (Q, ΣQ) possess a uniquely fixed operational encoding. 
+
+• Reproducibility: the same inputs lead to the same bytes in all specification-conformant implementations. 
+
+• Protocol well-definedness: the specification fixes inputs, encodings, and processing steps in such a way that specification-conformant implementations are interoperable without further implementation-dependent auxiliary assumptions. 
+
+• Commitment well-definedness: for commitments to concrete files, the byte sequence itself is the object; for commitments to structured or semantically interpreted objects, a canonical serialization is required insofar as semantically equal initial representations are to produce the same commitment input. 
+
+• Separation of operation and analysis: rational core presentations or other fixed operational representation systems for keys and inputs; Aapp for error bounds, convergence, and analytic models. 
+
+• No additional decisions at run time: once the normative encoding has been fixed, no further implementation-dependent decisions about format, rounding, or precision are required. Important: these advantages concern formal protocol suitability and reproducibility; they are no statement about the cryptographic security of the toy constructions. 
+
+Natural objections. The following objections suggest themselves and are anticipated here. 
+
+Cryptography works with bit strings anyway. Cryptographic protocols operate with bit strings, integers, group and field elements — so why the detour via R? Aex = Q is a deliberately chosen rational core class and not a maximal criterion for finite exact presentability: √2 and other algebraic numbers, too, possess suitable exact finite representations, and larger canonically representable systems (in particular for real algebraic numbers [ 14 ]) are possible. Aex is not intended as a replacement for the objects mentioned, but as a conceptual model of the fact that, and how, real values can be transformed into canonical operational objects without additional approximation. The formal notion of the canonically serializable object class (Definition 4) transfers this criterion to the finite objects occurring in practice — files, hashes, transaction IDs, payloads — which are themselves not real numbers but share the same property of canonical, finite representability.  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 16
+
+Why not simply Z? A restriction to integers is accurate for many cryptographic primitives but too restrictive for analysis purposes. The advantage lies not in replacing Z but in the explicit separation between operational objects (rational core presentation or canonically serializable representations) and analytic quantities ( Aapp ). 
+
+What does Aapp additionally provide? Approximable numbers from Aapp make it possible to formulate convergence, error bounds, and numerical models precisely without endangering operational well-definedness. Aapp thus covers the analytic side that Aex deliberately leaves out. 
+
+Is this a security claim? No. All advantages concern well-definedness, reproducibility, and the formulation of byte-level correctness arguments; no statement is made about the cryptographic security of the constructions used. ASN.1/DER [ 10 ] and the normatively fixed point, key, and signature encodings in RFC 8032 (Ed25519) [ 11 ] are examples of tightly specified operational encodings (RFC 8032 requires, for instance, 
+
+0 ≤ S < L and fixed point and integer encodings; different verification equations can lead to diverging sets of accepted signatures). snaproot [ 9], by contrast, illustrates more generally the use of prescribed finite representations; according to the present specification, the SR1 payload is not necessarily canonical in the strong sense of Definition 3 (cf. Section 7.5). All three can be understood, in the terminology of this paper, as realizations of fixed operational representations, and they show that the demanded separation between the operational and the analytic level is already implicitly carried out in real systems. 
+
+# 10 Limitations 
+
+The scope of this paper is deliberately controlled. We state the most important limitations openly: 
+
+• Narrower notion of representation. The notion of a representation system used here is deliberately narrower than general Type-2 representations of computable analysis; it suffices for the protocol questions considered but makes no claim to their full generality. 
+
+• Classical foundations. The main results are predominantly reformulations of classical com-putability limits (undecidability of equality of computable reals); the contribution lies in framing, transfer, and positioning, not in a new undecidability theorem. 
+
+• Taxonomy not yet formalized. The protocol-relative commitment taxonomy sketched in Section 11 is a research program and not yet fully formalized. 
+
+• No security analysis. The toy schemes (XOR, toy RSA, toy hash) serve exclusively to illustrate the representation question; no cryptographic security analysis is carried out. 
+
+• Own case study. The snaproot case study is the author’s own work and serves as illustration, not as independent external evidence. 
+
+• Specification relativity. Canonicity is not an intrinsic property of an abstract object but always relative to a normative syntax, normalization, and encoding specification. Different specifications can fix different, each internally canonical, byte encodings. 
+
+• No empirical evaluation. The paper contains no empirical study of competing implementations or real interoperability failures; the analysis is conceptual and mathematical, not experimental. 
+
+# 11 Outlook: Protocol-Relative Commitment Semantics 
+
+As an outlook, not as a fully elaborated theory, we sketch a protocol-relative extension of the represen-tation perspective developed here; the following considerations are not part of the formal main claims of this paper. The distinction made in this paper between exact byte identity, canonical serialization of structured objects, and canonical value presentation suggests a more general protocol-relative perspective. Let  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 17
+
+Π be a protocol and Obs Π the collection of the properties of a presentation d observed by it. Two presentations could then count as protocol-equivalent if 
+
+d1 ≡Π d2 ⇔ Obs Π(d1) = Obs Π(d2).
+
+Example (measurement protocol). Let Lmes be the decidable language of normalized decimal strings with exactly five decimal places. A protocol Π first decodes d ∈ Lmes as an exact rational fixed-point value parse (d) and observes of it only its rounding to two decimal places according to a normatively fixed rule — here round half away from zero (in an exact half case, away from zero in absolute value). We have 
+
+Obs Π(d) = round 2(parse( d)) , d1 ≡Π d2 ⇔ round 2(parse( d1)) = round 2(parse( d2)) .
+
+The associated computable normal form as a concrete code is 
+
+NΠ(d) = format 2(round 2(parse( d))) ,
+
+where format 2 always produces exactly two decimal places (for instance the string “3.14”); the canonical target form per equivalence class is thereby completely fixed as a finite code. The exactly different inputs 3.14159 and 3.14161 are protocol-equivalent under this Π (both round to 3.14 ), while 3.14000 and 3.15000 are not. Since parse (d) yields, for d ∈ Lmes , an exactly represented rational fixed-point value, round 2 is computable by integer arithmetic; the protocol-relative equivalence is therefore decidable and possesses a computable normal form — unlike the universal exact value equality of Theorem 1. Decisive is the restriction to the decidable input language Lmes : on an unrestricted class of arbitrary approximation programs for computable real numbers, a rounding normal form would not be totally computable, since round 2 is discontinuous at the rounding thresholds ( 3.145 ; 3.155 ; . . . ) and, from an arbitrary Cauchy name, it cannot be decided in the limiting case on which side of the threshold the value lies. The example thus demonstrates precisely the core thesis: computability arises through the precise specification of input language and rounding rule, not through the mere notion of rounding. It shows how a deliberately coarser, protocol-defined equivalence remains well-defined on a fixed input class. This equivalence need coincide neither with syntactic byte equality nor with exact real value equality. In particular, it can be coarser than value equality and thereby enable a canonical protocol-relative representation, even though a universal exact value canonicalization is excluded by Theorem 1. Precisely herein lies the most interesting starting point of an independent protocol-relative theory. A coarser protocol-relative equivalence weakens the requirements compared with exact value equality, but by itself guarantees neither the decidability of the equivalence nor the existence of a computable normal form; both must be established separately for the respective protocol. Moreover, a protocol-relative commitment binds, on the semantic level, only to the equivalence class [d]Π distinguished by Π,not necessarily to a single real value — an observation central to the cryptographic binding property. From this, prospectively, a taxonomy emerges of representation commitments (commitment to the concrete description; Nrep (d1) = Nrep (d2) ⇔ d1 = d2), exact value commitments (Nval (d1) = 
+
+Nval (d2) ⇔ [[ d1]] = [[ d2]] , i.e. exactly when the values are equal), and protocol-relative commitments 
+
+(NΠ(d1) = NΠ(d2) ⇔ d1 ≡Π d2). Demanding the respective equivalence in both directions ensures that the preprocessing does not merge classes not provided for by the protocol. A complete theory would additionally have to examine the compatibility of the equivalence with the operations used by the protocol, the composition of canonically serializable objects, and the demarcation from represented spaces, computable structures, exact real arithmetic, and existing semantic commitment notions. This elaboration is reserved for follow-up work. The proposed taxonomy here concerns the semantics or canonicalization of the input to be committed to. It makes no statement about determinism, hiding, or binding of the commitment scheme used subsequently: classical schemes can be randomized ( Commit (m; r)), so that even for identical input, different random values produce different commitments. The taxonomy thus describes how the semantic  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 18
+
+commitment input is determined from a presentation, not the commitment scheme itself. Classical commitment definitions [ 20 ] presuppose an already fixed message space; the perspective proposed here asks, upstream of that, which presentations count as the same message or the same protocol-relevant equivalence class in the first place. 
+
+# 12 Discussion and Conclusion 
+
+Operational cryptographic procedures process finite byte sequences. If semantically equal objects are thereby to produce identical protocol bytes independently of their initial representation (byte-input invariance), a canonical representation or equivalent normalization must additionally be fixed. The rational core presentation (Q, ΣQ) satisfies this condition for rational values; canonically serializable object classes transfer the same property to practical protocol objects such as files, hashes, transaction IDs, and payloads. Algorithmically approximable numbers Aapp , by contrast, are appropriate for analysis and estimation purposes, provided no byte-input-invariant processing is demanded. As a supplementary note: models such as the random oracle model [ 7] presuppose already encoded bit strings as inputs. The upstream mapping of semantic objects to these bit strings is presupposed by the model but not itself fixed. The perspective presented here lies upstream of it and treats exactly this representation layer — an operational view complementary to the idealization, which the model presupposes but does not itself solve. Beyond this, the correctness proof presented in this paper shows a more specific advantage: a canonical presentation is not a prerequisite of mathematical provability as such — formal proofs can also be conducted via Cauchy names, intervals, or other representations of real numbers. A canonical presentation is a sufficient and practically particularly suitable way of realizing representation-invariant processing; it is required in particular when semantically equal objects are to be represented by identical canonical byte inputs (byte-input invariance). It is, however, not necessary in general: representation invariance can also be achieved by directly extensional processing that is well-defined on equivalence classes — for instance, by a decoder accepting several notations and subsequently operating on the decoded value without first computing a canonical normal form. A function on bytes is uniquely specified even without canonicity; canonicity is needed so that semantically equal objects receive the same canonical byte input independently of their initial representation. In this sense, the rational core presentation, or a canonically serializable representation, enables byte-level correctness arguments that are reproducible independently of the implementation for an identical byte sequence. Beyond the toy examples considered here, the snaproot hash-anchoring protocol shows that the more general separation between semantic objects and their operational byte representations is also relevant for real hashing and verification systems. In such contexts, algorithms operate on syntactic representations, not on abstract mathematical objects. The use of fixed canonical or protocol-conformant finite representations therefore makes it possible to formulate protocols in such a way that their correctness, once the representation specification has been fixed, is formally verifiable independently of further, non-normalized implementation decisions. The contribution of this paper thus lies neither in new cryptographic primitives nor in a new undecidability theorem, but in a representation-theoretic framework for cryptographic protocol objects: in the explicit separation between approximable analysis objects ( Aapp ) and canonically serializable operational protocol objects (rational core presentation or protocol-conformant representations) — and in the observation that this separation forms a basis for byte-input-invariant protocol processing and for byte-level correctness arguments reproducible in all specification-conformant implementations. A protocol that commits to concrete byte sequences can be well-defined even without semantic canonicalization. Put pointedly, the contribution lies in the protocol-theoretic reformulation of classical computability limits and their connection with canonical serialization and commitment semantics. For cryptographic protocols it is therefore decisive not only which mathematical or semantic value is meant, but through which normative presentation it becomes a reproducible operational object.  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 19
+
+# Statement on the Use of AI Tools 
+
+In the preparation of this paper, AI language models were used as tools, in particular Anthropic Claude Opus 4.8 and Claude Fable 5 as well as OpenAI GPT-5.5 Thinking. They served for linguistic revision, critical review of the argumentation, checking of the worked examples, and the translation of this English version from the German original. The responsibility for the content, all conceptual decisions, and the final version lie entirely with the author. 
+
+# References 
+
+[1] A. M. Turing, On Computable Numbers, with an Application to the Entscheidungsproblem ,Proceedings of the London Mathematical Society, Series 2, vol. 42, no. 1, pp. 230–265, 1937. DOI 10.1112/plms/s2-42.1.230. [2] K. Weihrauch, Computable Analysis: An Introduction , Springer, 2000 (esp. the chapters on computable real numbers and their representations). [3] M. B. Pour-El, J. I. Richards, Computability in Analysis and Physics , Springer, 1989. [4] E. Bishop, D. Bridges, Constructive Analysis , Springer, 1985. [5] O. Goldreich, Foundations of Cryptography , Vol. I–II, Cambridge University Press, 2001–2004. [6] J. Katz, Y. Lindell, Introduction to Modern Cryptography , 3rd ed., Chapman & Hall/CRC, 2020. [7] M. Bellare, P. Rogaway, Random Oracles are Practical: A Paradigm for Designing Efficient Protocols , Proc. 1st ACM Conf. on Computer and Communications Security (CCS), pp. 62–73, 1993. DOI 10.1145/168588.168596. [8] National Institute of Standards and Technology, Secure Hash Standard (SHS) , FIPS PUB 180-4, August 2015. DOI 10.6028/NIST.FIPS.180-4. [9] A. Brömme, T. Yavas, snaproot: Decentralized File Integrity Verification Using Blockchain-Anchored Cryptographic Hashing , arXiv:2606.10625v1 [cs.CR], June 9, 2026. DOI 10.48550/arXiv.2606.10625. [10] ITU-T Recommendation X.690 (ISO/IEC 8825-1), Information technology – ASN.1 encoding rules: Specification of Basic Encoding Rules (BER), Canonical Encoding Rules (CER) and Distinguished Encoding Rules (DER) , 2021. [11] S. Josefsson, I. Liusvaara, Edwards-Curve Digital Signature Algorithm (EdDSA) , RFC 8032, DOI 10.17487/RFC8032, January 2017. [12] A. Rundgren, B. Jordan, S. Erdtman, JSON Canonicalization Scheme (JCS) , RFC 8785, DOI 10.17487/RFC8785, June 2020. [13] C. Bormann, P. Hoffman, Concise Binary Object Representation (CBOR) , RFC 8949, DOI 10.17487/RFC8949, December 2020. [14] S. Basu, R. Pollack, M.-F. Roy, Algorithms in Real Algebraic Geometry , 2nd ed., Springer, 2006 (esp. the chapters on the isolation and representation of real algebraic numbers). [15] IEEE, IEEE Standard for Floating-Point Arithmetic , IEEE Std 754-2019, 2019. DOI 10.1109/IEEESTD.2019.8766229. [16] A. Pauly, On the Topological Aspects of the Theory of Represented Spaces , Computability 5(2):159– 180, 2016. DOI 10.3233/COM-150049. Preprint: arXiv:1204.3763.  
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 20
+
+[17] M. Konečný, F. Steinberg, H. Thies, Computable Analysis for Verified Exact Real Computation , FSTTCS 2020, LIPIcs 182, pp. 50:1–50:18, Schloss Dagstuhl, 2020. DOI 10.4230/LIPIcs.FSTTCS.2020.50. [18] A. Pauly, F. Steinberg, Comparing Representations for Function Spaces in Computable Analysis ,Theory of Computing Systems 62(3):557–582, 2018. DOI 10.1007/s00224-016-9745-6. Preprint: arXiv:1512.03024. [19] D. Jackson, C. Cremers, K. Cohn-Gordon, R. Sasse, Seems Legit: Automated Analysis of Subtle Attacks on Protocols that Use Signatures , ACM CCS 2019, pp. 2165–2180, 2019. DOI 10.1145/3319535.3339813. [20] I. Damgård, Commitment Schemes and Zero-Knowledge Protocols , in: Lectures on Data Security (EEF School 1998), LNCS 1561, pp. 63–86, Springer, 1999. DOI 10.1007/3-540-48969-X_3. [21] K. Chalkias, P. Chatzigiannis, Base64 Malleability in Practice , AsiaCCS 2022, pp. 1219–1221, 2022. DOI 10.1145/3488932.3527284. [22] R. I. Soare, Turing Computability: Theory and Applications , Theory and Applications of Com-putability, Springer, Berlin/Heidelberg, 2016. DOI 10.1007/978-3-642-31933-4. 
+
+# A Detailed Calculations (Complete) 
+
+A.1 Symmetric Encryption (Complete Steps) 
+
+Key k = 13 /37 ∈ Aex 
+
+pair toy (13 /37) = ( p, q ) = (13 , 37) 
+
+si = ( p + 31 · q + i) mod 256 
+
+p + 31 · q = 1160 
+
+S (decimal) = [136 , 137 , 138 , 139 , 140] 
+
+S (hex) = [88, 89, 8A, 8B, 8C] 
+
+P = “HALLO” (ASCII) = [48, 41, 4C, 4C, 4F] 
+
+C = P ⊕ S:
+
+48 ⊕88=C0, 41 ⊕89=C8, 4C ⊕8A=C6, 4C ⊕8B=C7, 4F ⊕8C=C3 
+
+C (hex) = [C0, C8, C6, C7, C3] 
+
+Back-calculation: P = C ⊕ S
+
+A.2 RSA (Modular Powers via Square-and-Multiply) 
+
+Parameters: p = 11 , q = 17 , n = 187 , φ(n) = 160 , e = 7 , d = 23 , m = 42 . 
+
+> Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols 21
+
+Encryption: c = 42 7 mod 187 42 2 = 1764 mod 187 = 81 42 4 = 81 2 = 6561 mod 187 = 16 42 7 = 42 4 · 42 2 · 42 = 16 · 81 · 42 mod 187 16 · 81 = 1296 mod 187 = 174 174 · 42 = 7308 mod 187 = 15 ⇒ c = 15 
+
+Decryption: m = 15 23 mod 187 15 2 = 225 mod 187 = 38 15 4 = 38 2 = 1444 mod 187 = 135 15 8 = 135 2 = 18225 mod 187 = 86 15 16 = 86 2 = 7396 mod 187 = 103 23 = 16 + 4 + 2 + 1 15 23 = 103 · 135 · 38 · 15 mod 187 103 · 135 = 13905 mod 187 = 67 67 · 38 = 2546 mod 187 = 115 115 · 15 = 1725 mod 187 = 42 ⇒ m = 42 
+
+A.3 Toy Hash (Complete Sums) 
+
+H(x) = 
+
+> L−1
+
+∑
+
+> i=0
+
+(i + 1) · xi mod 256 
+
+k = 13 /37 , bytes toy (13 /37) = [13 , 37] :
+
+H = (1 · 13 + 2 · 37) mod 256 = 87 
+
+k = π, “3.14” → [51 , 46 , 49 , 52] :
+
+H = 51 + 92 + 147 + 208 = 498 mod 256 = 242 
+
+k = π, “3.1416” → [51 , 46 , 49 , 52 , 49 , 54] :
+
+H = 1067 mod 256 = 43 
+
+Full SHA-256 values for Section 7.4 (hexadecimal, 256 bits, each one contiguous value):  
+
+> SHA-256(“3.14”) =
+> 2efff1261c25d94dd6698ea1047f5c0a7107ca98b0a6c2427ee6614143500215
+> SHA-256(“3.1416”) =
+> 23741492d396d4d556f0982fbcc97870d7b0e61859d7d7619d8418f875a42602
+> SHA-256( [13 ,37] ) =
+> 51698d9afde54286cf8875ec5c4163a3b435e5f07e599ce20349fb342f94f015
+
+A.4 Note on the Term “Toy” 
+
+The term “toy” denotes, in this context, deliberately simplified, insecure example constructions that serve exclusively to illustrate structural and conceptual properties. In particular, no statement about cryptographic security is made. This is a common convention in cryptography and theoretical computer science.

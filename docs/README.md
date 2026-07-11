@@ -6,71 +6,62 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-10
-- 运行时间：2026-07-10 20:46:07 UTC
+- 最新运行日期：2026-07-11
+- 运行时间：2026-07-11 20:46:33 UTC
 - 运行状态：成功
-- 本次总论文数：17
-- 精读区：6
-- 速读区：11
+- 本次总论文数：14
+- 精读区：5
+- 速读区：9
 
 ### 今日简报（AI）
-今日共推荐17篇论文，精读6篇、速读11篇，涵盖安全、隐私与协同技术。最值得关注的是精读中的两篇9.0分论文：社区训练的后门吸收机制与无签名阈值授权方案。若时间有限，可优先浏览Agentic AI安全隐私、多智能体SLAM及行为隐私泄露等速读内容。
-- 详情：[/202607/10/README](/202607/10/README)
+今日聚焦多智能体系统的安全与隐私，精读5篇论文中，防火墙架构和恶意行为检测得分最高。值得关注的两个方向：敏感数据保护的防火墙设计和基于激活模式的恶意行为检测。建议深入阅读这两篇高评分论文，并结合AI安全生命周期中的人机协作案例进行实践。
+- 详情：[/202607/11/README](/202607/11/README)
 
 ### 精读区论文标签
-1. [The Power of Backdoor Absorption in Community Training](/202607/10/2607.06643v1-the-power-of-backdoor-absorption-in-community-training)  
+1. [Multi-Agent Firewall Architecture for Privacy Protection of Sensitive Data in Interactions with Language Models](/202607/11/2607.08282v1-multi-agent-firewall-architecture-for-privacy-protection-of-sensitive-data-in-interactions-with-language-models)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：AI模型训练中的后门攻击与防御
-2. [Threshold Authorization Without Threshold Signatures: Signature-Agnostic MPC Custody](/202607/10/2607.08226v1-threshold-authorization-without-threshold-signatures-signature-agnostic-mpc-custody)  
-   标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：基于MPC和Shamir秘密共享的阈值授权方案，无需阈值签名，适用于密钥托管。
-3. [Degree-Constrained Interval Optimization for Minimax Polynomial Approximation in Homomorphic Encryption](/202607/10/2607.08042v1-degree-constrained-interval-optimization-for-minimax-polynomial-approximation-in-homomorphic-encryption)  
+   evidence：通过多代理防火墙保护LLM交互中的敏感数据隐私
+2. [When Agents Go Rogue: Activation-Based Detection of Malicious Behaviors in Multi-Agent Systems](/202607/11/2607.06807v1-when-agents-go-rogue-activation-based-detection-of-malicious-behaviors-in-multi-agent-systems)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：同态加密中的多项式近似优化，支持机密计算
-4. [MLQENABLER: Enabling Secure Machine Learning Queries over Encrypted Database in Cloud Computing](/202607/10/2607.08197v1-mlqenabler-enabling-secure-machine-learning-queries-over-encrypted-database-in-cloud-computing)  
+   evidence：基于激活状态的多代理系统恶意行为检测
+3. [Beware of Agentic Botnets: Scalable Untargeted Promptware Attacks via Universal and Transferable Adversarial HalluSquatting](/202607/11/2607.07433v1-beware-of-agentic-botnets-scalable-untargeted-promptware-attacks-via-universal-and-transferable-adversarial-hallusquatting)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：云中加密数据库上的安全机器学习查询
-5. [Mini-Programs, Mega-Problems: Unveiling OAuth-based Authentication Misuses in Mini-Programs via Dynamic Analysis](/202607/10/2607.08232v1-mini-programs-mega-problems-unveiling-oauth-based-authentication-misuses-in-mini-programs-via-dynamic-analysis)  
+   evidence：针对代理型LLM应用的提示软件攻击是AI安全威胁
+4. [Token-Flow Firewall: Semantic Runtime Auditing for Persistent AI Agents](/202607/11/2607.08395v1-token-flow-firewall-semantic-runtime-auditing-for-persistent-ai-agents)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：小程序中OAuth身份认证误用
-6. [Secure Decentralized Federated Learning via Gossip and Virtual Voting](/202607/10/2607.08651v1-secure-decentralized-federated-learning-via-gossip-and-virtual-voting)  
+   evidence：持久AI代理的运行时安全审计，应对语义威胁
+5. [Coded Task Offloading for Fluid Computing: A Privacy-Aware Approach under D2D Networks](/202607/11/2607.08440v1-coded-task-offloading-for-fluid-computing-a-privacy-aware-approach-under-d2d-networks)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：安全的去中心化联邦学习，结合八卦协议和虚拟投票
+   evidence：面向分布式云边端计算的编码任务卸载与隐私保护
 
 ### 速读区论文标签
-1. [Security and Privacy in Agentic AI: Grand Challenges and Future Directions](/202607/10/2607.06608v1-security-and-privacy-in-agentic-ai-grand-challenges-and-future-directions)  
+1. [Builder, Defender, Breaker: The Case Against Removing the Human from the AI-Driven Security Lifecycle](/202607/11/2607.03215v1-builder-defender-breaker-the-case-against-removing-the-human-from-the-ai-driven-security-lifecycle)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：自主AI的安全与隐私关键挑战
-2. [CILC: Cryptographically-secure Inter-agent Loop Closure Candidate Detection for Multi-Agent Collaborative SLAM](/202607/10/2607.06700v1-cilc-cryptographically-secure-inter-agent-loop-closure-candidate-detection-for-multi-agent-collaborative-slam)  
+   evidence：讨论人工智能安全生命周期和完全自动化的风险，主张人类参与
+2. [Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols](/202607/11/2607.05016v1-algorithmically-presented-numbers-and-canonical-representations-in-cryptographic-protocols)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：使用安全多方计算实现SLAM中的环闭合检测
-3. [Behavioral Privacy Leakage in Agentic Negotiation: Formalizing and Mitigating Inference Attacks via Randomized Policies](/202607/10/2607.06815v1-behavioral-privacy-leakage-in-agentic-negotiation-formalizing-and-mitigating-inference-attacks-via-randomized-policies)  
+   evidence：密码协议中表示论视角，涉及密钥恢复和身份认证
+3. [Trustworthy Machine Learning through the Lens of Combinatorial Optimization: Survey and Research Perspectives](/202607/11/2607.07762v1-trustworthy-machine-learning-through-the-lens-of-combinatorial-optimization-survey-and-research-perspectives)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：面向自主谈判代理的行为差分隐私
-4. [FedCVESA: Taking Away Training Data in Federated Learning via Correlation Value Encoding and Segmented Aggregation](/202607/10/2607.07314v1-fedcvesa-taking-away-training-data-in-federated-learning-via-correlation-value-encoding-and-segmented-aggregation)  
+   evidence：综述可信机器学习，涵盖鲁棒性、隐私、公平性等AI安全主题
+4. [TRM-Raft: A Byzantine-Resistant Raft Consensus via Integrated Trust and Reputation Model](/202607/11/2607.08666v1-trm-raft-a-byzantine-resistant-raft-consensus-via-integrated-trust-and-reputation-model)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：联邦学习中的隐私攻击，侵犯隐私保护
-5. [Unlearning to Protect: A Distilled Reinforcement Learning Framework with Privacy-Preserving Feature Unlearning and XAI for IoT Security](/202607/10/2607.07635v1-unlearning-to-protect-a-distilled-reinforcement-learning-framework-with-privacy-preserving-feature-unlearning-and-xai-for-iot-security)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：面向物联网僵尸网络的AI安全防御与隐私保护遗忘
-6. [Equivariant Quantum Clustering with Differential Privacy: Parameter-Efficient Privacy-Preserving Analysis Across Heterogeneous Sensitive Datasets](/202607/10/2607.08092v1-equivariant-quantum-clustering-with-differential-privacy-parameter-efficient-privacy-preserving-analysis-across-heterogeneous-sensitive-datasets)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：差分隐私保护下的聚类分析方法
-7. [ContextNest: Verifiable Context Governance for Autonomous AI Agent](/202607/10/2607.02116v1-contextnest-verifiable-context-governance-for-autonomous-ai-agent)  
+   evidence：分布式系统中抵抗拜占庭错误的Raft共识
+5. [AGL-1: The Enterprise AI Governance Layer as a Control Plane for Trusted Enterprise Intelligence](/202607/11/2607.03516v1-agl-1-the-enterprise-ai-governance-layer-as-a-control-plane-for-trusted-enterprise-intelligence)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：自主AI代理的隐私与上下文治理
-8. [Lower Bounds for PIR with Preprocessing from Blackbox Cryptography](/202607/10/2607.06451v2-lower-bounds-for-pir-with-preprocessing-from-blackbox-cryptography)  
+   evidence：企业AI治理-云安全解决方案
+6. [Measuring Healthcare Data Leaks and Security Flaws at Internet Scale](/202607/11/2607.04965v1-measuring-healthcare-data-leaks-and-security-flaws-at-internet-scale)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：私有信息检索与预处理，与机密计算相关
-9. [Mitigating Taint-Style Vulnerabilities in MCP Servers via Security-Aware Tool Descriptions](/202607/10/2607.07461v1-mitigating-taint-style-vulnerabilities-in-mcp-servers-via-security-aware-tool-descriptions)  
+   evidence：互联网规模的医疗数据泄露和安全缺陷测量
+7. [Privilege and confidentiality in generative AI workflows](/202607/11/2607.05479v1-privilege-and-confidentiality-in-generative-ai-workflows)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：LLM代理MCP服务器安全漏洞
-10. [Unlearning to Protect: A Distilled Reinforcement Learning Framework with Privacy-Preserving Feature Unlearning and XAI for IoT Security](/202607/10/2607.07635v2-unlearning-to-protect-a-distilled-reinforcement-learning-framework-with-privacy-preserving-feature-unlearning-and-xai-for-iot-security)  
+   evidence：生成式AI工作流中的保密性
+8. [Agentic Data Environments](/202607/11/2607.07397v1-agentic-data-environments)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：面向物联网安全的隐私保护特征遗忘
-11. [Secure QR Codes: Authenticity Verification via EdDSA Signatures and CBOR Certificates](/202607/10/2607.08383v1-secure-qr-codes-authenticity-verification-via-eddsa-signatures-and-cbor-certificates)  
+   evidence：代理自动化的安全执行与安全保证
+9. [Modeling Failure Dynamics in Time-Constrained Authentication Systems: Evidence of a Success Cliff in USSD Workflows](/202607/11/2607.07650v1-modeling-failure-dynamics-in-time-constrained-authentication-systems-evidence-of-a-success-cliff-in-ussd-workflows)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：二维码认证的密码技术，未直接涉及密钥恢复
+   evidence：模拟时间受限认证系统中的故障动态，与身份认证相关
 
 
 <div class="dpr-home-promo-card">

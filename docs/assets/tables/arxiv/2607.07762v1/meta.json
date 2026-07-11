@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "extractor": "papercropper",
+  "tables": [
+    {
+      "url": "assets/tables/arxiv/2607.07762v1/table-001.webp",
+      "caption": "",
+      "page": 0,
+      "index": 1,
+      "width": 1586,
+      "height": 1240,
+      "label": "Table"
+    }
+  ]
+}

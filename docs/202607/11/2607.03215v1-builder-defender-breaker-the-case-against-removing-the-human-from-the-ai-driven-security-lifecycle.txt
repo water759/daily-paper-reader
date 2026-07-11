@@ -1,0 +1,154 @@
+Title: Builder, Defender, Breaker: The Case Against Removing the Human from the AI-Driven Security Lifecycle
+
+URL Source: https://arxiv.org/pdf/2607.03215v1
+
+Published Time: Tue, 07 Jul 2026 00:51:55 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# Builder, Defender, Breaker: The Case Against Removing the Human from the AI-Driven Security Lifecycle 
+
+MOHAMED CHAHINE GHANEM ∗, School of Computer Science and Mathematics, Keele University, United Kingdom and Cybersecurity Institute, University of Liverpool, United Kingdom Artificial intelligence has spread across the whole of the security lifecycle. The same family of models now writes application code, hardens it, and probes it for weaknesses, so that a single generative substrate in-creasingly performs all three roles at once. Enthusiasm for this convergence tends to treat full autonomy as the natural end point of partial assistance. This article argues that it is not. When the system that builds an artifact is drawn from the same distribution as the systems that defend and test it, the three roles inherit a common set of blind spots, and the independence that makes verification meaningful is quietly lost. Removing the human does more than raise the automation level: it collapses the external oracle against which machine output is judged, outruns the point at which a person could intervene, hands adversaries a predictable and poisonable target, and dissolves the locus of accountability when something fails. Drawing on evidence from autonomous code generation, adversarial machine learning, software fault tolerance, and the first all-machine hacking tournaments, we argue that the human belongs in the loop not as a temporary scaffold but as a per-manent structural requirement, and set out what a defensible division of labour between people and machines should preserve. CCS Concepts: • Security and privacy → Systems security ; • Computing methodologies → Artificial intelligence ; • Social and professional topics → Computing / technology policy .Additional Key Words and Phrases: Autonomous cyber defence, human-in-the-loop, AI security lifecycle, verification, accountability, algorithmic monoculture, adversarial machine learning 
+
+ACM Reference Format: 
+
+Mohamed Chahine Ghanem. 2026. Builder, Defender, Breaker: The Case Against Removing the Human from the AI-Driven Security Lifecycle. ACM AI Lett. 1, 2, Article XX (June 2026), 7 pages. https://doi.org/10.1145/ nnnnnnn.nnnnnnn 
+
+1 Three Hats, One Head 
+
+Open a modern software pipeline and you are likely to find an AI model in at least three places. One model, or one family of models, drafts the application code. Another reviews that code, flags insecure patterns, and proposes hardening. A third generates test cases, fuzzes interfaces, and searches for exploitable flaws. The three functions correspond to the oldest division of labour in security practice: the builder who creates the system, the defender who protects it, and the breaker who tries to subvert it. What is new is that a single generative substrate is beginning to wear all three hats at the same time. The prevailing narrative treats this as an unambiguous advance. If AI can assist a developer, why not let it write the whole module; if it can assist a defender, why not let it run the security 
+
+> ∗
+
+Corresponding author. Author’s Contact Information: Mohamed Chahine Ghanem, School of Computer Science and Mathematics, Keele Uni-versity, Newcastle-Under-Lyme, United Kingdom and Cybersecurity Institute, University of Liverpool, Liverpool, United Kingdom, mohamed.chahine.ghanem@liverpool.ac.uk. 
+
+This work is licensed under a Creative Commons Attribution 4.0 International License. 
+
+© 2026 Copyright held by the owner/author(s). ACM 3068-8590/2026/6-ARTXX https://doi.org/10.1145/nnnnnnn.nnnnnnn ACM AI Lett., Vol. 1, No. 2, Article XX. Publication date: June 2026.  
+
+> arXiv:2607.03215v1 [cs.CR] 3 Jul 2026 XX:2 M. C. Ghanem
+
+operations centre; if it can assist a red team, why not let it hunt vulnerabilities unsupervised. Each step looks like a modest extension of the last, and each promises speed and scale that human teams cannot match. The trajectory points toward a lifecycle that builds, defends, and tests itself, with the human removed from the loop. This article argues that the last step differs in kind, not degree. Partial assistance and full auton-omy are separated by a threshold that is easy to miss precisely because the individual steps toward it are small. Removing the human from a lifecycle in which AI already builds, defends, and tests does not simply raise the automation level. It collapses the independence that gives verification its meaning, outpaces the point at which a person could intervene, presents an adversary with a uniform and predictable target, and empties the place where accountability is supposed to sit. The claim is not that AI has no role across the lifecycle; it plainly does, and the evidence that it helps is real: in the 2025 DARPA AI Cyber Challenge, autonomous cyber-reasoning systems working un-der a strict no-human rule found the large majority of the competition’s injected flaws and even surfaced real zero-day vulnerabilities in open-source code [6]. The claim is narrower and, we think, more durable: there is at least one participant in the security lifecycle that cannot be automated away without breaking the very properties the lifecycle exists to guarantee. 
+
+2 A Lifecycle Under One Roof 
+
+Building. Code-generation assistants are now routine, and so is their central weakness: a model trained on the public corpus of human code reproduces the insecurity of that corpus. Pearce et al. prompted GitHub Copilot across scenarios drawn from the most dangerous common weak-ness enumerations and found that roughly forty per cent of the resulting programs contained exploitable vulnerabilities [14]. The pattern holds at scale: a formal analysis of some 331,000 C programs generated by nine state-of-the-art models found at least sixty-two per cent to be vulner-able, with the models differing only marginally from one another and exhibiting broadly the same coding errors [18]. These errors are not random. They track the vulnerability patterns latent in the training data, which means they are shared, to a first approximation, by every model trained on similar data. Worse, the humans nominally in charge do not compensate for them: in a controlled study, participants given an AI assistant wrote measurably less secure code and were more likely to believe their code was secure [15]. 
+
+Defending. On the defensive side, AI now drives intrusion detection, alert triage, malware classification, and configuration hardening. These systems learn a statistical picture of “normal” and flag departures from it. That picture is only ever as complete as the data behind it, and a decade of work catalogued by NIST’s adversarial-machine-learning taxonomy shows that it can be evaded, poisoned, or misdirected by an adversary who understands how it was built [3, 19]. A defender that has internalised the same distribution as the code it protects will, by construction, be blind to the same edge cases the builder was blind to. 
+
+Breaking. Offensive testing has been automated the longest, from fuzzers to symbolic-execution engines, and the frontier is now fully autonomous discovery and repair. DARPA’s 2016 Cyber Grand Challenge staged the first all-machine hacking tournament, in which cyber-reasoning sys-tems found, exploited, and patched flaws in seconds with no human in the loop [5]. Its successor, the 2025 AI Cyber Challenge, extended the ambition to real-world open-source software: with human interaction prohibited, the finalist systems identified 54 of the competition’s 63 injected vulnerabilities (86 per cent), produced accepted patches for 43 of them, and independently discov-ered eighteen genuine zero-day flaws, at an average cost of about $152 per competition task [6]. These programmes are genuine achievements. They also make the convergence concrete: the tools that test a system are now the same kind of system being tested. 
+
+> ACM AI Lett., Vol. 1, No. 2, Article XX. Publication date: June 2026.
+
+Against Removing the Human from the AI-Driven Security Lifecycle XX:3 Human Expert     
+
+> override authority &accountable party responsibility gap: accountability has nowhere to land
+> human-in-the-loop | on-the-loop | out-of-the-loop
+> 4
+> gate
+> human sign-off /
+> intervene or interrupt
+> Independent V&V of the loop's verdicts
+
+Build 
+
+> code generation
+
+Defend 
+
+> protect & detect
+
+Test  
+
+> vulnerability discovery
+> & patching
+> code, models,
+> configs
+> deployed system,
+> telemetry
+> findings and patches close the loop
+> 2assurance by self-verification — no independent V&V
+
+Shared generative substrate (algorithmic monoculture)       
+
+> common pre-training corpus ·model family ·toolchain
+> model homogenization ⇒correlated failure modes: blind-spot set
+
+ℬ
+
+> introduces flaws in
+
+ℬ blind to 
+
+ℬ never cover 
+
+ℬ
+
+Adversary 
+
+> data poisoning
+> (training time)
+> 3
+> evasion at test time:
+> transferable adversarial examples
+
+1 correlated failures 2 oracle problem 3 security monoculture 4 automation complacency & responsibility gap 
+
+Fig. 1. The fully autonomous security lifecycle as a closed loop. Build, Defend, and Test exchange artifacts along the solid path, and the returning findings carry the loop’s own assurance claim (hazard 2). All three stages draw on one generative substrate, whose shared priors define a common blind-spot set B: flaws in B
+
+are emitted by the builder, missed by the defender, never exercised by the tester, and so traverse every stage unseen (hazard 1). The adversary faces a uniform, predictable target and can act on it twice, by poisoning the shared training data and by crafting evasions that transfer across the monoculture (hazard 3). The human layer supplies what the loop cannot generate for itself—an independent oracle, a sign-off gate on consequen-tial actions, and an answerable party—and under full autonomy it drifts from in the loop to on the loop to out of it, leaving the seat of accountability vacant (hazard 4). The numbered hazards locate Sections 3–5 on the diagram. 
+
+Taken together, these three developments describe a lifecycle increasingly housed under one roof and, more consequentially, built from one kind of material. That shared material is the source of the problems that follow. 
+
+3 The Closed Loop 
+
+Correlated failure and the monoculture problem. A security lifecycle works because its stages fail independently. The developer overlooks a flaw; the reviewer catches it; if the reviewer misses it too, the tester’s exploit surfaces it. The protection comes not from any one stage being perfect but from the stages being unlikely to fail in the same place at the same time. Independence is the resource that defence in depth spends. Nor can it simply be assumed wherever redundancy ex-ists: when Knight and Leveson tested the premise behind N-version programming, independently 
+
+ACM AI Lett., Vol. 1, No. 2, Article XX. Publication date: June 2026. XX:4 M. C. Ghanem 
+
+written implementations of a common specification failed on the same inputs far more often than the independence assumption allowed, because people trained alike make similar mistakes in the same hard places [10]. A homogeneous AI pipeline reproduces that experiment under strictly worse conditions. The builder, the defender, and the breaker are no longer merely educated alike; they are drawn from the same generative distribution, and their failures correlate accordingly (Figure 1). A vulnerability that a model is disposed not to generate is, for the same reasons, one it is disposed not to detect and not to test for. The blind spot is not caught downstream because every stage downstream shares it. This is the security instance of algorithmic monoculture: when many decision-makers rely on the same underlying model, their outcomes homogenise, and errors that would have been idiosyncratic become systemic [4]. The mechanism is not speculative. Demontis et al. showed that adversarial examples optimised against one model transfer to and defeat different models to the extent that those models share structure, with transfer success reaching the point of total misclassification and predictable from the alignment of their gradients [7]. Shared provenance is shared fragility: in an all-AI lifecycle it produces a class of defect that no stage is equipped to see. 
+
+Who verifies the verifier? Verification is meaningful only against an oracle independent of the thing verified; supplying such an oracle is the central and still open problem of software test-ing [2]. A test suite written by the same process that wrote the code inherits the author’s assump-tions about what the code is supposed to do; it will confirm that the program does what the model expected, not that it does what the world requires. This is the machine analogue of marking one’s own homework, and the concern is empirical rather than abstract. Self-preference has been mea-sured directly: large-language-model evaluators recognise their own generations and score them more favourably than human annotators do, and the bias strengthens with the model’s ability to recognise its own output [12]. The human side of the arrangement fares no better. The one direct measurement we have of humans supervising an AI author found the opposite of a safeguard: par-ticipants with an assistant produced less secure code yet reported higher confidence in it [15]. A lifecycle that goes further and lets AI certify AI has no external oracle left. It can report that its outputs are consistent with its own expectations, which is not the same as reporting that they are correct—the gap that trustworthy-AI guidance addresses by requiring independent measurement and human review rather than self-attestation [11]. 
+
+The vanishing human and machine-speed drift. Even where a human is nominally retained, autonomy tends to push them out. The progression is familiar from other safety-critical domains: the human moves from in the loop, approving each action, to on the loop, monitoring a stream of actions, to out of the loop, receiving a summary after the fact. Two forces drive the drift. The first is human: sustained oversight of a system that is usually right induces automation complacency and automation bias, an effect that Parasuraman and Manzey found in experts as well as novices and that resists training and instruction [13]. The nominal overseer stops genuinely checking. The second is machine speed: when a cyber-reasoning system patches a flaw in seconds, a human approval step is not a safeguard but a bottleneck, and it will be removed as one. The moment the loop can close, both the incentive and the psychology push to close it. 
+
+4 When Automation Meets the Adversary 
+
+Security is adversarial, which distinguishes it from most other settings where AI is deployed. A recommender that makes a mistake faces a user who shrugs; a defence that makes a mistake faces an opponent actively looking for exactly that mistake, who will reuse it. Full autonomy interacts badly with this fact in three ways. First, uniformity is exploitable. A pipeline built from one model family behaves predictably, and predictability is precisely what an attacker wants. Adversarial machine learning has spent a  
+
+> ACM AI Lett., Vol. 1, No. 2, Article XX. Publication date: June 2026. Against Removing the Human from the AI-Driven Security Lifecycle XX:5
+
+decade showing that learned detectors can be evaded by inputs crafted at test time and corrupted by data introduced at training time [3]; the attacks are not confined to the feature space but can be realised as working malware that a classifier passes as benign [16]. A monoculture magnifies the payoff, because such attacks transfer across models that share structure [7]: an evasion that works against one instance works against its siblings, and a homogeneous lifecycle offers no diverse second opinion to catch the manipulation. Second, the offensive and defensive tools are the same tools. An autonomous system that can find and exploit vulnerabilities for the purpose of testing is, by description, an autonomous system that can find and exploit vulnerabilities. The dual use is no longer hypothetical: given a vulnera-bility description, an LLM agent was reported to autonomously exploit a majority of a set of real one-day flaws end to end, several of them rated critical [9]. When such a system runs without a human able to halt it, no one is positioned to notice that testing has shaded into damage, or that the tool has been redirected against a live target. Third, autonomous judgment is brittle where it matters most, and its own reported successes reveal the limit. The same agent that exploited most flaws when handed a written description managed only a small fraction once that description was removed [9]: the competence is real but leans heavily on human-curated context. More generally, reasoning models can degrade sharply as problem complexity rises, with accuracy falling away past a threshold even as the model continues to emit confident output; the precise interpretation of this collapse is debated, but the fragility it exposes is not [17]. The Cyber Grand Challenge supplies the parable. The winning autonomous system dominated the other machines and was then invited to the human Capture-the-Flag tour-nament at DEF CON, where it finished last [5]. Machine-speed autonomy won the contest that machines were built for and lost the moment it faced adversaries who could reason in ways it could not. 
+
+5 The Accountability Vacuum 
+
+Suppose the closed loop nonetheless fails: an autonomous lifecycle ships a vulnerability, a defence poisons itself, a test escalates into an outage. Who is responsible? The question is not rhetorical, because accountability is the one property of the lifecycle that cannot be delegated to a machine. A fully autonomous pipeline is the limit of a long-recognised erosion: the code, the review, and the test all issue from a process with no principal, so the answerability that ought to attach to a decision has nowhere to land. It is precisely this that recent governance instruments refuse to permit for high-stakes systems. The European Union’s AI Act requires that high-risk AI be designed so that it can be effectively overseen by a natural person who can intervene or halt it, and it names automation bias as a hazard the design must actively counter [8]. This matters beyond assigning blame after the fact. Accountability is also forward-looking: it is the expectation of having to answer that disciplines a builder’s choices in advance. A human who knows they will be asked to justify a deployment behaves differently from a system optimised only for a proxy metric. Governance frameworks encode this by making a named person accountable for an AI system’s risks rather than the system itself [11]. Guardrails, checklists, and stated values do not survive contact with a process that has no one inside it who can be held to them. Remove the human and you do not merely lose someone to blame; you lose the mechanism by which the lifecycle is held to any standard at all. 
+
+6 Keeping the Human in the Loop 
+
+None of this is an argument against AI in security. The productivity is real, the defensive coverage is real, and the autonomous-discovery results are real. It is an argument about which participant is load-bearing. The human in a security lifecycle is not a temporary scaffold to be removed once  
+
+> ACM AI Lett., Vol. 1, No. 2, Article XX. Publication date: June 2026. XX:6 M. C. Ghanem
+
+the models improve; the human supplies the independence, the oracle, the circuit-breaker, and the accountability on which the other properties depend. Several commitments follow, consistent with the risk-management posture that AI should augment rather than replace human judgment in consequential settings [11]. 
+
+Keep the sources of failure independent. The build path and the test path should not be drawn from the same model, the same training data, or the same vendor, precisely because attacks and blind spots transfer between models that share them [7]. Diversity here is not redundancy; it is the thing that makes verification informative. Where an AI writes code, an independent oracle, ideally of different provenance and partly human, should judge it. 
+
+Keep a human on the loop with real authority to intervene , and design the system so that intervention is possible at machine speed rather than nominal. Staged deployment, human sign-off on consequential actions, and a hard override are the difference between oversight and theatre; the AI Act’s demand for oversight that is effective rather than symbolic points the same way [8]. Authority cannot be exercised by a person who has been designed out of the decision, or lulled into rubber-stamping it. 
+
+Preserve provenance and independent oversight. Audit logs that record what each com-ponent did, red-teaming by parties who did not build the system, and third-party review of high-consequence deployments keep the loop open to inspection; the adversarial-ML taxonomy is ex-plicit that such evaluation must probe for evasion and poisoning instead of assuming robust-ness [19]. 
+
+Guard against deskilling. A workforce that has ceded building, defending, and testing to ma-chines loses the tacit competence that intervention requires, so that the retained human becomes unable to exercise the authority they nominally hold. Bainbridge named this the central irony of automation four decades ago: the more reliable the machine, the rarer and more demanding the occasions on which the human must take over, and the less practised the human is when they ar-rive [1]. The risk compounds the complacency automation already induces [13] and the over-trust practitioners already show toward AI output [15]: a supervisor who is both out of practice and disposed to defer is a supervisor in name only. Keeping people fluent in the work is a security control, not a training nicety. 
+
+7 Conclusion 
+
+AI now builds, defends, and tests, and it will do more of each. The temptation is to read that trajectory as ending in a lifecycle that runs itself. This article has argued that the end point is a trap: a closed loop of AI certifying AI loses the independence that makes verification mean anything, drifts past the point of human intervention, offers adversaries a uniform target, and empties the seat where accountability sits. The three hats can be worn by machines; the head that answers for them cannot. The task ahead is not to automate the human out of the security lifecycle but to design the division of labour so that everything gains from machine speed and scale except the one thing that must remain irreducibly human: the independent, accountable judgment against which all of it is checked. 
+
+Acknowledgments References       
+
+> [1] Lisanne Bainbridge. 1983. Ironies of Automation. Automatica 19, 6 (1983), 775–779. doi:10.1016/0005-1098(83)90046-8 [2] Earl T. Barr, Mark Harman, Phil McMinn, Muzammil Shahbaz, and Shin Yoo. 2015. The Oracle Problem in Software Testing: A Survey. IEEE Transactions on Software Engineering 41, 5 (2015), 507–525. doi:10.1109/TSE.2014.2372785 [3] Battista Biggio and Fabio Roli. 2018. Wild Patterns: Ten Years After the Rise of Adversarial Machine Learning. Pattern Recognition 84 (2018), 317–331. doi:10.1016/j.patcog.2018.07.023 ACM AI Lett., Vol. 1, No. 2, Article XX. Publication date: June 2026.
+
+Against Removing the Human from the AI-Driven Security Lifecycle XX:7 
+
+[4] Rishi Bommasani, Kathleen A. Creel, Ananya Kumar, Dan Jurafsky, and Percy Liang. 2022. Picking on the Same Person: Does Algorithmic Monoculture Lead to Outcome Homogenization?. In Advances in Neural Information Processing Systems 35 (NeurIPS 2022) . IEEE. [5] Defense Advanced Research Projects Agency (DARPA). 2016. Mayhem Declared Preliminary Winner of Historic Cyber Grand Challenge. DARPA News. https://www.darpa.mil/news/2016/mayhem-winner-cyber-grand-challenge. [6] Defense Advanced Research Projects Agency (DARPA). 2025. AI Cyber Challenge Marks Pivotal Inflection Point for Cyber Defense. DARPA News. https://www.darpa.mil/news/2025/aixcc-results. [7] Ambra Demontis, Marco Melis, Maura Pintor, Matthew Jagielski, Battista Biggio, Alina Oprea, Cristina Nita-Rotaru, and Fabio Roli. 2019. Why Do Adversarial Attacks Transfer? Explaining Transferability of Evasion and Poisoning Attacks. In 28th USENIX Security Symposium (USENIX Security 19) . USENIX Association, 321–338. https://www.usenix. org/conference/usenixsecurity19/presentation/demontis. [8] European Union. 2024. Regulation (EU) 2024/1689 (Artificial Intelligence Act), Article 14: Human Oversight. Official Journal of the European Union. https://artificialintelligenceact.eu/article/14/. [9] Richard Fang, Rohan Bindu, Akul Gupta, and Daniel Kang. 2024. LLM Agents Can Autonomously Exploit One-Day Vulnerabilities. arXiv preprint arXiv:2404.08144. [10] John C. Knight and Nancy G. Leveson. 1986. An Experimental Evaluation of the Assumption of Independence in Multiversion Programming. IEEE Transactions on Software Engineering SE-12, 1 (1986), 96–109. doi:10.1109/TSE.1986. 6312924 [11] National Institute of Standards and Technology. 2023. Artificial Intelligence Risk Management Framework (AI RMF 1.0) .Technical Report NIST AI 100-1. U.S. Department of Commerce, NIST. doi:10.6028/NIST.AI.100-1 [12] Arjun Panickssery, Samuel R. Bowman, and Shi Feng. 2024. LLM Evaluators Recognize and Favor Their Own Gener-ations. In Advances in Neural Information Processing Systems 37 (NeurIPS 2024) . 68772–68802. [13] Raja Parasuraman and Dietrich H. Manzey. 2010. Complacency and Bias in Human Use of Automation: An Attentional Integration. Human Factors 52, 3 (2010), 381–410. doi:10.1177/0018720810376055 [14] Hammond Pearce, Baleegh Ahmad, Benjamin Tan, Brendan Dolan-Gavitt, and Ramesh Karri. 2022. Asleep at the Keyboard? Assessing the Security of GitHub Copilot’s Code Contributions. In 2022 IEEE Symposium on Security and Privacy (SP) . IEEE, 754–768. doi:10.1109/SP46214.2022.9833571 [15] Neil Perry, Megha Srivastava, Deepak Kumar, and Dan Boneh. 2023. Do Users Write More Insecure Code with AI Assistants?. In Proceedings of the 2023 ACM SIGSAC Conference on Computer and Communications Security (CCS) . ACM, 2785–2799. doi:10.1145/3576915.3623157 [16] Fabio Pierazzi, Feargus Pendlebury, Jacopo Cortellazzi, and Lorenzo Cavallaro. 2020. Intriguing Properties of Ad-versarial ML Attacks in the Problem Space. In 2020 IEEE Symposium on Security and Privacy (SP) . IEEE, 1332–1349. doi:10.1109/SP40000.2020.00073 [17] Parshin Shojaee, Iman Mirzadeh, Keivan Alizadeh, Maxwell Horton, Samy Bengio, and Mehrdad Farajtabar. 2025. The Illusion of Thinking: Understanding the Strengths and Limitations of Reasoning Models via the Lens of Problem Complexity. arXiv preprint arXiv:2506.06941. [18] Norbert Tihanyi, Tamas Bisztray, Mohamed Amine Ferrag, Ridhi Jain, and Lucas C. Cordeiro. 2025. How Secure Is AI-Generated Code: A Large-Scale Comparison of Large Language Models. Empirical Software Engineering 30, 2, Article 47 (2025). doi:10.1007/s10664-024-10590-1 [19] Apostol Vassilev, Alina Oprea, Alie Fordyce, Hyrum Anderson, et al. 2025. Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations . Technical Report NIST AI 100-2e2025. National Institute of Standards and Technology. doi:10.6028/NIST.AI.100-2e2025 ACM AI Lett., Vol. 1, No. 2, Article XX. Publication date: June 2026.
