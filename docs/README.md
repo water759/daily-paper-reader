@@ -6,62 +6,49 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-11
-- 运行时间：2026-07-11 20:46:33 UTC
+- 最新运行日期：2026-07-12
+- 运行时间：2026-07-12 21:09:15 UTC
 - 运行状态：成功
-- 本次总论文数：14
-- 精读区：5
-- 速读区：9
+- 本次总论文数：9
+- 精读区：2
+- 速读区：7
 
 ### 今日简报（AI）
-今日聚焦多智能体系统的安全与隐私，精读5篇论文中，防火墙架构和恶意行为检测得分最高。值得关注的两个方向：敏感数据保护的防火墙设计和基于激活模式的恶意行为检测。建议深入阅读这两篇高评分论文，并结合AI安全生命周期中的人机协作案例进行实践。
-- 详情：[/202607/11/README](/202607/11/README)
+1) 今日安全日报共收录9篇论文，聚焦LLM Agent记忆投毒攻击与Open RAN后门防御两大热点。  
+2) 精读推荐《When Agents Remember Too Much》揭示Agent记忆被注入虚假信息的风险，以及《ORAN-DEFEND》提出子空间检测清理后门DRL应用的方法，均值得深入阅读。  
+3) 建议读者优先精读这两篇8分论文，了解前沿攻击与防御机制，同时可快速浏览速读列表中的TrustCLIP、可审计遗忘检测等相关工作。
+- 详情：[/202607/12/README](/202607/12/README)
 
 ### 精读区论文标签
-1. [Multi-Agent Firewall Architecture for Privacy Protection of Sensitive Data in Interactions with Language Models](/202607/11/2607.08282v1-multi-agent-firewall-architecture-for-privacy-protection-of-sensitive-data-in-interactions-with-language-models)  
-   标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：通过多代理防火墙保护LLM交互中的敏感数据隐私
-2. [When Agents Go Rogue: Activation-Based Detection of Malicious Behaviors in Multi-Agent Systems](/202607/11/2607.06807v1-when-agents-go-rogue-activation-based-detection-of-malicious-behaviors-in-multi-agent-systems)  
+1. [When Agents Remember Too Much: Memory Poisoning Attacks on Large Language Model Agents](/202607/12/2607.06595v1-when-agents-remember-too-much-memory-poisoning-attacks-on-large-language-model-agents)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：基于激活状态的多代理系统恶意行为检测
-3. [Beware of Agentic Botnets: Scalable Untargeted Promptware Attacks via Universal and Transferable Adversarial HalluSquatting](/202607/11/2607.07433v1-beware-of-agentic-botnets-scalable-untargeted-promptware-attacks-via-universal-and-transferable-adversarial-hallusquatting)  
+   evidence：LLM智能体的记忆中毒攻击
+2. [ORAN-DEFEND: Subspace Detection and Sanitization of Backdoor DRL xApps in Open RAN](/202607/12/2607.06647v1-oran-defend-subspace-detection-and-sanitization-of-backdoor-drl-xapps-in-open-ran)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：针对代理型LLM应用的提示软件攻击是AI安全威胁
-4. [Token-Flow Firewall: Semantic Runtime Auditing for Persistent AI Agents](/202607/11/2607.08395v1-token-flow-firewall-semantic-runtime-auditing-for-persistent-ai-agents)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：持久AI代理的运行时安全审计，应对语义威胁
-5. [Coded Task Offloading for Fluid Computing: A Privacy-Aware Approach under D2D Networks](/202607/11/2607.08440v1-coded-task-offloading-for-fluid-computing-a-privacy-aware-approach-under-d2d-networks)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：面向分布式云边端计算的编码任务卸载与隐私保护
+   evidence：O-RAN中深度强化学习的后门防御
 
 ### 速读区论文标签
-1. [Builder, Defender, Breaker: The Case Against Removing the Human from the AI-Driven Security Lifecycle](/202607/11/2607.03215v1-builder-defender-breaker-the-case-against-removing-the-human-from-the-ai-driven-security-lifecycle)  
+1. [TrustCLIP: Learning Private Visual Features via Adversarial Reconstruction](/202607/12/2607.04484v1-trustclip-learning-private-visual-features-via-adversarial-reconstruction)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：讨论人工智能安全生命周期和完全自动化的风险，主张人类参与
-2. [Algorithmically Presented Numbers and Canonical Representations in Cryptographic Protocols](/202607/11/2607.05016v1-algorithmically-presented-numbers-and-canonical-representations-in-cryptographic-protocols)  
+   evidence：通过对抗重建学习私有视觉特征
+2. [Auditable Machine Unlearning for Privacy-Compliant Ransomware Detection Using Multi-Shard SISA and Deep Reinforcement Learning](/202607/12/2607.06860v1-auditable-machine-unlearning-for-privacy-compliant-ransomware-detection-using-multi-shard-sisa-and-deep-reinforcement-learning)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：密码协议中表示论视角，涉及密钥恢复和身份认证
-3. [Trustworthy Machine Learning through the Lens of Combinatorial Optimization: Survey and Research Perspectives](/202607/11/2607.07762v1-trustworthy-machine-learning-through-the-lens-of-combinatorial-optimization-survey-and-research-perspectives)  
+   evidence：隐私合规的机器遗忘用于勒索软件检测
+3. [Beware What You Autocomplete: Forensic Attribution of Backdoored Code Completions](/202607/12/2607.08011v1-beware-what-you-autocomplete-forensic-attribution-of-backdoored-code-completions)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：综述可信机器学习，涵盖鲁棒性、隐私、公平性等AI安全主题
-4. [TRM-Raft: A Byzantine-Resistant Raft Consensus via Integrated Trust and Reputation Model](/202607/11/2607.08666v1-trm-raft-a-byzantine-resistant-raft-consensus-via-integrated-trust-and-reputation-model)  
+   evidence：代码补全后门攻击的溯源
+4. [Out of Sight: Compression-Aware Content Protection against Agentic Crawlers](/202607/12/2607.08180v1-out-of-sight-compression-aware-content-protection-against-agentic-crawlers)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：分布式系统中抵抗拜占庭错误的Raft共识
-5. [AGL-1: The Enterprise AI Governance Layer as a Control Plane for Trusted Enterprise Intelligence](/202607/11/2607.03516v1-agl-1-the-enterprise-ai-governance-layer-as-a-control-plane-for-trusted-enterprise-intelligence)  
+   evidence：针对LLM智能爬虫的内容防护方法
+5. [Multi-Channel Spread-Spectrum Code Watermarking](/202607/12/2607.06009v1-multi-channel-spread-spectrum-code-watermarking)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：企业AI治理-云安全解决方案
-6. [Measuring Healthcare Data Leaks and Security Flaws at Internet Scale](/202607/11/2607.04965v1-measuring-healthcare-data-leaks-and-security-flaws-at-internet-scale)  
+   evidence：面向LLM生成代码归因的水印技术
+6. [NARAD: Non-colluding Aggregator-oblivious Record-And-Decrypt](/202607/12/2607.07596v1-narad-non-colluding-aggregator-oblivious-record-and-decrypt)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：互联网规模的医疗数据泄露和安全缺陷测量
-7. [Privilege and confidentiality in generative AI workflows](/202607/11/2607.05479v1-privilege-and-confidentiality-in-generative-ai-workflows)  
+   evidence：同态加密实现机密投票
+7. [TRACE: A Two-Channel Robust Attribution Watermark via Complementary Embeddings for LLM-Agent Trajectories](/202607/12/2607.08400v1-trace-a-two-channel-robust-attribution-watermark-via-complementary-embeddings-for-llm-agent-trajectories)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：生成式AI工作流中的保密性
-8. [Agentic Data Environments](/202607/11/2607.07397v1-agentic-data-environments)  
-   标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：代理自动化的安全执行与安全保证
-9. [Modeling Failure Dynamics in Time-Constrained Authentication Systems: Evidence of a Success Cliff in USSD Workflows](/202607/11/2607.07650v1-modeling-failure-dynamics-in-time-constrained-authentication-systems-evidence-of-a-success-cliff-in-ussd-workflows)  
-   标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：模拟时间受限认证系统中的故障动态，与身份认证相关
+   evidence：LLM代理轨迹水印用于增强安全审计
 
 
 <div class="dpr-home-promo-card">

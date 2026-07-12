@@ -1,0 +1,860 @@
+Title: Multi-Channel Spread-Spectrum Code Watermarking
+
+URL Source: https://arxiv.org/pdf/2607.06009v1
+
+Published Time: Wed, 08 Jul 2026 00:43:17 GMT
+
+Number of Pages: 15
+
+Markdown Content:
+# Multi-Channel Spread-Spectrum Code Watermarking 
+
+# Soohyeon Choi 
+
+shchoi@smu.edu.sg Singapore Management University Singapore 
+
+# Debin Gao 
+
+dbgao@smu.edu.sg Singapore Management University Singapore 
+
+# Yue Duan 
+
+yueduan@smu.edu.sg Singapore Management University Singapore 
+
+## Abstract 
+
+Attributing code to the large language model that produced it is essential for provenance, licensing, and misuse accountability, yet no deployed watermark meets this need. Generation-time schemes require access to the producing model and cannot be applied to third-party code, while post-hoc schemes work on any code but carry at most 4 bits of payload, far too few to distinguish the many deployed model configurations. We present multi-channel spread-spectrum watermarking, the first post-hoc, training-free code wa-termark with a 24-bit payload and formal robustness guarantees. The scheme encodes bits in variable naming conventions and in eight pairs of semantically equivalent code patterns, and a keyed pseudo-random permutation maps every site to a codeword bit so that each bit receives multiple independent votes. Majority voting absorbs distributed corruption, while an outer Reed-Solomon code recovers the identifier when concentrated channel attacks defeat the vote, yielding provable robustness bounds for formatting, syntactic, and structural attacks. Across 1,750 Python files from CodeNet and from GPT-4.1 and Llama-4 generations, the watermark achieves 100% clean-detection accuracy with zero false positives. Under 17 attack types, it recovers the identifier at 97.6% accuracy under 8 variable renames and 94.1% under 10% random per-site corruption, while the strongest post-hoc baseline collapses to 0% under any single-transform attack. Embedding and detection together take under 200 ms on CPU without training data or GPU. 
+
+## CCS Concepts 
+
+• Security and privacy → Digital rights management ; Soft-ware and application security ; • Theory of computation →
+
+Error-correcting codes ; • Computing methodologies → Artificial intelligence .
+
+## Keywords 
+
+Code watermarking, Large language models, Model attribution, Multi-channel watermarking, Spread-spectrum, Reed-Solomon codes, Post-hoc watermarking 
+
+ACM Reference Format: 
+
+Soohyeon Choi, Debin Gao, and Yue Duan. 2018. Multi-Channel Spread-Spectrum Code Watermarking. In Proceedings of Make sure to enter the correct  
+
+> Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page. Copyrights for components of this work owned by others than the author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or republish, to post on servers or to redistribute to lists, requires prior specific permission and/or a fee. Request permissions from permissions@acm.org.
+> Conference acronym ’XX, Woodstock, NY
+> ©2018 Copyright held by the owner/author(s). Publication rights licensed to ACM. ACM ISBN 978-1-4503-XXXX-X/2018/06 https://doi.org/XXXXXXX.XXXXXXX
+
+conference title from your rights confirmation email (Conference acronym ’XX). 
+
+ACM, New York, NY, USA, 15 pages. https://doi.org/XXXXXXX.XXXXXXX 
+
+## 1 Introduction 
+
+Large language models (LLMs) for code generation have moved rapidly from research demonstration to mainstream developer tool. Tools such as GitHub Copilot [ 4 ], GPT-4 [ 19 ], Code Llama [ 26 ], and Qwen-Coder [ 11 ] are now integrated into IDEs, pull-request review systems, and enterprise development pipelines, producing a substantial fraction of the code shipped to public and private repos-itories. This deployment has created three classes of accountability problems that share a single technical root, the reliable attribution of a given piece of code to the model that produced it. The first class is security. LLM-generated code has been shown to contain exploitable vulnerabilities at rates comparable to or exceed-ing human-written code [ 20 , 21 , 28 ], and when such code reaches production, incident response requires attributing the vulnerable artifact to a specific model release before the provider can be no-tified and affected codebases systematically audited. The second is licensing. Large code models are known to memorize and re-produce training data verbatim under adversarial extraction [ 3], and when an alleged infringement surfaces, determining which provider is liable requires proof that the suspect artifact originated from their model. The third is academic integrity, where instructors increasingly need not just to flag LLM-generated submissions but to identify which model produced them, since institutional policies often permit some tools while prohibiting others, and public detec-tors address neither task reliably [ 27 ]. All three scenarios play out the same way from the provider’s perspective. An LLM provider generates code, distributes it to users, and later needs to prove that a suspicious artifact originated from a specific model release. The adversary is the end user or a downstream party, who may reformat the code, rename variables, insert or remove comments, or pass the code through another LLM to launder provenance. Any workable solution must bind a model identifier to the generated code at or shortly after generation, survive these modifications, and avoid false alarms on unrelated code. 
+
+Limitations of Existing Techniques. Two families of techniques have been proposed for this goal, and both fall short for third-party attribution where the LLM is unavailable at verification time. 
+
+Authorship detection trains a classifier to decide whether code is LLM-generated [ 6, 7 ]. Its accuracy depends on a statistical gap be-tween human and model code that narrows as models improve, and recent analyses show that such detectors can be defeated by para-phrasing, translation, or light editing [ 27 ]. Detection is also binary only (whether code is LLM-generated), not which model produced it, so it cannot be used for attribution. Code watermarking embeds a signal into the generated code itself. Generation-time schemes such as KGW [ 13 ], SWEET [ 14 ], STONE [ 12 ], and CODEIP [ 10 ]                      
+
+> 1arXiv:2607.06009v1 [cs.CR] 7 Jul 2026 Conference acronym ’XX, June 03–05, 2018, Woodstock, NY Choi et al.
+> def check_prime ( num_val ):
+> if num_val <= 1 :
+> return False
+> for iin range (2 , num_val ):
+> if num_val % i == 0 :
+> return False
+> return True
+> (a) Original
+> def check_prime ( NumVal ):
+> if 1 >= NumVal :
+> return False
+> for iin range (2 , NumVal ):
+> if 0 == NumVal % i :
+> return False
+> return True
+> (b) Watermarked (“gpt4”)
+
+Figure 1: LLM-generated code (a) and its watermarked coun-terpart (b). Blue marks the variable-naming channel, red marks structural channels. 
+
+bias the LLM’s token sampling and require access to the decoding process, carrying either zero payload or a payload validated only under narrow attacks. Post-hoc schemes drop the model-access requirement but either carry no payload and collapse under any single-transform attack [ 16 ] (see Section 6.4) or require end-to-end neural training for just a 4-bit identifier, supporting only 16 model IDs (SrcMarker [34], RoSeMary [35]). In short, no existing code-LLM watermarking system simultane-ously delivers a payload large enough for the model configurations deployed today, robustness against realistic code transformations, and training-free operation on CPU. 
+
+Our Approach. To address this gap, we propose multi-channel spread-spectrum watermarking, the first post-hoc, training-free code watermark with a large (24-bit) payload and formal robustness guarantees for formatting, syntactic, and structural attacks. Our key insight is that pairing two independent families of semantic-preserving code modification with spread-spectrum voting forces the attacker to corrupt both families at once, doubling the modifi-cation budget required to break the watermark compared to any single-channel scheme. Bits are spread across two channel types. 
+
+Variable naming conventions carry 2 bits per variable, encoded in the choice among four naming styles ( snake_case , camelCase ,
+
+PascalCase , and ALL_CAPS ). Structural code patterns carry 1 bit per site, encoded in eight pairs of semantically equivalent syntactic forms listed in Table 2. Every available site participates in the watermark through a keyed pseudo-random permutation that maps sites to codeword bit positions [ 8, 9], so each codeword bit receives votes from multiple independent sites. Majority voting across these votes gives a first layer of error correction, absorbing distributed corruption. A Reed-Solomon (RS) outer code [ 25 ] gives a second layer, recovering the identifier when concentrated channel attacks defeat the vote. The two channel families are independent, since renaming variables does not affect structural patterns and modifying operators does not affect variable names. Breaking the watermark, therefore, requires a larger total modification budget than any attack on one family alone could achieve. Figure 1 illustrates this on a small Python function watermarked with the identifier “gpt4” 1. The watermarked version differs from the original in three places, each carrying watermark bits. 
+
+> 1The short example is for exposition. Its four or so embedding sites are not enough to carry a full 24-bit identifier. Minimum capacity requirements are analyzed in Section 6.
+
+(1) Variable naming: num_val becomes NumVal . The 2-bit variable-naming slot carries the value 10 (PascalCase ). (2) Comparison direction: num_val <= 1 becomes 1 >= NumVal .The 1-bit structural slot carries the value 1 (flipped from the canonical form). (3) Equality operand order: num_val % i == 0 becomes 0== NumVal % i . The 1-bit structural slot carries the value 1
+
+(operands swapped from the canonical form). Each modification is semantic-preserving, and the watermarked code produces identical output for all inputs. The detector, given the secret key, reads choices back and recovers the embedded identifier. Our evaluation validates this design across 1,750 Python files drawn from CodeNet [ 23 ] and from GPT-4.1 and Llama-4 genera-tions, under 17 attack types. The system recovers the 24-bit identi-fier with 100% no-attack accuracy and zero false positives, matching the theoretical bound of 1/224 . Robustness reaches 97.6% under 8 variable renames, 100% under 32 renames on larger files, and 94.1% under 10% random per-site corruption. Embedding completes in 65 to 145 ms and detection in 28 to 50 ms, with no GPU or training data required. 
+
+Contributions. The contributions of this paper are summarized as follows: (1) A multi-channel spread-spectrum embedding that distributes watermark bits across variable naming conventions and eight structural code patterns, gaining robustness through redundant voting across independent channels. (2) A two-layer error correction architecture combining spread-spectrum majority voting with RS codes, with formal robustness theorems for formatting, syntactic, and structural attacks, and an empirical capacity-robustness tradeoff in which lower 𝑡 can outperform higher 𝑡 on large files. (3) A 24-bit payload with false positive rate 1/224 and post-hoc deployment in 65 to 145 ms, requiring no model access, no training data, and no GPU, in contrast to prior post-hoc multi-bit schemes that depend on thousands to millions of training samples. (4) An evaluation on 1,750 files across seven datasets and 17 attack types, with head-to-head baseline comparisons and a formal proof of the information-theoretic barrier under LLM regeneration. 
+
+## 2 Background 2.1 Code Watermarking 
+
+Code watermarking embeds a hidden signal into source code that can later be detected to determine provenance [ 8]. Unlike natural language watermarking [ 13 ], code watermarking must preserve both semantics (the code produces the same output) and syntactic validity (the code compiles correctly). A single misplaced token can cause a compilation error or a change in the program’s behavior. Existing schemes fall along two axes, namely when the water-mark is embedded (during generation versus post-hoc) and what is embedded (binary presence detection versus multi-bit message). Generation-time watermarking modifies the LLM’s token sam-pling process. KGW [ 13 ] splits the vocabulary into green and red lists using a hash of the previous token, then adds a bias 𝛿 to  
+
+> 2Multi-Channel Spread-Spectrum Code Watermarking Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+green token logits. Detection counts green tokens and computes a 
+
+𝑧 -score. SWEET [14] improves on KGW by applying the bias only to high-entropy tokens, preserving code correctness at low-entropy positions, such as keywords and syntax. STONE [ 12 ] further refines this by excluding syntax-critical tokens entirely. All three require access to the LLM’s internals and carry zero payload, hence, are only suitable for binary classification ( i.e., LLM-generated or not). Post-hoc watermarking techniques alter code after generation, making it applicable to any LLM. ACW [ 16 ] applies 45 idempo-tent code transformations ( e.g., refactoring, reordering, format-ting). Detection re-applies each transformation and checks whether the code changes. If the code is unchanged, the transformation was already applied, and the watermark is considered present. Sr-cMarker [ 34 ] trains a bidirectional gated recurrent unit (BiGRU) encoder with a paired decoder over variable-name transformations and abstract syntax tree (AST) rewrites to embed a 4-bit signa-ture. RoSeMary [ 35 ] trains a CodeT5-based neural encoder [ 33 ]end-to-end to embed a 4-bit signature across variable names and syntactic transformations, with zero-knowledge wrappers around verification. 
+
+## 2.2 Reed-Solomon Error Correction 
+
+RS codes [ 25 ] are a family of algebraic error-correcting codes widely used in storage, communication, and QR codes. An RS code with parameters (𝑛, 𝑘, 𝑡 ) over GF (𝑞 ) encodes 𝑘 message symbols into 
+
+𝑛 =𝑘 +2𝑡 codeword symbols and corrects any 𝑒 erasures and 𝑠 errors satisfying 𝑒 +2𝑠 ≤2𝑡 . With a Vandermonde parity-check matrix, the code is maximum-distance separable (MDS) , and any erasure pattern of size up to 2𝑡 is provably recoverable. Our system uses two complementary codes. A random binary linear code [ 30 ] serves as the primary code for all main evaluations. A standard RS code over GF (16 ) serves as a theoretical baseline with MDS guarantees and is evaluated in the Appendix A on files large enough to carry its longer codeword. Both codes parametrize a capacity-robustness tradeoff through the RS parameter 𝑡 , where a higher 𝑡 corrects more erasures but requires a longer codeword and therefore larger files. 
+
+Compact Code for Short Files. Our primary evaluation uses a systematic binary linear code with 4𝑡 parity-check bits derived from a fixed SHA-256 [ 22 ] seed. The parity matrix is random by construc-tion (no Vandermonde structure), so the code is not MDS but still decodes with high probability for moderate erasure counts. Specifi-cally, 𝑒 ≤2𝑡 −1 erasures recover with probability above 0.99, and 𝑒 =2𝑡 
+
+erasures with probability approximately 0.30 (Theorem 5.2). The codeword fits even the smallest files in 𝐷 32 at 𝑡 =2 while keeping the same decoding interface across all datasets. 
+
+GF(16) RS Baseline. For theoretical comparison, we evaluate a baseline, which is a standard RS code over GF (16 ), whose 4-bit symbols align naturally with our watermark layout, namely 2-bit variable-naming slots and 1-bit structural slots. GF(16) arithmetic operates over GF (2) [ 𝑥 ]/( 𝑥 4+𝑥 +1) with primitive element 𝛼 =𝑥 , and the 24-bit payload encodes as 6 GF(16) symbols. The GF(16) code requires 𝐷 40 or larger files (Table 1); Appendix A reports its full per-dataset comparison. Compact (primary) GF(16) RS (baseline) 
+
+𝑡 CW bits Min. bits CW bits Min. bits Erasures 2 32 32 40 40 ≤ 4
+
+4 40 40 56 56 ≤ 8
+
+8 56 56 88 88 ≤ 16 
+
+Table 1: Codeword parameters for the compact code (primary) and the GF(16) RS baseline (CW = codeword). 
+
+## 2.3 Spread-Spectrum Watermarking 
+
+Spread-spectrum techniques, originally from wireless communica-tions [ 9 ], distribute a narrowband signal across a wide frequency band, making the signal robust against narrowband interference. We adapt this principle to code watermarking by spreading the codeword across all available sites. Without spreading, each code-word bit depends on one site and a single modification flips it; with spreading, every site contributes to multiple bits. A keyed pseudo-random permutation assigns each site to a code-word bit position. The key generation is implementation-specific; we use a permutation seeded by a point sequence on the secp256k1 elliptic curve, detailed in Section 4. With 𝑁 sites and 𝐵 codeword bits, each bit receives approximately 𝑣 =⌊𝑁 /𝐵 ⌋ votes. For example, 
+
+𝐷 56 at 𝑡 =2 yields 𝑣 ≈1.31 votes per bit ( 𝑁 ≈42 , 𝐵 =32 ); 𝐷 152 yields 
+
+𝑣 ≈4.29 from 𝑁 ≈137 .This design provides two layers of error correction that operate independently. (1) Majority voting forms the first layer. If a codeword bit receives 
+
+𝑣 votes and fewer than ⌊𝑣 /2⌋ are corrupted, the majority vote is correct, and no RS correction is needed for this position. (2) RS decoding forms the second layer. For positions where the majority vote fails, RS correction handles up to 2𝑡 such positions across the entire codeword. The two layers address complementary threats. The spread-spectrum layer absorbs randomly distributed corruption from indi-vidual site modifications, while the RS layer handles concentrated corruption, such as an attacker targeting an entire channel. 
+
+## 3 Threat Model and Design Goals 3.1 Deployment Model 
+
+We consider a provider-as-verifier deployment model, standard across all keyed watermarking systems [12–14, 24]: (1) An LLM provider generates code and embeds a watermark containing the model identifier ( e.g., “gpt4”) using a secret key. (2) The watermarked code is distributed to users. (3) A user may modify the code ( e.g., renaming variables, reformat-ting, refactoring). (4) A verifier ( e.g., academic institution, employer, court) submits the code to a detection service. (5) The service provider tests it against all registered LLM provider keys and returns the result (“Generated by GPT-4” or “no wa-termark”). Detection requires the secret key 𝐾 , preventing users from run-ning detection themselves. With detection taking ≈ 40 ms per key and a small number of major LLM providers, exhaustive checking   
+
+> 3Conference acronym ’XX, June 03–05, 2018, Woodstock, NY Choi et al.
+
+completes in under 1 second, analogous to how YouTube’s Content ID checks uploaded videos against all registered content [31]. 
+
+## 3.2 Attacker Model 
+
+We assume the adversary does not possess the secret key 𝐾 , which the provider-as-verifier deployment model keeps private. The ad-versary, therefore, knows the watermarking scheme and channel types but cannot determine which sites map to which codeword bit positions. We define a four-level attack taxonomy based on the type of code transformation. Our system provides formal guarantees for Levels 1–3. Level 4 is an information-theoretic barrier for all post-hoc syntactic watermarks (Section 6.7). 
+
+• Level 1: Formatting. Whitespace, comments, blank lines, and import ordering. These changes do not affect the AST and there-fore corrupt zero watermark sites (Theorem 5.3). 
+
+• Level 2: Syntactic. Variable renaming, dead code insertion, and statement reordering, which are classical code-transformation operations [ 8 ]. Each variable rename corrupts at most 2 bits via the naming convention. Dead code insertion may shift AST-order site indices. 
+
+• Level 3: Structural. Operator direction swapping ( a<b ↔ b>a ), operand reordering ( a+b ↔ b+a ), and expression-form changes (ternary ↔ if/else, list comprehension ↔ for-loop). Each channel attack corrupts all sites of that channel. 
+
+• Level 4: Algorithmic. Complete code regeneration by another LLM. All syntactic features are independently regenerated from the program’s semantic content. 
+
+## 3.3 The Detection Dilemma 
+
+A fundamental tension exists in all watermarking systems between verifiability and security. Any detection mechanism that returns a binary answer can be queried as an oracle for iterative removal: an adversary modifies the code incrementally, queries the detector after each modification, and continues until detection fails. For code files with 10 to 30 modifiable sites, this requires only 𝑂 (𝑁 ) queries. The dilemma is universal across prior watermarking work and remains unresolved. KGW [ 13 ] acknowledges the risk and proposes access monitoring without formalization. Qu et al. [24 ] prove secu-rity under the Random Oracle Model [ 2 ] against blind, non-adaptive attacks only. RoSeMary [ 35 ] wraps verification in zero-knowledge proofs (ZKP), but the binary outcome is itself an oracle signal re-gardless of whether the key is hidden. Other schemes [ 10 , 12 , 14 , 16 ]do not address the risk. We adopt the provider-as-verifier model to prevent user-side oracle queries by default. Practical mitigations via rate limiting and query deduplication are discussed in Section 7. 
+
+## 3.4 Design Goals 
+
+The threat model above motivates five concrete goals that the sys-tem must satisfy together in order to be practical. 
+
+G1: Multi-bit Attribution. The watermark must carry enough payload to distinguish among the model identifiers deployed in practice today. We target 24 bits, sufficient for 224 ≈1.7×10 7 provider-model pairs, well beyond the 4-bit (16 IDs) ceiling of prior post-hoc neural schemes [34, 35]. Pool Construction                                                                                    
+
+> snake_case + structural canonicalize →DFS -ordered sites pool = ( "!,…,"")
+> Possibly Modified %′
+> (after attack / refactor)
+> Source Code %
+> + message '
+> Message Encoding
+> '⇒*+ ∈0,1#,/=24 +44
+> Site Value Reading
+> 5$∈{0,1,7899 }
+> Spread -Spectrum Assignment
+> ;%:0,…,=−1→0,…,/−1
+> (sites →codeword bits )
+> Spread -Spectrum Assignment
+> ;%:0,…,=−1→0,…,/−1
+> (sites →codeword bits )
+> Embedding Channels
+> -rename variable (4 conventions)
+> -flip structural form (8 channels)
+> Watermarked code %′
+> (identifier 'encoded in =sites)
+> Recovered Message
+> ('′ or FAIL)
+> Embedding Detection
+> Key K
+> →seed Fisher -Yates over secp256k1 ⇒same ;%on both sides
+> Message Decoding
+> Corrects ?+2" ≤24
+> Majority Voting
+> A&BC" A!B→5D4" B
+> (ties →erasure )
+
+Figure 2: System overview of the embedding (left) and detec-tion (right) pipelines. G2: Robustness Under Attack. Detection must survive every Level 1 attack deterministically (Theorem 5.3) and tolerate Level 2 and Level 3 attacks within the recovery bounds of the spread-spectrum voting and RS correction layers (Theorems 5.4 and 5.5). 
+
+G3: Semantic Preservation. Every embedding transformation must preserve program behavior on all inputs, and the watermarked code must still compile without modification. 
+
+G4: No Training or Model Access. The provider must embed and verify without model access, training data, or GPU resources. This rules out neural encoders trained end-to-end and any scheme that intercepts the LLM’s decoding process. 
+
+G5: Low False-Positive Rate. The detector must reject unrelated code with vanishingly small probability. We target a provable bound of 1/224 , matching the payload’s information-theoretic floor. 
+
+## 4 System Design 4.1 Overview 
+
+Figure 2 illustrates the two pipelines, embedding and detection . Both share identical normalization and pool construction steps, ensuring that the same source code always produces the same site ordering, which is critical for correct detection. 
+
+## 4.2 Message Encoding 
+
+The watermark payload is a model identifier string, encoded with a 6-bit compact alphabet of 64 characters, namely a–z (0–25), A–Z (26– 51), 0–9 (52–61), _ (62), and null padding (63). This alphabet covers  
+
+> 4Multi-Channel Spread-Spectrum Code Watermarking Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+# Channel Canonical (bit=0) Alternative (bit=1) 1 aug_assign x = x + 1 x += 1 
+
+2 compare_dir a < b b > a 
+
+3 equality_dir y == x x == y 
+
+4 list_comp for + append comprehension 5 ternary if/else block x if c else y 
+
+6 operand_order a + b b + a 
+
+7 empty_coll [] list() 
+
+8 none_check == None is None 
+
+Table 2: The eight structural channels for Python. 
+
+every plausible model identifier ( e.g., “gpt4”, “dsk2”), since deployed model names consist of alphanumeric characters and underscores. A 4-character identifier therefore produces up to 4×6=24 message bits. The compact code appends 4𝑡 parity bits to yield a (24 +4𝑡 )-bit codeword, whereas the GF (16 ) baseline encodes the same 24 bits as 6 four-bit symbols (Section 2). For example, “gpt4” encodes as 𝑔 =6, 𝑝 =15 , 𝑡 =19 , 4=56 , giving the bit string 000110 001111 010011 111000 . Compared with 8-bit ASCII, this encoding cuts the minimum capacity requirement by 25%, from 32 bits to 24 bits, enabling watermarking of shorter code files without sacrificing coverage of any deployed model name. 
+
+## 4.3 Embedding Channels 
+
+The watermark spreads bits across two complementary channel families, a variable naming channel and eight structural channels. 
+
+Variable Naming. Each multi-word variable carries 2 bits via the choice among four naming conventions, namely snake_case (bits 
+
+00 ), camelCase (bits 01 ), PascalCase (bits 10 ), and ALL_CAPS (bits 
+
+11 ). The pool construction step, described below, normalizes all variables to snake_case and extends single-word identifiers to multi-word forms so they can carry a detectable convention. The embedding algorithm then renames each variable to the convention determined by its codeword bit assignment. 
+
+Structural Channels. Each of the eight structural channels (listed in Table 2) exploits a pair of semantically equivalent syntactic forms, and the watermark encodes one bit per site by choosing between the canonical form (bit 0) and the alternative form (bit 1). All transformations are semantic-preserving, since both forms pro-duce identical program output. The channels are also independent, so attacking one channel ( e.g., normalizing all comparisons to the canonical ‘ <’ form) does not affect other channels ( e.g., augmented assignment or operand order ). Channels vary in prevalence, with 
+
+operand_order contributing the most sites per file (8.1 on average in 𝐷 56 , 37% of structural capacity) and ternary and none_check 
+
+the fewest (0.2 and 0.3 sites respectively). 
+
+## 4.4 Pool Construction 
+
+The site pool determines which embeddable sites carry watermark bits. Pool construction must be deterministic , such that the same source code and the same key always yield the same pool in the same order. The process proceeds in five steps. 
+
+Algorithm 1 Watermark Embedding 
+
+Require: Source code 𝑆 , message 𝑚 , key 𝐾 , RS parameter 𝑡 
+
+Ensure: Watermarked code 𝑆 ′ 
+
+> 1:
+
+canon ← Normalize (𝑆 ) {snake_case + structural}  
+
+> 2:
+
+pool ← ConstructPool (canon ) 
+
+> 3:
+
+𝑁 ← | pool | 
+
+> 4:
+
+cw ← RS_Encode (𝑚, 𝑡 ) {𝐵 = 24 + 4𝑡 bits}  
+
+> 5:
+
+𝜙 ← SpreadSpectrum (𝐾, 𝑁 , 𝐵 ) {keyed permutation}  
+
+> 6:
+
+for 𝑖 = 0 to 𝑁 − 1 do  
+
+> 7:
+
+Read target bits for site 𝑖 from cw via 𝜙 {variables use 2 consecutive 𝜙 slots}  
+
+> 8:
+
+Transform pool [𝑖 ] to encode those bits  
+
+> 9:
+
+end for  
+
+> 10:
+
+return watermarked source 𝑆 ′
+
+(1) Normalize variable names to snake_case (canonical form), so that variables are identified consistently regardless of the original naming style. (2) Extend single-word variables with context-inferred suffixes (e.g., n → n_count , s → s_str ) so they become multi-word and can carry a detectable naming convention; single-character vari-ables such as ‘i’ cannot, since snake_case and camelCase are indistinguishable for single words. AST-validity tests (Section 6) confirm that the renamed code remains functionally correct. (3) Normalize structural channels to canonical forms. All com-parisons are normalized to </<= (flipping >/>= ), commutative operands are sorted by type, and equality operands are ordered by complexity. (4) Extract embeddable sites in deterministic depth-first search order, naming-convention variables first, then structural sites. (5) Construct the ordered pool as a list of (site, bit-width) en-tries, where variables contribute 2 bits each and structural sites contribute 1 bit each. 
+
+## 4.5 Spread-Spectrum Bit Assignment 
+
+With 𝑁 sites and a 𝐵 -bit codeword, the key 𝐾 yields an assign-ment 𝜙 𝐾 :{0, . . . , 𝑁 −1}→{ 0, . . . , 𝐵 −1} via a Fisher-Yates shuffle [ 17 ]seeded by a point sequence on the secp256k1 elliptic curve [ 18 , 29 ]. The 𝑥 -coordinates of the scalar-multiplied sequence 𝐾 ·𝐺, 2𝐾 ·𝐺, . . . 
+
+on secp256k1 drive the Fisher-Yates swap indices. The assignment operates in full permutation cycles, where each cycle of 𝐵 assignments covers all codeword bit positions exactly once. With 𝑁 sites, the number of full cycles is ⌊𝑁 /𝐵 ⌋, and each codeword bit receives between ⌊𝑁 /𝐵 ⌋ and ⌈𝑁 /𝐵 ⌉ votes. This uni-form distribution is critical because it ensures no single codeword bit position is under-represented. 
+
+## 4.6 Embedding and Detection Algorithms 
+
+We now present both pipelines as pseudocode. The embedding pipeline (Algorithm 1) takes the source code, message, key, and RS parameter 𝑡 , and produces watermarked code with the identifier encoded across 𝑁 sites. Normalization and pool construction es-tablish a deterministic site ordering (Section 4.4), the RS encoder produces a codeword of 𝐵 =24 +4𝑡 bits, and the spread-spectrum   
+
+> 5Conference acronym ’XX, June 03–05, 2018, Woodstock, NY Choi et al.
+
+Algorithm 2 Watermark Detection 
+
+Require: Possibly modified code 𝑆 ′, key 𝐾 , RS parameter 𝑡 
+
+Ensure: Recovered message 𝑚 ′ or FAIL  
+
+> 1:
+
+canon ← Normalize (𝑆 ′) 
+
+> 2:
+
+pool ← ConstructPool (canon ) 
+
+> 3:
+
+𝑁 ← | pool |, 𝐵 ← 24 + 4𝑡  
+
+> 4:
+
+𝜙 ← SpreadSpectrum (𝐾, 𝑁 , 𝐵 ) 
+
+> 5:
+
+Initialize vote counters 𝑉 0 [0..𝐵 −1] ← 0, 𝑉 1 [0..𝐵 −1] ← 0 
+
+> 6:
+
+for 𝑖 = 0 to 𝑁 − 1 do  
+
+> 7:
+
+𝑏 ← ReadSiteValue (pool [𝑖 ], 𝑆 ′) 
+
+> 8:
+
+if 𝑏 ≠ null then  
+
+> 9:
+
+𝑉 𝑏 [𝜙 (𝑖 )] ← 𝑉 𝑏 [𝜙 (𝑖 )] + 1 
+
+> 10:
+
+end if  
+
+> 11:
+
+end for  
+
+> 12:
+
+for 𝑗 = 0 to 𝐵 − 1 do  
+
+> 13:
+
+if 𝑉 0 [ 𝑗 ] > 𝑉 1 [ 𝑗 ] then  
+
+> 14:
+
+bits [ 𝑗 ] ← 0 
+
+> 15:
+
+else if 𝑉 1 [ 𝑗 ] > 𝑉 0 [ 𝑗 ] then  
+
+> 16:
+
+bits [ 𝑗 ] ← 1 
+
+> 17:
+
+else  
+
+> 18:
+
+bits [ 𝑗 ] ← ERASURE  
+
+> 19:
+
+end if  
+
+> 20:
+
+end for  
+
+> 21:
+
+𝑚 ′ ← RS_Decode (bits , 𝑡 ) 
+
+> 22:
+
+return 𝑚 ′ if decoding succeeds, else FAIL assignment 𝜙 𝐾 maps each site to a codeword bit position. Each site is then transformed to encode its target bit assignment. The detection pipeline (Algorithm 2) reverses this process. Given possibly modified code, detection reconstructs the same pool using identical normalization, which is critical for correctness. Each site contributes a vote to its assigned codeword bit position. A position with a strict majority of 𝑉 0 or 𝑉 1 yields the corresponding bit; ties produce erasures that the RS decoder corrects. If decoding succeeds, the recovered message is returned; otherwise, it outputs FAIL. 
+
+## 4.7 Concrete Example 
+
+We walk through the mechanism on a typical 𝐷 56 file. Such a file pro-vides about 21 multi-word variables and 22 structural sites. Variables contribute 2 votes each (one per naming-convention bit, occupying two consecutive 𝜙 𝐾 slots as in Algorithm 1) and structural sites contribute 1 vote each, giving 𝑁 =21 ×2+22 =64 total votes. With 𝑡 =2,the codeword has 𝐵 =32 bits, so the spread-spectrum assignment 
+
+𝜙 𝐾 averages 𝑣 =𝑁 /𝐵 =2.0 votes per bit position. The per-site 𝑉 /bit column reported in Appendix B (Table 14) counts one vote per site rather than one per bit and is therefore roughly half of 𝑣 as used. Under embedding, 𝜙 𝐾 maps each of the 64 vote slots to one codeword bit position, and the corresponding site is transformed to match its assigned bit. Under detection, the same 64 sites vote on the same 32 positions. An attack that flips 3 structural sites corrupts 3 of the 64 vote slots. The spread-spectrum assignment distributes these wrong votes pseudo-randomly, so each lands at a distinct bit position with high probability. Each affected position has one correct vote and one wrong vote, producing a tie that the detector flags as an erasure. The RS decoder corrects up to 2𝑡 =4Variable (sites E − F) Structural (sites GE − HE )                                           
+
+> 018910 11 15 18 20
+> 1011001
+> 3I1|0 I00I1|3 I02I1|1I03I1|0 I01I1|2I00I1|3 I02I1|1I0
+> Sites ( J=HG )
+> Codeword bits ( K=L)−majority vote per bit
+> Reed -Solomon Decoder
+> Corrects ?+2" ≤24 =4; here ?=0,"=0⇒within bound
+> Recovered message M′
+> ''=“1011001” (bit -exact)
+
+Figure 3: Spread-spectrum voting example. Three attacker-flipped sites are each outvoted 2-to-1 by correct votes, and RS decoding recovers the message without correction. 
+
+erasures, so the three erasures fall within the correction bound, and the identifier is recovered exactly. Figure 3 illustrates the same mechanism on a scaled toy with 
+
+𝑁 =21 sites and 𝐵 =7 codeword bits for visibility, where each bit receives 𝑣 =3 votes. Sites 0–9 are variable slots (blue), sites 10–20 are structural sites (orange), and sites 11, 15, and 18 are attacker-flipped (red). Tallies below each codeword bit are written 𝑉 1·1|𝑉 0·0,showing the number of votes for each value. With three votes per bit, each flipped vote is outvoted 2-to-1 at its assigned codeword bit, so majority voting recovers every bit directly ( 𝑒 =𝑠 =0), and RS never needs to engage. On production files with 𝑣 ≈2, the detector instead sees ties that become erasures, which RS resolves as described. 
+
+## 5 Formal Analysis 
+
+We provide robustness guarantees for Levels 1–3 of our attack taxon-omy (Section 3). Our main evaluation uses the compact binary code, whose recovery guarantee is given by Theorem 5.2. The GF (16 ) RS baseline, reported in the Appendix A, satisfies the stronger MDS guarantee of Theorem 5.1. 
+
+Theorem 5.1 (GF(16) RS: MDS Guarantee). For the GF (16 ) RS encoding, any received codeword with 𝑒 symbol erasures and 𝑠 symbol errors satisfying 𝑒 +2𝑠 ≤2𝑡 is decoded to the original message exactly. 
+
+Proof. The code is an RS code over GF (24) with 𝑘 =6 message symbols and 𝑛 =𝑘 +2𝑡 codeword symbols. The parity-check matrix is 
+
+𝐻 𝑗𝑖 =𝛼 𝑖 ( 𝑗 +1) for 𝑖 ∈[ 0, 𝑛 ), 𝑗 ∈[ 0, 2𝑡 ), where 𝛼 is a primitive element. By the Vandermonde property, every 𝑟 ×𝑟 submatrix of 𝐻 for 𝑟 ≤2𝑡 is in-vertible over GF (16 ), establishing the MDS property with minimum distance 𝑑 =2𝑡 +1. The combined bound 𝑒 +2𝑠 ≤2𝑡 is the standard unique-decoding condition for MDS codes, achieved by Gaussian elimination over GF (16 ). □ 
+
+> 6Multi-Channel Spread-Spectrum Code Watermarking Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+Theorem 5.2 (Compact Code: Probabilistic Guarantee). For the compact binary code, the decoder recovers the message when the 4𝑡 ×𝑒 submatrix of 𝐻 indexed by the 𝑒 erased bit positions has full column rank. For a uniformly random 𝐻 and erasure pattern of weight 𝑒 , this probability is Î4𝑡 −𝑒 +1 
+
+> 𝑖 =1
+
+(1−2−𝑖 ). Empirically, the decoder recovers >99% of cases for 𝑒 ≤2𝑡 −1 and ≈30% for 𝑒 =2𝑡 .
+
+Proof sketch. The decoder solves the linear system 𝐻 𝐸 𝑥 𝐸 =𝑏 
+
+over GF (2), where 𝐻 𝐸 is the 4𝑡 ×𝑒 submatrix of 𝐻 whose columns correspond to the erased positions, 𝑥 𝐸 is the vector of unknown erased-bit values, and 𝑏 is the syndrome from the known bits. A unique solution exists iff 𝐻 𝐸 has full column rank. For a uniformly random parity matrix 𝐻 , this probability follows Î4𝑡 −𝑒 +1 
+
+> 𝑖 =1
+
+(1−2−𝑖 )
+
+as stated, which we verify empirically (Appendix B, Table 14, 𝐷 32 
+
+column) at >0.99 for 𝑒 ≤3 and ≈0.30 for 𝑒 =2𝑡 =4. □
+
+Theorem 5.3 (Level 1 Invariance). Formatting changes (white-space, comments, blank lines, import ordering) affect zero watermark sites. The watermark is perfectly preserved. 
+
+Proof. All watermark sites are extracted from the AST, which is invariant to whitespace, comments, blank lines, and import order-ing. The normalization step (Section 4) produces identical canonical forms regardless of formatting, so the pool and all site values are preserved. □
+
+Theorem 5.4 (Rename Robustness). Renaming 𝑟 ≤𝑡 variables corrupts at most 2𝑟 bit positions in the codeword. For the GF (16 ) code, the RS decoder corrects all such corruptions exactly (Theorem 5.1). For the compact code, correction succeeds with the probabilistic guarantee of Theorem 5.2. 
+
+Proof. Each variable encodes 2 bits via its naming convention, so renaming 𝑟 variables corrupts at most 2𝑟 bit positions in the codeword. For the GF (16 ) code, these 2𝑟 bits map to at most 2𝑟 
+
+symbol positions in the worst case; treating them as erasures gives 
+
+𝑒 =2𝑟 ≤2𝑡 when 𝑟 ≤𝑡 , so Theorem 5.1 guarantees exact correction. For the compact code, the same 2𝑟 positions are treated as erasures and Theorem 5.2 gives the recovery probability. The bound is tight, since renaming 𝑡 +1 variables can produce 2(𝑡 +1) corrupted positions, exceeding the 2𝑡 budget. Empirically, 𝑡 =8 with 8 renames recovers 97.6% on 𝐷 56 (Table 5). □
+
+Theorem 5.5 (Structural Channel Robustness). Let 𝑁 be the total number of sites and 𝐵 the codeword length in bits. Consider an attacker who corrupts 𝑐 structural sites chosen without knowledge of 𝜙 𝐾 . Over the uniform spread-spectrum assignment, the expected fraction of corrupted votes at each codeword bit position is 𝑐 /𝑁 . When 
+
+𝑐 <𝑁 /2, each position is expected to retain a correct majority, and the RS outer code absorbs residual errors up to its 𝑒 +2𝑠 ≤2𝑡 bound (Theorem 5.1). 
+
+Proof. The assignment 𝜙 𝐾 distributes sites uniformly across 𝐵 
+
+bit positions in full permutation cycles, so each position receives 
+
+𝑣 ≈𝑁 /𝐵 votes. By symmetry, the expected number of corrupted votes at position 𝑗 is E[𝑐 𝑗 ]=𝑐𝑣 /𝑁 , so the majority condition 𝑐 𝑗 <𝑣 /2
+
+holds in expectation when 𝑐 <𝑁 /2. Variance around this expectation can still tip individual positions past the majority threshold, partic-ularly when 𝑐 approaches 𝑁 /2 or when corrupted sites concentrate in a single channel. The RS outer code absorbs such residual errors up to the 2𝑡 bound. For 𝑡 =8 on 𝐷 56 , 𝑁 ≈66 and attacking the hardest single structural channel corrupts 𝑐 ≈8.1 votes (12% of total), well below 𝑁 /2. Empirically, this recovers 29.9% of files, reflecting the concentrated-channel case where variance overwhelms the ma-jority at several positions before RS correction engages; weaker channel attacks yield higher recovery rates (Section 6). □
+
+Theorem 5.6 (Attack Budget). Let 𝜙 𝐾 be a keyed permutation mapping 𝑁 sites to 𝐵 codeword bit positions in full permutation cycles, with 𝑣 =⌊𝑁 /𝐵 ⌋ votes per bit. For an attacker who corrupts 𝑐 
+
+sites without knowledge of 𝐾 , breaking RS decoding requires flipping the majority vote at strictly more than 2𝑡 codeword bit positions (by Theorem 5.1). Each such flip requires at least ⌈𝑣 /2⌉ corrupted votes to land on that position. In expectation over the uniform permutation, the attacker therefore needs 𝑐 ≥( 2𝑡 +1)·⌈ 𝑣 /2⌉=Ω   𝑡 𝑁 𝐵 
+
+ corrupted sites to break detection. 
+
+Proof. RS decoding fails only when more than 2𝑡 symbol posi-tions are corrupted. To corrupt a codeword bit, the attacker must overturn its majority vote, which requires at least ⌈𝑣 /2⌉ of the 𝑣 
+
+votes at that position to be flipped. Since 𝜙 𝐾 is a uniformly random permutation and the attacker does not know which sites map to a given bit, the expected number of sites the attacker must corrupt to land ⌈𝑣 /2⌉ on any specific bit is (⌈ 𝑣 /2⌉)·( 𝑁 /𝑣 )=𝑁 /2 per target bit. Targeting 2𝑡 +1 bits simultaneously requires 𝑐 ≥( 2𝑡 +1)·⌈ 𝑣 /2⌉
+
+corruptions by linearity of the vote counts, which simplifies to 
+
+Ω(𝑡𝑁 /𝐵 ) for 𝐵 ≤𝑁 . □
+
+Theorem 5.7 (Level 4 Impossibility). Let (embed , detect ) be a post-hoc syntactic watermark scheme whose output is obtained by ap-plying only syntactic transformations (variable names, operator forms, or expression structure) that do not change the input-output behavior of the program. Let 𝑇 be any regeneration function whose output distribution on input 𝑃 depends only on the input-output behavior of 
+
+𝑃 . Then for any program 𝑆 , message 𝑚 , and key 𝐾 ,
+
+Pr [detect (𝑇 (embed (𝑆, 𝑚, 𝐾 )) , 𝐾 ) = 𝑚 ] ≈ 1/| 𝑀 |,
+
+where |𝑀 | is the message space size. 
+
+Proof. By the first premise, embed (𝑆, 𝑚, 𝐾 ) and 𝑆 are behav-iorally indistinguishable. By the second premise, 𝑇 ’s output distri-bution depends only on behavior, so 𝑇 (embed (𝑆, 𝑚, 𝐾 )) and 𝑇 (𝑆 )
+
+are identically distributed. The random variable 𝑇 (embed (𝑆, 𝑚, 𝐾 )) 
+
+therefore carries no information about 𝑚 . Detection succeeds only when 𝑇 ’s syntactic choices happen to match the encoded message, which occurs with probability 1/| 𝑀 |=1/224 ≈6×10 −8. □
+
+## 6 Evaluation 6.1 Experimental Setup 
+
+Dataset. We draw human-written code from Project CodeNet [ 23 ], a large-scale dataset of competitive programming solutions. We partition the Python subset into five disjoint capacity buckets, each covering a non-overlapping range of embedding capacity, so that cross-dataset comparisons isolate capacity effects rather than con-founding with file-size overlap, and sample 250 files per bucket. To evaluate on real LLM-generated code, we extract 250 problem statements from CodeNet and regenerate solutions with GPT-4.1   
+
+> 7Conference acronym ’XX, June 03–05, 2018, Woodstock, NY Choi et al.
+
+Dataset Capacity range Total files Eval 𝑛 Avg vars Avg struct Avg total Avg LOC 
+
+𝐷 32 32–39 bits 15,201 250 11.9 10.9 34.6 41.5 
+
+𝐷 40 40–55 bits 12,308 250 15.6 14.4 45.6 59.8 
+
+𝐷 56 56–87 bits 5,787 250 21.9 22.1 66.0 94.3 
+
+𝐷 88 88–151 bits 1,419 250 33.8 34.2 101.7 152.8 
+
+𝐷 152 ≥152 bits 300 250 70.6 74.6 201.8 463.1 gpt41 LLM-generated 268 250 32.1 26.5 92.1 108.8 llama4 LLM-generated 268 250 18.1 15.2 51.7 58.7 
+
+Table 3: Dataset summary. Each 𝐷 𝑘 covers a disjoint capacity range. All evaluations use the compact random binary code. 
+
+Test 𝑛 Result No-attack accuracy 1,750 100% 
+
+AST validity (watermarked code parses) 1,750 100% 
+
+FPR: unwatermarked code, correct key 1,750 0.0% 
+
+FPR: watermarked code, wrong key 1,750 0.0% Table 4: Correctness, fidelity, and false positive rate over 1,750 files (all 7 datasets, 𝑛 =250 each). Theoretical FPR bound 
+
+1/224 ≈0.000006% . Empirical results are consistent with theory. 
+
+and Llama-4-Maverick, yielding two additional datasets of 250 files each. Table 3 summarizes all seven evaluation datasets. 
+
+Attacks. Each attack family probes a distinct design surface. Re-name attacks isolate the variable-naming channel, per-channel structural attacks exercise each structural channel individually, and graduated per-site attacks stress the spread-spectrum voting layer directly. Beyond a clean no-attack baseline, we evaluate 17 attack types organized by our taxonomy. 
+
+• Rename 𝑟 : rename 𝑟 ∈{ 2, 4, 8, 16 , 32 } variables to random names (Level 2). 
+
+• Per-channel structural : attack all sites of one channel, 8 individual attacks (Level 3). 
+
+• Graduated per-site : randomly flip 𝑥 % of individual sites with 
+
+𝑥 ∈{ 10 , 20 , 30 , 40 }, measuring precise corruption tolerance. 
+
+Metrics. Detection accuracy is the fraction of files where the correct model identifier is recovered. False positive rate (FPR) is the fraction of non-watermarked files that trigger a false detection. 
+
+## 6.2 Correctness, Fidelity, and False Positive Rate 
+
+Table 4 summarizes baseline sanity checks. The system achieves perfect no-attack accuracy across all 1,750 watermarked files, and all watermarked files parse correctly (100% AST validity). This is by construction, since our transformations are semantic-preserving syntactic rewrites and Python’s ast.unparse always produces valid code. The false positive rate of 0/1,750 on both unwatermarked code (correct key) and wrong-key detection is consistent with the theoretical bound of 1/224 .
+
+## 6.3 Robustness Under Attacks 
+
+We first isolate rename and structural attacks on our own system (Table 5), then compare against post-hoc baselines in Section 6.4 and against the generation-time paradigm in Section 6.5. Each 𝑡 
+
+RS parameter scan Large-file scaling Attack 𝑡 =2 𝑡 =4 𝑡 =8 𝑡 =2 𝑡 =2
+
+(𝐷 32 ) (𝐷 40 ) (𝐷 56 ) (𝐷 88 ) (𝐷 152 )No attack 100.0 100.0 100.0 100.0 100.0 Rename 2 98.4 99.6 98.0 100.0 100.0 
+
+Rename 4 98.4 99.6 98.0 100.0 100.0 
+
+Rename 8 1.6 99.6 97.6 100.0 99.6 Rename 16 0.0 † 0.0 † 16.2 99.2 † 100.0 †
+
+Rename 32 – – 0.0 † 59.7 † 100.0 †
+
+aug_assign 78.8 63.2 70.9 98.0 98.0 
+
+compare_dir 76.0 62.0 59.8 96.0 98.8 
+
+equality_dir 58.0 52.4 49.8 90.0 96.0 
+
+list_comp 82.0 82.4 76.5 99.6 100.0 
+
+ternary 97.6 96.0 95.6 100.0 100.0 
+
+operand_order 41.6 36.8 29.9 80.0 81.6 
+
+empty_coll 83.6 79.2 74.5 99.6 100.0 
+
+none_check 100.0 98.8 97.2 99.6 100.0 Table 5: Detection accuracy (%) under various attacks ( 𝑛 =250 
+
+per column). First three columns vary 𝑡 ; last two fix 𝑡 =2 on larger files. †: restricted to eligible files, meaning files with enough distinct variables to rename; –: no eligible files in this column. 
+
+is deliberately evaluated on the smallest dataset that can carry its codeword, showing robustness under the hardest capacity condi-tions. The last two columns demonstrate that on larger files, even 
+
+𝑡 =2 provides strong robustness through majority voting alone, often matching or exceeding higher 𝑡 on structural attacks. Higher 𝑡 improves rename robustness by increasing the RS cor-rection budget. The improvement is most dramatic for rename attacks: rename_8 improves from 1.6% ( 𝑡 =2, 𝐷 32 ) to 97.6% ( 𝑡 =8,
+
+𝐷 56 ), confirming Theorem 5.4. For structural attacks, however, the pattern reverses: higher 𝑡 can reduce structural robustness. For ex-ample, operand_order drops from 41.6% ( 𝑡 =2, 𝐷 32 ) to 29.9% ( 𝑡 =8,
+
+𝐷 56 ). The reason is that a higher 𝑡 requires a longer codeword (24 +4𝑡 bits), which dilutes votes per bit when the file capacity is only moderately above the codeword minimum. With fewer votes per bit, a concentrated structural attack more easily flips the major-ity on affected positions. On larger files ( 𝐷 88 , 𝐷 152 ), where votes per bit are abundant, 𝑡 =2 outperforms 𝑡 =8 on structural attacks while also handling heavy renames via majority voting alone. Among structural channels, operand_order is the weakest be-cause it has the highest per-file site count (8.1 sites on 𝐷 56 , 37% of  
+
+> 8Multi-Channel Spread-Spectrum Code Watermarking Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+Attack ACW [16] SrcMarker-Py Ours ( 𝑡 =2)No attack 100.0 89.8 100.0 
+
+Rename 2 0.0 24.5 98.4 
+
+Rename 4 0.0 24.1 98.4 
+
+Rename 8 0.0 24.1 1.6 aug_assign 0.0 79.2 78.8 compare_dir 0.0 88.0 76.0 equality_dir 0.0 78.2 58.0 list_comp 0.0 88.9 82.0 ternary 0.0 90.7 97.6 
+
+operand_order 0.0 83.8 41.6 empty_coll 0.0 88.0 83.6 none_check 0.0 89.4 100.0 
+
+Payload 0 bits 4 bits 24 bits 
+
+Training None GPU, 20k None 
+
+FPR 0.0% 6.25% / 27.6% ‡ 0.0% Table 6: Attack robustness on 𝐷 32 (𝑛 =250 ). Bold marks the best per row. ‡: SrcMarker-Py FPR is 6.25% ( 1/16 random chance). 
+
+structural capacity), so destroying it removes a disproportionate share of votes. This is a property of Python’s syntax distribution rather than a flaw in the scheme; channels with fewer sites per file (ternary , none_check ) are minimally affected by channel-targeted attacks. In Appendix B, Table 14 shows the same attack recovers to 81.6% on 𝐷 152 as votes per bit scale up, confirming that the 29.9% figure reflects the hardest capacity condition rather than a design ceiling. On larger files, the same 𝑉 /bit relationship governs random per-site corruption: at 4.29 𝑉 /bit ( 𝐷 152 ), the system tolerates 10% random corruption at 94.1% accuracy, while at 0.66 𝑉 /bit ( 𝐷 32 ) it drops to 9.8%. Appendix B reports the full cross-dataset matrix (Table 14) and graduated-corruption table (Table 15). 
+
+## 6.4 Comparison with Post-Hoc Baselines 
+
+Both ACW [ 16 ] and SrcMarker [ 34 ] are post-hoc watermarks. ACW applies 45 idempotent Sourcery [ 32 ] transformation rules with fixed-point iteration and detects watermarks by checking whether re-applying the rule set changes the code. It carries zero payload. SrcMarker is a dual-channel neural watermark embedding a 4-bit signature via a BiGRU encoder trained on variable naming and structural AST transforms. For SrcMarker [ 34 ], we implemented SrcMarker-Py, a faithful Python reimplementation substituting vocabulary token injection for naming-convention detection, using our eight structural chan-nels, and applying max-pool aggregation so that 3 to 5 token struc-tural changes produce detectable activation peaks rather than being diluted. The GRU encoder (128-dim embedding, 256-dim hidden, bidirectional) is trained on 20K CodeNet Python files for 20 epochs, achieving 91.47% best validation accuracy. This follows the prece-dent of RoSeMary [35]. Table 6 compares all three systems on 𝐷 32 under every attack, and Table 7 shows how no-attack accuracy and rename robustness scale across datasets. On 𝐷 32 (Table 6), ACW achieves 100% no-attack accuracy but collapses to 0% under every single-transform attack. SrcMarker-Py maintains moderate structural robustness (79% to No attack (%) Rename 2 (%) Dataset ACW SM-Py Ours ACW SM-Py Ours 
+
+𝐷 32 100.0 89.8 100.0 0.0 24.5 98.4 
+
+𝐷 40 100.0 84.8 100.0 0.0 19.0 99.2 
+
+𝐷 56 100.0 72.9 100.0 0.0 17.9 98.0 
+
+𝐷 88 100.0 61.1 100.0 0.0 16.7 100.0 
+
+𝐷 152 98.4 59.1 100.0 0.0 11.0 100.0 
+
+GPT-4.1 99.6 86.3 100.0 0.0 18.7 98.4 
+
+Llama-4 100.0 86.0 100.0 0.0 21.6 100.0 Table 7: Cross-dataset baseline comparison ( 𝑛 =250 each, 𝑡 =2). SM-Py = SrcMarker-Py. Bold marks the best per cell. 
+
+90% on most channels) but starts at only 89.8% no-attack 2 and drops to approximately 24% under renames. Our system achieves 100% no-attack, survives rename_2 and rename_4 at 98.4%, and main-tains 42% to 100% on structural attacks. Across datasets (Table 7), SrcMarker-Py degrades monotonically as files grow, falling to 59.1% no-attack on 𝐷 152 , while our system maintains 100% no-attack on all CodeNet datasets. 
+
+ACW failure mode. ACW’s detection checks whether re-applying its 45 transformation rule set changes the code. Any structural attack directly inverts one of ACW’s idempotent transforms, and any rename breaks the identifier tokens that operand-ordering heuristics depend on. Thus any single-transform attack achieves 0% detection on every dataset. ACW also carries zero payload, making model attribution impossible. 
+
+SrcMarker-Py failure modes. Two effects explain why no-attack accuracy never reaches 100%. First, the model’s peak validation ac-curacy is 91.47%, causing genuine decoding errors regardless of file length. Second, the BiGRU truncates tokenized input to 256 tokens, silently discarding watermark sites in longer files, explaining the monotonic drop from 𝐷 32 (89.8%) to 𝐷 152 (59.1%). Under rename at-tacks, SrcMarker-Py falls to approximately 24%, near random 4-bit chance (6.25%), because a single rename destroys the 2-bit naming channel. The decoder also distributes the 16 possible 4-bit outputs non-uniformly on unwatermarked code, so average FPR matches the 1/16 random-chance bound, but an adversary who selects the worst-case target message reaches 27.6% empirical FPR on 𝐷 32 (Ta-ble 6). Our training-free AST traversal processes complete source without truncation, maintaining 100% no-attack on all datasets. Our system dominates on every attribution-relevant dimension. The 24-bit payload distinguishes 224 model configurations versus SrcMarker-Py’s 16 and ACW’s none; the false positive rate is 0% versus 6.25% and under 1% respectively; training cost is zero versus 20k samples plus GPU and none; and no-attack accuracy is 100% on every dataset versus a degradation from 89.8% to 59.1% as file length grows. The one dimension where SrcMarker-Py edges us out is structural-attack accuracy on 𝐷 32 (five of eight channels); this gap narrows on larger files (Appendix B, Table 14) where votes per bit rise and the majority-voting layer compensates.    
+
+> 2Some SrcMarker-Py attack rows ( e.g., ternary at 90.7%) sit slightly above this no-attack baseline; the gap is noise around the 91.47% validation ceiling, not improved robustness. 9Conference acronym ’XX, June 03–05, 2018, Woodstock, NY Choi et al.
+
+## 6.5 Comparison with STONE 
+
+Having compared against the closest post-hoc baselines, we now evaluate against STONE [ 12 ], a state-of-the-art generation-time watermark, to understand how the two paradigms differ under the same attack suite. STONE excludes syntax-critical tokens from the green/red list assignment during LLM generation and detects the watermark through a 𝑧 -score on the token distribution. Be-cause it is generation-time, it cannot be applied to our CodeNet or pre-generated LLM datasets. We evaluate on HumanEval+ code gen-erated locally with Qwen2.5-Coder-3B-Instruct [ 11 ] from STONE’s official implementation [ 12 ], yielding 820 paired watermarked/un-watermarked scores across 164 problems. We reproduce STONE on its official implementation (MarkLLM-derived) with three im-plementation errors corrected: (i) the prefix-length parameter is set to 1 so that the greenlist is re-seeded per token as the paper’s formulation assumes (the shipped value of 0 collapses the greenlist to a constant, inflating the null-hypothesis 𝑧 -score baseline), (ii) the 𝑧 -score normalization counts scored tokens directly rather than conflating scored and skipped counts, and (iii) the generation-time skip-syntax gate is removed to eliminate a generation/detection asymmetry under stochastic decoding. Parameters otherwise fol-low the repository defaults ( 𝛾 =0.5, hash_key=15485863 , Qwen2.5-Coder-3B-Instruct, 5 samples per problem). We use 𝛿 =2.0, the top of STONE’s reported sweep range; with the corrected 𝑧 -score, the repository’s 𝛿 =0.5 setting yields an area under the ROC curve (AU-ROC) of approximately 0.64. Table 8 compares both systems under the full attack suite. The results highlight a gap between AUROC as a summary statistic and practical detection rates. STONE’s no-attack AUROC of 0.869 appears respectable, but at 1% FPR it detects only 42.8% of wa-termarked code, a 57% miss rate even without any attack. At 5% FPR, the detection rate rises to 60.4% but still misses nearly 40% of watermarked samples. The low baseline AUROC likely reflects the short length of HumanEval+ solutions, which provide limited token sequences for the statistical 𝑧 -test. Structural attacks have a negligible effect on STONE’s signal (AUROC drops by less than 0.02), which is expected since AST-level transformations do not alter the token-level green-list distribution. 
+
+Tokenizer coupling. STONE’s detector does not invoke the LLM, but it does require the same tokenizer used during generation. The greenlist at each position is derived by hashing previous token IDs, so a different tokenizer produces different IDs, and the recon-structed greenlists no longer match. In practice, detection is tied to a specific model family. Our post-hoc design avoids this coupling entirely, since detection reads an AST rather than a token sequence. 
+
+Takeaway. This comparison illustrates the fundamental tradeoff be-tween the two watermarking paradigms. Generation-time schemes like STONE are inherently robust to syntactic attacks because their signal lives in the token distribution, but they require LLM access, carry zero payload, and depend on tokenizer consistency. Post-hoc schemes like ours are more vulnerable to concentrated structural attacks but provide model attribution through a 24-bit payload without requiring model access or training. The two approaches are complementary, and combining them for layered robustness is a promising future direction. STONE Ours Attack AUROC TPR @ FPR 1% TPR @ FPR 5% Acc. (%) FPR (%) No attack 0.869 42.8% 60.4% 100.0 0.0 Rename 2 0.863 40.6% 56.8% 98.0 0.0 Rename 4 0.856 39.6% 55.7% 98.0 0.0 Rename 8 0.855 39.5% 55.4% 97.6 0.0 aug_assign 0.850 39.6% 56.2% 70.9 0.0 compare_dir 0.850 39.5% 56.2% 59.8 0.0 equality_dir 0.851 39.5% 56.2% 49.8 0.0 list_comp 0.850 39.6% 56.2% 76.5 0.0 ternary 0.850 39.6% 56.2% 95.6 0.0 operand_order 0.850 39.6% 56.3% 29.9 0.0 empty_coll 0.850 39.6% 56.2% 74.5 0.0 none_check 0.850 39.6% 56.2% 97.2 0.0 Post-hoc No Yes 
+
+Payload 0 bits 24 bits 
+
+Training LLM access None Table 8: STONE (HumanEval+, 820 paired scores, Qwen2.5-Coder-3B) vs. ours ( 𝐷 56 , 𝑛 =250 , 𝑡 =8). 
+
+## 6.6 Real LLM-Generated Code 
+
+To validate that our system works on actual LLM-generated code, we generated Python solutions for 250 matched CodeNet [ 23 ] prob-lems using GPT-4.1 and Llama-4-Maverick. Table 9 reports robust-ness under the standard attack suite. The key finding is that code verbosity drives robustness. GPT-4.1 generates longer code (92.1 avg bits, 2.9 𝑉 /bit) compared to Llama-4 (51.7 avg bits, 1.6 𝑉 /bit). More code means more votes per codeword bit and better majority-voting resilience. The GPT-4.1 structural-attack results (95.6% to 100% except operand_order at 78.8%) are consistent with 𝐷 88 in Appendix B (Table 14), which has comparable average capacity (101.7 bits), confirming that the votes-per-bit relationship holds across both human-written and LLM-generated code. The same wa-termark scheme works on both models without any model-specific tuning. The minimum capacity across both LLM datasets is 32 bits, meaning every LLM-generated file in our evaluation is eligible for watermarking at 𝑡 =2 (Appendix B, Table 16). 
+
+## 6.7 LLM Rewriting Attack 
+
+An adversary with access to a capable LLM could attempt to evade detection by asking the model to rewrite the watermarked code while preserving its semantics. This constitutes a Level 4 attack in our taxonomy (Section 3). We pass each watermarked file to the attacker LLM with the prompt “Refactor the following Python code. Keep the behavior identical. Return only the refactored code, no explanation.” , temperature 0.3, top-𝑝 0.95, and no system prompt. The returned code is passed through our detector. We evaluate five attacker models spanning two capability tiers: GPT-4.1, GPT-4o-mini, Qwen2.5-Coder-32B, and Qwen3-Coder-30B are strong refactorers; GPT-3.5-turbo is a weaker model included to probe incomplete-regeneration behavior. Table 10 demonstrates the information-theoretic limit of post-hoc watermarking. Strong LLMs perform complete semantic-preserving  
+
+> 10 Multi-Channel Spread-Spectrum Code Watermarking Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+Attack GPT-4.1 (92.1 avg bits) Llama4 (51.7 avg bits) No attack 100.0 100.0 
+
+Rename 2 98.4 100.0 
+
+Rename 4 92.8 99.6 
+
+Rename 8 58.8 24.4 Rename 16 61.0 21.6 aug_assign 97.2 88.4 compare_dir 96.8 91.6 equality_dir 95.6 78.8 list_comp 97.6 93.2 ternary 100.0 98.8 operand_order 78.8 71.2 empty_coll 98.8 94.8 none_check 100.0 98.8 
+
+Table 9: Real LLM-generated code (250 matched problems, 
+
+𝑡 =2). GPT-4.1 generates approximately 1.8× more code (92.1 vs. 51.7 avg bits, 2.9 vs. 1.6 V/bit), directly explaining the robustness gap. 
+
+Rewriting model Survival rate Refactoring quality GPT-4.1 0.0% Complete regeneration GPT-4o-mini 0.4% Complete regeneration Qwen2.5-Coder-32B 0.4% Complete regeneration Qwen3-Coder-30B 1.6% Near-complete GPT-3.5-turbo 32.8% Partial (incomplete) 
+
+Table 10: Watermark survival under LLM rewriting ( 𝑡 =8,
+
+𝑛 =250 ). GPT-3.5’s higher survival reflects weaker refactor-ing, not watermark robustness. 
+
+regeneration, independently choosing all variable names, operator forms, and code structure, a setting also studied as a stress test for classifier-based attribution on transformed code [ 5]. The water-mark signal is entirely destroyed. GPT-3.5-turbo’s 32.8% survival reflects incomplete refactoring rather than watermark robustness. Inspecting the GPT-3.5 output on files where detection succeeded shows the model often renames a subset of variables while leaving several untouched, or restructures control flow while preserving the original variable names. Such partial regeneration leaks some of the watermarked syntactic choices through. Stronger models (GPT-4.1, GPT-4o-mini, Qwen2.5-Coder-32B) refactor end-to-end, independently recomputing every naming and structural decision, which drives survival to essentially zero. This limit applies to all post-hoc syntactic watermarking ap-proaches. As proved in Theorem 5.7, it is an information-theoretic barrier, not a design flaw. 
+
+## 6.8 Efficiency 
+
+Table 11 reports embedding and detection wall-clock times. All measurements use the secp256k1 elliptic curve on CPU, with no GPU or training data required. All configurations complete in under 250ms for embedding and under 50ms for detection, making the system practical for inline deployment in API pipelines. Timing scales modestly with 𝑡 because larger codewords require more spread-spectrum assignments, but remains sub-second even at 𝑡 =8.
+
+𝑡 Dataset Embed (ms) Detect (ms) 2 𝐷 32 65 ± 71 28 ± 14 4 𝐷 40 85 ± 70 34 ± 13 8 𝐷 56 145 ± 94 50 ± 25 
+
+Table 11: Embedding and detection time using the secp256k1 elliptic curve. Zero GPU, zero training. Sub-second for all configurations. 
+
+By comparison, SrcMarker [ 34 ] and RoSeMary [ 35 ] require GPU-based training on thousands to millions of code samples before any embedding is possible, and STONE [ 12 ] requires LLM inference during generation. 
+
+## 7 Discussion 
+
+The LLM robustness barrier. Generation-time watermarking [ 12 –14 ] is the complementary approach to the Level 4 barrier estab-lished in Section 6.7. These methods embed the watermark in the token sampling distribution, which is reproduced whenever the LLM generates output. A promising future direction is combining generation-time distributional watermarking with our post-hoc structural watermarking for layered robustness. 
+
+Capacity vs. robustness tradeoff. The RS parameter 𝑡 controls a capacity-robustness tradeoff, with competing effects on rename versus structural robustness analyzed in Section 6.3 and Appen-dix B (Table 14). Choose 𝑡 based on the expected attack profile rather than file size alone. If heavy rename attacks dominate, use 
+
+𝑡 =8 to maximize the RS correction budget. If structural attacks or random per-site corruption dominate, prefer 𝑡 =2 even on large files, because shorter codewords preserve votes per bit and strengthen the majority-voting layer. Table 14 confirms this empirically: on 
+
+𝐷 152 , 𝑡 =2 holds 100% under 16 variable renames via majority voting alone, while also outperforming 𝑡 =8 on most structural attacks. 
+
+Deployment considerations. The provider-as-verifier model re-quires institutional infrastructure but offers practical advantages. A centralized detection service would accept code submissions from authorized verifiers (teachers, employers, courts, etc.), test the code against all registered provider keys in under one second (Section 3), and return a certificate identifying the source model or reporting no watermark detected. 
+
+Oracle resistance. Any binary-answer detector can be queried as an oracle for iterative removal (Section 3.3). Three deployment-level mitigations raise the practical cost without providing a cryp-tographic guarantee, namely a per-file query cap ( e.g., three times), Levenshtein-based deduplication [ 15 ] of near-identical resubmis-sions, and audit logging of query patterns. Together, they force the attacker to substantially modify the file between queries rather than flipping individual sites, collapsing 𝑂 (𝑁 ) oracle access into per-query paraphrasing and, in the limit, into a Level 4 LLM regen-eration attack under which no post hoc watermark survives. 
+
+Key management. Each provider registers a unique key 𝐾 𝑖 with the detection service. Our implementation uses the secp256k1 el-liptic curve, providing a key space of approximately 2256 [29 ], far   
+
+> 11 Conference acronym ’XX, June 03–05, 2018, Woodstock, NY Choi et al.
+
+Year Domain Post-hoc Payload FPR Training Robustness Test LLM Test KGW [13] 2023 NLP No 0 bits – LLM access Partial No SWEET [14] 2024 PL No 0 bits – LLM access Partial Partial STONE [12] 2026 PL No 0 bits – LLM access Partial Partial CODEIP [10] 2024 PL No Multi – GPU+data Truncation only No Qu et al. [24] 2025 NLP No Multi – LLM access Non-adaptive No ACW [16] 2025 PL Yes 0 bits <1% None Partial No SrcMarker [34] 2024 PL Yes 4 bits 6.25% GPU+data Partial No RoSeMary [35] 2025 PL Yes 4 bits 6.25% GPU+data No Yes 
+
+Ours – PL Yes 24 bits 10 −6% None 17 attack types Yes (5 LLMs) Table 12: Comparison with existing watermarking methods. All schemes preserve program semantics (G3), so we omit that column. Our system is the only post-hoc approach with >4-bit payload, zero training cost, and comprehensive robustness evaluation. 
+
+exceeding cryptographic requirements [ 1 ]. A malicious provider cannot register a key that maps to another provider’s identifier because the RS-decoded message must match the provider’s reg-istered name; even if the RS decoder produces a valid codeword under a different key, the decoded string will not match the target provider’s identifier (probability 1/224 ). 
+
+Language scope. Our evaluation focuses on Python, consistent with all related work on post-hoc code watermarking [ 12 , 14 , 16 ,35 ]. The multi-channel spread-spectrum architecture is language-agnostic and requires only a parser that produces an AST and a set of semantically equivalent syntactic pairs. Extension to other languages requires identifying language-specific syntactic equiva-lences and is left as future work. 
+
+## 8 Related Work 
+
+Table 12 provides a systematic comparison across all dimensions. 
+
+Generation-time watermarking. KGW [ 13 ] introduced green/red list watermarking for LLM-generated text, biasing token sampling toward green-list tokens and detecting the watermark via a 𝑧 -score. KGW also identifies the oracle risk and proposes access monitor-ing as a mitigation. SWEET [ 14 ] adapts KGW to code by applying the bias only to high-entropy tokens, preserving code quality at deterministic positions such as keywords and syntax. STONE [ 12 ]further excludes syntax-critical tokens. All three require LLM access during generation and embed zero payload. CODEIP [ 10 ] extends generation-time embedding with grammar-guided logit biasing but also requires LLM access and evaluates only against truncation. Our approach operates post-hoc and embeds 24 bits of identifying information. 
+
+Post-hoc multi-bit watermarking. RoSeMary [ 35 ] is the closest to our work, offering post-hoc code watermarking with a multi-bit payload 3. It uses a CodeT5-based neural encoder trained end-to-end to embed a 4-bit signature. Our payload is 6× larger (24 vs. 4 bits, re-ducing FPR from 6.25% to 10 −6%), our system requires zero training    
+
+> 3RoSeMary’s authors have not released source code or trained model weights, so we could not reproduce it. Our comparison, therefore, covers only design-level prop-erties stated in the published manuscript, including the 4-bit payload (from which FPR =1/16 follows directly) and reliance on end-to-end neural training. We do not include empirical robustness measurements for RoSeMary.
+
+versus millions of samples and GPU, we provide formal robustness theorems versus empirical-only evaluation, and we test against 17 attack types, including 5 LLM rewriting models. SrcMarker [ 34 ]is a dual-channel neural watermark that trains a BiGRU encoder end-to-end to embed 4 bits via variable naming and 10 AST trans-forms. It supports C, C++, Java, and JavaScript, but not Python. We implement SrcMarker-Py for Python comparison (Section 6.4), find-ing that our training-free design matches or exceeds SrcMarker’s robustness on rename attacks while providing 6× the payload. 
+
+Post-hoc presence detection. ACW [ 16 ] applies 45 idempotent code transformations via the Sourcery [ 32 ] refactoring engine and detects watermarks by checking if re-applying them changes the code. It is training-free and efficient (approximately 30ms), but carries zero payload and collapses to 0% detection under any single-transform attack (Section 6.4). Our system matches ACW’s deploy-ment simplicity while providing multi-bit attribution and formal robustness. 
+
+## 9 Conclusion 
+
+Post-hoc code watermarking has been stuck between zero-payload presence detectors and training-heavy neural schemes that carry only 4 bits. We show that composing two independent channel families with a keyed spread-spectrum assignment and an RS outer code lifts the payload to 24 bits, runs on CPU without training data, and admits formal robustness proofs for every attack level below Level 4. Evaluation on 1,750 Python files across 17 attack types validates the construction end-to-end. The Level 4 barrier, complete code regeneration by a capable LLM, is an information-theoretic limit for every post-hoc syntactic watermark (Theorem 5.7), not a defect of our construction. End-to-end provenance, therefore, requires pairing post-hoc attribution with a generation-time signal embedded in the token distribution. Extending the channel catalog to additional languages and building a multi-provider detection registry are the concrete next steps. 
+
+## References     
+
+> [1] Elaine Barker. 2020. Recommendation for Key Management: Part 1 – General. NIST Special Publication 800-57 Part 1 Rev. 5. https://csrc.nist.gov/pubs/sp/800/ 57/pt1/r5/final [2] Mihir Bellare and Phillip Rogaway. 1993. Random Oracles are Practical: A Para-digm for Designing Efficient Protocols. In CCS ’93, Proceedings of the 1st ACM
+> 12
+
+Multi-Channel Spread-Spectrum Code Watermarking Conference acronym ’XX, June 03–05, 2018, Woodstock, NY 
+
+Conference on Computer and Communications Security, Fairfax, Virginia, USA, November 3-5, 1993 , Dorothy E. Denning, Raymond Pyle, Ravi Ganesan, Ravi S. Sandhu, and Victoria Ashby (Eds.). ACM, 62–73. doi:10.1145/168588.168596 [3] Nicholas Carlini, Florian Tramèr, Eric Wallace, Matthew Jagielski, Ariel Herbert-Voss, Katherine Lee, Adam Roberts, Tom B. Brown, Dawn Song, Úlfar Erlingsson, Alina Oprea, and Colin Raffel. 2021. Extracting Training Data from Large Lan-guage Models. In 30th USENIX Security Symposium, USENIX Security 2021, August 11-13, 2021 , Michael D. Bailey and Rachel Greenstadt (Eds.). USENIX Association, 2633–2650. https://www.usenix.org/conference/usenixsecurity21/presentation/ carlini-extracting [4] Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Pondé de Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, Alex Ray, Raul Puri, Gretchen Krueger, Michael Petrov, Heidy Khlaaf, Girish Sastry, Pamela Mishkin, Brooke Chan, Scott Gray, Nick Ryder, Mikhail Pavlov, Alethea Power, Lukasz Kaiser, Mohammad Bavarian, Clemens Winter, Philippe Tillet, Felipe Petroski Such, Dave Cummings, Matthias Plappert, Fo-tios Chantzis, Elizabeth Barnes, Ariel Herbert-Voss, William Hebgen Guss, Alex Nichol, Alex Paino, Nikolas Tezak, Jie Tang, Igor Babuschkin, Suchir Balaji, Shan-tanu Jain, William Saunders, Christopher Hesse, Andrew N. Carr, Jan Leike, Joshua Achiam, Vedant Misra, Evan Morikawa, Alec Radford, Matthew Knight, Miles Brundage, Mira Murati, Katie Mayer, Peter Welinder, Bob McGrew, Dario Amodei, Sam McCandlish, Ilya Sutskever, and Wojciech Zaremba. 2021. Eval-uating Large Language Models Trained on Code. CoRR abs/2107.03374 (2021). https://arxiv.org/abs/2107.03374 [5] Soohyeon Choi, Ali Alkinoon, Ahod Alghuried, Abdulaziz Alghamdi, and David Mohaisen. 2025. Attributing ChatGPT-Transformed Synthetic Code. In 45th IEEE International Conference on Distributed Computing Systems, ICDCS 2025, Glasgow, United Kingdom, July 21-23, 2025 . IEEE, 89–99. doi:10.1109/ICDCS63083.2025. 00018 [6] Soohyeon Choi and David Mohaisen. 2025. Attributing ChatGPT-Generated Source Codes. IEEE Trans. Dependable Secur. Comput. 22, 4 (2025), 3602–3615. doi:10.1109/TDSC.2025.3535218 [7] Soohyeon Choi, Yong Kiam Tan, Mark Huasong Meng, Mohamed Ragab, Soumik Mondal, David Mohaisen, and Khin Mi Mi Aung. 2025. I Can Find You in Seconds! Leveraging Large Language Models for Code Authorship Attribution. CoRR 
+
+abs/2501.08165 (2025). doi:10.48550/ARXIV.2501.08165 [8] Christian S. Collberg and Clark D. Thomborson. 2002. Watermarking, Tamper-Proofing, and Obfuscation-Tools for Software Protection. IEEE Trans. Software Eng. 28, 8 (2002), 735–746. doi:10.1109/TSE.2002.1027797 [9] Ingemar J. Cox, Joe Kilian, Frank Thomson Leighton, and Talal Shamoon. 1997. Secure spread spectrum watermarking for multimedia. IEEE Trans. Image Process. 
+
+6, 12 (1997), 1673–1687. doi:10.1109/83.650120 [10] Batu Guan, Yao Wan, Zhangqian Bi, Zheng Wang, Hongyu Zhang, Pan Zhou, and Lichao Sun. 2024. CodeIP: A Grammar-Guided Multi-Bit Watermark for Large Language Models of Code. In Findings of the Association for Computational Linguistics: EMNLP 2024, Miami, Florida, USA, November 12-16, 2024 (Findings of ACL) , Yaser Al-Onaizan, Mohit Bansal, and Yun-Nung Chen (Eds.). Association for Computational Linguistics, 9243–9258. doi:10.18653/V1/2024.FINDINGS-EMNLP.541 [11] Binyuan Hui, Jian Yang, Zeyu Cui, Jiaxi Yang, Dayiheng Liu, Lei Zhang, Tianyu Liu, Jiajun Zhang, Bowen Yu, Kai Dang, An Yang, Rui Men, Fei Huang, Xingzhang Ren, Xuancheng Ren, Jingren Zhou, and Junyang Lin. 2024. Qwen2.5-Coder Technical Report. CoRR abs/2409.12186 (2024). doi:10.48550/ARXIV.2409.12186 [12] Jungin Kim, Shinwoo Park, and Yo-Sub Han. 2026. Marking Code Without Breaking It: Code Watermarking for Detecting LLM-Generated Code. (2026), 3990–4002. https://aclanthology.org/2026.findings-eacl.207/ [13] John Kirchenbauer, Jonas Geiping, Yuxin Wen, Jonathan Katz, Ian Miers, and Tom Goldstein. 2023. A Watermark for Large Language Models. In International Conference on Machine Learning, ICML 2023, 23-29 July 2023, Honolulu, Hawaii, USA (Proceedings of Machine Learning Research) , Andreas Krause, Emma Brunskill, Kyunghyun Cho, Barbara Engelhardt, Sivan Sabato, and Jonathan Scarlett (Eds.). PMLR, 17061–17084. https://proceedings.mlr.press/v202/kirchenbauer23a.html [14] Taehyun Lee, Seokhee Hong, Jaewoo Ahn, Ilgee Hong, Hwaran Lee, Sangdoo Yun, Jamin Shin, and Gunhee Kim. 2024. Who Wrote this Code? Watermarking for Code Generation. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), ACL 2024, Bangkok, Thailand, August 11-16, 2024 , Lun-Wei Ku, Andre Martins, and Vivek Srikumar (Eds.). Association for Computational Linguistics, 4890–4911. doi:10.18653/V1/2024. ACL-LONG.268 [15] Vladimir I Levenshtein et al . 1966. Binary codes capable of correcting deletions, insertions, and reversals. 10, 8 (1966), 707–710. [16] Boquan Li, Zheming Fu, Mengdi Zhang, Peixin Zhang, Jun Sun, and Xingmei Wang. 2024. Efficient and Universal Watermarking for LLM-Generated Code Detection. (2024). https://api.semanticscholar.org/CorpusID:267627184 [17] M Donald MacLaren. 1970. The art of computer programming. Volume 2: Seminu-merical algorithms (Donald E. Knuth) . Vol. 12. SIAM. 306–308 pages. [18] Victor S. Miller. 1985. Use of Elliptic Curves in Cryptography. In Advances in Cryptology - CRYPTO ’85, Santa Barbara, California, USA, August 18-22, 1985, Proceedings (Lecture Notes in Computer Science) , Hugh C. Williams (Ed.). Springer, 417–426. doi:10.1007/3-540-39799-X_31 [19] OpenAI. 2023. GPT-4 Technical Report. CoRR abs/2303.08774 (2023). doi:10. 48550/ARXIV.2303.08774 [20] Hammond Pearce, Baleegh Ahmad, Benjamin Tan, Brendan Dolan-Gavitt, and Ramesh Karri. 2022. Asleep at the Keyboard? Assessing the Security of GitHub Copilot’s Code Contributions. In 43rd IEEE Symposium on Security and Privacy, SP 2022, San Francisco, CA, USA, May 22-26, 2022 . IEEE, 754–768. doi:10.1109/ SP46214.2022.9833571 [21] Neil Perry, Megha Srivastava, Deepak Kumar, and Dan Boneh. 2023. Do Users Write More Insecure Code with AI Assistants?. In Proceedings of the 2023 ACM SIGSAC Conference on Computer and Communications Security, CCS 2023, Copen-hagen, Denmark, November 26-30, 2023 , Weizhi Meng, Christian Damsgaard Jensen, Cas Cremers, and Engin Kirda (Eds.). ACM, 2785–2799. doi:10.1145/ 3576915.3623157 [22] Fips Pub. 2012. Secure hash standard (shs). 2012 pages. [23] Ruchir Puri, David S. Kung, Geert Janssen, Wei Zhang, Giacomo Domeniconi, Vladimir Zolotov, Julian Dolby, Jie Chen, Mihir R. Choudhury, Lindsey Decker, Veronika Thost, Luca Buratti, Saurabh Pujar, and Ulrich Finkler. 2021. Project CodeNet: A Large-Scale AI for Code Dataset for Learning a Diversity of Coding Tasks. CoRR abs/2105.12655 (2021). https://arxiv.org/abs/2105.12655 [24] Wenjie Qu, Dong Yin, Zixin He, Wei Zou, Tianyang Tao, Jinyuan Jia, and Jiaheng Zhang. 2024. Provably Robust Multi-bit Watermarking for AI-generated Text via Error Correction Code. CoRR abs/2401.16820. doi:10.48550/ARXIV.2401.16820 [25] Irving S Reed and Gustave Solomon. 1960. Polynomial codes over certain finite fields. Journal of the society for industrial and applied mathematics 8, 2 (1960), 300–304. [26] Baptiste Rozière, Jonas Gehring, Fabian Gloeckle, Sten Sootla, Itai Gat, Xi-aoqing Ellen Tan, Yossi Adi, Jingyu Liu, Tal Remez, Jérémy Rapin, Artyom Kozhevnikov, Ivan Evtimov, Joanna Bitton, Manish Bhatt, Cristian Canton-Ferrer, Aaron Grattafiori, Wenhan Xiong, Alexandre Défossez, Jade Copet, Faisal Azhar, Hugo Touvron, Louis Martin, Nicolas Usunier, Thomas Scialom, and Gabriel Syn-naeve. 2023. Code Llama: Open Foundation Models for Code. CoRR abs/2308.12950 (2023). doi:10.48550/ARXIV.2308.12950 [27] Vinu Sankar Sadasivan, Aounon Kumar, Sriram Balasubramanian, Wenxiao Wang, and Soheil Feizi. 2025. Can AI-Generated Text be Reliably Detected? Stress Testing AI Text Detectors Under Various Attacks. Trans. Mach. Learn. Res. 2025 (2025). https://openreview.net/forum?id=OOgsAZdFOt [28] Gustavo Sandoval, Hammond Pearce, Teo Nys, Ramesh Karri, Siddharth Garg, and Brendan Dolan-Gavitt. 2023. Lost at C: A User Study on the Security Implications of Large Language Model Code Assistants. In 32nd USENIX Security Symposium, USENIX Security 2023, Anaheim, CA, USA, August 9-11, 2023 , Joseph A. Calandrino and Carmela Troncoso (Eds.). USENIX Association, 2205–2222. https://www. usenix.org/conference/usenixsecurity23/presentation/sandoval [29] SEC SECG. 2010. 2: Recommended elliptic curve domain parameters. Version 2.0 .Technical Report. [30] Claude E. Shannon. 1948. A mathematical theory of communication. Bell Syst. Tech. J. 27, 3 (1948), 379–423. doi:10.1002/J.1538-7305.1948.TB01338.X [31] Michael Soha and Zachary J McDowell. 2016. Monetizing a meme: YouTube, content ID, and the Harlem Shake. Social Media+ Society 2, 1 (2016), 2056305115623801. [32] Sourcery AI. 2024. Sourcery: Automated Python Refactoring. https://sourcery.ai. [33] Yue Wang, Weishi Wang, Shafiq R. Joty, and Steven C. H. Hoi. 2021. CodeT5: Identifier-aware Unified Pre-trained Encoder-Decoder Models for Code Under-standing and Generation. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing, EMNLP 2021, Virtual Event / Punta Cana, Dominican Republic, 7-11 November, 2021 , Marie-Francine Moens, Xuanjing Huang, Lucia Specia, and Scott Wen-tau Yih (Eds.). Association for Computational Linguistics, 8696–8708. doi:10.18653/V1/2021.EMNLP-MAIN.685 [34] Borui Yang, Wei Li, Liyao Xiang, and Bo Li. 2024. SrcMarker: Dual-Channel Source Code Watermarking via Scalable Code Transformations. In IEEE Symposium on Security and Privacy, SP 2024, San Francisco, CA, USA, May 19-23, 2024 . IEEE, 4088–4106. doi:10.1109/SP54263.2024.00097 [35] Ruisi Zhang, Neusha Javidnia, Nojan Sheybani, and Farinaz Koushanfar. 2025. Ro-bust and Secure Code Watermarking for Large Language Models via ML/Crypto Codesign. CoRR abs/2502.02068 (2025). doi:10.48550/ARXIV.2502.02068 
+
+## A Full Baseline Comparison Tables 
+
+Table 13 provides the complete per-dataset attack results for ACW [ 16 ], SrcMarker-Py, and our system across all five CodeNet disjoint datasets ( 𝐷 32 –𝐷 152 ), supplementing the condensed Tables 6 and 7. 
+
+13 Conference acronym ’XX, June 03–05, 2018, Woodstock, NY Choi et al. 
+
+ACW SrcMarker-Py Ours ( 𝑡 =2)Attack 𝐷 32 𝐷 40 𝐷 56 𝐷 88 𝐷 152 𝐷 32 𝐷 40 𝐷 56 𝐷 88 𝐷 152 𝐷 32 𝐷 40 𝐷 56 𝐷 88 𝐷 152 
+
+No attack 100.0 100.0 100.0 100.0 98.4 89.8 84.8 72.9 61.1 59.1 100.0 100.0 100.0 100.0 100.0 
+
+Rename 2 0.0 0.0 0.0 0.0 0.0 24.5 19.0 17.9 16.7 11.0 98.4 99.2 98.0 100.0 100.0 
+
+Rename 4 0.0 0.0 0.0 0.0 0.0 24.1 19.5 18.3 16.7 11.0 98.4 99.2 98.0 100.0 100.0 
+
+Rename 8 0.0 0.0 0.0 0.0 0.0 24.1 19.5 18.3 16.7 11.0 1.6 5.2 59.6 100.0 99.6 
+
+aug_assign 0.0 0.0 0.0 0.0 0.0 79.2 80.1 67.2 55.6 56.1 78.8 92.0 94.8 98.0 98.0 
+
+compare_dir 0.0 0.0 0.0 0.0 0.0 88.0 81.4 69.0 59.4 55.7 76.0 86.4 95.2 96.0 98.8 
+
+equality_dir 0.0 0.0 0.0 0.0 0.0 78.2 74.0 60.7 56.0 50.6 58.0 77.6 86.8 90.0 96.0 
+
+list_comp 0.0 0.0 0.0 0.0 0.0 88.9 84.4 72.5 60.3 58.2 82.0 91.6 99.2 99.6 100.0 
+
+ternary 0.0 0.0 0.0 0.0 0.0 90.7 84.4 72.5 61.1 58.2 97.6 98.8 100.0 100.0 100.0 
+
+operand_order 0.0 0.0 0.0 0.0 0.0 83.8 82.3 69.9 56.4 57.8 41.6 63.2 70.4 80.0 81.6 
+
+empty_coll 0.0 0.0 0.0 0.0 0.0 88.0 81.4 72.1 60.3 59.1 83.6 92.0 100.0 99.6 100.0 
+
+none_check 0.0 0.0 0.0 0.0 0.0 89.4 84.0 71.2 59.0 57.4 100.0 100.0 100.0 99.6 100.0 
+
+Payload 0 bits 4 bits 24 bits 
+
+Training None GPU, 20k samples None 
+
+Table 13: Full three-way baseline comparison across all five disjoint datasets ( 𝑛 =250 each). Bold marks the best per cell.                                                                            
+
+> Attack 𝐷 32 (0.66) 𝐷 40 (0.87) 𝐷 56 (1.31) 𝐷 88 (2.11) 𝐷 152 (4.29) No attack 100.0 100.0 100.0 100.0 100.0 Rename 2 98.4 99.2 98.0 100.0 100.0
+> Rename 4 98.4 99.2 98.0 100.0 100.0
+> Rename 8 1.6 5.2 59.6 100.0 99.6 Rename 16 0.0 †0.0 †29.0 99.2 100.0
+> aug_assign 78.8 92.0 94.8 98.0 98.0
+> compare_dir 76.0 86.4 95.2 96.0 98.8
+> equality_dir 58.0 77.6 86.8 90.0 96.0
+> list_comp 82.0 91.6 99.2 99.6 100.0
+> ternary 97.6 98.8 100.0 100.0 100.0
+> operand_order 41.6 63.2 70.4 80.0 81.6
+> empty_coll 83.6 92.0 100.0 99.6 100.0
+> none_check 100.0 100.0 100.0 99.6 100.0
+
+Table 14: Cross-dataset analysis (%, 𝑡 =2, 𝑛 =250 ). Column head-ers list each dataset, followed by its average votes per code-word bit 𝑣 = 𝑁 /𝐵 with 𝐵 = 32 . Bold marks the best per row. †:few eligible files. 
+
+## B Additional Experimental Analyses B.1 Cross-Dataset Analysis 
+
+To demonstrate how file size (votes/bit) affects robustness, we fix 
+
+𝑡 =2 and evaluate the same attacks across all five datasets (Table 14). This isolates the effect of votes/bit from the RS correction capacity. The results reveal two key insights. First, rename robustness scales with votes/bit: rename_16 improves from 0.0% ( 𝐷 32 , 0.66 V/bit) to 100% ( 𝐷 152 , 4.29 V/bit), demonstrating that majority voting, rather than RS correction, is the primary defense against variable renaming on larger files. Second, operand_order is the most persis-tent structural attack, remaining the hardest single-channel attack at every dataset size (41.6% on 𝐷 32 to 81.6% on 𝐷 152 ). Dataset V/bit 0% 10% 20% 30% 40% 
+
+𝐷 32 0.66 100.0 9.8 0.0 0.0 0.0 
+
+𝐷 40 0.87 100.0 20.4 0.4 0.0 0.0 
+
+𝐷 56 1.31 100.0 44.8 3.2 0.0 0.0 
+
+𝐷 88 2.11 100.0 77.9 25.3 0.4 0.0 
+
+𝐷 152 4.29 100.0 94.1 58.0 13.0 0.4 
+
+Table 15: Graduated per-site attack (%, 𝑡 =2, 𝑛 =250 ). Votes/bit directly determines corruption tolerance: at 4.29 V/bit ( 𝐷 152 ), the system tolerates 20% random corruption at 58.0%. 
+
+## B.2 Graduated Per-Site Attack 
+
+To measure corruption tolerance precisely, we randomly flip in-dividual site bits (not entire channels) and vary the corruption percentage from 0% to 40%. At 50% corruption, every configuration drops to 0% accuracy, as expected once the majority vote fails. Ta-ble 15 shows the results with 𝑡 =2 across all five datasets, directly demonstrating that votes/bit determines robustness. The relationship between votes/bit and corruption tolerance is monotonic. At 0.66 V/bit ( 𝐷 32 ), 10% corruption yields only 9.8% accuracy; at 4.29 V/bit ( 𝐷 152 ), the same 10% corruption yields 94.1%. This follows directly from the spread-spectrum voting mechanism (Theorem 5.5). With 𝑣 votes per bit position, random 𝑝 -fraction corruption flips each vote independently, and the majority remains correct as long as fewer than 𝑣 /2 votes are corrupted. Higher 𝑣 
+
+makes the majority exponentially more resilient to the same cor-ruption fraction. In practice, realistic attacks corrupt individual sites rather than entire channels, so these graduated results are the most deployment-relevant robustness measure. 
+
+## B.3 Capacity Distribution 
+
+Table 16 shows the distribution of embedding capacity across all seven evaluation datasets. Median capacity ranges from 34 bits (𝐷 32 , tightly matching the 32-bit codeword) to 172 bits ( 𝐷 152 , 5.4× 
+
+> 14 Multi-Channel Spread-Spectrum Code Watermarking Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+Dataset Min P25 Median P75 Max Std 
+
+𝐷 32 32 33 34 36 39 2.1 
+
+𝐷 40 40 40 43 47 55 4.7 
+
+𝐷 56 56 57 62 68 87 8.3 
+
+𝐷 88 88 89 98 112 151 15.6 
+
+𝐷 152 152 162 172 213 530 84.6 gpt41 32 53 77 114 403 52.6 llama4 32 38 46 59 144 18.3 
+
+Table 16: Distribution of total embedding capacity (variable bits + structural bits, 𝑛 =250 per dataset). Higher capacity means more votes per codeword bit and stronger robustness. 
+
+the codeword), illustrating the wide capacity span. For practical deployment, 𝑡 =2 (32-bit codeword) is recommended for shorter code files, while 𝑡 =8 (56-bit codeword) is recommended for longer files where capacity is not a constraint. For LLM-generated code from non-trivial problem statements, the generated code almost always provides sufficient capacity, with GPT-4.1 averaging 92.1 bits per file (Table 3). 
+
+## C Open Science 
+
+All artifacts needed to evaluate this paper’s core contributions are available at https://github.com/soohyeonc/Multi_Channel_Watermarking. The repository includes the full embedding and detection pipeline (the secp256k1 ECC key module, spread-spectrum assignment, compact and GF(16) RS encoders, and all eight structural chan-nel transformers), every attack implementation used in our eval-uation (rename, per-channel structural, graduated per-site, and LLM rewriting), our SrcMarker-Py reimplementation, and the cor-rected STONE [ 12 ] reproduction with code diffs documented in 
+
+baselines/STONE/STONE_settings.md . Human-written code is drawn from the publicly available Project CodeNet [ 23 ]; LLM-generated code was produced using public APIs (OpenAI GPT-4.1, GPT-4o-mini, GPT-3.5) and open-source models (Qwen2.5-Coder, Qwen3-Coder, Llama-4-Maverick). Dataset partitioning scripts and pre-filtered evaluation sets are included, and no artifact is withheld from review. 
+
+## D Ethical Considerations 
+
+Our watermarking system is designed for legitimate attribution of LLM-generated code, such as academic integrity verification, intellectual property compliance, and security incident response. The provider-as-verifier deployment model ensures that only autho-rized parties can run detection, preventing misuse as a surveillance tool. We advocate for transparent disclosure when watermarking is applied and for legal frameworks governing its use. No human subjects, user data, or real-world vulnerability ex-ploitation are involved in this work. All evaluation code is drawn from publicly available datasets (Project CodeNet) or generated by publicly accessible LLM APIs. The STONE [ 12 ] baseline repro-duction involved correcting implementation errors in a publicly released codebase, which we document and will share to benefit the community. 
+
+Dual-use considerations. Watermarking can be used for legiti-mate attribution but also for covert tracking of individual devel-opers’ coding patterns. We advocate for transparent disclosure: providers should publicly announce that their generated code is watermarked, analogously to how telemetry and data-collection policies are disclosed today. The detection oracle (Section 3.3) could be misused for surveillance if the provider-as-verifier service logs and correlates queries against individuals; we recommend audit transparency and aggregate query-rate public reporting to prevent this. Finally, attribution alone does not establish authorship re-sponsibility. A developer who accepts LLM-generated code without review remains accountable for their decisions, and watermarking should not be a sole determinant in legal or academic sanctions.

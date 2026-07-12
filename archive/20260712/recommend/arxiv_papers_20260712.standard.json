@@ -1,0 +1,371 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-12T21:02:08.707257+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 7,
+    "quick_skim_target": 11,
+    "quick_selected": 7
+  },
+  "deep_dive": [
+    {
+      "id": "2607.06595v1",
+      "source": "arxiv",
+      "title": "When Agents Remember Too Much: Memory Poisoning Attacks on Large Language Model Agents",
+      "abstract": "Personal AI agents powered by large language models can reason and act using available tools to access emails, manage calendars, and push code to remote repositories, all with minimal oversight. When augmented with long-term memory, an agent can recall specific details relevant to the current task, reducing the need for large context windows. Currently, long-term memory agents tend to fall into two distinct domains: conversational and action-planning agents. Personal assistant agents sit at the convergence of these two domains and handle sensitive information while interacting with untrusted information sources, creating previously unaccounted security vulnerabilities. In this work, we introduce the novel attack vector, GhostWriter, which exploits current memory subsystems in tool-using personal agents to poison their memory store. GhostWriter operates in two phases: injection, where an adversary sends a hidden attack payload to the target agent; and activation, in which the poisoned memory is retrieved. We show that GhostWriter achieves near-universal injection rates of approximately 98% and a high average activation rate of approximately 60% against state-of-the-art agents. This attack is possible due to the lack of security-focused memory governance. In response, we propose Agentic Memory Sentry (AM-Sentry), which leverages two mitigation techniques: a memory-saving policy and a memory-retrieval screen. Our experiments show that AM-Sentry dramatically reduces GhostWriter's success rate while preserving agent utility.",
+      "authors": [
+        "George Torres",
+        "Sharad Shrestha",
+        "Satyajayant Misra"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-06T19:30:53+00:00",
+      "link": "https://arxiv.org/pdf/2607.06595v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "memory poisoning attacks on LLM agents",
+      "llm_evidence_cn": "LLM智能体的记忆中毒攻击",
+      "llm_evidence": "LLM智能体的记忆中毒攻击",
+      "canonical_evidence": "LLM智能体的记忆中毒攻击",
+      "llm_tldr_en": "Introduces GhostWriter, a novel memory poisoning attack on LLM agents that exploits long-term memory to inject malicious content, compromising agent security and privacy.",
+      "llm_tldr_cn": "大型语言模型（LLM）智能体使用长期记忆增强任务性能，但这也带来了新的安全漏洞。本文提出GhostWriter攻击，通过向智能体的长期记忆中注入恶意内容，使其在后续任务中输出错误或有害信息。攻击利用了智能体与不可信信息来源的交互，成功绕过了现有防御，揭示了记忆增强AI系统的严重安全威胁。",
+      "llm_tldr": "大型语言模型（LLM）智能体使用长期记忆增强任务性能，但这也带来了新的安全漏洞。本文提出GhostWriter攻击，通过向智能体的长期记忆中注入恶意内容，使其在后续任务中输出错误或有害信息。攻击利用了智能体与不可信信息来源的交互，成功绕过了现有防御，揭示了记忆增强AI系统的严重安全威胁。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.06647v1",
+      "source": "arxiv",
+      "title": "ORAN-DEFEND: Subspace Detection and Sanitization of Backdoor DRL xApps in Open RAN",
+      "abstract": "Open Radio Access Networks (O-RAN) increasingly delegate near-real-time control to deep reinforcement learning (DRL) xApps obtained from third-party vendors, creating a new supply-chain attack surface. A backdoor policy behaves optimally until an adversary injects a covert trigger into the observed key performance indicator (KPI) telemetry, at which point it issues harmful control actions that degrade quality of service (QoS). We present ORAN-DEFEND, a retraining-free wrapper that sanitizes a frozen, potentially compromised xApp by projecting each KPI window onto a safe subspace estimated from a small number of trusted clean rollouts via singular value decomposition (SVD). We establish, both analytically and empirically, a precise recovery condition: the defense succeeds if the trigger energy concentrates in the orthogonal complement of the safe subspace, and we quantify this boundary through the trigger's $\\Eperp$ energy fraction. On the Colosseum COLORAN dataset, we evaluate four structurally distinct DRL backdoor attacks, like TrojDRL, SleeperNets, BadRL, and Q-Incept, spanning inner-loop and outer-loop poisoning regimes and demonstrate $100\\%$ return recovery and $\\geq99.5\\%$ defense success rate across all four when the subspace assumption holds. A geometry ablation reveals an intrinsic and previously uncharacterized limit of any linear projection defense: when the trigger collocates with the legitimate signal, the $\\Eperp$ energy fraction governs recovery monotonically, and the linear residual detector collapses to chance even while a nonlinear classifier retains perfect separability.",
+      "authors": [
+        "Md Raihan Uddin",
+        "Fatemeh Lotfi",
+        "Tolunay Seyfi",
+        "Fatemeh Afghah"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-07-07T16:06:05+00:00",
+      "link": "https://arxiv.org/pdf/2607.06647v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "backdoor defense in DRL for O-RAN",
+      "llm_evidence_cn": "O-RAN中深度强化学习的后门防御",
+      "llm_evidence": "O-RAN中深度强化学习的后门防御",
+      "canonical_evidence": "O-RAN中深度强化学习的后门防御",
+      "llm_tldr_en": "Presents a retraining-free wrapper to detect and sanitize backdoor attacks in DRL xApps using subspace projection.",
+      "llm_tldr_cn": "该论文针对O-RAN中第三方DRL xApp的后门攻击，提出ORAN-DEFEND方法。通过从少量可信清洁轨迹中估计安全子空间，将每个KPI窗口投影到该子空间上，从而净化潜在的恶意行为。理论分析和实验证明了该方法能精确恢复被后门攻击的QoS，且无需重新训练。",
+      "llm_tldr": "该论文针对O-RAN中第三方DRL xApp的后门攻击，提出ORAN-DEFEND方法。通过从少量可信清洁轨迹中估计安全子空间，将每个KPI窗口投影到该子空间上，从而净化潜在的恶意行为。理论分析和实验证明了该方法能精确恢复被后门攻击的QoS，且无需重新训练。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.04484v1",
+      "source": "arxiv",
+      "title": "TrustCLIP: Learning Private Visual Features via Adversarial Reconstruction",
+      "abstract": "Vision and vision-language models rely on high-level visual representations that are increasingly used across recognition, retrieval, and multimodal reasoning pipelines. However, recent advances in generative modeling have shown that such features can often be inverted, enabling realistic reconstructions of the underlying image and raising significant privacy risks. We revisit this problem through the lens of reconstruction and propose TrustCLIP, a reconstruction-driven framework that treats a feature-conditioned generator as an explicit privacy adversary. TrustCLIP learns a projection between encoder features and downstream modules that is explicitly optimized to degrade the reconstructions produced by generative attackers while retaining the necessary signals for downstream tasks. Unlike prior defenses that rely on discriminative privacy metrics, TrustCLIP directly optimizes against a generative reconstruction attacker, targeting a threat not captured by standard evaluation protocols. We demonstrate its effectiveness in both conventional classification and multimodal large language model pipelines. Across these settings, TrustCLIP consistently reduces the fidelity of generative inversions while maintaining downstream task performance. Project page: https://atnikos.github.io/trustclip/",
+      "authors": [
+        "Nikos Athanasiou",
+        "Ilya A. Petrov",
+        "Angela Yao",
+        "Shugao Ma",
+        "Eric Sauser",
+        "Edoardo Remelli",
+        "Shreyas Hampali",
+        "Johannes Schönberger",
+        "Fadime Sener",
+        "Bugra Tekin"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-07-05T20:11:00+00:00",
+      "link": "https://arxiv.org/pdf/2607.04484v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "learns private visual features by degrading reconstruction attacks",
+      "llm_evidence_cn": "通过对抗重建学习私有视觉特征",
+      "llm_evidence": "通过对抗重建学习私有视觉特征",
+      "canonical_evidence": "通过对抗重建学习私有视觉特征",
+      "llm_tldr_en": "Proposes TrustCLIP, a reconstruction-driven framework that optimizes visual features to be non-invertible while retaining utility for downstream tasks.",
+      "llm_tldr_cn": "针对视觉特征可被逆向重建导致隐私泄露的问题，提出TrustCLIP框架，将特征条件生成器视为显式隐私攻击者，通过学习投影模块在保持下游任务性能的同时，显著降低图像重建质量。在多个数据集上验证了隐私-效用权衡的有效性。",
+      "llm_tldr": "针对视觉特征可被逆向重建导致隐私泄露的问题，提出TrustCLIP框架，将特征条件生成器视为显式隐私攻击者，通过学习投影模块在保持下游任务性能的同时，显著降低图像重建质量。在多个数据集上验证了隐私-效用权衡的有效性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.06009v1",
+      "source": "arxiv",
+      "title": "Multi-Channel Spread-Spectrum Code Watermarking",
+      "abstract": "Attributing code to the large language model that produced it is essential for provenance, licensing, and misuse accountability, yet no deployed watermark meets this need. Generation-time schemes require access to the producing model and cannot be applied to third-party code, while post-hoc schemes work on any code but carry at most 4 bits of payload, far too few to distinguish the many deployed model configurations. We present multi-channel spread-spectrum watermarking, the first post-hoc, training-free code watermark with a 24-bit payload and formal robustness guarantees. The scheme encodes bits in variable naming conventions and in eight pairs of semantically equivalent code patterns, and a keyed pseudo-random permutation maps every site to a codeword bit so that each bit receives multiple independent votes. Majority voting absorbs distributed corruption, while an outer Reed-Solomon code recovers the identifier when concentrated channel attacks defeat the vote, yielding provable robustness bounds for formatting, syntactic, and structural attacks. Across 1,750 Python files from CodeNet and from GPT-4.1 and Llama-4 generations, the watermark achieves 100% clean-detection accuracy with zero false positives. Under 17 attack types, it recovers the identifier at 97.6% accuracy under 8 variable renames and 94.1% under 10% random per-site corruption, while the strongest post-hoc baseline collapses to 0% under any single-transform attack. Embedding and detection together take under 200 ms on CPU without training data or GPU.",
+      "authors": [
+        "Soohyeon Choi",
+        "Debin Gao",
+        "Yue Duan"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG",
+        "cs.SE"
+      ],
+      "published": "2026-07-07T08:50:19+00:00",
+      "link": "https://arxiv.org/pdf/2607.06009v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "code watermarking for attributing LLM-generated code",
+      "llm_evidence_cn": "面向LLM生成代码归因的水印技术",
+      "llm_evidence": "面向LLM生成代码归因的水印技术",
+      "canonical_evidence": "面向LLM生成代码归因的水印技术",
+      "llm_tldr_en": "Proposes multi-channel spread-spectrum code watermarking with 24-bit payload and formal robustness guarantees for post-hoc LLM code attribution.",
+      "llm_tldr_cn": "针对LLM生成代码的归属鉴定问题，提出多通道扩频代码水印方法，利用变量命名约定和语义等价代码模式编码24比特负载，并具有形式化鲁棒性保证，首次实现可部署的后验代码水印。",
+      "llm_tldr": "针对LLM生成代码的归属鉴定问题，提出多通道扩频代码水印方法，利用变量命名约定和语义等价代码模式编码24比特负载，并具有形式化鲁棒性保证，首次实现可部署的后验代码水印。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.06860v1",
+      "source": "arxiv",
+      "title": "Auditable Machine Unlearning for Privacy-Compliant Ransomware Detection Using Multi-Shard SISA and Deep Reinforcement Learning",
+      "abstract": "Ransomware poses an escalating cybersecurity threat as attackers continuously modify behavioral patterns to evade static defenses. Although existing machine learning-based detectors often achieve strong predictive performance, they generally assume fixed training data and do not support the selective removal of previously learned samples. This limitation conflicts with privacy regulations such as the GDPR and CCPA, which require the removal of sensitive user data upon request. To address this challenge, we propose an auditable ransomware detection and unlearning framework that integrates deep reinforcement learning with multi-shard SISA retraining. In the proposed system, a Double Deep Q-Network (DDQN) learns a reward-guided detection policy from behavioral features under asymmetric security costs, while multi-shard SISA enables privacy-compliant selective sample removal through shard-level retraining. The framework was evaluated using four criteria: utility preservation, oracle-based forgetting validation, membership inference auditing, and computational efficiency. On a balanced Windows 11 behavioral dataset comprising 2,000 samples and 103 features, the baseline DDQN detector achieved an F1 score of 0.9925 and an AUC of 0.9983. The experimental results show that single-shard unlearning maintains minimal utility degradation and low oracle disagreement, whereas moderate shard counts (M = 5-10) provide the best efficiency-performance trade-off, reducing retraining time to 5-30 s compared with 80-330 s for full retraining. In addition, the membership inference scores remain close to 0.5 across most configurations, indicating limited privacy leakage after unlearning. These findings demonstrate that a privacy-compliant ransomware detection framework can jointly achieve high detection performance, auditable deletion verification, and efficient sample removal.",
+      "authors": [
+        "Jannatul Ferdous",
+        "Rafiqul Islam",
+        "Md Zahidul Islam"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-07T23:23:52+00:00",
+      "link": "https://arxiv.org/pdf/2607.06860v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "machine unlearning for ransomware detection with privacy compliance",
+      "llm_evidence_cn": "隐私合规的机器遗忘用于勒索软件检测",
+      "llm_evidence": "隐私合规的机器遗忘用于勒索软件检测",
+      "canonical_evidence": "隐私合规的机器遗忘用于勒索软件检测",
+      "llm_tldr_en": "Proposes an auditable ransomware detection framework integrating deep reinforcement learning with multi-shard SISA unlearning to support privacy-compliant removal of user data while maintaining detection performance.",
+      "llm_tldr_cn": "现有机器学习勒索软件检测器不支持用户数据删除，违反GDPR等隐私法规。本文提出可审计框架，结合深度强化学习与多分片SISA重训练，实现选择性数据遗忘。Double DQN在保持高检测率的同时，能有效移除指定样本的影响，并通过审计机制保证合规性，为网络安全中的隐私合规提供了可行方案。",
+      "llm_tldr": "现有机器学习勒索软件检测器不支持用户数据删除，违反GDPR等隐私法规。本文提出可审计框架，结合深度强化学习与多分片SISA重训练，实现选择性数据遗忘。Double DQN在保持高检测率的同时，能有效移除指定样本的影响，并通过审计机制保证合规性，为网络安全中的隐私合规提供了可行方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.07596v1",
+      "source": "arxiv",
+      "title": "NARAD: Non-colluding Aggregator-oblivious Record-And-Decrypt",
+      "abstract": "Electronic voting must keep individual ballots private while letting anyone verify the final tally. This paper presents an architecture that meets both goals without a trusted key dealer: each voter encrypts a ballot in the browser with a self-generated secret key under the Paillier additive homomorphic cryptosystem, and no party ever holds every key. Two server roles divide the tally. A collector combines the voters' per-ballot auxiliary values into a single group element; an aggregator uses that element to cancel the voters' random masks inside the homomorphic product and recover the exact vote sum, learning the result but no individual ballot. The Solana blockchain records every ciphertext immutably and enforces the election lifecycle, while a native C library (libtommath) performs the heavy modular arithmetic. We state six assumptions under which the protocol is correct and prove product homomorphism, mask cancellation, and sum recovery; privacy rests on the Decisional Composite Residuosity (DCR) assumption for the additive layer together with a Diffie-Hellman-style assumption on the masking base. A bit-packing scheme places an entire multi-candidate ballot in one ciphertext, cutting client work, on-chain transactions, storage, and tally cost by a factor of k (the candidate count); the slot width b is free, with only k*b bounded by log_2(N). With b = 25 and a 255-bit modulus the scheme supports ten candidates and up to 2^25 - 1 = 33,554,431 votes per candidate, about 335 million ballots, and tallies 50,000 ballots in under one second. Finally, running the collector and aggregator inside attested secure enclaves makes the tally tamper-resistant and prevents cross-role collusion to deanonymize voters. The proof-of-concept implementation is open-source; a worked numerical example in the appendix reproduces the full pipeline.",
+      "authors": [
+        "Akshit Vakati Venkata",
+        "Rajat Dugar",
+        "Ayush Adarsh"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-08T16:13:56+00:00",
+      "link": "https://arxiv.org/pdf/2607.07596v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "homomorphic encryption for confidential voting",
+      "llm_evidence_cn": "同态加密实现机密投票",
+      "llm_evidence": "同态加密实现机密投票",
+      "canonical_evidence": "同态加密实现机密投票",
+      "llm_tldr_en": "Presents a voting architecture using Paillier homomorphic encryption with non-colluding servers and blockchain for ballot privacy and verifiability.",
+      "llm_tldr_cn": "该论文提出了一种电子投票架构NARAD，利用Paillier同态加密和区块链实现无需可信密钥分发者的投票隐私和可验证性。两个服务器角色（收集器和聚合器）通过协同计算解密选票总和，而不泄露单个选票。方案在Solana区块链上实现，具有端到端隐私保护。",
+      "llm_tldr": "该论文提出了一种电子投票架构NARAD，利用Paillier同态加密和区块链实现无需可信密钥分发者的投票隐私和可验证性。两个服务器角色（收集器和聚合器）通过协同计算解密选票总和，而不泄露单个选票。方案在Solana区块链上实现，具有端到端隐私保护。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.08011v1",
+      "source": "arxiv",
+      "title": "Beware What You Autocomplete: Forensic Attribution of Backdoored Code Completions",
+      "abstract": "Large language models have enabled powerful code completion systems that assist developers by predicting subsequent lines of code. However, these models remain vulnerable to backdoor attacks, where malicious fine-tuning data covertly implants unsafe behaviors. Despite advances in defensive techniques, adaptive and sophisticated backdoor attacks still evade detection and mitigation. We present CodeTracer, a forensic framework that traces malicious code completions back to the backdoor fine-tuning data responsible for them. Operating under realistic post-deployment constraints, CodeTracer relies solely on the fine-tuning corpus and the reported miscompletion event. It extracts a structured behavioral fingerprint from the compromised output, narrows the search to semantically relevant code samples, and employs LLM-based reasoning to attribute unsafe logic to specific backdoor data. Extensive evaluations across three representative vulnerability cases and ten backdoor attacks, along with sixteen competitive baselines, demonstrate that CodeTracer consistently achieves high forensic accuracy, low false identification rates, and strong robustness against adaptive attacks.",
+      "authors": [
+        "Anjun Gao",
+        "Yueyang Quan",
+        "Zhuqing Liu",
+        "Minghong Fang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.IR",
+        "cs.LG"
+      ],
+      "published": "2026-07-09T00:37:25+00:00",
+      "link": "https://arxiv.org/pdf/2607.08011v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "forensic attribution of backdoored code completions",
+      "llm_evidence_cn": "代码补全后门攻击的溯源",
+      "llm_evidence": "代码补全后门攻击的溯源",
+      "canonical_evidence": "代码补全后门攻击的溯源",
+      "llm_tldr_en": "CodeTracer traces backdoor code completions to the malicious fine-tuning data by extracting behavioral fingerprints.",
+      "llm_tldr_cn": "本文针对大语言模型代码补全中的后门攻击难以检测和溯源的问题，提出CodeTracer框架，通过提取恶意输出的结构化行为指纹，将其与微调语料库关联，在现实约束下实现后门数据的精准归因，推动了AI安全防御的进展。",
+      "llm_tldr": "本文针对大语言模型代码补全中的后门攻击难以检测和溯源的问题，提出CodeTracer框架，通过提取恶意输出的结构化行为指纹，将其与微调语料库关联，在现实约束下实现后门数据的精准归因，推动了AI安全防御的进展。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.08400v1",
+      "source": "arxiv",
+      "title": "TRACE: A Two-Channel Robust Attribution Watermark via Complementary Embeddings for LLM-Agent Trajectories",
+      "abstract": "LLM agents reach users through resellers, who may rebrand a developer's agent or substitute a cheaper model. When provenance is disputed, attribution rests on the trajectory log (the record of tool calls, observations, and executed actions, not the model's reasoning), which the reseller stores and processes to meter usage. A watermark must therefore survive an adversary with full read/write access to the very evidence it is detected from; existing agent watermarks do not, as their attribution is read straight off that log. We present TRACE, to our knowledge the first agent watermark that is distortion-free in its action choices, self-synchronizing under deletion, and unconditionally invariant under rewriting. Deletion desynchronizes a position-derived key and rewriting alters content, so a deletion-robust key must come from content and a rewrite-robust key from position, and no single key serves both. A trajectory, however, has room for two watermarks. TRACE superposes a selection channel that sets which action is chosen, keyed on local content with a distortion-free sampler, so the agent's distribution is provably unchanged and detection resynchronizes after deletions, and a tally channel that sets how many records each decision group holds, keyed on the log's skeleton alone, which no rewriting can touch. We prove this behavioral watermark's signal is bought with decision entropy, each decision paying at least half its entropy and deterministic decisions nothing, and that erasing both channels forces the reseller to corrupt the trajectories it resells. On ToolBench and ALFWorld, TRACE matches the unwatermarked agent's success rate while its selection channel reaches detection scores near z = 100 on long-horizon trajectories, stays detectable under 70% step deletion, and keeps a tally channel exactly unchanged under LLM rewriting of any strength.",
+      "authors": [
+        "Zheng Gao",
+        "Xiaoyu Li",
+        "Xiaoyan Feng",
+        "Jiaojiao Jiang",
+        "Yang Song",
+        "Yulei Sui",
+        "Zhenchang Xing",
+        "Liming Zhu"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-07-09T12:25:22+00:00",
+      "link": "https://arxiv.org/pdf/2607.08400v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "watermarking for LLM agent trajectory attribution to enhance security",
+      "llm_evidence_cn": "LLM代理轨迹水印用于增强安全审计",
+      "llm_evidence": "LLM代理轨迹水印用于增强安全审计",
+      "canonical_evidence": "LLM代理轨迹水印用于增强安全审计",
+      "llm_tldr_en": "Presents TRACE, a robust watermark for LLM agent trajectories that is distortion-free and invariant under adversarial rewriting, enabling provenance attribution.",
+      "llm_tldr_cn": "针对LLM代理部署中的归属争议，本文提出TRACE水印方案。它嵌入在代理调用轨迹中，对动作选择无失真，且能抵抗删除和重写攻击。TRACE是首个在重写下无条件和不变的水印，为代理使用审计和防仿冒提供了可靠技术。实验证明其鲁棒性。",
+      "llm_tldr": "针对LLM代理部署中的归属争议，本文提出TRACE水印方案。它嵌入在代理调用轨迹中，对动作选择无失真，且能抵抗删除和重写攻击。TRACE是首个在重写下无条件和不变的水印，为代理使用审计和防仿冒提供了可靠技术。实验证明其鲁棒性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.08180v1",
+      "source": "arxiv",
+      "title": "Out of Sight: Compression-Aware Content Protection against Agentic Crawlers",
+      "abstract": "The rise of LLM-based agents with reasoning, summarization, and memory capabilities has created a new threat surface for online content that conventional defenses fail to address. Existing defenses like access controls can be circumvented by agents mimicking ordinary browsers, and injection-based defenses often degrade human readability. In this paper, we revisit the agent pipeline and identify context compression, which agents routinely invoke to fit context budgets, as a critical yet overlooked defense layer. We propose CAPE, a framework that protects high-value textual content by injecting invisible perturbations without changing its human-visible surface form, thereby inducing severe information loss during agent compression. CAPE extracts disruptive seed perturbations from an accessible surrogate compressor, then adapts them to query-only target compressors through prior-guided evolution and preference-calibrated candidate prioritization, achieving effective protection under a low query budget. Experiments on three content types and four compression settings show that CAPE improves information loss by up to 75.8% over the strongest baseline while keeping protected content visually indistinguishable from originals. CAPE also transfers to real-world settings, including the LangGraph agent workflow and GitHub Copilot, highlighting its generality and practical value. This paper aims to reveal context compression as a new defense layer, promoting content protection research in the agent era.",
+      "authors": [
+        "Xuefei Wang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-09T07:27:48+00:00",
+      "link": "https://arxiv.org/pdf/2607.08180v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "defends content against LLM-based agentic crawlers using compression-aware perturbations",
+      "llm_evidence_cn": "针对LLM智能爬虫的内容防护方法",
+      "llm_evidence": "针对LLM智能爬虫的内容防护方法",
+      "canonical_evidence": "针对LLM智能爬虫的内容防护方法",
+      "llm_tldr_en": "Proposes CAPE framework that injects invisible perturbations to textual content to cause severe information loss during agent compression, protecting against unauthorized crawling.",
+      "llm_tldr_cn": "针对LLM智能爬虫窃取在线内容的问题，提出CAPE框架，通过注入人类不可见的扰动，在智能代理压缩上下文时造成严重信息丢失，从而保护高价值文本。该方法不降低人类可读性，在多种压缩模型上验证有效，为内容防御提供了新思路。",
+      "llm_tldr": "针对LLM智能爬虫窃取在线内容的问题，提出CAPE框架，通过注入人类不可见的扰动，在智能代理压缩上下文时造成严重信息丢失，从而保护高价值文本。该方法不降低人类可读性，在多种压缩模型上验证有效，为内容防御提供了新思路。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

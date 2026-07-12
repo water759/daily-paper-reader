@@ -1,0 +1,1252 @@
+Title: NARAD: Non-colluding Aggregator-oblivious Record-And-Decrypt
+
+URL Source: https://arxiv.org/pdf/2607.07596v1
+
+Published Time: Thu, 09 Jul 2026 01:09:09 GMT
+
+Number of Pages: 25
+
+Markdown Content:
+# NARAD: Non-colluding Aggregator-oblivious Record-And-Decrypt 
+
+Blockchain-Verifiable Voting via Packed Paillier Encryption Akshit Vakati Venkata Rajat Dugar Ayush Adarsh 
+
+Indian Institute of Technology Madras 
+
+Abstract 
+
+Electronic voting must keep individual ballots private while letting anyone verify the final tally. This paper presents an architecture that meets both goals without a trusted key dealer: each voter encrypts a ballot in the browser with a self-generated secret key under the Paillier additive homomorphic cryptosystem, and no party ever holds every key. Two server roles divide the tally. A collector combines the voters’ per-ballot auxiliary values into a single group element; an aggregator uses that element to cancel the voters’ random masks inside the homomorphic product and recover the exact vote sum, learning the result but no individual ballot. The Solana blockchain records every ciphertext immutably and enforces the election lifecycle, while a native C library (libtommath) performs the heavy modular arithmetic. The paper states six assumptions under which the protocol is correct and prove product homomorphism, mask cancellation, and sum recovery; privacy rests on the assumptions standard for aggregator-oblivious encryption: the Decisional Composite Residuosity (DCR) assumption for the additive layer together with a Diffie–Hellman-style assumption on the masking base. A bit-packing scheme places an entire multi-candidate ballot in one ciphertext, cutting client work, on-chain transactions, storage, and tally cost by a factor of k (the candidate count); the slot width b is free, with only the product k · b
+
+bounded by log 2 N . With b = 25 and a 255-bit modulus the scheme supports ten candidates and up to 2 25 − 1 = 33 554 431 votes per candidate, about 335 million ballots in total, and the proof-of-concept tallies 50,000 ballots exactly in under one second on its real parameters. Finally, we show how running the collector and aggregator inside attested secure enclaves makes the tally tamper-resistant and prevents a single host from colluding across the two roles to deanonymize voters. The proof-of-concept implementation is open-source. 1 A worked numerical example in the appendix reproduces the full pipeline on those same parameters. 
+
+Keywords: Paillier cryptosystem, homomorphic encryption, electronic voting, aggregator-oblivious, blockchain, Solana, WebAssembly, libtommath, vote packing, DCR assumption 
+
+## 1 Introduction 
+
+Electronic voting must satisfy two requirements that usually pull against each other: ballot privacy (no party learns how an individual voted) and tally verifiability (the published result is publicly checkable). Mix-net systems give privacy but need trusted authorities to shuffle and decrypt. Additive homomorphic encryption gives a cleaner path: the tally is computed directly on ciphertexts, so no individual ballot is ever decrypted. 
+
+1.1 The aggregator-oblivious model 
+
+In the aggregator-oblivious model [6], voters encrypt their data with self-generated secret keys and no coordination with a key dealer. No single party holds every secret key. The aggregator 
+
+> 1https://github.com/Akshit11318/narad
+
+1arXiv:2607.07596v1 [cs.CR] 8 Jul 2026 computes the sum of the encrypted values from auxiliary information supplied by a collector, but cannot decrypt any single ciphertext. The mechanism rests on one structural choice: each voter’s secret key sk i plays two roles at once. It is the encryption randomness ri of the masking term, and it is the exponent of the auxiliary value aux i = pk sk i 
+
+> A
+
+. When the aggregator raises the ciphertext product to its own key 
+
+sk A and divides by the collected auxiliary product, the random masks cancel exactly and only the encrypted sum remains. 
+
+1.2 Contributions 
+
+1. A system model and architecture that combine aggregator-oblivious Paillier encryption with blockchain immutability: clients encrypt in the browser through WebAssembly, and aggrega-tion runs in a native C library (Sections 5 and 11). 2. Six explicit assumptions and complete correctness proofs for the aggregation pipeline, covering product homomorphism, mask cancellation, and sum recovery (Sections 6–7). 3. A privacy analysis under the DCR assumption, showing that the aggregator, collector, and network observer each learn nothing about individual ballots (Section 8). 4. A bit-packing scheme that fits a multi-candidate ballot into one ciphertext, with a tunable slot width b, capacity bounds, and a quantified account of why packing matters (Section 9). 5. A proof-of-concept measured on its own real parameters, with multi-scale results and a worked numerical example computed on those parameters (Sections 11–12, Appendix A). 6. A discussion of how the design scales to more or fewer candidates and voters, how on-chain cost trades against capacity, how preferential voting fits the packing model, and how secure enclaves can make the tally tamper-resistant (Section 13). 
+
+1.3 Outline 
+
+Section 2 recalls the Paillier primitives and fixes notation. Section 3 positions our work against prior systems and argues why the aggregator-oblivious model is preferable to a trusted key dealer in an enclave. Section 4 states the guarantees and their assumptions upfront. Section 5 describes the parties and trust model. Section 6 states the protocol and its assumptions; Section 7 proves correctness; Section 8 analyzes security; Section 9 covers vote packing; Section 10 gives the algorithms; Section 11 describes the implementation and its architecture on real parameters; and Section 12 reports measurements. Section 13 discusses scaling, threshold aggregation, and future work, and Section 14 concludes. Appendix A works a full example end to end. 
+
+## 2 Preliminaries 
+
+2.1 Paillier encoding and the L-function 
+
+We use the additive structure of the Paillier cryptosystem [1]. For a modulus N = pq with 
+
+p, q distinct odd primes, and the base 1 + N , the binomial theorem gives, for any non-negative integer m,(1 + N )m = X
+
+> t≥0
+
+mt
+
+
+
+N t ≡ 1 + mN (mod N 2), (1) since every term with t ≥ 2 is divisible by N 2. Encoding is additively homomorphic: (1 + 
+
+N )m1 (1 + N )m2 ≡ (1 + N )m1+m2 (mod N 2), so multiplying encodings adds plaintexts modulo 
+
+N .2To hide a plaintext, the encoding is multiplied by a random element of Z∗  
+
+> N2
+
+. In this work that mask is Hr for a public base H ∈ Z∗  
+
+> N2
+
+and a secret exponent r, so a ciphertext is c =
+
+Hr (1 + N )m mod N 2.The plaintext is recovered with the L-function 
+
+L(u) = u − 1
+
+N , u ≡ 1 (mod N ), (2) where the division is exact over the integers. For m < N , Equation 1 gives (1 + N )m mod N 2 =1 + mN , hence L(1 + mN ) = m. The protocol of Section 6 removes the mask before applying 
+
+L.
+
+2.2 Hardness assumptions 
+
+Definition 2.1 (Decisional Composite Residuosity) . Given N = pq and z ∈ Z∗  
+
+> N2
+
+, it is computa-tionally infeasible to decide whether z is an N -th residue modulo N 2 (that is, whether ∃ y ∈ Z∗ 
+
+> N2
+
+with z ≡ yN (mod N 2)) or a uniformly random element of Z∗  
+
+> N2
+
+.
+
+Privacy of the construction relies on two assumptions, both standard for aggregator-oblivious encryption [4, 5, 6]. First, the additive Paillier layer (1 + N )m is semantically secure under DCR (Definition 2.1) [1]. Second, the masking term Hsk i , for a secret exponent sk i and the public base H, is pseudorandom in the subgroup ⟨H⟩ it generates, a Diffie–Hellman-style assumption on H. Note that the mask lies in ⟨H⟩, not in all of Z∗  
+
+> N2
+
+, so we do not claim a ciphertext is indistinguishable from a uniform group element. We do not reprove the scheme; its privacy under these two assumptions is established in [4, 5, 6], and Section 8 states the guarantees our deployment relies on. 
+
+2.3 Notation 
+
+Table 1 collects the symbols used throughout. Table 1: Notation. Symbol Meaning 
+
+N = pq Paillier modulus; p, q distinct odd primes 
+
+N 2 ciphertext modulus, defining the group Z∗ 
+
+> N2
+
+H public base element of Z∗ 
+
+> N2
+
+sk A, pk A aggregator secret/public key, pk A = Hsk A mod N 2
+
+sk i voter i’s secret key, reused as the masking randomness ri
+
+xi voter i’s packed ballot (plaintext), xi < N ci voter i’s ciphertext Hsk i (1 + N )xi mod N 2
+
+aux i voter i’s auxiliary value pk sk i 
+
+> A
+
+mod N 2
+
+L(·) L-function L(u) = ( u − 1) /N n number of voters 
+
+k number of candidates 
+
+b bits per packing slot (implementation uses b = 25) 
+
+vi,j voter i’s entry for candidate j; vi,j ∈ { 0, 1}
+
+S recovered sum P 
+
+> i
+
+xi
+
+Σ sum of secret keys P 
+
+> i
+
+sk i
+
+Π ciphertext product Q 
+
+> i
+
+ci mod N 2
+
+P, P ′ tally intermediates Π sk A and P · aux −1 mod N 2
+
+33 Related Work and Positioning 
+
+We position our work against the main families of secure voting and aggregation, and argue why the aggregator-oblivious model is preferable to simpler alternatives. 
+
+Helios [2] is a web-based open-audit voting system using homomorphic encryption. It relies on a single trusted authority to hold the decryption key and compute the tally. If that authority is compromised, all ballot privacy is lost. Our design eliminates this trust bottleneck: no single party holds every secret key, and the aggregator learns only the sum, not individual ballots. Helios also does not use a blockchain, so its audit trail depends on the honesty of the server that stores ciphertexts; we record every ciphertext on Solana, giving an immutable record that no party can alter. 
+
+Civitas [3] extends Helios with coercion resistance using distributed plaintext-equivalence tests and enforced eligibility. It requires a set of supervisor authorities that jointly manage decryption, a threshold scheme, but one that still concentrates trust in a small committee. Our aggregator-oblivious model goes further: each voter is their own key dealer, so there is no committee to corrupt. The price we pay is the absence of coercion resistance, which Civitas handles through receipt-freeness and forced-abstention protections. We view coercion resistance as orthogonal and complementary. 
+
+Aggregator-oblivious encryption. Shi et al. [4] introduced privacy-preserving aggregation in which users encrypt with self-generated keys; Joye and Libert [5] gave a scalable Paillier-based scheme, and Leontiadis et al. [6] relaxed its trust by removing the trusted dealer and periodic key updates. These works are theoretical: they define protocols and prove security but do not address browser-side encryption, multi-candidate packing, blockchain audit trails, or native-code performance. Our contribution is to take this line of protocols from theory to a measured system, with bit-packing for multi-candidate ballots, WebAssembly for client-side encryption, a native C library for server-side aggregation, and a Solana program for immutable recording. 
+
+Secure aggregation in federated learning. Mansouri et al. [7] systematize cryptographic secure-aggregation schemes for federated learning. Turbo-Aggregate [8] reaches O(N log N )aggregation via secret sharing and coding, tolerating dropouts, a property voting does not need (a dropped ballot is not counted) but that complicates the protocol. These systems target model gradients, not binary ballots, and do not use blockchain for input integrity. Our protocol is simpler (no secret sharing, no coding), targets a different application (voting), and adds on-chain immutability. 
+
+Why not run a trusted key dealer inside a secure enclave? A natural alternative to aggregator-oblivious encryption is to keep a conventional trusted-key-dealer Paillier scheme but run the dealer (and the tallying authority) inside an attested secure enclave such as Intel SGX or AWS Nitro Enclaves. The enclave would hold the factorization of N or the decryption key, compute the tally, and attest to the result. This is simpler: one party, one key, and removes the need for the collector/aggregator split entirely. We do not pursue this route for three reasons. First , it concentrates all cryptographic trust in the enclave’s correctness and the hardware manufacturer’s honesty. SGX has suffered practical side-channel attacks [19, 20] that can extract keys from “isolated” enclaves; a single successful attack on the dealer enclave compromises every ballot in the election, not only one tally. In our design, by contrast, a compromised aggregator learns only the sum. Individual ballots remain protected by DCR even if sk A leaks. Second , the aggregator-oblivious model 4gives a cryptographic privacy guarantee that does not depend on hardware at all: privacy rests on DCR, a number-theoretic assumption, not on the physical integrity of a chip. Enclaves can 
+
+strengthen integrity (Section 13.5) but they are not the basis of privacy. Third , the key-dealer model requires the dealer to be online during tallying, creating an availability bottleneck; our aggregator needs only the collected aux , which is a single group element that can be computed and forwarded by anyone who receives the aux i values. In short, enclaves are a good addition to our design (making the tally tamper-resistant) but a poor replacement for the cryptographic separation of duties that aggregator-oblivious encryption provides. 
+
+Zero-knowledge proofs for ballot validity. A limitation of our current design is the lack of cryptographic enforcement of Assumption 6.4 ( vi,j ∈ { 0, 1}). A malicious voter could submit a ciphertext encoding an out-of-range value. The standard remedy is a zero-knowledge range proof that the committed value lies in {0, 1}, proven alongside the ciphertext without revealing the vote. Pedersen commitments [14] provide the hiding commitment C = gvhr mod p; a Schnorr-style proof of knowledge [15] then demonstrates that the prover knows v and r consistent with 
+
+C; and a range proof based on the constraint v(v − 1) = 0 (equivalently, v ∈ { 0, 1}) can be constructed via Bulletproofs [16] or the simpler Σ-protocol of Camenisch and Stadler [17]. Asum proof (that exactly one candidate is selected, P 
+
+> j
+
+vi,j = 1) can be built from a Schnorr proof on the aggregate commitment. Our codebase includes WASM-backed implementations of these primitives (modular exponentiation, secure hashing, Fiat–Shamir challenges) but has not yet integrated them into the voting flow; this is the most important piece of future work. 
+
+## 4 Guarantees and Assumptions Summary 
+
+Before diving into the protocol, we state upfront what the system guarantees and under what conditions. Each guarantee names the assumption or proof that backs it. 
+
+4.1 Guarantees provided 
+
+• Ballot privacy (individual). No party (aggregator, collector, or network observer) learns how an individual voter voted. Reason: Each ciphertext ci = Hsk i (1 + N )xi mod N 2 is semantically secure under DCR (Definition 2.1) and the masking assumption on H (Section 2). The secret key sk i never leaves the voter’s browser. (Proposition 8.1.) 
+
+• Aggregator obliviousness. The aggregator learns only the tally S = P xi, not any indi-vidual xi. Reason: The aggregator sees {ci} and the product aux = Q aux i but never an individual aux i. Recovering a single xi from ci would break DCR. (Proposition 8.3.) 
+
+• Collector obliviousness. The collector learns nothing about any vote. Reason: Each 
+
+aux i = pk sk i 
+
+> A
+
+depends only on ( pk A, sk i) and is independent of the ballot xi. The collector never sees a ciphertext. (Proposition 8.2.) 
+
+• Tally correctness. The recovered sum R equals the true sum S = P xi exactly. Rea-son: Proven under Assumptions 6.1–6.5 via product homomorphism (Theorem 7.2), mask cancellation (Theorem 7.3), and sum recovery (Theorem 7.4). 
+
+• Per-candidate count correctness. The extracted count for each candidate equals the true number of votes for that candidate. Reason: The 25-bit packing preserves slots inde-pendently under homomorphic addition, and extraction isolates each slot without cross-talk. (Corollary 7.5, Assumptions 6.3 and 6.4.) 5• Input integrity (tamper-evident). The set of ciphertexts used in aggregation can be checked against the immutable on-chain record. Reason: Each ci is a finalized Solana trans-action; any insertion, deletion, or modification diverges from the chain and is detectable by any auditor. 
+
+• Output integrity (deterministic). Anyone holding the on-chain ciphertexts and aux can recompute R and verify the published result. Reason: R is a deterministic function of public inputs; a dishonest aggregator cannot publish a different valid tally. 
+
+• No key coordination. Voters generate their own secret keys without a dealer. Reason: The protocol’s mask cancellation works because sk i serves as both the encryption randomness and the auxiliary exponent (Assumption 6.6), so no external key distribution is needed. 
+
+4.2 What is not guaranteed 
+
+• No range enforcement. The system does not cryptographically verify vi,j ∈ { 0, 1} (As-sumption 6.4 is trusted, not enforced). ZK range proofs would close this gap. 
+
+• No coercion resistance. A voter can reveal sk i to prove how they voted. 
+
+• No collusion resistance (without enclaves). Privacy assumes the collector and aggregator do not pool their views. Secure enclaves (Section 13.5) can make this a hardware-enforced guarantee. 
+
+• No availability guarantee. A withholding aggregator can refuse to publish. Threshold decryption across multiple aggregators (Section 13.6) would address this. 
+
+## 5 System Model 
+
+The protocol involves four kinds of party. This section describes them at the level of roles, knowledge, and trust; their concrete realization as software components is deferred to Section 11. Figure 1 shows the parties and the messages between them. 
+
+5.1 Parties and roles 
+
+• Trusted third party ( T P ). Generates the modulus N = pq , picks the base H, publishes (N, H ), and goes offline. It takes part only in setup and never sees a ballot. 
+
+• Voters ( U1, . . . , U n). Each voter picks a secret key sk i, encodes a ballot as a packed integer 
+
+xi, and produces a ciphertext ci and an auxiliary value aux i. A voter knows only its own key and ballot. 
+
+• Collector ( C). The collector assembles the material that lets the masks be canceled in bulk. Each voter sends it an auxiliary value aux i = pk sk i 
+
+> A
+
+= Hsk A·sk i , which ties the voter’s secret key sk i to the aggregator’s public key but carries no information about the ballot. The collector multiplies these into one element aux = Q 
+
+> i
+
+aux i = Hsk A  
+
+> P
+> isk i
+
+and forwards it to the aggregator. This single value is exactly what the aggregator needs to strip every per-voter mask Hsk i at once; without it the sum cannot be recovered. The collector never receives a ciphertext ci, and each aux i depends only on ( pk A, sk i), so its role is integrity-critical: it must include every aux i exactly once, but it learns nothing about any vote. 
+
+• Aggregator ( A). The aggregator produces the result. At setup it generates its own secret key sk A and publishes pk A = Hsk A . At tally time it multiplies all ciphertexts into Π = Q 
+
+> i
+
+ci,raises the product to sk A, divides out the collector’s aux to cancel the masks, applies the 6System Model: Parties, Messages, and What Each Party Learns Trusted Party (TP)       
+
+> setup only · generates N = p·q publishes (N, H), then goes offline Public parameters: (N, H) and aggregator public key pk_A = H^(sk_A) mod N²
+> Voter U_i
+> picks secret key sk_i packs ballot →x_i c_i = H^(sk_i)·(1+N)^(x_i) aux_i = pk_A^(sk_i)
+> knows: own sk_i, own ballot
+> Collector C
+> receives all aux_i aux = Πaux_i mod N²
+> learns: nothing (random elements under DCR)
+> Aggregator A
+> holds sk_A · combines {c_i} and aux cancels masks, recovers S = Σx_i
+> learns: the tally only, no single ballot
+> Blockchain ledger
+> immutable record of {c_i} audit trail · lifecycle stages
+> c_i
+> c_i (on-chain)
+> aux_i aux
+> published tally [count_1, ..., count_k]
+
+Figure 1: System model. The trusted party publishes ( N, H ) at setup and leaves. Each voter sends a ciphertext ci to the aggregator (and to the chain) and an auxiliary value aux i to the collector. The collector forwards the product aux ; the aggregator recovers and publishes the tally. No party except the voter sees an individual plaintext. 
+
+L-function, and multiplies by sk −1
+
+A to recover the sum S = P
+
+i xi, which it unpacks into per-candidate counts. It holds sk A and sees every ciphertext and the aggregate aux , but never an individual aux i; under the assumptions of Section 2 it learns the tally and nothing about any single ballot. It can refuse to publish but cannot forge a different result, since the tally is fixed by the public ciphertexts and aux .
+
+5.2 Trust model 
+
+• T P : trusted only for setup. It knows the factorization of N but no sk i, and it is offline once (N, H ) are published. 
+
+• A: holds sk A. It can compute the sum but not individual votes (under DCR, Definition 2.1). It can withhold a result but cannot forge one: the sum is fixed by {ci} and aux .
+
+• C: sees only {aux i}, which are independent of the ballots and, under DCR, indistinguishable from random group elements. It learns nothing about votes. 
+
+• Ui: knows only its own sk i and ballot; the plaintext never leaves the voter. 
+
+• Blockchain validators: untrusted, under Byzantine fault-tolerant consensus. 
+
+5.3 High-level flow 
+
+Setup fixes ( N, H ) and the aggregator key. Each voter independently encrypts and emits (ci, aux i); the ciphertexts are also recorded on-chain for an audit trail. The collector aggregates the auxiliary values into a single element, and the aggregator uses it to cancel the per-voter masks and recover the tally in one homomorphic computation. The cryptographic detail of each step follows in Section 6. 76 Cryptographic Protocol 
+
+Recall the four parties of Section 5: T P , voters U1, . . . , U n, collector C, and aggregator A.Figure 2 traces the full execution from a voter’s ballot to the published tally. 
+
+6.1 Assumptions 
+
+The six assumptions below are sufficient for correctness. Each is cited by the proofs of Section 7. 
+
+Assumption 6.1 (Valid modulus) . N = p · q with p, q distinct odd primes. This makes Z∗ 
+
+> N2
+
+a well-defined multiplicative group, gives gcd( H, N 2) = 1 for H ∈ Z∗  
+
+> N2
+
+, and guarantees that modular inverses exist for every element coprime to N 2.
+
+Assumption 6.2 (Invertible, non-trivial aggregator key) . gcd( sk A, N ) = 1 , and the resulting public key pk A = Hsk A mod N 2 is non-trivial, i.e. pk A /∈ { 1, H }. The first condition is the one correctness needs: it makes sk −1 
+
+> A
+
+mod N exist for the final recovery step. The second is a directly checkable sanity condition (both pk A and the comparison are computable without the factorization of N ) ruling out a degenerate public key. The reference implementation enforces both, having originally failed by setting sk A equal to H.
+
+Assumption 6.3 (Packing capacity) . k · b ≤ ⌊ log 2 N ⌋, where k is the candidate count and 
+
+b is the bits per slot. Equivalently 2kb ≤ N . This keeps every packed vote xi inside ZN , i.e. 
+
+xi < N . Only the product k · b is constrained; b is otherwise free. For the 255-bit N used here 2,
+
+⌊log 2 N ⌋ = 254 , so with b = 25 , k ≤ ⌊ 254 /25 ⌋ = 10 .
+
+Assumption 6.4 (Per-slot bound) . Each vi,j ∈ { 0, 1} and, for every candidate j, the tally 
+
+Tj = Pni=1 vi,j satisfies Tj < 2b. This keeps each slot from overflowing during homomorphic addition. 
+
+Assumption 6.5 (Sum bound) . S = Pni=1 xi < N . This makes the final modular reduction exact, R = S mod N = S, with no wraparound. It is implied by Assumptions 6.3 and 6.4: if every slot stays below 2b, then S ≤ Pkj=1 (2 b − 1) 2 b(k−j) = 2 kb − 1 < N .
+
+Assumption 6.6 (Key as randomness) . The voter’s secret key is reused as the masking ran-domness, ri = sk i. This is the structural assumption behind mask cancellation. Because 
+
+aux i = pk sk i 
+
+> A
+
+= Hsk A·sk i , the factor Hsk i in the ciphertext product, once raised to sk A, becomes 
+
+Hsk A·sk i , which aux i cancels exactly. 
+
+6.2 Setup phase 
+
+T P selects primes p, q , computes N = pq , and picks H ∈ Z∗  
+
+> N2
+
+. It publishes ( N, H ) and goes offline. The aggregator A generates sk A satisfying Assumption 6.2 and publishes pk A =
+
+Hsk A mod N 2. Each voter Ui independently samples a secret key sk i ∈R [2 , N 2). 
+
+6.3 Encryption phase 
+
+Voter Ui encodes the ballot as a packed integer xi (Section 9; in the encryption formula below, 
+
+xi is written as m for clarity) and computes 
+
+ci = Hsk i · (1 + N )xi mod N 2, (3) 
+
+aux i = pk sk i 
+
+> A
+
+= Hsk A·sk i mod N 2. (4) The ciphertext ci goes to the aggregator and is recorded on-chain; aux i goes to the collector. Note that aux i depends only on ( pk A, sk i) and not on the ballot xi.        
+
+> 2A 255-bit integer has ⌊log 2N⌋= 254, so the bound on k·bis 254, not 255.
+
+8Protocol Execution: From Voter Ballot to Published Tally Phase 1 — Setup (Trusted Third Party TP) 
+
+1. TP chooses safe primes p, q → N = p · q 2. TP picks H ∈ Z*_{N²} → publishes (N, H), goes offline 3. Aggregator A generates sk_A ∈ Z*_{N²} → publishes pk_A = H^{sk_A} mod N² 4. Each voter U_i independently picks sk_i ∈ [0, N²) (no key dealer, TP does not know sk_i) 
+
+Assumptions: A1 (N=pq, odd primes), A2 (sk_A ≠ H, gcd(sk_A,N)=1) 
+
+Phase 2 — Voter U_i (Browser / WASM) Step 1: Select candidate → vote vector 
+
+e.g., candidate 2 of 3 → v = [0, 1, 0] 
+
+Step 2: Pack into integer (25-bit slots) 
+
+m = v_1·2^50 + v_2·2^25 + v_3·2^0 = 2^25 
+
+Step 3: Paillier encrypt (sk_i = randomness r_i) 
+
+c_i = H^{sk_i} · (1+N)^m mod N² 
+
+Step 4: Compute auxiliary value 
+
+aux_i = pk_A^{sk_i} = H^{sk_A · sk_i} mod N² 
+
+Assumptions: A4 (k·25 < log ₂ N), A5 (v_{i,j} ∈ {0,1}), A6 (sk_i = r_i) 
+
+c_i 
+
+> (to chain + DB)
+
+aux_i 
+
+> (to collector)
+
+Phase 3 — Collector C 
+
+Receives all aux_i from voters Computes product: aux = Π aux_i mod N² = H^{sk_A · Σ sk_i} mod N² Sends aux → Aggregator A 
+
+aux 
+
+{c_i} 
+
+Phase 4 — Aggregator A (Native C / libtommath) Input: ciphertexts {c_1, ..., c_n}, aux, (N, H, sk_A) 
+
+Step 1. Product of ciphertexts 
+
+Π = Π_{i=1}^{n} c_i mod N² = [ Π (1 + x_i·N)] · H^{ Σ sk_i} mod N² (binomial expansion, Lemma 1) = (1 + S·N) · H^{ Σ sk_i} mod N² where S = Σ x_i 
+
+Step 2. Exponentiate by sk_A 
+
+P = Π^{sk_A} mod N² = (1 + S·N)^{sk_A} · H^{sk_A · Σ sk_i} mod N² 
+
+Step 3. Cancel mask with aux 
+
+P' = P · aux^{-1} mod N² = (1 + S·N)^{sk_A} · H^{sk_A· Σsk_i} · H^{-sk_A· Σsk_i} mod N² = (1 + S·N)^{sk_A} mod N² (Theorem 2: mask cancelled) 
+
+Step 4. Apply L-function 
+
+L(P') = (P' − 1) / N = sk_A · S mod N (binomial: (1+SN)^{sk_A} ≡ 1 + sk_A·S·N mod N²) 
+
+Step 5. Multiply by sk_A^{-1} to recover sum 
+
+R = L(P') · sk_A^{-1} mod N = S mod N (Theorem 3) Since S < N (Assumption A3): R = S exactly 
+
+Phase 5 — Unpack & Publish Results 
+
+R = Σ x_i = Σ_{i=1}^{n} [v_{i,1}·2^{25(k-1)} + v_{i,2}·2^{25(k-2)} + ... + v_{i,k}·2^0] = Σ_j [ ( Σ_i v_{i,j}) · 2^{25(k-j)} ] (slots are independent, Corollary 1) Extract: count_j = (R ≫ 25(k −j)) mod 2² ⁵ for j = 1..k Publish: [count_1, count_2, ..., count_k] → Portal visualization + on-chain record 
+
+Assumptions for Correctness (referenced in proofs): 
+
+(A1) N = p·q, p and q distinct odd primes → Z*_{N²} well-defined, inverses exist (A2) sk_A ≠ H and gcd(sk_A, N) = 1 → non-degenerate key, sk_A^{-1} mod N exists (A3) S = Σ x_i < N → R = S mod N = S (exact, no wraparound) (A4) k × 25 < log ₂ N → packed vote fits in single Paillier plaintext (A5) v_{i,j} ∈ {0,1} and Σ_i v_{i,j} < 2² ⁵ → no per-slot overflow (A6) sk_i = r_i (key as randomness) → aux_i = pk_A^{r_i} cancels H^{r_i} in aggregation 
+
+Privacy: Under DCR assumption, c_i and aux_i are indistinguishable from random in Z*_{N²} Figure 2: Protocol execution. Phase 1: setup by T P . Phase 2: a voter encrypts a ballot and computes an auxiliary value. Phase 3: the collector multiplies the auxiliary values. Phase 4: the aggregator runs the Paillier tally. Phase 5: unpack and publish. The dashed box lists the six assumptions used in the proofs. 96.4 Collection phase 
+
+The collector C computes the product of the auxiliary values: 
+
+aux =
+
+> n
+
+Y
+
+> i=1
+
+aux i = Hsk A·Pni=1 sk i mod N 2, (5) and sends aux to the aggregator. 
+
+6.5 Aggregation phase 
+
+The aggregator recovers the sum in five steps: Π = 
+
+> n
+
+Y
+
+> i=1
+
+ci mod N 2, (6) 
+
+P = Π sk A mod N 2, (7) 
+
+P ′ = P · aux −1 mod N 2, (8) 
+
+L(P ′) = P ′ − 1
+
+N , (9) 
+
+R = L(P ′) · sk −1 
+
+> A
+
+mod N. (10) Under Assumptions 6.1–6.5, R = Pni=1 xi exactly (Theorem 7.4). 
+
+## 7 Correctness Proofs 
+
+We prove that the pipeline recovers S = P xi through three theorems and a supporting lemma. Each proof names the assumptions it uses. 
+
+Lemma 7.1 (Binomial expansion in ZN 2 ). For non-negative integers a1, . . . , a n,
+
+> n
+
+Y
+
+> i=1
+
+(1 + aiN ) ≡ 1 + 
+
+> n
+
+X
+
+> i=1
+
+ai
+
+!
+
+N (mod N 2).
+
+Proof. By induction on n.
+
+Base case (n = 1): 1 + a1N ≡ 1 + a1N (mod N 2), which holds trivially. 
+
+Inductive step : assume the claim for n − 1 terms. Then 
+
+> n
+
+Y
+
+> i=1
+
+(1 + aiN ) = 
+
+> n−1
+
+Y
+
+> i=1
+
+(1 + aiN )
+
+| {z }     
+
+> ≡1+( Pn−1
+> i=1 ai)N(mod N2)
+
+· (1 + anN )
+
+≡
+
+
+
+1 + Pn−1 
+
+> i=1
+
+ai · N
+
+
+
+(1 + anN ) (mod N 2)= 1 + Pn−1 
+
+> i=1
+
+ai · N + anN +
+
+Pn−1 
+
+> i=1
+
+ai
+
+
+
+anN 2
+
+≡ 1 + ( Pni=1 ai) N (mod N 2),
+
+since the N 2 term vanishes modulo N 2.
+
+Theorem 7.2 (Ciphertext product homomorphism) . Under Assumption 6.1, 
+
+> n
+
+Y
+
+> i=1
+
+ci ≡ (1 + S · N ) · HΣ (mod N 2),
+
+where S = Pni=1 xi and Σ = Pni=1 sk i. (The congruence holds for any non-negative xi; the packing and sum bounds enter only at recovery, Theorem 7.4 and Corollary 7.5.) 
+
+10 Proof. From Equation 3, ci = Hsk i · (1 + N )xi mod N 2. By Equation 1, (1 + N )xi ≡ 1 + xiN
+
+(mod N 2), so ci ≡ Hsk i · (1 + xiN ) (mod N 2). Taking the product, 
+
+> n
+
+Y
+
+> i=1
+
+ci ≡
+
+> n
+
+Y
+
+> i=1
+
+Hsk i
+
+!
+
+·
+
+> n
+
+Y
+
+> i=1
+
+(1 + xiN )
+
+!
+
+(mod N 2).
+
+The first factor is HP sk i = HΣ. For the second, Lemma 7.1 gives Qni=1 (1 + xiN ) ≡ 1 + S · N
+
+(mod N 2). Combining the two factors yields the claim. 
+
+Theorem 7.3 (Mask cancellation) . Under Assumptions 6.1, 6.2, and 6.6, 
+
+P ′ = P · aux −1 ≡ (1 + S · N )sk A (mod N 2).
+
+Proof. From Theorem 7.2, Π ≡ (1 + S · N ) · HΣ (mod N 2). Raising to sk A,
+
+P = Π sk A ≡ (1 + S · N )sk A · Hsk A·Σ (mod N 2).
+
+By Equation 5 and Assumption 6.6, aux = Hsk A·Σ mod N 2. By Assumption 6.1, gcd( H, N 2) = 1, so aux ∈ Z∗  
+
+> N2
+
+and aux −1 mod N 2 exists. Therefore 
+
+P ′ = P · aux −1 ≡ (1 + S · N )sk A · Hsk AΣ · H−sk AΣ
+
+≡ (1 + S · N )sk A (mod N 2).
+
+The mask Hsk AΣ cancels exactly. 
+
+Theorem 7.4 (Sum recovery) . Under Assumptions 6.1, 6.2, and 6.5, 
+
+R = L(P ′) · sk −1 
+
+> A
+
+mod N = S =
+
+> n
+
+X
+
+> i=1
+
+xi.
+
+Proof. By the binomial theorem (Equation 1 with exponent sk A and base increment S · N ), (1 + SN )sk A ≡ 1 + sk A · S · N (mod N 2),
+
+since every term of order ≥ 2 in SN carries N 2. Reducing the canonical representative of P ′ in [0 , N 2), the coefficient of N lies in [0 , N ), so 
+
+P ′ = 1 +  (sk A · S) mod N  N, L(P ′) = P ′ − 1
+
+N = ( sk A · S) mod N. 
+
+By Assumption 6.2, gcd( sk A, N ) = 1, so sk −1 
+
+> A
+
+mod N exists and 
+
+R = L(P ′) · sk −1 
+
+> A
+
+mod N = ( sk A · S · sk −1 
+
+> A
+
+) mod N = S mod N. 
+
+By Assumption 6.5, S < N , so S mod N = S.
+
+Corollary 7.5 (Vote-count correctness) . Under Assumptions 6.3 and 6.4, the extracted count for each candidate equals the true tally: 
+
+count j =
+
+> n
+
+X
+
+> i=1
+
+vi,j for all j ∈ { 1, . . . , k }.
+
+Proof. By Theorem 7.4, R = Pni=1 xi. Each xi = Pkj=1 vi,j · 2b(k−j), so 
+
+R =
+
+> n
+
+X
+
+> i=1
+> k
+
+X
+
+> j=1
+
+vi,j · 2b(k−j) =
+
+> k
+
+X
+
+> j=1
+> n
+
+X
+
+> i=1
+
+vi,j 
+
+!| {z }
+
+> Tj
+
+·2b(k−j).
+
+Because each Tj < 2b (Assumption 6.4), the slots do not interfere. The extraction count j =
+
+⌊R/ 2b(k−j)⌋ mod 2 b then isolates Tj , and since vi,j ∈ { 0, 1}, Tj is the true count. 11 8 Security Analysis 
+
+8.1 Cryptographic foundation 
+
+Privacy rests on the two assumptions of Section 2: DCR for the additive Paillier layer, and pseudorandomness of the masking term Hsk i in ⟨H⟩ under a Diffie–Hellman-style assumption on 
+
+H. Under these assumptions the masked encoding ci = Hsk i (1 + N )xi mod N 2 is a semantically secure encryption of xi; the aggregator-oblivious construction is proven private under exactly these assumptions in [4, 5, 6]. We do not reprove that result. The propositions below state the guarantees in our setting, where the collector and aggregator are distinct, non-colluding parties (collusion is discussed under Limitations). Importantly, no single honest-but-curious party sees both ci and the matching aux i: the collector sees only {aux i}, while the aggregator sees {ci}
+
+and the product aux , never an individual aux i.
+
+8.2 Privacy guarantees 
+
+Proposition 8.1 (Individual vote privacy) . Under the assumptions of Section 2, no efficient adversary that sees ci, together with the public (N, H, pk A), can learn xi with non-negligible advantage. Proof. The ciphertext ci = Hsk i (1 + N )xi mod N 2 multiplies the Paillier encoding of xi by the mask Hsk i with a secret, uniformly chosen sk i. By the masking assumption the mask is pseudorandom in ⟨H⟩, and by DCR the additive layer is semantically secure; together these make ci a semantically secure encryption of xi [4, 5, 6], so no efficient adversary distinguishes it from an encryption of any other ballot. The public values ( N, H, pk A) do not reveal the factorization of N and give no additional advantage. 
+
+Proposition 8.2 (Collector obliviousness) . The collector C, seeing {aux i}ni=1 , learns nothing about any xi.Proof. Each aux i = pk sk i 
+
+> A
+
+mod N 2 is a function of ( pk A, sk i) only and does not depend on the ballot xi in any way. The collector’s entire view is therefore independent of the votes, so it learns nothing about them. (The collector never sees a ciphertext ci.) 
+
+Proposition 8.3 (Aggregator obliviousness) . The aggregator A, seeing {ci}ni=1 and the aggregate 
+
+aux , learns only S = P xi and nothing about individual xi.Proof. A’s view is ( {ci}, aux ), where aux = Hsk A·Σ is a single group element; A never sees an individual aux i. The protocol yields R = S. Learning an individual xi would require distinguishing ci from an encryption of another ballot, which contradicts Proposition 8.1; the aggregate aux encodes only Σ = P sk i in the exponent and exposes no individual sk i. This is the aggregator-oblivious property proven in [4, 5, 6]. 
+
+8.3 Integrity properties 
+
+The architecture provides input integrity through the chain and output integrity through deter-minism: 
+
+• On-chain immutability. Each ci is a finalized Solana transaction and cannot be altered afterward, which gives a permanent audit trail of the exact ciphertext set. 
+
+• Cross-checkable inputs. The ciphertexts the aggregator reads from the database can be checked against the immutable on-chain record. Any insertion, deletion, or modification of a ballot at the host diverges from the chain and is detectable by any auditor, so host-side tampering with the input set is tamper-evident rather than silent. 12 • Deterministic, recomputable tally. Given {ci} and aux , the recovered sum R is a de-terministic function of public inputs. Anyone holding the on-chain ciphertexts and aux can recompute R and verify the published result; a dishonest host cannot publish a different valid tally. 
+
+• Stage enforcement. The on-chain program admits votes only during the Voting stage and candidate changes only during Application. 
+
+• Parameter validation. Before each run the parameters are checked ( N odd, gcd( sk A, N ) = 1, sk A non-trivial, N of the expected bit length), which rules out the degenerate configurations of Assumptions 6.1 and 6.2. These checks make tampering detectable . Making it impossible for a malicious host requires hardware isolation, which we treat as future work (Section 13). 
+
+8.4 Limitations 
+
+1. No range proofs. Assumption 6.4 is not enforced cryptographically, so a malicious voter could submit an out-of-range value. Zero-knowledge range proofs would close this gap. 2. Trusted setup. T P knows the factorization of N . Distributed key generation would remove this trust. 3. Single aggregator. A holds sk A and could withhold a result. Threshold decryption across several aggregators would mitigate this. 4. Collusion. The privacy analysis assumes the collector and aggregator do not collude. Aparty holding both an individual aux i and the matching ci is outside the analyzed model; the secure-enclave direction of Section 13.5 also helps here by isolating each role. 5. No coercion resistance. A voter can reveal sk i to prove a vote. Receipt-freeness mecha-nisms [3] would be needed. 6. Local validator. The test validator is not Byzantine fault-tolerant; mainnet deployment is needed for production security. 
+
+## 9 Vote Packing 
+
+To tally a multi-candidate election from a single ciphertext per voter, votes are packed into one integer using fixed-width bit slots. For k candidates with b bits per slot, 
+
+xi =
+
+> k
+
+X
+
+> j=1
+
+vi,j · 2b(k−j) = vi, 1 · 2b(k−1) + vi, 2 · 2b(k−2) + · · · + vi,k · 20. (11) Candidate 1 takes the most significant slot, candidate k the least. The homomorphic sum keeps the slots independent: nX
+
+> i=1
+
+xi =
+
+> k
+
+X
+
+> j=1
+> n
+
+X
+
+> i=1
+
+vi,j 
+
+!
+
+· 2b(k−j), (12) and extraction is count j = ⌊R/ 2b(k−j)⌋ mod 2 b. Figure 3 shows the layout for the implementa-tion’s choice k = 10, b = 25. 13 25-bit Vote Packing: k=10 candidates, N=255 bits       
+
+> Cand 1 bits 225-249 Cand 2 bits 200-224 Cand 3 bits 175-199 Cand 4 bits 150-174 Cand 5 bits 125-149 Cand 6 bits 100-124 Cand 7 bits 75-99 Cand 8 bits 50-74 Cand 9 bits 25-49 Cand 10 bits 0-24 m = v_1 · 2^225 + v_2 · 2^200 + ... + v_10 · 2^0
+> Constraint: k × b = 10 × 25 = 250 bits < log2(N) = 255 bits
+> Max per slot: 2^25 - 1 = 33,554,431 votes
+> Homomorphism: Sum preserves slots independently: Σm_i = Σ_j ( Σ_i v_{i,j}) · 2^{25(k-j)}
+
+Figure 3: Bit packing with the implementation’s b = 25 and k = 10. Each slot is 25 bits, so 10 × 25 = 250 bits, below ⌊log 2 N ⌋ = 254. The maximum count per candidate is 2 25 − 1 = 33 ,554 ,431. 
+
+9.1 The slot width is a free parameter 
+
+The choice b = 25 is not fundamental. The only constraint packing imposes is Assumption 6.3: the packed ballot must fit in ZN , i.e. k · b ≤ ⌊ log 2 N ⌋. It is the product k · b that the modulus bounds, not b or k individually. For a fixed N one may trade slot width against candidate count: a 255-bit modulus accommodates 10 × 25, or 5 × 50, or 25 × 10, among others. A wider slot raises the per-candidate vote ceiling 2 b − 1 but leaves room for fewer candidates; a narrower slot does the reverse. The implementation uses b = 25 because it balances ten candidates against a 33.5-million ceiling per candidate, which is comfortable for large elections, but any ( k, b ) with 
+
+k · b ≤ ⌊ log 2 N ⌋ is valid. 
+
+9.2 Why bit-packing matters 
+
+The straightforward alternative is one ciphertext per candidate: voter Ui would send k separate Paillier ciphertexts ci, 1, . . . , c i,k . Packing replaces those k ciphertexts with one and removes a factor of k from almost every cost in the system (Figure 4). 
+
+• Client work. The voter performs one Paillier encryption instead of k. On a phone or laptop doing exponentiation modulo the 510-bit N 2, this is the difference between one and k of the most expensive operations in the flow. 
+
+• On-chain footprint. One ciphertext means one transaction and one stored account per voter instead of k. On Solana, where reserved account space costs rent, this divides the on-chain cost of an election by k.
+
+• Storage. The database holds n ciphertext rows instead of n · k. At ∼405 bytes per voter row (Section 12), a 10-candidate election stores about 10 × less. 
+
+• Tally cost. Aggregation multiplies n ciphertexts rather than n · k, so the running product is O(n) instead of O(n · k). One decryption then recovers every candidate’s count at once, instead of k separate decryptions. 
+
+• No privacy cost. The packed ciphertext is still a single Paillier ciphertext and remains se-mantically secure under DCR (Proposition 8.1); packing changes only the plaintext encoding, not the hardness. 
+
+9.3 Capacity analysis 
+
+For the implementation’s b = 25 and 255-bit N :
+
+• Maximum candidates: kmax = ⌊⌊ log 2 N ⌋/b ⌋ = ⌊254 /25 ⌋ = 10. 
+
+• Maximum votes per candidate: 2b − 1 = 33 ,554 ,431. 14 Naive Per-Candidate Ciphertexts vs. Single Packed Ciphertext Naive: one ciphertext per candidate 
+
+> voter casts k separate encryptions
+
+Voter U_i produces k ciphertexts: 
+
+> c_(i,1) cand 1 c_(i,2) cand 2
+
+· · · c_(i,k) cand k Each c_(i,j) is a full ~512-bit Paillier ciphertext. 
+
+Cost for n voters, k candidates: 
+
+Encryptions / voter . . . . . . . . . k On-chain transactions . . . . . . n · k Database rows . . . . . . . . . . . . n · k Ciphertext multiplications . . . n · k Decryptions at tally . . . . . . . . k 
+
+Storage and on-chain footprint grow linearly with the number of candidates. 
+
+> pack
+
+Packed: one ciphertext per voter 
+
+> all k slots inside a single integer
+
+Voter U_i produces ONE ciphertext:    
+
+> slot 1 slot 2 slot 3
+
+· · · slot k c_i = H^(sk_i) · (1+N)^m mod N², m = packed ballot k slots of 25 bits live inside one ~512-bit c_i. 
+
+Cost for n voters, k candidates: 
+
+Encryptions / voter . . . . . . . . . 1 On-chain transactions . . . . . . . . n Database rows . . . . . . . . . . . . . . n Ciphertext multiplications . . . . . n Decryptions at tally . . . . . . . . . 1 
+
+Footprint is independent of k as long as k · 25 < log ₂ N (Assumption A4). 
+
+Net effect of bit-packing: 
+
+• A k-fold reduction in ciphertexts, on-chain transactions, storage rows, and modular multiplications. • Tally cost becomes O(n) instead of O(n · k); one decryption recovers every candidate's count at once. • For k = 10 this is a 10× saving in client work, chain fees, and database size at no loss of privacy. Figure 4: Per-candidate ciphertexts versus a single packed ciphertext. Packing fixes the client, on-chain, storage, and tally cost at a level independent of the candidate count k, as long as 
+
+k · b ≤ ⌊ log 2 N ⌋.
+
+• Maximum total ballots: up to kmax × (2 b − 1) ≈ 335 .5 million when votes are spread so that no candidate exceeds its slot. A worst-case landslide, in which a single candidate could receive every vote, is bounded by the per-slot ceiling 2 b − 1 = 33 .5 million. For more candidates, or a higher per-candidate ceiling, a larger N is needed (Table 2). Table 2: Modulus size required for a given candidate count, at b = 25. Candidates ( k) Bits needed ( k × b) Min N bits Min prime size 10 250 255 128-bit 20 500 505 253-bit 50 1,250 1,255 628-bit 100 2,500 2,505 1,253-bit 
+
+## 10 Algorithms 11 Proof-of-Concept Implementation 
+
+The architecture is implemented as a running, open-source proof-of-concept that validates the design. 3 The numbers reported below, and in the appendix, are taken from this deployment rather than chosen by hand. 
+
+3Source code: https://github.com/Akshit11318/narad 
+
+15 Algorithm 1 Voter encryption (client-side, WebAssembly) 
+
+Input: Vote vector v = [ v1, . . . , v k] ∈ { 0, 1}k; public params ( N, H ); aggregator public key pk A;slot width b
+
+Output: Ciphertext c; auxiliary value aux 
+
+Assumptions: 6.3 ( k · b ≤ ⌊ log 2 N ⌋), 6.4 ( vj ∈ { 0, 1}), 6.6 ( sk reused as randomness r)
+
+1: sk $
+
+←− [2 , N 2) ▷ secret key, also the masking randomness 
+
+2: m ← 0
+
+3: for j = 1 to k do 
+
+4: m ← m + vj · 2b(k−j) ▷ pack votes in reverse slot order 
+
+5: end for 
+
+6: c ← ModExp (H, sk, N 2) · ModExp (1+ N, m, N 2) mod N 2
+
+7: aux ← ModExp (pk A, sk, N 2)
+
+8: return (c, aux )
+
+11.1 Implementation architecture 
+
+Each role of Section 5 maps to a software component (Figure 5). Client-side cryptography runs in the browser; the collector and aggregator run in the backend, which calls a native C module for the heavy arithmetic; PostgreSQL and Solana provide storage and an audit trail. Implementation Architecture   
+
+> Client (browser)
+> Portal (React)
+> candidate selection · JWT login results visualization
+> WASM crypto module (C)
+> Paillier encrypt · 25-bit packing libtommath · sk_i never leaves client ballot HTTPS: c_i, aux_i
+> Backend (Node.js / Express, containerized)
+> API + Auth
+> routes · RBAC · JWT collector: aux = Πaux_i Solana Anchor client
+> Aggregation service
+> orchestrates the tally reads (N,H,sk_A) from DB calls native addon
+> Native addon (C)
+> libtommath mp_exptmod mp_invmod · mp_mulmod 25-bit unpack SQL Storage and ledger
+> PostgreSQL
+> system_params (N, H, sk_A) — source of truth voter_data (c_i, aux_i) · aggregated_results
+> Solana (Anchor)
+> on-chain ballots {c_i} (immutable) election lifecycle stages RPC (election lifecycle, on-chain ballots)
+> Crypto parameters flow from the DB, not the chain.
+
+Figure 5: Implementation architecture. Client-side encryption runs in the browser through WebAssembly. The collector and aggregator both run in the backend, which delegates the modular arithmetic to a native C addon. PostgreSQL is the single source of truth for the Paillier parameters; Solana provides an immutable ballot record. 
+
+Voter (browser + WASM). All cryptography runs client-side in a WebAssembly mod-ule compiled from C with Emscripten and linked against libtommath. The plaintext xi and the secret key sk i never leave the browser. The module exports generate secret key (sk i), 
+
+pack votes (the packed integer m), encrypt vote (ci = Hsk i (1+ N )m mod N 2), and compute aux 
+
+(aux i = pk sk i
+
+A mod N 2). 16 Algorithm 2 Vote aggregation (server-side, native libtommath) 
+
+Input: Ciphertexts {c1, . . . , c n}; collected auxiliary aux ; params ( N, H, sk A); candidate count 
+
+k; slot width b
+
+Output: Vote counts [count 1, . . . , count k]
+
+Assumptions: 6.1 ( N =pq , odd primes), 6.2 (gcd( sk A, N )=1), 6.5 ( S<N ) 
+
+> 1:
+
+N 2 ← N · N 
+
+> 2:
+
+sk −1 
+
+> A
+
+← ModInv (sk A mod N, N ) ▷ exists by Assumption 6.2 
+
+▷ Step 1: product of ciphertexts (Theorem 7.2)  
+
+> 3:
+
+Π ← 1 
+
+> 4:
+
+for i = 1 to n do  
+
+> 5:
+
+Π ← Π · ci mod N 2 ▷ mp mul + mp mod  
+
+> 6:
+
+end for 
+
+▷ Step 2: exponentiate by sk A 
+
+> 7:
+
+P ← ModExp (Π , sk A, N 2) ▷ mp exptmod 
+
+▷ Step 3: cancel mask (Theorem 7.3)  
+
+> 8:
+
+aux −1 ← ModInv (aux, N 2) ▷ exists by Assumption 6.1  
+
+> 9:
+
+P ′ ← P · aux −1 mod N 2
+
+▷ Step 4: L-function  
+
+> 10:
+
+L ← (P ′ − 1) div N ▷ exact integer division 
+
+▷ Step 5: recover sum (Theorem 7.4)  
+
+> 11:
+
+R ← L · sk −1 
+
+> A
+
+mod N ▷ now R = S = P xi
+
+▷ Step 6: unpack votes (Corollary 7.5)  
+
+> 12:
+
+for j = 1 to k do  
+
+> 13:
+
+count j ← (R ≫ b(k − j)) & (2 b − 1) ▷ right-shift + bitmask  
+
+> 14:
+
+end for  
+
+> 15:
+
+return [count 1, . . . , count k]
+
+Collector. A backend service that multiplies the auxiliary values into aux = Q aux i mod N 2.It can be split into a separate party where stronger separation of duties is required. 
+
+Aggregator (native C / libtommath). Runs the tally of Section 6. Every modular expo-nentiation and inversion happens in a native C addon linked against the same libtommath used in the WASM client, so the two sides agree bit-for-bit. 
+
+Blockchain (Solana). An Anchor program records each ci as an append-only transaction and enforces the election lifecycle (application → voting → closed). It does not participate in aggregation; it provides immutability, not computation. 
+
+Database (PostgreSQL). The system params table holds ( N, H, sk A) and is the single source of truth for the Paillier parameters. The voter data table holds the per-voter ci and 
+
+aux i, and the aggregated results table holds the tally. 
+
+Design rationale. Encryption runs in WebAssembly because libtommath’s mp exptmod exe-cutes exponentiation modulo the 510-bit N 2 at near-native speed in the browser sandbox, several times faster than JavaScript BigInt . Aggregation runs in a native addon because the tally is 
+
+n modular multiplications plus one large exponentiation, where native C clearly outperforms 
+
+BigInt at scale. Parameters live in PostgreSQL rather than on-chain so a setup mistake can be corrected without redeploying an immutable program; the chain still records every ballot for an audit trail. The blockchain is included because homomorphic aggregation alone gives no audit 17 trail: recording each ci on-chain lets any observer confirm that the ciphertext set used in the tally matches what was submitted. 
+
+11.2 Technology stack 
+
+• WASM: C + Emscripten 4.0.6 + libtommath 
+
+• Backend: Node.js 20, Express, Prisma ORM 
+
+• Native addon: C + Node-API, cmake-js, libtommath 
+
+• Blockchain: Solana (Anchor 0.30.1), test validator 
+
+• Database: PostgreSQL 16 
+
+• Frontend: React 19, Tailwind CSS 
+
+• Deployment: Docker Compose (four containers: backend, postgres, solana, portal) 
+
+11.3 Concrete parameters 
+
+The running system uses the following 255-bit parameters, read directly from the system params 
+
+table through the aggregator parameter endpoint. The same values drive the evaluation in Section 12 and the worked example in Appendix A. 
+
+> N = 400000000000000000000000211d1b86000000000000000001b131395144546b H = 2e0f69afca2410fda28718e5623a7a755531ae6dd30a286ec6737b8b2a6a7b61 skA = 2481c95a9eb72624f93de30ccd1118fbccfb637cd367ad167433a866751833b
+
+Here N is a 255-bit odd modulus (Assumption 6.1), and sk A is coprime to N and distinct from 
+
+H (Assumption 6.2). These checks run at the start of every test. 
+
+11.4 Data storage strategy 
+
+Ciphertexts ci and auxiliary values aux i are stored both on Solana (for immutability) and in PostgreSQL (for aggregation). The Paillier parameters live only in PostgreSQL: system params 
+
+is the single source of truth. PostgreSQL also handles voter authentication (bcrypt password hashes, JWT tokens); the blockchain handles the election lifecycle and ballot recording. 
+
+11.5 Engineering issues resolved 
+
+Bringing the protocol from paper to a working system surfaced several concrete bugs, each tied to an assumption or to a low-level detail: 1. Even modulus (Assumption 6.1): a hardcoded N was even. Fixed by generating N = pq 
+
+with odd primes. 2. Degenerate key (Assumption 6.2): sk A was set equal to H. Fixed with a separate random sk A.3. Parameter source mismatch: aggregation read N from a stale on-chain value. Fixed by reading from the database. 4. Packing mismatch: the C path used 25-bit slots while a JavaScript fallback used 32-bit. Unified to 25-bit. 5. Missing sk −1 
+
+> A
+
+step: the JavaScript path omitted L(P ′) · sk −1 
+
+> A
+
+. Added. 18 6. GCD pre-check bug: a faulty check rejected a valid sk A. Removed the pre-check in favor of a direct mp invmod .7. Byte order: a native binding emitted big-endian where the rest of the code expected little-endian. Added the reversal. The byte-order and parameter-source issues in particular show the gap between a clean protocol and a correct implementation: the mathematics was right long before the bytes lined up. 
+
+## 12 Evaluation 
+
+12.1 Methodology 
+
+Measurements were taken on a 12th-generation Intel Core i7-12700H (20 hardware threads) with 16 GB of RAM, running the four-container Docker Compose stack. The test harness reads the live parameters ( N, H, sk A) from the backend, encrypts ballots in Python with the same Paillier formulas as the WASM client, bulk-loads them into PostgreSQL with COPY , and then drives the real backend endpoints for the collector and aggregator steps. The aggregation timings are therefore the native libtommath tally, not a re-implementation. Each run checks the recovered per-candidate counts against the counts generated during encryption. 
+
+12.2 Correctness and performance 
+
+Table 3 reports five runs at different scales. In every run the recovered counts matched the expected counts exactly. The encryption column reflects the Python harness standing in for the client; the aggregation column is the native tally and is the figure of interest for server cost. Table 3: Measured results on the parameters of Section 11. “Encrypt” is harness-side Paillier encryption plus bulk insert; “Aux” is the collector product; “Aggregate” is the native libtommath tally. All runs recovered exact counts. Voters Cand. Encrypt (s) Aux (s) Aggregate (s) DB size Correct 100 10 0.07 0.007 0.018 39 KB yes 1,000 5 0.44 0.012 0.041 394 KB yes 5,000 5 2.02 0.039 0.104 1.9 MB yes 10,000 10 4.17 0.052 0.189 3.9 MB yes 50,000 10 21.77 0.199 0.815 19.4 MB yes The native tally scales linearly with the number of ballots, from 18 ms at 100 voters to 0.82 s at 50,000, since the running product is O(n) and the single decryption that follows is O(1) in the voter count. Effective aggregation throughput rises with scale as the fixed setup cost amortizes, from about 5,400 ballots/s at 100 voters to about 61,000 ballots/s at 50,000. Per-voter storage is steady at roughly 405 bytes (two ∼512-bit hex values plus metadata), so a 50,000-ballot election occupies about 19 MB. 
+
+12.3 Capacity 
+
+With b = 25 and the 255-bit modulus, each candidate slot holds up to 2 25 −1 = 33 ,554 ,431 votes, and ten candidates give a total ceiling near 335 million ballots, bounded by Assumptions 6.3 and 6.4. 19 13 Scaling and Future Directions 
+
+The same design accommodates much larger or smaller elections by turning a few indepen-dent dials, and it extends naturally to richer ballot formats and stronger integrity. Figure 6 summarizes the levers. Scaling Levers and Future Directions (a) Only the product k·b is fixed by N     
+
+> the bit budget log ₂N is shared; b = 25 is just one split
+> 10 candidates × 25 bits: 5 candidates × 50 bits: 25 candidates × 10 bits: Same budget (k·b ≤log ₂N≈254 bits), three splits. Choose b for the election; only the product is capped.
+
+(b) Slot width b → votes per candidate         
+
+> max votes per candidate = 2^b −1
+> b = 25 →33.5 M b = 30 →1.07 B b = 35 →34 B b = 25 is the current implementation's choice; it balances candidate count against per-slot capacity. Nothing in the protocol fixes b.
+
+(c) Bigger election → bigger modulus N 
+
+> a larger budget admits more candidates and/or wider slots
+> N bits k=10 255 k=20 505 k=50 1255 k=100 2505
+
+(d) Future: preferential / ranked voting          
+
+> a slot can hold a rank or score, not just {0,1}
+> Today: v_(i,j) ∈{0,1} (approval / single choice) Next: v_(i,j) ∈{0,…,r} (rank or Borda score) rank=3 rank=1 rank=2 · · · A b-bit slot holds scores up to 2^b −1, so a Borda count reuses the same packed layout: the homomorphic sum adds scores slot-by-slot. Only the unpack step and a range proof change.
+> IRV needs round-by-round tallies (open problem).
+
+Figure 6: Scaling levers and future directions: (a) for a fixed modulus only the product k · b is bounded, so the same bit budget can be split into many narrow slots or few wide ones; (b) wider slots admit more votes per candidate; (c) a larger modulus admits more candidates and/or wider slots; (d) preferential voting reuses the same packed layout with non-binary slot values. 
+
+13.1 More or fewer candidates 
+
+The candidate count is bounded by k ≤ ⌊⌊ log 2 N ⌋/b ⌋. With the current 255-bit modulus and 
+
+b = 25 this is 10. Doubling to 20 candidates needs about a 505-bit modulus; 100 candidates need about 2,505 bits (Table 2). Raising N costs more per modular operation but changes nothing else in the protocol or the proofs. A small election with two or three candidates can keep the 255-bit modulus and leave the unused high slots at zero, or move to a smaller modulus for faster arithmetic. 
+
+13.2 More or fewer voters 
+
+Two dials control voter capacity. The first is the slot width b: each slot holds up to 2 b − 1 votes per candidate, so b = 25 gives 33.5 million, b = 30 gives about 1.07 billion, and b = 35 gives about 34 billion. Widening slots uses more of the bit budget, so the product k · b must still satisfy Assumption 6.3; in practice one chooses ( k, b ) to fit the target election. The second dial is the modulus size itself, which sets the budget ⌊log 2 N ⌋ shared between k and b. The tally remains O(n) regardless of these choices. 20 13.3 On-chain cost versus capacity 
+
+On Solana, accounts pay rent for the space they reserve, and each ciphertext is an element of 
+
+Z∗  
+
+> N2
+
+, roughly 2 ⌈| N |/8⌉ ≈ 64 bytes for a 255-bit N . The size of an election therefore trades directly against its on-chain cost: a larger rent budget reserves larger accounts and records more voters and candidates on-chain, with no change to the off-chain database or the homomorphic tally. An operator willing to pay more for stronger immutability can scale the on-chain portion up; one who needs only a lightweight audit trail can keep on-chain accounts small and lean on the database. The cryptographic protocol is identical in both cases. 
+
+13.4 Preferential and ranked voting 
+
+The packing scheme already admits non-binary slot values. Today vi,j ∈ { 0, 1} encodes approval or a single choice. Allowing vi,j ∈ { 0, . . . , r } encodes a rank or a Borda-style score, and the homomorphic sum still adds the values slot by slot, so a Borda count needs no new ciphertext layout: a b-bit slot holds scores up to 2 b − 1. Only the unpack step and the validity (range) proof change. Fully ranked methods such as instant-runoff need round-by-round retallying of partial orders, which the additive scheme does not capture directly; supporting them efficiently is an open problem. 
+
+13.5 Tamper-resistance through secure enclaves 
+
+The integrity checks of Section 8 make tampering detectable : the on-chain record fixes the ciphertext set, and the tally is a deterministic, publicly recomputable function of it, so a host cannot silently alter inputs or forge a result. They do not, however, make tampering impossible :a malicious host operator could still manipulate the in-memory computation of the collector or aggregator, or selectively process inputs, and would only be caught after the fact by an auditor who recomputes. Running the collector inside a hardware secure enclave (for example Intel SGX, AMD SEV-SNP, or AWS Nitro Enclaves) would close this gap. The collector is a natural candidate: it touches every aux i and must faithfully compute aux = Q aux i mod N 2 without dropping or substituting values. Inside an enclave its code and memory are isolated from the host, including a root operator, and remote attestation lets any party verify the exact binary that is running before trusting its output. Extending the same treatment to the aggregator would additionally seal sk A and guarantee a faithful decryption. Combined with the on-chain audit trail, enclaves would move the system from tamper-evidence to tamper-resistance: no party, not even the machine owner, could read intermediate state or alter the votes, and anyone could check, via attestation, that the published tally came from the unmodified protocol. Enclaves also address the collusion limitation of Section 8. Ballot privacy depends on the collector and aggregator not pooling their views: the collector’s individual values {aux i} together with the aggregator’s ciphertexts {ci} would expose the per-voter masking exponents and break privacy. In a single-operator deployment, where both roles run on the same infrastructure, only operational discipline keeps the two apart. Placing each role in its own attested enclave makes that separation cryptographic rather than procedural: each enclave ingests only its designated inputs (the collector the aux i, the aggregator the ci and the aggregate aux ), computes only its defined function, and emits only its defined output, with attestation proving it does nothing more. A host with root access can neither read an enclave’s memory nor reroute the individual 
+
+aux i into the aggregator, so collusion across the two roles becomes infeasible even when one party owns all the hardware. This is the strongest reason to favor enclaves here: they convert the non-collusion assumption from a trust requirement into a hardware-enforced guarantee. 21 13.6 Threshold aggregation across multiple aggregators 
+
+The current design uses a single aggregator holding sk A. A malicious aggregator can withhold results (though it cannot forge them). Threshold decryption distributes sk A across t parties using ( k, t )-secret sharing, so no single party can decrypt alone. In a Paillier threshold scheme [18], the key sk A is split into shares sk A, 1, . . . , sk A,t via Shamir secret sharing over Zλ (where λ = lcm( p − 1, q − 1)). Each aggregator Aj computes a partial decryption Pj = Π sk A,j mod N 2 from the ciphertext product Π. The partial decryptions are then combined via Lagrange interpolation to recover P = Π sk A mod N 2, after which the rest of the protocol (mask cancellation, L-function, sum recovery) proceeds as before. This has two benefits. First , it removes the single-aggregator availability bottleneck: as long as k of t aggregators participate, the tally can proceed. Second , it hardens the collector’s position: with a single aggregator, the collector forwards aux to one party who then knows both {ci} and 
+
+aux . With threshold aggregation, each aggregator sees only Π (the public ciphertext product) and its own partial decryption share; no single aggregator ever holds enough information to cancel the mask alone, so the collector’s aux is distributed across parties rather than handed to one. This makes it harder for any single host to link individual ciphertexts to auxiliary values, strengthening the non-collusion property even without enclaves. The cost is a more complex setup (shared key generation) and a slightly taller tally (one Lagrange interpolation step). For elections requiring high integrity, the trade-off is favorable. 
+
+13.7 Further work 
+
+Beyond the directions above, the priorities are: integrating the zero-knowledge range proofs described in Section 3 to enforce vote validity (Assumption 6.4); implementing the threshold aggregation of Section 13.6 to remove single-aggregator trust; distributed key generation to remove the trusted setup entirely; and a Solana mainnet deployment with formal verification of the on-chain program. 
+
+## 14 Conclusion 
+
+We described an architecture for privacy-preserving blockchain voting based on Paillier homo-morphic encryption. The central idea is that each voter reuses a self-generated secret key as both the masking randomness and the auxiliary exponent, which lets the aggregator cancel the ran-dom masks without any key coordination. We proved correctness under six explicit assumptions and analyzed privacy under DCR. A bit-packing scheme places a full multi-candidate ballot in one ciphertext and removes a factor of k from client work, on-chain footprint, storage, and tally cost; its slot width is a free parameter, with only the product k·b bounded by the modulus. With 
+
+b = 25 and a 255-bit modulus the design supports ten candidates and on the order of 335 million ballots, and the proof-of-concept tallies 50,000 ballots exactly in under a second using native libtommath arithmetic. The same design scales to larger elections by enlarging the modulus or the slot width, trades on-chain cost against capacity through Solana rent, extends to score-based preferential voting within the existing packing model, and can be made tamper-resistant by running the collector and aggregator inside attested secure enclaves. 
+
+## A Worked Example on the Real Parameters 
+
+This appendix runs the full protocol for 3 voters and 2 candidates using the actual system parameters of Section 11. Every value below is computed, not invented; the script in figures/ 
+
+(worked example.py ) reproduces it and asserts the final result. Large group elements are shown abbreviated as head...tail in hexadecimal; the small plaintexts and the recovered sum are exact. 22 A.1 Setup 
+
+The published parameters are the real N , H, and sk A:
+
+> N = 400000000000000000000000211d1b86000000000000000001b131395144546b H = 2e0f69afca2410fda28718e5623a7a755531ae6dd30a286ec6737b8b2a6a7b61 skA = 2481c95a9eb72624f93de30ccd1118fbccfb637cd367ad167433a866751833b
+
+The aggregator publishes pk A = Hsk A mod N 2 = 90101d091d...d2da8b7c . The three voters fix the secret keys (random in the real system, fixed here for reproducibility): 
+
+> sk1 = 1f2e3d4c5b6a79887766554433221100ffeeddccbbaa99887766554433221101 sk2 = 0a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff1 sk3 = 123456789abcdef0fedcba98765432100123456789abcdef0fedcba987654321
+
+A.2 Encryption 
+
+With b = 25, the ballots and their packings are 
+
+U1 → cand 1 : v1 = [1 , 0] , m 1 = 2 25 = 33 ,554 ,432; U2 → cand 2 : v2 = [0 , 1] , m 2 = 1; 
+
+U3 → cand 1 : v3 = [1 , 0] , m 3 = 2 25 = 33 ,554 ,432 .
+
+The expected tally is candidate 1 = 2, candidate 2 = 1. Each voter computes ci = Hsk i (1 + 
+
+N )mi mod N 2 and aux i = pk sk i 
+
+> A
+
+mod N 2:
+
+> c1 = 5240f0f7e2...0c56b81c aux1 = 7a3776619b...e818e3b9 c2 = 4196c34735...4270970f aux2 = 5d8eb1c992...175f09c5 c3 = f7e600014f...a33897e7 aux3 = c7f87d7ef6...84da6db1
+
+A.3 Collection 
+
+The collector multiplies the auxiliary values modulo N 2:
+
+aux = aux 1 · aux 2 · aux 3 mod N 2 = 66153be6a0...8860c768 .
+
+A.4 Aggregation 
+
+The aggregator runs the five steps of Section 6: Π = c1c2c3 mod N 2 = da1145ab6e...ab5271d6 
+
+P = Π sk A mod N 2 = 452b3db4cb...fa66bac3 
+
+P ′ = P · aux −1 mod N 2 = 63bf297ccc...0b1ae769 
+
+L = ( P ′ − 1) /N = ( sk A · S) mod N = 1127918153 . . . 070612024 (77 digits) 
+
+R = L · sk −1 
+
+> A
+
+mod N = 67 ,108 ,865 
+
+A.5 Result 
+
+The recovered sum is R = 67 ,108 ,865 = 2 · 225 + 1, exactly the sum of the packed plaintexts 
+
+m1 + m2 + m3. Unpacking the two 25-bit slots gives count 1 = ⌊R/ 225 ⌋ mod 2 25 = 2 , count 2 = R mod 2 25 = 1 ,
+
+which matches the expected tally of two votes for candidate 1 and one for candidate 2. The script verifies R = m1 + m2 + m3 and [count 1, count 2] = [2 , 1], both of which hold. This is the same arithmetic the native aggregator performs at scale. In the 100-voter, 10-candidate run of Section 12, the recovered counts were 23 Alice 7 Bob 11 Carol 8 Dave 15 Eve 7 Frank 10 Grace 10 Heidi 7 Ivan 11 Judy 14 (total 100, all exact) 
+
+## References 
+
+[1] P. Paillier, “Public-key cryptosystems based on composite degree residuosity classes,” in 
+
+Proc. EUROCRYPT , 1999, pp. 223–238. [2] B. Adida, “Helios: Web-based open-audit voting,” in Proc. USENIX Security Symposium ,2008, pp. 335–348. [3] A. Kiayias, M. Korman, and D. Walluck, “Voting without self-enforcing protocols: A survey of e-voting schemes,” in Proc. ACNS , 2008. [4] E. Shi, T.-H. H. Chan, E. Rieffel, R. Chow, and D. Song, “Privacy-preserving aggregation of time-series data,” in Proc. NDSS , 2011. [5] M. Joye and B. Libert, “A scalable scheme for privacy-preserving aggregation of time-series data,” in Proc. Financial Cryptography and Data Security (FC) , 2013, pp. 111–125. [6] I. Leontiadis, K. Elkhiyaoui, and R. Molva, “Private and dynamic time-series data aggre-gation with trust relaxation,” in Proc. Cryptology and Network Security (CANS) , 2014. [7] M. Mansouri, M. ¨Onen, W. Ben Jaballah, and M. Conti, “SoK: Secure aggregation based on cryptographic schemes for federated learning,” Proceedings on Privacy Enhancing Tech-nologies (PoPETs) , vol. 2023, no. 1, pp. 140–157, 2023. [8] J. So and B. G¨ uler, “Turbo-Aggregate: Breaking the quadratic aggregation barrier in secure federated learning,” IEEE Journal on Selected Areas in Information Theory , vol. 2, no. 1, pp. 479–489, 2021. [9] “libtommath: A portable number theoretic multiple-precision integer library,” [Online]. Available: https://github.com/libtom/libtommath 
+
+[10] “Emscripten: LLVM to WebAssembly compiler,” [Online]. Available: https:// emscripten.org 
+
+[11] “Anchor: Solana Sealevel Framework,” [Online]. Available: https://github.com/ coral-xyz/anchor 
+
+[12] “Solana: A fast, secure, and censorship-resistant blockchain,” [Online]. Available: https: //solana.com 
+
+[13] “Docker: Containerized application platform,” [Online]. Available: https://docker.com 
+
+[14] T. P. Pedersen, “Non-interactive and information-theoretic secure verifiable secret sharing,” in Proc. CRYPTO , 1991, pp. 129–140. [15] C. P. Schnorr, “Efficient signature generation by smart cards,” Journal of Cryptology , vol. 4, no. 3, pp. 161–174, 1991. [16] B. B¨ unz, S. Bootle, D. Boneh, A. Poelstra, P. Wuille, and G. Maxwell, “Bulletproofs: Short proofs for confidential transactions and more,” in Proc. IEEE Symposium on Security and Privacy (S&P) , 2018, pp. 315–334. 24 [17] J. Camenisch and M. Stadler, “Proof systems for general statements about discrete loga-rithms,” Tech. Report TR 260, Dept. of Computer Science, ETH Z¨ urich, 1997. [18] I. Damg˚ ard and M. Jurik, “A generalisation, a simplification and some applications of Paillier’s probabilistic public-key system,” in Proc. PKC , 2001, pp. 119–136. [19] S. van Schaik, A. Kwong, D. Genkin, and Y. Yarom, “SGAxe: How SGX fails in practice,” 2020, [Online]. Available: https://sgaxeattack.com/ 
+
+[20] J. Bulck, M. Minkin, O. Weisse, D. Genkin, B. Kasikci, F. Piessens, M. Silberstein, T. Witchel, and Y. Yarom, “LVI: Hijacking transient execution through microarchitectural data injection,” in Proc. IEEE Symposium on Security and Privacy (S&P) , 2020. 25
