@@ -1,0 +1,448 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-13T21:21:27.260992+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 9,
+    "quick_skim_target": 11,
+    "quick_selected": 9
+  },
+  "deep_dive": [
+    {
+      "id": "2607.09179v1",
+      "source": "arxiv",
+      "title": "Malaika: Understanding Malware through Tri-Grounded Agentic Reasoning",
+      "abstract": "Recent LLM-based systems have shown promising capabilities for security-focused code analysis. Malware understanding, however, poses a distinct challenge: analysts must reconstruct high-level malicious behaviors under partial observability from sparse, dispersed evidence intertwined with benign functionality. While static analysis can expose security-relevant signals, the central challenge is not merely identifying suspicious code, but determining whether the evidence sufficiently supports an auditable behavior-level conclusion. We formulate malware understanding as a grounded reasoning problem and argue that reliable behavior reconstruction requires three complementary forms of grounding. Domain grounding constrains how behavior hypotheses are generated and evaluated, semantics grounding localizes and connects supporting program evidence, and knowledge grounding supports behavioral attribution through externally verifiable threat knowledge. To study this hypothesis, we present Malaika, a multi-agent framework that operationalizes the three grounding mechanisms through analyst-inspired reasoning, tool-mediated evidence localization, and retrieval-based behavioral attribution. We instantiate Malaika for Android malware analysis and evaluate it on malware-understanding tasks. Results show that Malaika improves analysis quality over prior LLM-based malware-analysis frameworks and demonstrate that reliability depends not only on model capability but also on the reasoning process. In particular, comparisons against malware-analysis systems and frontier agentic frameworks show that grounding-aware reasoning produces more precise and auditable conclusions. Ablation studies further support the grounding hypothesis. These findings suggest that grounding-aware reasoning provides a principled foundation for reliable malware understanding and, more broadly, for evidence-grounded software analysis.",
+      "authors": [
+        "Xingzhi Qian",
+        "Xinran Zheng",
+        "Yiling He",
+        "Lorenzo Cavallaro"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.SE"
+      ],
+      "published": "2026-07-10T08:13:19+00:00",
+      "link": "https://arxiv.org/pdf/2607.09179v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "LLM-based malware understanding with tri-grounded reasoning",
+      "llm_evidence_cn": "基于LLM的三重接地恶意软件理解",
+      "llm_evidence": "基于LLM的三重接地恶意软件理解",
+      "canonical_evidence": "基于LLM的三重接地恶意软件理解",
+      "llm_tldr_en": "Formulates malware understanding as a grounded reasoning problem and uses LLMs with three grounding forms for reliable behavior reconstruction.",
+      "llm_tldr_cn": "本文提出Malaika，将恶意软件理解构建为接地推理问题，利用LLM结合三种接地形式（领域、证据、审计）从稀疏证据中重构高层次恶意行为。该方法不仅识别可疑代码，还通过多阶段推理判断行为结论的可靠性。实验表明，在真实样本上，Malaika提升了恶意行为分析的准确性和可审计性。",
+      "llm_tldr": "本文提出Malaika，将恶意软件理解构建为接地推理问题，利用LLM结合三种接地形式（领域、证据、审计）从稀疏证据中重构高层次恶意行为。该方法不仅识别可疑代码，还通过多阶段推理判断行为结论的可靠性。实验表明，在真实样本上，Malaika提升了恶意行为分析的准确性和可审计性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.09391v1",
+      "source": "arxiv",
+      "title": "Federated Learning Architecture: Data Privacy and System Security Approaches",
+      "abstract": "This study explores the integration of homomorphic encryption and differential privacy techniques to enhance data privacy and security in Federated Learning (FL) systems. FL allows data to remain on local devices, eliminating the need for centralized data collection; however, sensitive information may still be leaked during model updates. To address this issue, homomorphic encryption enables computations on encrypted data, while differential privacy prevents the extraction of individual information through statistical techniques applied to model outputs. The proposed architecture was tested on the Framingham, Pima Indians Diabetes, and Bank Marketing datasets, revealing that enhanced privacy can be achieved without significantly compromising model accuracy. Furthermore, the impact of data heterogeneity among clients on model performance was analyzed, and it was concluded that strategies such as the careful selection of differential privacy parameters and training settings, along with the use of larger datasets, can improve the efficiency of FL. The findings demonstrate that privacy-preserving and high-performance artificial intelligence systems can be securely applied in sensitive domains such as healthcare and finance.",
+      "authors": [
+        "Cagdas Karatas",
+        "Hibanur Karadogan",
+        "Ahmet Yasin Ertug",
+        "Busra Buyuktanir",
+        "Kazim Yildiz",
+        "Gozde Karatas Baydogmus"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-10T13:15:06+00:00",
+      "link": "https://arxiv.org/pdf/2607.09391v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "homomorphic encryption and differential privacy for FL privacy",
+      "llm_evidence_cn": "同态加密与差分隐私增强联邦学习隐私",
+      "llm_evidence": "同态加密与差分隐私增强联邦学习隐私",
+      "canonical_evidence": "同态加密与差分隐私增强联邦学习隐私",
+      "llm_tldr_en": "Proposes integrating homomorphic encryption and differential privacy to enhance data privacy in federated learning without significantly compromising model accuracy.",
+      "llm_tldr_cn": "联邦学习允许数据留在本地设备，但模型更新仍可能泄露敏感信息。本文提出结合同态加密和差分隐私技术，在加密数据上计算并添加噪声防止个体信息提取。在三个数据集上实验表明，该方法能在不显著牺牲模型性能的前提下有效增强隐私保护。这项工作为联邦学习隐私保护提供了实用解决方案。",
+      "llm_tldr": "联邦学习允许数据留在本地设备，但模型更新仍可能泄露敏感信息。本文提出结合同态加密和差分隐私技术，在加密数据上计算并添加噪声防止个体信息提取。在三个数据集上实验表明，该方法能在不显著牺牲模型性能的前提下有效增强隐私保护。这项工作为联邦学习隐私保护提供了实用解决方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.06037v1",
+      "source": "arxiv",
+      "title": "REAN: Reconstruction-aware ECG Anonymization Based on Privacy--Utility Orthogonality",
+      "abstract": "A shared electrocardiogram (ECG) is itself a biometric fingerprint that can re-identify a patient and reveal personal information. Recent ECG anonymizers transform the signal before sharing to reduce privacy leakage. However, existing methods still face a privacy--utility trade-off, in which preserving privacy often compromises utility while preserving utility reveals personal information. We propose \\emph{REAN} (\\emph{RE}construction-aware ECG \\emph{AN}onymizer), a raw ECG signal anonymizer, to address this privacy--utility trade-off. REAN reconstructs the signal using a 1-D U-Net trained with losses from frozen privacy and utility classifiers to reduce privacy leakage while preserving utility. The privacy and utility gradients are near-orthogonal ($\\approx$93.8$^\\circ$), so reducing privacy leakage leaves utility almost unchanged. On four public PhysioNet databases, REAN achieves the strongest privacy--utility balance among raw ECG signal baselines. It drives re-identification to chance (0.96$\\to$0.00), keeps arrhythmia macro-AUROC at the clean level (Clean 0.9982 vs.\\ REAN 0.9991), and maintains re-identification protection under unseen privacy-classifier architectures.",
+      "authors": [
+        "Taerin Ki",
+        "Sunghwan Park",
+        "Junyoung Park",
+        "Jaewoo Lee"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-07-07T09:12:53+00:00",
+      "link": "https://arxiv.org/pdf/2607.06037v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "ECG anonymization method for privacy preservation",
+      "llm_evidence_cn": "心电图匿名化方法用于隐私保护",
+      "llm_evidence": "心电图匿名化方法用于隐私保护",
+      "canonical_evidence": "心电图匿名化方法用于隐私保护",
+      "llm_tldr_en": "Proposes REAN, a reconstruction-aware ECG anonymizer that uses privacy and utility gradients to balance privacy-utility trade-offs.",
+      "llm_tldr_cn": "针对共享心电图的生物特征隐私泄露问题，提出REAN匿名化方法。通过1D U-Net重建信号，并利用冻结的隐私和效用分类器损失进行训练，实现隐私与效用的正交优化。实验表明REAN在降低隐私泄露的同时保持心电图分析效用，为医疗AI数据共享提供了有效隐私保护手段。",
+      "llm_tldr": "针对共享心电图的生物特征隐私泄露问题，提出REAN匿名化方法。通过1D U-Net重建信号，并利用冻结的隐私和效用分类器损失进行训练，实现隐私与效用的正交优化。实验表明REAN在降低隐私泄露的同时保持心电图分析效用，为医疗AI数据共享提供了有效隐私保护手段。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.05913v1",
+      "source": "arxiv",
+      "title": "xDECAF: An Extensible Data Flow Diagram Analysis Framework for Information Security",
+      "abstract": "xDECAF is an extensible tool for architecture-based data flow analysis with a focus on information security. It combines an extended data flow diagram metamodel of labeled flows and nodes, a domain-specific constraint language with different flow operations, and a browser-based editor backed by an analysis engine. In this paper, we present the xDECAF tool library and a curated catalog of over 20 example models with documented constraints and expected violations, intended as a reusable dataset for the community. The tool has already been adopted by several research lines, providing concrete evidence of its utility. The tool, dataset, and a hosted online editor are publicly available.",
+      "authors": [
+        "Benjamin Arp",
+        "Felix Schwickerath",
+        "Alexander Vogt",
+        "Tom Hüller",
+        "Nils Niehues",
+        "Nicolas Boltz"
+      ],
+      "primary_category": "cs.SE",
+      "categories": [
+        "cs.SE",
+        "cs.CR"
+      ],
+      "published": "2026-07-07T07:08:49+00:00",
+      "link": "https://arxiv.org/pdf/2607.05913v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Extensible data flow analysis framework for security, applicable to cloud architectures",
+      "llm_evidence_cn": "可扩展的数据流分析框架，适用于云架构安全分析",
+      "llm_evidence": "可扩展的数据流分析框架，适用于云架构安全分析",
+      "canonical_evidence": "可扩展的数据流分析框架，适用于云架构安全分析",
+      "llm_tldr_en": "Introduces xDECAF, a tool for architecture-based data flow analysis with a constraint language, editor, and over 20 example models, aimed at information security.",
+      "llm_tldr_cn": "本文提出xDECAF工具，扩展了数据流图元模型，支持标签流和节点，并定义领域特定约束语言。该工具提供浏览器编辑器和分析引擎，附带20多个示例模型。xDECAF已被多个研究采用，可用于云架构的数据流安全分析。",
+      "llm_tldr": "本文提出xDECAF工具，扩展了数据流图元模型，支持标签流和节点，并定义领域特定约束语言。该工具提供浏览器编辑器和分析引擎，附带20多个示例模型。xDECAF已被多个研究采用，可用于云架构的数据流安全分析。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.07209v1",
+      "source": "arxiv",
+      "title": "Continual Learning With Participation Privacy: An Auditable Buffering-Aggregation Recipe",
+      "abstract": "Modern federated and streaming learning systems often release intermediate models, so privacy must hold for the full trajectory under adaptive interaction. Motivated by participation privacy, we study single-edit neighboring user streams, where one insertion/deletion shifts all subsequent updates and defeats standard Hamming-neighbor continual-release analyses. We give an auditable modular recipe. A randomized buffering wrapper emits bins of size $[U,2U]$, reducing single-edit streams to a Hamming-style per-bin update stream with explicit backlog/delay guarantees, where $U$ is calibrated by the privacy parameters $(\\varepsilon,δ)$. We then prove a certification theorem identifying when a non-adaptive Hamming-neighbor DP proof for a continual primitive lifts to adaptive inputs: the primitive must use fresh per-round randomness and have a stable one-round privacy profile under common adaptive context. Together, these ingredients yield trajectory-level $(\\varepsilon,δ)$-DP for single-edit streams using standard primitives (e.g., tree prefix sums), with an explicit privacy--latency link via $U$.",
+      "authors": [
+        "T-H. Hubert Chan",
+        "Elaine Shi",
+        "Mengshi Zhao",
+        "Mingxun Zhou"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-07-08T09:44:27+00:00",
+      "link": "https://arxiv.org/pdf/2607.07209v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "privacy-preserving continual learning with differential privacy",
+      "llm_evidence_cn": "具有差分隐私保护的持续学习",
+      "llm_evidence": "具有差分隐私保护的持续学习",
+      "canonical_evidence": "具有差分隐私保护的持续学习",
+      "llm_tldr_en": "Proposes an auditable buffering-aggregation recipe for continual learning with participation privacy under streaming settings, enabling formal DP guarantees.",
+      "llm_tldr_cn": "针对持续学习中的参与隐私问题，提出可审计的缓冲聚合方案。通过随机缓冲包装将单编辑流转换为汉明风格的每桶更新流，并校准隐私参数，实现严格的差分隐私保证。该工作为联邦和流式学习系统提供了参与隐私保护机制。",
+      "llm_tldr": "针对持续学习中的参与隐私问题，提出可审计的缓冲聚合方案。通过随机缓冲包装将单编辑流转换为汉明风格的每桶更新流，并校准隐私参数，实现严格的差分隐私保证。该工作为联邦和流式学习系统提供了参与隐私保护机制。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.09011v1",
+      "source": "arxiv",
+      "title": "Secret Scanner Agent: Extracting Secrets and Access Context from Unstructured Documents",
+      "abstract": "Exposed documents such as emails, chat threads, tickets, and incident notes routinely leak credentials, but during incident response a leaked secret is only half the story. Responders also need to identify the ``door'' the secret opens: the account, tenant, endpoint, database, cloud resource, or other system that the credential could allow an attacker to access. Traditional secret scanners rely on regular expressions or trained classifiers which work well on well-formatted code, yet they struggle when a credential is fragmented, reformatted, or far from the resource it unlocks, and they report the secret string without naming what it opens. We present Secret Scanner Agent (SSA), a multi-agent large-language-model system that extracts both the secret and its associated door, together with supporting evidence, from unstructured exposed documents. SSA pairs a detection agent that favors recall with a review agent that filters false positives and recovers missing context. Because real credential data is sensitive, we evaluate SSA on synthetic benchmarks we generated that span 23 secret types and multiple document formats, scored with a three-step pipeline of programmatic matching, an LLM judge, and human review. Across six models, multi-agent SSA improves extraction precision over a single-agent variant, with the largest gains on door extraction, by up to 16 percentage points. SSA matches a regular-expression scanner's precision while more than tripling its recall, and against thirteen security analysts it is more precise, recovers nearly twice as many secret--door pairs, and runs five to seventeen times faster. By returning the secret, its door, and supporting evidence in one result, SSA turns credential detection into an actionable finding for triage and remediation.",
+      "authors": [
+        "Zixiao Chen",
+        "Mariko Wakabayashi",
+        "Charlotte Siska"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.MA"
+      ],
+      "published": "2026-07-10T00:28:34+00:00",
+      "link": "https://arxiv.org/pdf/2607.09011v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "extracts secrets and access context from documents, relevant to cloud security incident response",
+      "llm_evidence_cn": "从文档中提取秘密和访问上下文，与云安全事件响应相关",
+      "llm_evidence": "从文档中提取秘密和访问上下文，与云安全事件响应相关",
+      "canonical_evidence": "从文档中提取秘密和访问上下文，与云安全事件响应相关",
+      "llm_tldr_en": "Secret Scanner Agent uses multi-agent LLM to extract credentials and identify the resource they access, aiding cloud security incident response.",
+      "llm_tldr_cn": "本文提出Secret Scanner Agent（SSA），一个多智能体大语言模型系统，能从非结构化文档中提取泄露的凭证并识别其对应的云资源。传统扫描器难以处理碎片化或远离上下文的凭证。SSA通过智能体协作，提高了提取准确性和上下文关联性，有助于快速响应云安全事件。",
+      "llm_tldr": "本文提出Secret Scanner Agent（SSA），一个多智能体大语言模型系统，能从非结构化文档中提取泄露的凭证并识别其对应的云资源。传统扫描器难以处理碎片化或远离上下文的凭证。SSA通过智能体协作，提高了提取准确性和上下文关联性，有助于快速响应云安全事件。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.07371v2",
+      "source": "arxiv",
+      "title": "zk-ScalHard: Scalable and Hardware-Rooted Privacy-Preserving Authentication for Secure OTA Updates in Zonal SDVs",
+      "abstract": "The automotive industry is transitioning to Zonal-oriented Architectures (ZoA) for Software-Defined Vehicles (SDVs), enabling frequent over-the-air (OTA) updates for 100+ Electronic Control Units (ECUs). While OTA updates improve efficiency, they introduce safety-critical security risks. Current standards like Uptane and AUTOSAR Adaptive rely on Public-Key Infrastructure (PKI). However, PKI-based authentication creates bandwidth bottlenecks in in-vehicle and vehicle-to-cloud (V2I) communication as ECU density increases. It also risks exposing sensitive vehicle configurations and passenger privacy due to centralized architectures. Next-generation Zonal SDVs require decentralized, scalable authentication with data privacy. To address this, we propose zk-ScalHard, a hardware-rooted, privacy-preserving authentication protocol. We introduce a decentralized, hierarchical trust-promotion model utilizing Silicon Physical Unclonable Functions (PUFs) and two novel Zero-Knowledge Proof (ZKP) circuits: (1) Zonal Identity and Integrity (ZIDI) and (2) High-Performance Computing Aggregation (HPCA). These circuits employ multi-party computation (MPC) and recursive aggregation to achieve decentralization and scalability. The integration of ZKPs and PUFs ensures 100% vehicle-level data sovereignty. Benchmarked against Uptane, zk-ScalHard achieves constant O(1) communication and verification complexity, improving upon the linear O(n) complexity of current systems. Evaluation shows a 99.2% reduction in authentication bandwidth and a 99.9% reduction in the temporal attack surface. Our results demonstrate that zk-ScalHard provides a scalable, secure, and GDPR-compliant architecture for future Zonal SDVs.",
+      "authors": [
+        "Shrikant Tangade",
+        "Bansi Pambhar",
+        "Valeria Loscri",
+        "Mauro Conti"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-08T13:05:19+00:00",
+      "link": "https://arxiv.org/pdf/2607.07371v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Privacy-preserving authentication for OTA updates using zk-SNARKs and hardware roots",
+      "llm_evidence_cn": "使用零知识证明和硬件根实现OTA更新中的隐私保护认证",
+      "llm_evidence": "使用零知识证明和硬件根实现OTA更新中的隐私保护认证",
+      "canonical_evidence": "使用零知识证明和硬件根实现OTA更新中的隐私保护认证",
+      "llm_tldr_en": "Proposes zk-ScalHard, a scalable and hardware-rooted authentication scheme for OTA updates in zonal SDVs, ensuring privacy and efficiency.",
+      "llm_tldr_cn": "本文针对区域架构软件定义车辆中的OTA更新认证问题，提出zk-ScalHard方案。该方案利用零知识证明和硬件信任根实现去中心化、可扩展的认证，解决了传统PKI方案的带宽瓶颈和隐私暴露风险。实验表明，zk-ScalHard在保障安全性的同时显著降低了通信开销，为车辆网联安全提供了隐私保护方案。",
+      "llm_tldr": "本文针对区域架构软件定义车辆中的OTA更新认证问题，提出zk-ScalHard方案。该方案利用零知识证明和硬件信任根实现去中心化、可扩展的认证，解决了传统PKI方案的带宽瓶颈和隐私暴露风险。实验表明，zk-ScalHard在保障安全性的同时显著降低了通信开销，为车辆网联安全提供了隐私保护方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.09653v1",
+      "source": "arxiv",
+      "title": "VEXAIoT: Autonomous IoT Vulnerability EXploitation using AI Agents",
+      "abstract": "Internet of Things (IoT) systems are inherently vulnerable due to constrained hardware, outdated firmware, and insecure default configurations, creating a need for scalable and adaptive security testing approaches. While recent adoptions of Large Language Model (LLM) agents have demonstrated promise in penetration testing and Capture-the-Flag (CTF) environments, their application to IoT specific vulnerabilities remains unexplored. This paper presents an autonomous multi-agent framework, referred to as Vulnerability EXploitation using AI Agents (VEXAIoT), for vulnerability discovery and exploitation in IoT environments using LLM-based reasoning and offensive security tools. The framework combines a vulnerability detection agent and an attack execution agent to perform reconnaissance, plan attack sequences, and execute exploits against vulnerable IoT services. The system is evaluated in IoTGoat and Metasploitable environments across ten attack scenarios mapped to OWASP IoT vulnerabilities. Experimental results show attack success rate of up to 100% with low token overhead and average execution times under two minutes for most attacks. Across 260 attack executions, VEXAIoT achieves a 95.0% overall success rate, including 94.5% success in IoTGoat and 96.7% success in Metasploitable2. These results demonstrate the potential for LLM-driven agents to automate IoT vulnerability assessment and offensive security workflows in controlled environments",
+      "authors": [
+        "Katherine Swinea",
+        "Kshitiz Aryal",
+        "Lopamudra Praharaj",
+        "Maanak Gupta"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-10T17:52:29+00:00",
+      "link": "https://arxiv.org/pdf/2607.09653v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "AI agents for autonomous IoT vulnerability exploitation, relevant to AI security testing",
+      "llm_evidence_cn": "使用AI代理进行自主IoT漏洞利用，与AI安全测试相关",
+      "llm_evidence": "使用AI代理进行自主IoT漏洞利用，与AI安全测试相关",
+      "canonical_evidence": "使用AI代理进行自主IoT漏洞利用，与AI安全测试相关",
+      "llm_tldr_en": "Proposes VEXAIoT, an autonomous multi-agent framework using LLMs for vulnerability discovery and exploitation in IoT environments, combining detection and attack agents.",
+      "llm_tldr_cn": "本文提出VEXAIoT，一个基于LLM的多代理框架，自动化IoT漏洞发现与利用。框架包括漏洞检测代理和攻击执行代理，利用AI推理进行渗透测试。实验表明能够有效发现和利用IoT特定漏洞，为AI辅助安全测试提供了新途径。",
+      "llm_tldr": "本文提出VEXAIoT，一个基于LLM的多代理框架，自动化IoT漏洞发现与利用。框架包括漏洞检测代理和攻击执行代理，利用AI推理进行渗透测试。实验表明能够有效发现和利用IoT特定漏洞，为AI辅助安全测试提供了新途径。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.08867v1",
+      "source": "arxiv",
+      "title": "Secure-by-Disguise: A Systematic Evaluation of Image Disguising for Confidential Medical Image Modeling",
+      "abstract": "Cloud-based deep learning enables large-scale medical image analysis but raises significant privacy concerns when sensitive patient images are outsourced for model development. Image disguising has recently emerged as a promising privacy-enhancing technology (PET) that transforms images into visually unintelligible representations while preserving information for downstream learning. We established a unified framework to evaluate representative methods, DisguisedNets and NeuraCrypt, across four datasets involving classification and semantic segmentation tasks. Our analysis assessed predictive utility, efficiency, and robustness against reconstruction attacks. Results showed that image disguising performance varies significantly between tasks; while methods preserved utility for medical image classification, they caused substantial degradation in dense semantic segmentation. Specifically, Randomized Multidimensional Transformation (RMT) offered the optimal balance of performance and security, whereas AES-based disguising severely impacted utility. Furthermore, regression-based reconstruction attacks effective on natural images proved considerably less successful on realistic medical images. These findings provide a systematic assessment of PET suitability for confidential medical AI applications.",
+      "authors": [
+        "Jason Rojas",
+        "Jiajie He",
+        "Yash Patel",
+        "Yuechun Gu",
+        "Zeyun Yu",
+        "Keke Chen"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.LG"
+      ],
+      "published": "2026-07-09T18:43:58+00:00",
+      "link": "https://arxiv.org/pdf/2607.08867v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "evaluation of image disguising for privacy in cloud-based medical AI",
+      "llm_evidence_cn": "评估图像伪装技术用于云医学AI隐私保护",
+      "llm_evidence": "评估图像伪装技术用于云医学AI隐私保护",
+      "canonical_evidence": "评估图像伪装技术用于云医学AI隐私保护",
+      "llm_tldr_en": "Systematically evaluates image disguising methods for confidential medical image analysis on the cloud, revealing varied privacy-utility trade-offs.",
+      "llm_tldr_cn": "针对云端深度学习中的医学图像隐私问题，系统评估了图像伪装技术（如DisguisedNets和NeuraCrypt）在分类和分割任务上的效果。发现伪装性能在不同数据集上差异显著，且重建攻击下部分方法泄露风险仍存，为云上医学AI隐私保护提供了重要指导。",
+      "llm_tldr": "针对云端深度学习中的医学图像隐私问题，系统评估了图像伪装技术（如DisguisedNets和NeuraCrypt）在分类和分割任务上的效果。发现伪装性能在不同数据集上差异显著，且重建攻击下部分方法泄露风险仍存，为云上医学AI隐私保护提供了重要指导。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.08906v1",
+      "source": "arxiv",
+      "title": "Proof-of-Continuity: A Temporal Model for Authority Propagation in Distributed Systems and AI Agents",
+      "abstract": "Proof-of-Possession authorization models derive authority from the possession of artifacts such as tokens, credentials, or capabilities. This paper argues that possession is insufficient for discrete execution chains, whether they span multiple services or occur as separated steps within the same machine, because it does not guarantee preservation of the causal relationship between the origin of a request and the authority exercised at later steps. We introduce Proof-of-Continuity, a minimal authority-propagation discipline for the Provenance Identity Continuity (PIC) model, in which each execution step must be causally linked to the previous step and may only propagate a non-expansive subset of the authority received from the origin. It introduces Proof of Relationship, a single-hop causal primitive whose transitive composition is Proof-of-Continuity; these complement Proof-of-Possession rather than replace it. Under this model, the confused deputy condition cannot be satisfied as valid model behavior: any privilege exercised at a later step must already be present in the origin authority context. This is directly relevant to distributed systems and AI agents, where executors invoke tools and downstream services while holding multiple authority sources, so that the same authority/causality mismatch recurs across service boundaries. Under Proof-of-Continuity these sources may be carried together but are never merged into a combined authority, since each step is authorized only against the authority context of the lineage that caused it.   This paper concerns authorization propagation rather than authentication: identity and authentication mechanisms such as OIDC, verifiable credentials, wallets, and workload identity remain complementary mechanisms for establishing the origin, while Proof-of-Continuity addresses how authority propagates after that origin exists.",
+      "authors": [
+        "Nicola Gallo"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.DC"
+      ],
+      "published": "2026-07-09T19:59:29+00:00",
+      "link": "https://arxiv.org/pdf/2607.08906v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "temporal model for authority propagation in distributed systems, relevant to identity authentication",
+      "llm_evidence_cn": "分布式系统中权威传播的时间模型，与身份认证相关",
+      "llm_evidence": "分布式系统中权威传播的时间模型，与身份认证相关",
+      "canonical_evidence": "分布式系统中权威传播的时间模型，与身份认证相关",
+      "llm_tldr_en": "Proof-of-Continuity ensures causal authority propagation in distributed systems and AI agents, addressing limitations of possession-based models.",
+      "llm_tldr_cn": "基于令牌的授权模型（如持有证明）无法保证跨执行步骤的因果连续性，导致安全漏洞。本文引入延续证明（Proof-of-Continuity），一种最小权威传播规则，要求每个执行步骤与上一步因果链接，且仅传播非扩展子集。该模型为分布式系统和AI智能体提供更强的授权连续性保障，增强身份认证的安全性。",
+      "llm_tldr": "基于令牌的授权模型（如持有证明）无法保证跨执行步骤的因果连续性，导致安全漏洞。本文引入延续证明（Proof-of-Continuity），一种最小权威传播规则，要求每个执行步骤与上一步因果链接，且仅传播非扩展子集。该模型为分布式系统和AI智能体提供更强的授权连续性保障，增强身份认证的安全性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.09176v1",
+      "source": "arxiv",
+      "title": "SherAgent: Scaling Attack Investigation in the Wild via LLM-Empowered Iterative Query-Filter Backtracking",
+      "abstract": "Provenance-based attack investigation enables viable automation by standardizing data and query logic; however, it is critically hindered in practice by dependency explosions and fragmented causal chains in the wild. Towards designing a robust and automated investigation tool, we collaborated with the SOC of a major Internet corporation serving billions of users. By engaging in real-world incident response, we are able to evaluate and refine their existing LLM-based investigation workflows, which processes tens of thousands of raw alerts daily, leaving thousands for manual triage, to find out the root causes of investigation failures and major challenges in their existing tools. Motivated by these findings, we propose SherAgent, an LLM-empowered automated investigation system. Operating on an iterative ``query-filter'' backtracking paradigm over provenance graphs, SherAgent leverages the semantic reasoning capabilities of LLMs to process unstructured data, such as investigation context and threat intelligence. To overcome fragmented causal chains caused by missing events, the system dynamically calibrates query conditions to broaden the search scope. Concurrently, it performs precision result filtering and strategic nodes selection for subsequent exploration, thereby mitigating dependency explosions. Extensive evaluations in the wild demonstrate that SherAgent improves the end-to-end investigation success rate by 31.1% and 63.7% compared to both legacy enterprise baselines and SOTA approaches, respectively. Furthermore, it operates with remarkable efficiency, incurring under $0.10 in API costs and requiring less than 4 minutes per investigation. Finally, our user study confirms that SherAgent provides accurate and clear insights, significantly reducing the analytical overhead for security experts.",
+      "authors": [
+        "Zhenyuan Li",
+        "Zhengkai Wang",
+        "Ling Jiang",
+        "Xiangmin Shen",
+        "Ruixiao Lin",
+        "Sen Nie",
+        "Shi Wu",
+        "Shouling Ji"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-10T08:11:10+00:00",
+      "link": "https://arxiv.org/pdf/2607.09176v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "LLM-empowered attack investigation system for security operations",
+      "llm_evidence_cn": "基于LLM的攻击调查系统用于安全运营",
+      "llm_evidence": "基于LLM的攻击调查系统用于安全运营",
+      "canonical_evidence": "基于LLM的攻击调查系统用于安全运营",
+      "llm_tldr_en": "Proposes SherAgent, an LLM-based system for automated attack investigation that uses iterative query-filter backtracking to handle dependency explosions and fragmented causal chains in provenance data.",
+      "llm_tldr_cn": "实际攻击调查受限于依赖爆炸和因果链碎片化。本文与大型互联网企业安全运营中心合作，提出SherAgent系统，利用LLM驱动的迭代查询-过滤回溯方法，自动处理大量告警并定位根本原因。系统能够在海量数据中高效追溯攻击路径，显著减少人工研判工作量。",
+      "llm_tldr": "实际攻击调查受限于依赖爆炸和因果链碎片化。本文与大型互联网企业安全运营中心合作，提出SherAgent系统，利用LLM驱动的迭代查询-过滤回溯方法，自动处理大量告警并定位根本原因。系统能够在海量数据中高效追溯攻击路径，显著减少人工研判工作量。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}
