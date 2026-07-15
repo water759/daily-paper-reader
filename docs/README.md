@@ -6,71 +6,65 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-14
-- 运行时间：2026-07-14 21:48:08 UTC
+- 最新运行日期：2026-07-15
+- 运行时间：2026-07-15 21:10:20 UTC
 - 运行状态：成功
-- 本次总论文数：17
-- 精读区：6
-- 速读区：11
+- 本次总论文数：15
+- 精读区：5
+- 速读区：10
 
 ### 今日简报（AI）
-今日精读6篇速读11篇，围绕加密推理简化和密码安全两大前沿问题。最值得关注的是Transformer层并行加密推理与ML-DSA随机泄露攻击研究，均获9.0高分。建议优先精读这两篇论文，掌握加密与非对称密码领域的最新突破。
-- 详情：[/202607/14/README](/202607/14/README)
+今天精读聚焦ML-DSA随机泄漏攻击与LLM生成代码的跨切面安全分析，速读覆盖感知哈希黑盒攻击、联邦MLLM个性化及无人机认证。最值得关注后量子签名侧信道防御与LLM代码的关联规则挖掘，建议优先阅读两篇9.0分论文以把握密码安全与AI代码审计的交叉前沿。
+- 详情：[/202607/15/README](/202607/15/README)
 
 ### 精读区论文标签
-1. [Layer-Parallel Inference Reduces Encrypted Nonlinear Depth in Transformers](/202607/14/2607.04819v2-layer-parallel-inference-reduces-encrypted-nonlinear-depth-in-transformers)  
+1. [From Regression to Prior-Aware Inference: Solving the ILWE Family in Randomness Leakage Attacks against ML-DSA](/202607/15/2607.05921v3-from-regression-to-prior-aware-inference-solving-the-ilwe-family-in-randomness-leakage-attacks-against-ml-dsa)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：通过层并行推理降低Transformer中加密非线性深度，提升机密计算性能
-2. [From Regression to Prior-Aware Inference: Solving the ILWE Family in Randomness Leakage Attacks against ML-DSA](/202607/14/2607.05921v2-from-regression-to-prior-aware-inference-solving-the-ilwe-family-in-randomness-leakage-attacks-against-ml-dsa)  
+   evidence：针对ML-DSA签名方案随机性泄露的密钥恢复攻击
+2. [Cross-Cutting Security Analysis of LLM-Generated Code via Metamorphic Testing and Association Rule Mining](/202607/15/2607.12089v1-cross-cutting-security-analysis-of-llm-generated-code-via-metamorphic-testing-and-association-rule-mining)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：ML-DSA随机性泄露导致密钥恢复
-3. [Effective Synthetic Image Detection via Noise Residual Clustering](/202607/14/2607.10695v1-effective-synthetic-image-detection-via-noise-residual-clustering)  
+   evidence：LLM生成代码的安全漏洞；AI安全分析
+3. [A Scalable Cloud-Orchestrated and Service-Oriented Multi-Domain QKD Network with PQC Integration](/202607/15/2607.12765v1-a-scalable-cloud-orchestrated-and-service-oriented-multi-domain-qkd-network-with-pqc-integration)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：合成图像检测以对抗AI生成的虚假信息
-4. [Enhanced Byzantine-Robust Federated Learning Via Truncated-Quadratic Loss for Heterogeneous Data](/202607/14/2607.10970v1-enhanced-byzantine-robust-federated-learning-via-truncated-quadratic-loss-for-heterogeneous-data)  
-   标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：拜占庭鲁棒联邦学习
-5. [Imperceptible and Reversible Adversarial Examples against Vision-Language Models for Privacy Protection](/202607/14/2607.10329v1-imperceptible-and-reversible-adversarial-examples-against-vision-language-models-for-privacy-protection)  
+   evidence：分布式云计算安全与机密计算；云编排QKD网络
+4. [Explaining Intrusion Alert Decisions of Deep Learning-based Network Intrusion Detection Systems for Security Analysts](/202607/15/2607.12203v1-explaining-intrusion-alert-decisions-of-deep-learning-based-network-intrusion-detection-systems-for-security-analysts)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：通过可逆对抗样本保护VLM免受文本查询攻击的隐私
-6. [Rethinking MCP Security: A Large-Scale Study of Runtime MCP Servers and Security Scanner Reliability](/202607/14/2607.11086v1-rethinking-mcp-security-a-large-scale-study-of-runtime-mcp-servers-and-security-scanner-reliability)  
+   evidence：人工智能安全：解释深度学习入侵检测决策
+5. [Bulkhead: Automated Semantic Detection and Remediation of Container Escape Vulnerabilities](/202607/15/2607.12723v1-bulkhead-automated-semantic-detection-and-remediation-of-container-escape-vulnerabilities)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：LLM智能体MCP服务器安全分析，涉及人工智能安全
+   evidence：自动检测容器逃逸漏洞以提升云安全
 
 ### 速读区论文标签
-1. [SFDS: Selective File Disclosure System](/202607/14/2607.09370v1-sfds-selective-file-disclosure-system)  
+1. [LLM-Guided Program Evolution for Targeted Black-Box Attacks on Perceptual Hash Algorithms](/202607/15/2607.11472v1-llm-guided-program-evolution-for-targeted-black-box-attacks-on-perceptual-hash-algorithms)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：基于认证的文件选择性披露访问控制
-2. [ANCHOR: Automated Alignment Auditing for CLI Agents on Real-World Harm](/202607/14/2607.10455v1-anchor-automated-alignment-auditing-for-cli-agents-on-real-world-harm)  
+   evidence：LLM引导的感知哈希对抗攻击
+2. [PFAdapter: Hierarchical LoRA Decomposition for Personalized Federated MLLMs](/202607/15/2607.12111v1-pfadapter-hierarchical-lora-decomposition-for-personalized-federated-mllms)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：审计CLI代理的AI安全风险
-3. [Toward Production-Ready Federated Learning in Healthcare: Privacy, Orchestration, and Governance in MLOps](/202607/14/2607.10467v1-toward-production-ready-federated-learning-in-healthcare-privacy-orchestration-and-governance-in-mlops)  
+   evidence：联邦微调多模态LLM，隐私保护的分层LoRA分解
+3. [$\mathrm{P}^{3}$CDA: Privacy-Preserving and Provably Secure Cross Domain Authentication Scheme for Internet of Drones](/202607/15/2607.12288v1-mathrmp3cda-privacy-preserving-and-provably-secure-cross-domain-authentication-scheme-for-internet-of-drones)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：联邦学习中的隐私保护与MLOps治理
-4. [PromptGraph: Graph-Guided Prompt Sanitization for Balancing Privacy and Utility in LLM Inference](/202607/14/2607.10709v1-promptgraph-graph-guided-prompt-sanitization-for-balancing-privacy-and-utility-in-llm-inference)  
+   evidence：跨域认证与隐私保护
+4. [Trust but Verify? Uncovering the Security Debt of Autonomous Coding Agents](/202607/15/2607.12428v1-trust-but-verify-uncovering-the-security-debt-of-autonomous-coding-agents)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：基于图的提示消毒方法，用于隐私保护的大语言模型推理
-5. [Differentially Private Consistent Release of Counting Queries](/202607/14/2607.10952v1-differentially-private-consistent-release-of-counting-queries)  
+   evidence：研究AI生成代码中的安全代码异味与AI安全威胁相关
+5. [Stability Buys Time: A Re-Keying Game for Encrypted Multi-Agent Control](/202607/15/2607.12742v1-stability-buys-time-a-re-keying-game-for-encrypted-multi-agent-control)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：差分隐私一致计数查询发布
-6. [Mako: A Self-Evolving Agentic Operating System (SE-AOS) for Autonomous Web Exploitation](/202607/14/2607.11288v1-mako-a-self-evolving-agentic-operating-system-se-aos-for-autonomous-web-exploitation)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：自主AI代理进行网络利用和安全测试
-7. [Prezta: Provable Remote Execution of Zero-Trust Authorization using SNARKs](/202607/14/2607.11466v1-prezta-provable-remote-execution-of-zero-trust-authorization-using-snarks)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：使用SNARK的零信任授权，可直接应用于云计算身份认证
-8. [A Verifier-Centric Conceptual Model for Digital Credential Ecosystems](/202607/14/2607.10747v1-a-verifier-centric-conceptual-model-for-digital-credential-ecosystems)  
+   evidence：云环境下的加密多智能体控制与密钥更新
+6. [Understanding Implicit Trust Errors in Core Carrier Networks through Multi-Agent Flaw Discovery and Analysis](/202607/15/2607.10315v1-understanding-implicit-trust-errors-in-core-carrier-networks-through-multi-agent-flaw-discovery-and-analysis)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：数字凭证验证模型
-9. [MemExchange: Cloud-Scale Memory Trading](/202607/14/2607.11579v1-memexchange-cloud-scale-memory-trading)  
+   evidence：云原生核心网络中的隐式信任安全缺陷
+7. [Toward Production-Ready Federated Learning in Healthcare: Privacy, Orchestration, and Governance in MLOps](/202607/15/2607.10467v2-toward-production-ready-federated-learning-in-healthcare-privacy-orchestration-and-governance-in-mlops)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：云规模内存交易系统用于分布式云架构
-10. [Privacy-Aware Collaborative and Distributed Bayesian Optimization](/202607/14/2607.11600v1-privacy-aware-collaborative-and-distributed-bayesian-optimization)  
+   evidence：联邦学习在医疗云中的安全运营实践
+8. [AutoSLO: Practical Latency SLOs on Cloud Data Warehouses -- Extended Version](/202607/15/2607.11770v1-autoslo-practical-latency-slos-on-cloud-data-warehouses----extended-version)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：分布式贝叶斯优化中通过差分隐私保护隐私
-11. [Closing the Loop: An Access-Control Architecture for Automated, Anomaly-Driven Network Revocation in IoT Deployments](/202607/14/2607.11649v1-closing-the-loop-an-access-control-architecture-for-automated-anomaly-driven-network-revocation-in-iot-deployments)  
+   evidence：分布式云数据仓库架构用于延迟SLO管理
+9. [Agentic Service-Oriented Computing: A Manifesto for the Next Frontier of Service-Oriented Computing](/202607/15/2607.12619v1-agentic-service-oriented-computing-a-manifesto-for-the-next-frontier-of-service-oriented-computing)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：802.1X认证和RADIUS撤销机制与云中身份认证相关
+   evidence：分布式云计算架构，基于LLM代理的服务计算
+10. [Auditable and Transparent Fully Authenticated Disk Encryption via USB Storage Interposition](/202607/15/2607.12716v1-auditable-and-transparent-fully-authenticated-disk-encryption-via-usb-storage-interposition)  
+   标签：评分：6.0/10、query:sec-cloud-ai
+   evidence：通过USB中间件实现认证磁盘加密与身份认证相关
 
 
 <div class="dpr-home-promo-card">

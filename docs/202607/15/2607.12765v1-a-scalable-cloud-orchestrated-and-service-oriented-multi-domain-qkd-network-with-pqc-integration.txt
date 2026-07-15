@@ -1,0 +1,803 @@
+Title: A Scalable Cloud-Orchestrated and Service-Oriented Multi-Domain QKD Network with PQC Integration
+
+URL Source: https://arxiv.org/pdf/2607.12765v1
+
+Published Time: Wed, 15 Jul 2026 11:58:24 GMT
+
+Number of Pages: 18
+
+Markdown Content:
+# A Scalable Cloud-Orchestrated and Service-Oriented Multi-Domain QKD Network with PQC Integration 
+
+# Konstantinos Krilakis 1,2 , Antonia Tsili 2, Aikaterini Mandilara 1,2 , and Dimitris Syvridis 1,2 1Department of Informatics and Telecommunications, National and Kapodistrian University of Athens 
+
+2Eulambia Advanced Techonlogies Ltd. 
+
+Abstract 
+
+Quantum key distribution (QKD) offers unconditional security but existing QKD networks remain difficult to scale across heterogeneous infrastructures and administrative domains due to vendor-specific interfaces, trusted-node constraints, and limited interoperability. This work presents a flexible multi-domain and multi-site quantum-secure network architecture integrating vendor-agnostic QKD, SDN orchestration, and cloud-managed trust services. Communication is based on Zero Trust Network Access protocols featuring multi-level authentication mechanisms building upon post-quantum cryptography (PQC) signature and key encapsulation algorithms. The system is deployed on a real-world testbed with domains incorporating QKD nodes from 3 vendors, as well as domains without QKD infrastructure elements. Experimental results show that PQC and SDN overhead remain relatively low even on constrained devices, with the main bottleneck being QKD key retrieval and vendor-specific key streaming limitations. The proposed framework extends quantum-safe key transport beyond native QKD boundaries while preserving flexibility, interoperability, and compatibility with existing infrastructures. 
+
+# 1 Introduction 
+
+Research in applied cybersecurity is essentially converging towards two emerging frontiers [5] that offer the properties required to safeguard the global network against the dangers of quantum computer cyber attacks; quantum key distribution (QKD) and post-quantum cryptography (PQC). Each approach entails distinct trade-offs. QKD requires specialized and often costly hardware, but can offer information-theoretic security (ITS) [25] under well-defined assumptions. PQC can be easily integrated into existing infrastructures, but misses an equilibrium that balances proven security guarantees and performance efficiency. Quantum Key distribution is a method for distributing cryptographic keys with theoretically unconditional security. It operates at the physical layer of the network and the basic scheme includes two terminals (Alice and Bob) connected with an ideally dark fibre of limited length. Clients on either Alice or Bob end ultimately receive symmetric cryptography keys through authorised and secure access to the corresponding QKD terminal. This pairwise scheme substantially restricts application range and scalability, especially under the constraint of the devices’ increased financial cost. Under certain assumptions and configurations, symmetric keys can be shared between clients on the outer nodes of pairs that are connected through chain-like QKD links. The links are formed using trusted nodes (TNs) [20], and extend the reach of key agreement beyond the pair’s distance limitations. Nevertheless, installation of multiple QKD nodes increases the cost even more, and the symmetric keys can only be shared between clients attached to nodes that are parts of this sequential chain at a certain rate. Optical switches could overcome the issue of strict sequential interactions [26], as they offer flexible path reconfiguration, but they introduce additional insertion loss at every switching stage, reducing the secret key rate and maximum achievable distance. Furthermore, optical switches only provide passive routing and do not regenerate or store keys, meaning losses and errors propagate across the entire path. In contrast, trusted nodes terminate the quantum link at each hop, generate fresh keys, and forward them using one-time-pad encryption, enabling longer distances and more stable performance. As a result, trusted-node architectures remain more practical for large-scale QKD deployments. Several works over the past years have focused on overcoming QKD limitations ranging from theoretical key management and new hybrid protocols that improve the trust over relay nodes [19] to practical QKD network (QKDN) extensions [7, 12, 6]. Dervisevic et al. [8] conducted a survey providing a comprehensive system-level overview of key management in QKD networks, focusing on architectures based on trusted relay nodes. The authors highlight the differences between QKD and classical key management, emphasizing the need to decouple key generation and consumption due to the limited rate and point-to-point nature of QKD links. The survey identifies open challenges such as scalability, synchronization, and multi-vendor interoperability. Works inspired by the decoupling of key generation and consumption propose the integration of key pools, for example Wang et al. [24] introduce an algorithm based on balancing key resources and routing hops by managing resource consumption and QKD key accumulation in pools, in the context of a multi-domain network. Zhu et al. [27] discuss QKD key provisioning to partially-QKD-deployed optical networks using multi-level key pool slicing. The goal is to efficiently accumulate and distribute key material to E2E applications either they have access to key streams of QKD nodes or not, a useful and detailed key management approach which requires extensive configurations, thus a laborious transition of existing QKDNs, which still need to undergo significant scaling [12] challenges. Another set of works have concentrated on the fact that authentication in QKD interactions is not standardised, attempting to efficiently and securely inject PQC methods to this aspect. Kozlovičs et al. [14] propose two protocols supporting the key agreement between two clients that obtain QKD-produced keys, while upgrading TLS 1.3 with PQC algorithms. The idea is that the clients receive parts of the keys from different pathways, further securing key distribution, with servers acting as the interface of the QKD terminals. 
+
+1arXiv:2607.12765v1 [cs.CR] 14 Jul 2026 Figure 1: High-level schematic illustration of the proposed network model. Each disk represents a domain; The white cubes represent client NEs; the purple cubes represent Domain Secure Services Providers (DSSPs); the client application communication with PQC is shown in red; the secure services PQC connections are shown in gray. 
+
+Atutxa et al. [1] employ PQC digital signatures and study their effect on Quantum Bit Error Rate (QBER), which measures the ratio of incorrect bits to total bits received, acting as an indicator of eavesdropping or channel noise, while Tsili et al [23] create an automated PQC PKI framework that can be deployed on QKDNs. Finally, an applied research direction of interest introduces real QKDNs deployments with PQC integration consisting multiple nodes and TNs [15, 17, 18]. Such solutions succeed in demonstrating real-world application and viable adaptations with tangible results – which is the aim behind the current work. Recent efforts have also explored federation mechanisms for extending QKD infrastructures beyond isolated metropolitan deployments. In particular, Barral et al. [2] proposed an ETSI-compliant hybrid PQC/QKD federation architecture for interconnecting geographically separated QKD “islands” through distributed key management overlays and trusted relay federation. Their approach combines QKD-generated secrets with PQC mechanisms to enable secure inter-domain key transport across heterogeneous infrastructures while maintaining interoperability with ETSI GS QKD standards. Similar to MadQCI, the work emphasizes multi-vendor interoperability, distributed orchestration, and practical deployment considerations in carrier-grade environments. However, the federation model remains primarily centered around KMS-level relay coordination and ETSI transport overlays. A detailed breakdown of the corresponding specifications can be found in the Supplementary Information. Here, we present a multi-site enterprise-level network infrastructure and dedicated cloud management designed to enable quantum-secure communication among all network entities (NEs). Contrary to Mendez et al. [17], where PQC is used in some segments of a QKDN for emulating long-distance QKD connections, post-quantum methods are employed to securely conduct the provision of secret key material that could be provided via QKD or other means, and other cryptographic services, over classical channels. As a result, the need for extensive QKDN installations is avoided, while exploiting existing QKD pairs and essentially extending quantum-safe key relay in a way compatible to legacy networks. The architecture is organized into separate, autonomous domains with a central supervisor which provides the capability of the system is the delivery of cryptographic keys generated via QKD to NEs across domains, as well as the creation of secure tunnel links for encrypted data exchange. More specifically, we distinguish the following properties and novelties: 
+
+• A native, cross-platform, multi-domain network architecture with support for heterogeneous topologies. 
+
+• An agnostic design supported by a zero-touch provisioning (ZTP) driver framework. 
+
+• Integration of multi-vendor QKD systems within some domains, combined with PQC KEMs to enable unlimited distance quantum-secure key relay. 
+
+• A unified security layer incorporating multi-factor authentication and cloud-based key management for trust, identity, and interoperability. 
+
+• SDN-driven automation with detailed telemetry for monitoring and reporting. The above network was experimentally evaluated on a 12-domain testbed with heterogeneous hardware, quantifying end-to-end setup latency and packet processing overhead. A high-level illustration of the infrastructure is depicted in Figure 1, where each disk represents a domain comprising NEs, a gateway router, a Domain Secure Services Provider (DSSP) and some domains integrate a QKD node as the key generator. The figure shows two kinds of PQC-protected interations; the direct communication of two NEs located in different domains (red), established through the service provision of the DSSP of each domain, and the management of the DSSPs from the cloud (gray), as cloud-based routers facilitate inter-domain connectivity and aggregation of the domains orchestrated by the visualised-SDN data plane components. The remainder of this work is organized as follows. In Section 2, we present the resulting multi-domain quantum-secure network architecture and describe its underlying classical and quantum infrastructure. We detail the system operation and the workflows enabling inter-domain key relay across hybrid quantum-classical environments, but also list experimental results derived from our 
+
+2TLS & PQC KEM 
+
+> TLS & PQC KEM & IKE
+> TLS
+> Client
+> Cloud
+> Domain
+> QKD
+
+(a) A domain with a QKD termi-nal as key generator and the authen-tication mechanisms per connection type according to the participating peers. Domain 
+
+optical link 
+
+typical QKD 
+
+cloud & PQC 
+
+Domain 
+
+Client  Client QKD  QKD 
+
+(b) A scenario wherein the users belong to different quantum domains and the QKD nodes form an Alice-Bob pair. The green arrows represent conventional QKD usage. The blue arrows represent QKD-derived key sharing through forwarding PQC encap-sulated messages. 
+
+Figure 2: Intradomain operation and a basic interdomain communication scenario. The figures illustrate the architecture and message exchanges within a single domain, together with its connectivity to a neighbouring domain through both classical and quantum channels. The intradomain workflow presents the service transactions and corresponding authentication mechanisms in a simplified quantum domain comprising a client, a Domain Secure Services Provider (DSSP), and a QKD node acting as the key generator. The interdomain scenario depicts the conventional Alice–Bob QKD configuration, where the two QKD nodes form a direct QKD pair. 
+
+heterogeneous 12-domain deployment. In Section 5, we describe the logical organisation of our system and the main components developed for the construction and seamless operation and orchestration of the offered cybersecurity services. Finally, we analyse the practical implications, limitations, and scalability challenges of the proposed approach, concluding with directions for future work towards large-scale quantum-secure deployments. 
+
+# 2 Network Topology 
+
+The proposed work introduces a multi-site enterprise-grade network infrastructure that allows quantum secure communication between any network entities (NEs) involved. Our deployment consists of twelve (12) independent network domains, designed after real-world network equivalents, to which NEs and key generators are attached, see for example Figure 2a. Formally, an infrastructure domain is defined as a physical or virtual network segment –implemented through hardware NAT boundaries, VLAN isolation, or equivalent mechanisms– that exposes a functional grouping of network resources governed by a specific set of security policies, authentication protocols, and distributed administration rules. The domains’ inner topology is abstracted to a version that can be matched to a wide range of fundamental network units with little to no requirements. Each domain contains a router that functions as a gateway, a low-power device functioning as the Domain Secure Services Provider (DSSP), and at least one key generator and one client. Clients are organised in client pools, where a client pool is a virtualized SDN network pool that combines flow rules and port policies policies to create a programmable network under each hardware domain. We focus on the application wherein the key generators are QKD terminals, thus we distinguish two kinds, the classical or non-quantum , and the QKD or quantum 
+
+domains. Classical domains adhere to classical channel communication principles. Quantum domains contain a QKD node each and are vendor-agnostic. 
+
+# 2.1 Classical Network 
+
+Each administrative domain is defined by minimal design assumptions enabling a technology-agnostic, service-oriented deployment that simplifies management and enhances monitoring. Domains are delimited by hardware gateway routers providing local connec-tivity, including wireless access where required, while domain environments are realized using heterogeneous computing platforms ranging from constrained Raspberry Pi and Android-powered devices to x64 and RISC-V-based systems. These devices support gateway operations and services deployed within demilitarized zones (DMZs) in conjunction with the router. Domain components interconnect through a combination of VLAN-based traffic isolation, proprietary VPN tunnelling, and identity-based segmentation orchestrated by the cloud control plane, whereas clients connect to the domain router either directly through Wi-Fi links or virtually through software-defined networking (SDN). The SDN infrastructure employs OpenFlow 1.3 [16] through an ONOS controller [4] 
+
+3Domain XI 
+
+QKD 
+
+Tx 
+
+> ...
+> RSCV
+> DMZ
+
+QKD 
+
+Rx 
+
+Domain XII 
+
+QKD 
+
+Rx 
+
+Domain II 
+
+QKD 
+
+Rx 
+
+Domain IV Domain I
+
+QKD 
+
+Tx 
+
+Rpi 
+
+Domain III 
+
+QKD 
+
+Tx  
+
+> ...
+> ...
+> ...
+> ...
+> ...
+> Toshiba
+> IDQuantique
+> ThinkQuantum
+> clients
+> DMZ
+> Rpi
+
+Rpi  Rpi 
+
+> RSCV
+> SDN
+> DMZ
+> scenario 1
+> scenario 2
+> Optical PUF
+
+Domain IX  Domain X
+
+Domain VIII 
+
+QKD 
+
+Rx 
+
+Domain VII 
+
+QKD 
+
+Tx 
+
+> ...
+> ...
+
+Rpi  Rpi 
+
+Domain V
+
+QKD 
+
+Tx 
+
+> ...
+
+Rpi 
+
+Domain VI 
+
+QKD 
+
+Rx 
+
+> ...
+
+Rpi   
+
+> DMZ DMZ DMZ
+> ...
+
+Rpi 
+
+> ...
+
+Rpi 
+
+> cloud server
+> Management
+> Key transfer
+> Both
+
+Figure 3: Detailed overview of the testbed’s architecture. This figure shows explicit connections within the domains and the cloud. Dotted arrow links show key transfer within each domain, solid arrows show management control originating from the cloud, and the remaining interdomain arrows are governed by both connection types. There are three (3) possible scenarios concerning intradomain key transfer, depending on transaction type: the blue scenario (1) describes usual QKD function; in the magenta scenario (2), QKD keys are processed from the gateway before reaching the client; the third scenario uses a wifi link between the gateway and the client. 4hosted within the cloud environment and coordinated with a dual-mode managed switch running in virtualized SDN mode and supporting both aggregated (non-SDN) and SDN-based architectures on the same device. Network Address Translation (NAT) is used to obscure internal topology and retain traffic processing within the SDN data plane, while the SDN switch dynamically redirects traffic according to controller-defined flow rules and port policies, effectively placing clients into different logical positions across segmented network domains. Consequently, each NE can be programmatically assigned to dedicated configuration and oper-ational positions, enabling dynamic establishment and orchestration of domain layouts, as depicted in Figure 3. For simplicity, the topology assumes one Network Interface Card (NIC) per device, although multiple devices support concurrent multi-NIC parallel connections. The network is protected by using a open source Network Access Control and Identity Manager, behind a 1G hardware firewall. This consolidates control and monitoring functions while enforcing security boundaries over different external testbeds us-ing Media Access Control Security (MACsec) and Internet Protocol Security (IPsec) connections, creating a federated enterprise network. Our implementation remains fully independent of the OQS project and relies exclusively on portable standardized al-gorithm releases, ensuring portability and avoiding tight coupling with specific hardware platforms while providing reproducible measurements. Working in parallel with existing directory-service models, the system is deployed as an additional non-discoverable hidden directory-service layer coordinated through compatible upper management levels. Furthermore, cryptographic functionality is implemented through a lightweight custom application-layer library with minimal kernel dependencies (e.g., KTLS), rendering the software transferable, transparent, and readily integrable with existing applications. 
+
+# 2.2 QKD Network 
+
+At the lowest level and closest to the physical characteristics of the system lies the quantum layer, which is largely driven by the configuration of the QKD nodes. The quantum layer comprises pairs of QKD nodes running a vendor-specific version of the BB84 protocol [3], among which key agreement takes place in the quantum channel, and pairs that form TNs. TNs operate as repeaters in QKD networks, extending the physical reach of the key agreement process and creating a single end-to-end logical chained link between QKD nodes. This functionality requires that the QKD devices forming the TN are purposely configured for this reason, while remaining in a protected environment. From an operational perspective, each QKD node is associated with a specific administrative domain managed by a DSSP, which acts as a trusted proxy for inter-domain key relaying. When forwarding a key 
+
+K to a neighbouring domain, the DSSP retrieves a locally generated QKD key K′ from the quantum layer and computes K ⊕ K′.The resulting value is then transmitted to the next domain, where the corresponding DSSP can recover K using the shared key material. In this way, secure end-to-end key transport across multiple administrative domains is achieved without directly exposing the original key during transit. Here, we assume the existence of inter-domain links that lack the interoperability and protection mechanisms required for seamless trusted-node operation, particularly in multi-vendor deployments. We refer to such incomplete relay links as dangling chain edges (DCEs). The chain segments between DCEs are reinforced with PQC KEMs, thus filling the chain’s non quantum-resistant gaps and yielding a chained link of arbitrary length. We exhibit this paradigm on a testbed of five (5) QKD pairs, two (2) Toshiba MU [22] pairs, two (2) ID Quantique Clavis XG [13] pairs and a ThinkQuantum QUKY [21] pair. Photographs of the physical devices can be found in the Supplementary Information. 
+
+# 2.3 TN emulation 
+
+We implement an emulated equivalent of a conventional TNs via a point to point topology, which can further safeguard the communication of DCEs, provided that a MACsec tunnel has been previously setup. The tunnel can be deployed either as cloud-hosted Secure Access Service Edge (SASE) endpoints or as static on-premises endpoints. In both cases, the endpoint service embeds Identity and Access Management (IAM) and Network Access Control (NAC) functionalities through a RADIUS-based authentication and authorization interface, allowing centralized enforcement of access-control policies independently of the underlying network infrastructure. The endpoint service operates a PQC-KEM-secured post-quantum mutual TLS streaming encryptor/decryptor pair that accepts only authorized DSSPs as peers. Each pair is instantiated with dynamically defined protocol parameters, dedicated PQC KEM root keys, and post-quantum mTLS certificates, making every connection uniquely bound and non-interchangeable. A schematic of the proposed setup can be found in the Supplementary Information. 
+
+# 2.4 Encryptors 
+
+The DSSP of domains 1, 2, 3, 4, 9, and 10 have integrated software encryptors that are cross-platform, crypto-agile packet encryptors designed to deliver high-assurance tunneling services between network domains. These software services support multi-domain interoperability and are engineered to operate within heterogeneous cryptographic environments, providing multi-layer encryption, identification through PQC key pairs and multi-vendor QKD support. Configuration is performed through a PQC-KEM-secured network management interface, which communicates directly with the cloud key management system (KMS). This mechanism ensures post-quantum-resilient provisioning of configuration parameters and cryptographic material. The encryptors support different protocols for key-generating sources, including: 
+
+• QKD ETSI 014 [10] 
+
+• SKIP 
+
+• Direct integration with the cloud KMS as a key-provisioning entity This flexibility enables seamless operation in hybrid classical-quantum key distribution environments. 
+
+5QKD  CLOUD               
+
+> LOGIN
+> {}
+> ETSI 014 ENC_KEY
+> RESPONSE
+> {}
+> LOGIN
+> {}
+> POLICY REQUEST
+> {user_data}
+> ACCEPT
+> {,}
+> ACCEPT
+> {}
+> STATUS REQUEST
+> {,}
+> RESPONSE
+> {,}
+> KEY REQUEST
+> {,,}
+> CLIENT DOMAIN
+
+Figure 4: The intradomain transactions leading to key generation. The client logs onto the domain services, requesting a key from the QKD terminal. Coloured areas denote the authentication protocols: pink for TLS and KEM public key identification; blue for TLS, KEM public key identification and Internet Key Exchange (IKE); green for single-direction or mutual TLS. 
+
+# 3 System Operation 
+
+Consider the setting where a set of m NEs designated as clients C1, C 2, ..., C m is distributed among domains D1, D 2, ..., D n. Domains 
+
+Dx x ∈ [n] integrating a QKD node Gx are hereafter called quantum domains, and are denoted D∗ 
+
+> x
+
+if they fall into the DCE category (see Section 2). The assignment yields 
+
+Cy1 
+
+> 1
+
+, C y2 
+
+> 1
+
+, ..., C yp1 
+
+> 1
+
+of D1,Cyp1+1  
+
+> 2
+
+, C yp1+2  
+
+> 2
+
+, ..., C yp1+p2 
+
+> 2
+
+of D2
+
+...where yi ∈ [m], i ∈ { 1, 2, ..., p 1, p 1 + 1 , ..., p 1 + p2, ... }. Let us denote CA 
+
+> 1
+
+:= Cy1 
+
+> 1
+
+after ‘Alice’, and CB 
+
+> 2
+
+:= Cyp1+1  
+
+> 2
+
+after ‘Bob’. We assume that client device CA 
+
+> 1
+
+of domain D1, which comprises key generator G1, requests cryptographic material that will allow the encrypted communication with client CB 
+
+> 2
+
+of domain D2, as in Figures 2b-7. It follows that, the ultimate goal for CA 
+
+> 1
+
+and CB 
+
+> 2
+
+is to share the symmetric key KA,B  
+
+> 1,2
+
+for encryption and decryption. During the domain and client pool creation, each NE is provided with digital certificates and an initial key pair (pk KEM , sk KEM ) produced with a PQC KEM, bound to its identity (see Section 5.3). The public key pk KEM is stored on the cloud for peer-to-peer identification and trust establishment. Intradomain modules and services are consistently accessible within each domain, maintaining their integrity while forming functionally complete units that can operate independently and collaborate seamlessly. Inside the domain D1, a client CA 
+
+> 1
+
+is authenticated through multi-factor means. Namely, successful authentication is dependent on TLS and an additional security layer based on the ability of CA 
+
+> 1
+
+to decrypt with their secret key kKEM s , confirming their identity. Once the client device CA 
+
+> 1
+
+has been authenticated, an encapsulated key request is sent to the domain gateway. The domain services of D1 will attempt to gain authenticated access to the cloud services, and retrieve the updated policy restrictions that apply to client CA 
+
+> 1
+
+. Depending on the nature of the request, the client will proceed to perform a key agreement with client CBi , i ∈ [n], or the domain services will prompt the local key generator G1 to provide key KA,B  
+
+> 1,2
+
+.In more detail, suppose that client with identity profile CA 
+
+> 1
+
+wants to request a QKD-produced key KA,B  
+
+> 1,2
+
+from their local QKD terminal. The client logs onto the domain services using their signature σCA 
+
+> 1
+
+and the respective user-driven policy ΠCA 
+
+> 1
+
+that must be followed is updated. The update is performed by interchange of the domain-facing and cloud services, wherein the client destination is identified by their PQC KEM public key pk KEM CA
+
+> 1
+
+. If authorised, the domain-facing services allow role-based access (RBAC) and produce a token tLOG . The client subsequently uses their profile CA 
+
+> 1
+
+and the received token tLOG to request and receive the QKD-produced key KA,B  
+
+> 1,2
+
+, along with its identifier ID K , through the domain services. The process is shown in full in Figure 4. Next, consider the case wherein CB 
+
+> 1
+
+has initiated key agreement with CA 
+
+> 1
+
+; cloud key, domain and identity management will perform multi-layer authentication between domain and cloud, similar to the previous-stage authentication mechanism, and will supply CB
+
+> 1
+
+6with the means for retrieving the correct key from the local key generator, a.k.a the QKD node G1.
+
+# 4 Connecting DCEs for Multi-domain Key Distribution 
+
+Our vendor-agnostic approach to key relay is based on cloud-managed post-quantum key encapsulation and authentication, as well as SDN functionality, all conveniently complementing and reinforcing QKD across domains. PQC mechanisms are efficiently exploited, enhancing the resilience and forward secrecy of communications, while cloud management ensures that only legitimate and continuously validated users access the provided security services. Ultimately, one key can be shared between two NEs without distance limitations following a two-phase process described below. The handshake phase ensures transfer only to strictly authorized parties, following the Zero Trust Network Access (ZTNA) premises, while the transfer phase defies vendor-specific integration, e.g. as required by interfaces conforming to ETSI GS QKD 015 [9]. 
+
+# 4.1 Handshake Phase 
+
+The functionality described in Section 3 is applied consistently across all domains. Initially, domains D1 and D2 log onto the cloud services, updating the policies and permissions applicable to their corresponding clients CA 
+
+> 1
+
+and CB 
+
+> 2
+
+, and the clients, in turn, log onto the respective domain services. These login steps of this process are the same as in Figure 4 for all endpoints of the respective domains D1 and D2. All clients expose a service API specifically purposed to serve communication intentions. Hence, once clients 
+
+CA 
+
+> 1
+
+and CB 
+
+> 2
+
+have received a respectively unique login token tLOG for service access, CB 
+
+> 2
+
+enrolls to the services exposed by CA 
+
+> 1
+
+.Client CA 
+
+> 1
+
+will send its profile data, the login token and a token tA,B  
+
+> 1,2
+
+to the cloud through the domain services. Client CA 
+
+> 1
+
+stores token tA,B  
+
+> 1,2
+
+on the cloud, in order to be shared with the communication peer, and expects to receive it from CB 
+
+> 2
+
+as proof that it belongs to a known, authenticated, and accessible domain, in this case D2. Afterwards, CA 
+
+> 1
+
+will communicate the identifier ID t to 
+
+CB 
+
+> 2
+
+. The latter, once authorized, will resolve the token tA,B  
+
+> 1,2
+
+with identifier ID t by accessing the cloud through the domain services, then encapsulate and present tA,B  
+
+> 1,2
+
+to CA 
+
+> 1
+
+, thereby establishing trust. 
+
+# 4.2 Transfer Phase 
+
+Assuming that clients CA 
+
+> 1
+
+of domain D1 and CB 
+
+> 2
+
+of domain D2 need to share the private symmetric key KA,B  
+
+> 1,2
+
+and that key generators Gi of domain Di, i ∈ [n] and Gj , j ∈ [n] of domain Dj are QKD terminals, we distinguish the following cases depending on their relation: 
+
+• Key generators G1 ≡ Gi and G2 ≡ Gj are a QKD pair, as in Figure 2b. The DSSP of the source domain D1 acts as a trusted proxy by masking the relay key KA,B  
+
+> 1,2
+
+with a second QKD-generated key K′ 
+
+> 1,2
+
+using the operation KA,B  
+
+> 1,2
+
+⊕ K′
+
+> 1,2
+
+. The result is transmitted to the adjacent domain, which then reconstructs KA,B  
+
+> 1,2
+
+using the corresponding shared QKD key material. 
+
+• Key generators G1 and G2 are parts of QKD pairs connected through a TN comprising terminals Gi, Gj , as in Figure 6. The DSSP of the source domain D1 masks the relay key KA,B  
+
+> 1,2
+
+with a locally shared QKD key K1 using C1 = KA,B  
+
+> 1,2
+
+⊕ K1,i and forwards the result through the intermediate domains; the trusted node recovers the original key as KA,B  
+
+> 1,2
+
+= C1 ⊕ K1,i . The trusted node then establishes a new QKD-derived key Kj, 2 with the next domain, computes C2 = KA,B  
+
+> 1,2
+
+⊕ Kj, 2, and forwards 
+
+C2. The destination domain D2 will recover the relayed key with KA,B  
+
+> 1,2
+
+= C2 ⊕ Kj, 2.
+
+• Key generators G1 ≡ Gi and Gj are connected in one of the ways described in the previous cases and client C2 belongs to a non-quantum domain, as in Figure 7. The DSSP in the source domain first computes C1 = KA,B  
+
+> 1,2
+
+⊕K1,i and forwards C1 to the first trusted node, which recovers the original key as KA,B  
+
+> 1,2
+
+= C1 ⊕ K1,i . The trusted node then establishes a new QKD-derived key Kj, 2 with the next domain, computes C2 = KA,B  
+
+> 1,2
+
+⊕ Kj, 2, and forwards C2. The DCE recovers KA,B  
+
+> 1,2
+
+= C2 ⊕ Kj, 2 and, instead of applying another XOR-based masking operation, encapsulates KA,B  
+
+> 1,2
+
+using a KEM public key associated with the destination domain, producing a ciphertext CKEM that is transmitted to the destination, where KA,B  
+
+> 1,2
+
+is recovered through KEM decapsulation. 
+
+• Key generators Gi and Gj are connected in one of the ways described in the previous cases and clients C1, C2 belong to a domains without a QKD terminal. The source domain encapsulates the session key KA,B  
+
+> 1,2
+
+using the destination domain’s KEM public key, producing a ciphertext CKEM = Encaps( pk dst , K A,B  
+
+> 1,2
+
+), which is transmitted across the network. Upon reception, the destination domain recovers the key by performing decapsulation, KA,B  
+
+> 1,2
+
+= Decaps( sk dst , C KEM ), enabling secure end-to-end key delivery without relying on QKD-generated key material. Using the proposed system, the QKD-derived key material is encapsulated with PQC KEMs and exported under cloud super-vision through the described transaction-based workflow. While information-theoretic security is inherently confined to the QKD segment, this approach preserves quantum resistance across domain boundaries and enforces controlled access, traceability, and policy compliance. 
+
+# 5 Architectural Planes and Main Components 
+
+The presented system follows a layered architectural model consisting of an administrative plane, an SDN-orchestrated control plane, and a data plane, spanning the control, application, network, and quantum layers shown in Figure 8, the latter being treated separately due to its distinct management and operational requirements. The administrative plane constitutes the management of 
+
+7CLOUD                              
+
+> LOGIN
+> {}LOGIN
+> {}
+> LOGIN
+> {}
+> POLICY REQUEST
+> {user_data}
+> ACCEPT
+> {,}
+> ACCEPT
+> {}LOGIN
+> {}
+> POLICY REQUEST
+> {user_data}
+> ACCEPT
+> {,}
+> ACCEPT
+> {}
+> CLIENT DOMAIN CLIENT
+> ENROLL
+> {username, password}
+> KEY REQUEST
+> {,,}
+> KEY REQUEST
+> {}
+> ACCEPT
+> {}
+> DOMAIN
+> STATUS REQUEST
+> ACCEPT
+> {}
+> TOKEN REQUEST {}
+> RESOLVE TOKEN
+> {,,}
+> RESOLVE TOKEN
+> {}
+> ACCEPT
+> {}
+> ACCEPT
+> {}
+> STATUS REQUEST
+> KEY ID
+> {}
+
+Figure 5: The interdomain transactions for key agreement between clients CA 
+
+> 1
+
+and CB 
+
+> 1
+
+. The first login steps are the same as in Figure 4. Then, CB 
+
+> 2
+
+enrolls to the services exposed by CA 
+
+> 1
+
+and CA 
+
+> 1
+
+stores a token on the cloud. The peer receives and resolves the token, which is used to obtain the ID of the symmetric key to be used for encryption. Coloured areas denote the authentication protocols (see Figure 4). 8optical link    
+
+> trusted node
+> typical QKD
+> cloud & PQC
+> Domain Domain
+> Client QKD
+> QKD QKD
+> Client QKD
+
+Figure 6: The clients are placed in two remote quantum domains with QKD terminals connected through a TN. The green arrows represent the conventional QKD usage. The blue arrows represent QKD-derived key sharing through forwarding PQC encapsulated messages. optical link     
+
+> trusted node
+> typical QKD
+> cloud & PQC
+> Client QKD QKD
+> Domain Domain
+> QKD QKD Client Client
+> Domain
+
+Figure 7: The clients are placed in two remote domains, a quantum D1 and a non-quantum D2. The green arrows represent the conventional QKD possible interactions, which are limited among domains D1, Di, Dj , D∗
+
+> k
+
+. The blue arrows represent the extended QKD-derived and quantum-safe key sharing offered by our implementation through forwarding PQC encapsulated messages. 9these layers, defining policies, supervising configuration, and controlling security-critical operations. The SDN-orchestrated control plane maintains a global view of the network and enables dynamic configuration and reconfiguration of network paths in response to topology changes or policy decisions. The data plane is responsible for the execution of communication and processing functions, including the transport of user data, the operation of communication channels, and the application of cryptographic mechanisms. Together, these planes provide a clear separation between governance, decision-making, and execution across the system. Trusted Node 
+
+QUANTUM 
+
+NETWORK 
+
+APPLICATION 
+
+Services 
+
+Services 
+
+Services 
+
+PQC 
+
+Transactions 
+
+CONTROL 
+
+Telemetry 
+
+Certificate 
+
+Authority  Distributed 
+
+Control 
+
+Services  Services 
+
+Figure 8: Overview of the proposed framework’s overall organisation. The main implementation components are distributed according to the physical layout in the network. We distinguish four (4) planes – quantum, network, application and control. Quantum: 
+
+defines the quantum channels; network: models domains of clients and key generators while specifying TN connections; application: 
+
+outlines service area of action; control: distributes crucial management operations among the corresponding cloud services. 
+
+# 5.1 Administration and Control 
+
+The administrative plane supervises the configuration and coordination of system components, without directly participating in their operation. It defines and enforces system-wide policies, manages client permissions and possible actions, and regulates the sources of authorization material, including certificates, public key pairs, and tokens, according to user profiles. These services are domain-specific and supervised by the cloud control plane. Cloud services reside alongside the administration control and support system-wide operations, while the administrative plane manages actions with significant security concern, such as client addition and profile creation. The control plane leverages SDN control and automation to dynamically configure network paths, isolate traffic, and react to topology or policy changes. As QKD networks scale, SDN features that allow dynamic configurations and regulated key retrieval become critical [18]. In our deployment, a visualised SDN provides automated switching for QKD terminals while abstracting the QKD layer. 
+
+# 5.2 Certification, Authentication, Identification and Trust 
+
+Authentication is achieved with a strict scheme that involves certificates, PQC KEM key pairs (asymmetric) and policy alignment (e.g domain specific user access, RBAC, etc.). Client permissions and possible actions are explicitly defined and authorization material (certificates, public key pairs, tokens) sources are restrained according to user profile. The proposed authentication framework is based on a multi-level public key infrastructure (PKI) managed from the cloud, that employs separate roots for QKD nodes of different vendors and another root for the rest of the testbed. In more detail, the overall system employs three (3) root Certificate Authorities (CAs), and four (4) Intermediate Certificate Authorities (ICAs). Separate roots not only ensure compatibility with the QKD nodes, which require distinct chain-of-trust formats, but also preserve integrity among chains and ensure interoperability. Certificates are categorized according to their operational role: 
+
+• infrastructure identity certificates for device-level identification, 
+
+• service device-bound identification and authorization certificates for client-service interactions, and 
+
+• key management trust certificates for secure inter-KMS communication and synchronization. Certificate issuance, renewal, revocation, and policy enforcement are managed by dedicated services operating under cloud supervi-sion. Certificate maintenance guarantees dependency dismantling on revocation events; in a partial certificate renewal case wherein a certificate becomes invalidated, the old certificate is returned to re-establish the client or domain, reconstructing the part of the network that could potentially accommodate an adversary; otherwise maintenance triggers system overhauling. Trust is established through explicit cross-validation of service certificates rather than reliance on a single centralized issuer. During domain build, gateways are provisioned with certificates used for mutual TLS (mTLS) authentication and clients are defined by the administrator and securely initialised with digital certificates signed with post-quantum algorithms. Any NEs participating in authenticated interactions are also provided a key pair produced with PQC KEMs, bound to their certified identities, and 
+
+10 each activated public key pk KEM is stored on the cloud for peer-to-peer identification and trust establishment. Following initial authentication, the system employs proof-of-possession mechanisms to avoid repeated transmission of long-term credentials. Instead, short-lived cryptographic tokens are issued and used as digital tickets for subsequent transactions. Possession of a valid token cryptographically demonstrates authorization, enabling stateless authentication at the service level while ensuring scalability, replay protection, and minimal exposure of sensitive credentials. 
+
+# 5.3 Key Management 
+
+The key management module orchestrates domain deployment and, as such, determines the behaviour of the final system with respect to trust and the cryptographic material’s lifecycle. In more detail, it coordinates the distribution of domains built beforehand and ensures that they are provisioned with certificates and key pairs sufficient to initiate trusted connections. It distributes and maintains certificates for each NE in a domain and connects each NE to a rotating key pair created with the PQC KEM NTRU [11]. Eventually, the KMS provides NEs with an initial transactional KEM pair (pk KEM , sk KEM ) from which the public key is stored on the cloud for client discovery. Another pair is ephemeral and updated after each transaction with the help of the domain services, while the last is used for identification. Each sender holds a separate public key for each receiver, making sure that the message can be decapsulated and decrypted by the holder of the corresponding secret key, hence the KEM pair is used as an additional identity validation point. With regards to key retrieval, our ZTP device driver architecture ensures automatic provisioning with full agnostic nature. Key generators are provisioned to the DSSP over a specific secondary Network Interface Controller. This physical isolation provides protected access and identification, as each key generator can be registered to the system and identified via different types of identity claims (e.g. PUF, Printed Circuit Board specific features). The DSSP backend, then, uses a key generator-specific driver that handles the key requests using the appropriate security claims. This scheme leads to interoperability and secure assimilation of any type of device for key generation. 
+
+# 5.4 Vendor-Agnostic QKD Management 
+
+A significant portion of effort addressed the seamless incorporation of the QKD pairs. QKD management is performed from the cloud and is designed to accommodate the requirements of the devices in our testbed, while remaining readily extensible to support additional hardware. This module is meant to efficiently provide access to cryptographic material while maintaining smooth operation and communication with the domain, as commercial QKD devices frequently depend on rigid configuration requirements, limiting seamless integration in large-scale, multi-vendor environments. In our implementation, we found misalignment on four (4) levels, including administration or management, authentication mechanisms, SDN support and key retrieval interfaces. 
+
+# 5.5 Orchestration 
+
+The orchestration layer is responsible for the coordinated management and automation of network, control, and quantum resources across domains. It provides consistent configuration, deployment, and supervision of complex scenarios, but also integrates with the SDN controller to allow dynamic configuration, monitoring, and reconfiguration of network paths in response to topology changes or policy decisions. In the context of this work, orchestration plays a central role in the controlled bridging of high-level components with low-level system elements. A key function of the orchestration layer is the support for automated scenario building, whereby network topologies, domain relationships, and service dependencies can be instantiated programmatically. This includes the definition of participating network elements, inter-domain links, and associated control policies. According to the system operation described in Section 2, three main automated scenarios are prepared: 1. QKD response time: This test involves all the processes required for the key agreement between a QKD node pair located in separate domains, as well as the retrieval and transmission of its identifier as an encapsulated message across domains. The development of this test allowed to study the rate of key acquisition in a real-world deployment within the context of PQC-protected interdomain connections and revealed the issue of depletion, as some QKD nodes have limited key generation throughput. 2. Intradomain key retrieval: This test measures the end-to-end latency of service requests, decomposed into the communica-tion and processing stages between user, device, domain, and key generation entities, including the return path of the generated key material. It captures both communication and processing delays involved in request propagation and key delivery. 3. Cloud key retrieval: This test measures the latency of client-domain-cloud exchanges during service enrollment and token handling. It includes client authentication and the transmission and retrieval of tokens and identifiers via domain services and cloud infrastructure. 
+
+# 5.6 Telemetry 
+
+A major concern since the early stages of the system’s development has been the design of an elaborate telemetry component that offers transparency, fault detection and localization, in addition to close performance monitoring. Telemetry has been tuned to be device-oriented and to provide a clear image of the network’s status, enabling observability and the rapid identification of problematic segments. To this end, telemetry data are collected and aggregated across domains, allowing both localized and system-wide conditions to be assessed in a consistent manner. The testbed logging has been tuned to avoid obstruction of normal operation, introducing only negligible performance impact while delivering meaningful and actionable updates. Given the high volume of telemetry and event messages generated by the system, device-oriented filtering and aggregation mechanisms have been employed to surface only significant state changes and relevant events, thereby preventing information overload. At the same time, clients are provided with control over telemetry and logging behavior, allowing them to enable, disable, or trigger logging operations 
+
+11 manually according to their specific requirements. Logging messages produced cover key acquisition latency, transaction completion, client authentication events, and cryptographic operation timings, such as encryption and decryption. These metrics support both real-time monitoring and post-experiment analysis, contributing to validation, debugging, and performance characterization of the deployed system. 
+
+# 6 Experimental results 
+
+We conducted experiments on a testbed of ten (10) domains containing QKD nodes from three vendors –Toshiba, ID Quantique, ThinkQuantum– alongside two (2) domains without QKD nodes (Figures 3). Each domain includes a gateway router, a low-power DSSP device, and client nodes (Table 1), while an aggregation router enables inter-domain and cloud connectivity via an SDN-enabled data plane. QKD communication relies on ETSI 014 [10]. Connection latency is between 10 and 25 ms per link, with the multi-authentication combination mTLS and PQC KEM included in the measurement. SDN functionality increases latency by a ∼ 10 ms SDN overhead. Intradomain transactions complete in 
+
+t ∈ [10 + x, 25 + x] ms , where x ∈ { 20 , 250 } ms depending on the QKD vendor, while cloud access introduces an overhead of 
+
+∼ 13 to 52 ms per request. The dominant latency factor is QKD key retrieval, which is approximately one order of magnitude slower than classical cryptographic and networking operations, whereas network jitter remains negligible. Table 2 reports the processing overhead introduced by encapsulation and decapsulation operations across heterogeneous DSSP platforms. For PQC, NTRU761 KEM pair generation – measured using a fully portable version of the algorithm without processing optimisation instructions – requires 37 .6 ms per device on a laptop and 71 ms in cloud containers, with per-domain generation (four pairs) reaching 125 ms and 280 ms respectively. Increasing CPU cores (2 vs. 10) does not improve latency, indicating dependence on single-core performance. PQC operations remain stable across heterogeneous environments. 
+
+Platform Role Specifications 
+
+Poweredge R730 cloud servers 32 cores 32GB Ubuntu server 24.04 PCI exp 3.0 Laptop client I713700H 20 Cores 16GB Ubuntu 25.04 PCIE 4.0 Raspberry Pi 5 DSSP 2GB 4 core Aarch64 kernel SMP Raspberry pi 4 DSSP Raspbian lite 32GB heatsink no fan 6.12 SMP PREEMPT RISCV64 DSSP Sifive P550 premier Arm RISCV64 32GB SMP PREEMPT_DYN Table 1: Devices used in our testbed with their specifications and role. 
+
+Platform EncryptionDecryption 
+
+RISCV64 (full desktop) 2.5 ms 24 ms Raspberry Pi 4 (full desktop) 2.5 - 4 ms 6.5 ms Raspberry Pi 5 (no desktop) 2.5 ms 6.5 ms Table 2: Times for encryption and decryption of the encapsulated packet travelling between domains. 
+
+Certificate generation is dominated by RSA-4096 costs. On the laptop, CA-ICA tree construction (18 certificates) requires 
+
+412 ms , while QKD infrastructure initialization takes ∼ 1227 ms , with only ∼ 27 ms attributed to ECDSA P-384 and ∼ 1200 ms 
+
+to RSA. In cloud environments, initialization increases to ∼ 13 .4–16 .9 s , again largely due to RSA generation, with minimal gains from additional CPU cores. Table 3 summarizes the measured certificate and KEM generation overhead across platforms. Overall, system overhead from SDN control and service orchestration remains low and manageable even on constrained devices. In contrast, QKD key retrieval and infrastructure initialization constitute the primary bottlenecks, with vendor-specific implemen-tations introducing higher latency in exchange for robustness and advanced authentication support. Classical certificate generation is resource-sensitive, whereas PQC operations exhibit consistent performance across platforms. 
+
+Platform 1 KEM pair 4 KEM pairs CA - ICA (18 crts) QKD (16 crts) 
+
+Laptop 37.58 125.26 411.82 1227.35 Cloud server (2 cores) 71 280.31 4377.59 16888.82 Cloud server (10 cores) 71 280.31 4377.59 13443.88 Table 3: Measurements regarding the creation of key pairs and certificates on each device of Table 1. The KEM used is NTRU761, while a part of the listed certificates (crts) were produced with ECDSA P-384 and the rest with RSA 4096. the results are reported in milliseconds. 12 7 Conclusions 
+
+The presented work demonstrates a flexible multi-domain quantum-secure network architecture that combines QKD, PQC, SDN orchestration, and cloud-managed trust services into a unified framework. The proposed approach accommodates heterogeneous deployments, including fully PQC-based domains, hybrid quantum-classical infrastructures, and multiple types of key generators through an agnostic ZTP-driven integration model. This allows secure key transport and authenticated communication across domains without requiring homogeneous QKD deployments or tightly coupled vendor-specific infrastructures. The implementation further highlights the practical challenges associated with the integration of multi-vendor QKD systems, particularly with respect to incompatible management interfaces, authentication schemes, orchestration mechanisms, and key retrieval procedures. At the operational level, the limited key streaming and generation rates of current QKD nodes remain a major bottleneck compared to the relatively stable overhead introduced by PQC operations and SDN functionality. Nevertheless, the measurements indicate that the additional orchestration, authentication, and encapsulation layers can be integrated with limited performance impact even on constrained devices, supporting the practicality of the proposed architecture in realistic deployments. Another important aspect of the proposed framework is its adaptability. The architecture can accommodate a wide range of deployment scenarios, including domains with native QKD support, partially connected trusted-node chains, and purely classical domains relying exclusively on PQC mechanisms for secure key transport. At the same time, the DSSP abstraction and cloud-supervised management model provide a consistent operational interface independently of the underlying cryptographic or networking technologies, simplifying interoperability and service orchestration across heterogeneous environments. Future work will focus on extending the infrastructure towards geographically remote domains and larger-scale deployments involving significantly higher numbers of clients and services. Such scaling introduces additional challenges related to orchestration complexity, latency accumulation, inter-domain trust propaga-tion, certificate lifecycle management, QKD key depletion, telemetry aggregation, and the scalability of centralized cloud and SDN control services. Nevertheless, the modular and vendor-agnostic design of the proposed architecture provides the flexibility required to progressively address these challenges while enabling the evolution towards practical large-scale quantum-secure networks. 
+
+# References 
+
+[1] Asier Atutxa, Ane Sanz, Eire Salegi, Maider Huarte, Jasone Astorga, and Eduardo Jacob. Authentication of the QKD classical channel through Post-Quantum Cryptography in a multi-site 5G/6G quantum-safe communication network. In 2025 International Conference on Quantum Communications, Networking, and Computing (QCNC) , pages 648–654, Nara, Japan, March 2025. IEEE. [2] David Barral, Aitor Brazaola-Vicario, Diego Cifrián, Natalia Costas, Gonzalo Blázquez, Ana Fernández-Vilas, Iago F. Llovo, Pedro Otero-García, Pablo P. Rejo, Alejandra Ruiz, Juan Villasuso, and Manuel Fernández-Veiga. Interconnecting Regional QKD Networks: Hybrid Key Delivery Across Quantum Domains, April 2026. arXiv:2604.20376 [cs.NI]. [3] Charles H Bennett and Gilles Brassard. Quantum cryptography: Public key distribution and coin tossing. In Proceedings of IEEE International Conference on Computers, Systems and Signal Processing , volume 175. Bangalore, India, 1984. [4] P. et al. Berde. Onos: towards an open, distributed sdn os. In HotSDN , pages 1–6, 2014. [5] Vinay Chamola, Alireza Jolfaei, Vaibhav Chanana, Prakhar Parashari, and Vikas Hassija. Information security in the post quantum era for 5G and beyond networks: Threats to existing cryptography, and post-quantum cryptography. Computer Communications , 176:99–118, August 2021. [6] Hao-Ze Chen, Ming-Han Li, Yu Zhou Wang, Zhen-Geng Zhao, Cheng Ye, Fei Long Li, Zhu Chen, Sheng-Long Han, Bao Tang, Ya Jun Miao, and Wei Qi. Implementation of carrier-grade quantum communication networks over 10000 km. npj Quantum Information , 11(1):137, August 2025. [7] Teng-Yun Chen, Xiao Jiang, Shi-Biao Tang, Lei Zhou, Xiao Yuan, Hongyi Zhou, Jian Wang, Yang Liu, Luo-Kan Chen, Wei-Yue Liu, Hong-Fei Zhang, Ke Cui, Hao Liang, Xiao-Gang Li, Yingqiu Mao, Liu-Jun Wang, Si-Bo Feng, Qing Chen, Qiang Zhang, Li Li, Nai-Le Liu, Cheng-Zhi Peng, Xiongfeng Ma, Yong Zhao, and Jian-Wei Pan. Implementation of a 46-node quantum metropolitan area network. npj Quantum Information , 7(1):134, September 2021. [8] Emir Dervisevic, Amina Tankovic, Ehsan Fazel, Ramana Kompella, Peppino Fazio, Miroslav Voznak, and Miralem Mehic. Quantum Key Distribution Networks - Key Management: A Survey. ACM Computing Surveys , 57(10):1–36, October 2025. [9] ETSI Industry Specification Group for Quantum Key Distribution (ISG QKD). Etsi gs qkd 015 v2.1.1 (2022-04): Quantum key distribution (qkd); control interface for software defined networks. Group Specification GS QKD 015 V2.1.1, ETSI, April 2022. Specifies management/abstraction interfaces between SDN controllers and QKD nodes for network control plane operations. [10] European Telecommunications Standards Institute. Quantum key distribution (qkd); protocol and data format of rest-based key delivery api. Technical report, European Telecommunications Standards Institute (ETSI), Sophia Antipolis, France, 2019. Defines a protocol and data format for REST-based key delivery in QKD networks. [11] Jeffrey Hoffstein, Jill Pipher, and Joseph H. Silverman. Ntru: A ring-based public key cryptosystem. In Joe P. Buhler, editor, 
+
+Algorithmic Number Theory, Third International Symposium, ANTS III , volume 1423 of Lecture Notes in Computer Science ,pages 267–288, Berlin, Heidelberg, 1998. Springer-Verlag. [12] P. Horoschenkoff, J. Henrich, R. Böhn, I. Khan, J. Rödiger, M. Gunkel, M. Bauch, J. Benda, P. Bläcker, E. Eichhammer, U. Eismann, G. Frenck, H. Griesser, W. Jontofsohn, N. Kopshoff, S. Röhrich, F. Seidl, N. Schark, E. Sollner, D. von Blanck-enburg, A. Heinemann, M. Stiemerling, and M. Gärtner. DemoQuanDT: A Carrier-Grade QKD Network. Journal of Optical Communications and Networking , 17(9):743, September 2025. arXiv:2503.21186 [quant-ph]. 
+
+13 [13] ID Quantique. Clavis xg quantum key distribution system. https://www.idquantique.com/quantum-safe-security/ products/clavis-xg-qkd-system/ , 2022. Official product page for the Clavis XG commercial QKD system. [14] Sergejs Kozlovics, Krisjanis Petrucena, Davis Larins, and Juris Viksna. Quantum Key Distribution as a Service and Its Injection into TLS. In Weizhi Meng, Zheng Yan, and Vincenzo Piuri, editors, Information Security Practice and Experience , volume 14341, pages 527–545. Springer Nature Singapore, Singapore, 2023. Series Title: Lecture Notes in Computer Science. [15] V. Martin, J. P. Brito, L. Ortíz, R. B. Méndez, J. S. Buruaga, R. J. Vicente, A. Sebastián-Lombraña, D. Rincón, F. Pérez, C. Sánchez, M. Peev, H. H. Brunner, F. Fung, A. Poppe, F. Fröwis, A. J. Shields, R. I. Woodward, H. Griesser, S. Roehrich, F. De La Iglesia, C. Abellán, M. Hentschel, J. M. Rivas-Moscoso, A. Pastor-Perales, J. Folgueira, and D. López. MadQCI: a heterogeneous and scalable SDN-QKD network deployed in production facilities. npj Quantum Information , 10(1):80, September 2024. [16] Nick McKeown, Thomas Anderson, Hari Balakrishnan, Guru Parulkar, Larry Peterson, Jennifer Rexford, Scott Shenker, and Jonathan Turner. Openflow: enabling innovation in campus networks. ACM SIGCOMM Computer Communication Review ,38(2):69–74, 2008. [17] Ruben B. Mendez, Jaime S. Buruaga, Rafael J. Vicente, Luis Mengual, Antonio Pastor, Alejandro Muñiz, Juan Morales, Rafael Canto, Jesus Folgueira, Diego R. Lopez, Vicente Martin, and Juan P. Brito. SDN-Based Hybrid Quantum-Safe Domain Intercommunication Within MadQCI. In 2024 International Conference on Quantum Communications, Networking, and Computing (QCNC) , pages 168–175, Kanazawa, Japan, July 2024. IEEE. [18] Rubén B. Méndez, Hans H. Brunner, Juan P. Brito, Hamid Taramit, Chi-Hang Fred Fung, Antonio Pastor, Rafael Cantó, Jesús Folgueira, Diego R. López, Momtchil Peev, and Vicente Martin. Switching Coordinator: An SDN Application for Flexible QKD Networks. Entropy , 28(2):219, February 2026. [19] Yoann Piétri, Pierre-Enguerrand Verdier, Baptiste Lacour, Maxime Gautier, Heming Huang, Thomas Camus, Jean-Sébastien Pegon, Martin Zuber, Jean-Charles Faugère, Matteo Schiavon, Amine Rhouni, Yves Jaouën, Nicolas Fabre, Romain Alléaume, Thomas Rivera, and Eleni Diamanti. Quantum Key Distribution with Efficient Post-Quantum Cryptography-Secured Trusted Node on a Quantum Network, April 2025. arXiv:2504.01454 [quant-ph]. [20] Louis Salvail, Momtchil Peev, Eleni Diamanti, Romain Alléaume, Norbert Lütkenhaus, and Thomas Länger. Security of trusted repeater quantum key distribution networks. Journal of Computer Security , 18(1):61–87, January 2010. [21] ThinkQuantum S.r.l. Quky quantum key distribution platform. https://www.thinkquantum.com/quky/ , 2024. Official product page describing the QUKY BB84-based QKD system. [22] Toshiba Europe Limited. Multiplexed qkd system mu. https://www.toshiba.eu/quantum/products/ quantum-key-distribution/ , 2025. Official product page describing the MU QKD system and its BB84-based proto-col implementation. [23] Antonia Tsili, Konstantinos Kordolaimis, Konstantinos Krilakis, and Dimitris Syvridis. A scalable framework for post-quantum authentication in public key infrastructures. In 2025 International Conference on Quantum Communications, Networking, and Computing (QCNC) , pages 279–286, 2025. [24] Qingping Wang, Xiaosong Yu, Qingcheng Zhu, Yongli Zhao, and Jie Zhang. Quantum key pool construction and key distribution scheme in multi-domain QKD optical networks (QKD-ON). In Chaoyang Lu, Yangjian Cai, Feng Chen, and Zhaohui Li, editors, 
+
+4th Optics Young Scientist Summit (OYSS 2020) , page 63, Ningbo, China, February 2021. SPIE. [25] Feihu Xu, Xiongfeng Ma, Qiang Zhang, Hoi-Kwong Lo, and Jian-Wei Pan. Secure quantum key distribution with realistic devices. Rev. Mod. Phys. , 92:025002, May 2020. [26] Yong-Hua Yang, Pei-Yuan Li, Shi-Zhao Ma, Xiao-Cong Qian, Kai-Yi Zhang, Liu-Jun Wang, Wan-Li Zhang, Fei Zhou, Shi-Biao Tang, Jia-Yong Wang, Yu Yu, Qiang Zhang, and Jian-Wei Pan. All optical metropolitan quantum key distribution network with post-quantum cryptography authentication. Optics Express , 29(16):25859, August 2021. [27] Qingcheng Zhu, Xiaosong Yu, Yongli Zhao, Avishek Nag, and Jie Zhang. QKD Key Provisioning With Multi-Level Pool Slicing for End-to-End Security Services in Optical Networks. IEEE Transactions on Network Science and Engineering , 11(2):2153– 2169, March 2024. 
+
+14 Appendix A Hardware and Devices 
+
+This section contains photographs of key devices used for the deployment of the enterprise-grade network. 
+
+# A.1 Cloud Servers 
+
+Figure 9: The cloud servers 15 A.2 QKD Nodes 
+
+Figure 10: Toshiba MU nodes 
+
+Figure 11: ThinkQuantum QUKY 
+
+Figure 12: ID Quantique Clavis XG 16 Appendix B Additional Figures 
+
+# B.1 Trusted Node Emulation Through MACsec TN emulation 
+
+# Enc/Dec DSSP  DSSP 
+
+# QKD 
+
+## type 1 
+
+# QKD 
+
+## type 2 
+
+# Enc/Dec 
+
+# PQC 
+
+# KEM 
+
+# PQC 
+
+# KEM 
+
+# MSCsec 
+
+> ETSI014
+> ETSI014
+
+Figure 13: Emulated trusted-node operation through MACsec. The DSSPs establish PQC-protected tunnels and relay QKD-derived key material across domains. 
+
+# B.2 QKD Chain with DSSP Relay 
+
+Figure 14: Example of a chained QKD relay across multiple domains. Intermediate DSSPs recover and re-protect the relayed key material before forwarding it to the next domain. 17 Appendix C Comparison with Similar Works 
+
+Table 4: Comparison of the ETSI/KMS federation architecture [2], the MadQCI SDN-QKD deployment [15, 17], and the proposed DSSP-based multi-domain framework. 
+
+Aspect ETSI/KMS Federation MadQCI SDN-QKD MadQCI Hybrid Intercommu-nication Proposed DSSP Framework 
+
+Primary objective Federation of heterogeneous re-gional QKD networks through ETSI-compliant KMS overlays. Deployment of scalable SDN-QKD infrastructure integrated into pro-duction telecom networks. Hybrid quantum-safe inter-domain communication using SDN, QKD, and PQC across administrative domains. Enterprise-grade quantum-secure orchestration integrating QKD, PQC, SDN, and cloud trust ser-vices. Architectural paradigm Distributed KMSTN federation overlay. Software-defined QKD networking (SDN-QKD). SDN-based hybrid QKD/PQC do-main intercommunication. Domain-oriented DSSP orchestra-tion framework. Core orchestration entity KMS / KMSTN federation nodes. SDN controller with LKMS and forwarding modules. SDN controllers coordinating LKMSes and border nodes across domains. Distributed DSSPs supervised by cloud orchestration. Relay abstraction Trusted KMS relay proxies. Trusted relay nodes with for-warding modules separated from LKMS. Border-node relay architecture with SDN-assisted key forwarding. DSSPs acting as trusted inter-domain relay proxies. Deployment model Interconnection of regional QKD islands. Production deployment across op-erational telecom facilities and multiple operators. Interconnection of heterogeneous administrative and technological domains within MadQCI. Enterprise/cloud multi-domain deployment with SDN-managed orchestration. Network domains Federated regional domains. Telefónica and RedIMadrid do-mains interconnected through bor-der nodes. Cross-domain QKD forwarding between Telefónica, RedIMadrid, and Munich domains. Multiple enterprise or carrier domains interconnected through DSSP federation. QKD technologies Hybrid QKD/PQC federation. Simultaneous DV-QKD and CV-QKD deployment. Hybrid QKD forwarding with PQC-assisted long-haul emula-tion. QKD-agnostic integration with optional PQC-only segments. Vendor interoper-ability ETSI-compliant interoperability among QKD regions. Integration of Huawei, Toshiba, ID Quantique, AIT, ADVA, R&S, and QuSide systems. Vendor-independent inter-domain hybridization using ID Quantique and Huawei systems. Vendor-agnostic orchestration integrating Toshiba, IDQ, ThinkQuantum, and future vendors. Control plane Secure KMS coordination and routing. SDN controller implementing routing, QoS, switching, and orchestration. Independent SDN controllers coor-dinating secure inter-domain key forwarding. Cloud-supervised SDN orchestra-tion integrated with DSSP policy management. Switching and path management Logical key-routing federation. Dynamic optical switching en-abling 45 direct quantum paths. Dynamic SDN-assisted key for-warding and border-node path or-chestration. Dynamic SDN-assisted inter-domain relay selection and routing. Quantum/classical coexistence Focused on federation and secure transport. Quantum and commercial telecom traffic coexist on shared fibers. QKD domains interconnected through PQC-emulated long-haul links over classical infrastructure. Supports hybrid quantum/classi-cal infrastructure and DCE exten-sion. PQC integration Kyber-secured transport and hy-brid relay. Hybrid operation with QKD and conventional cryptographic fall-back. PQC KEMs (Kyber/NTRU) used for long-distance QKD emulation and hybrid XOR-based protection. PQC integrated into identity, au-thentication, orchestration, and secure tunnels. Hybridization method Hybrid relay using QKD/PQC-derived secrets. Parallel coexistence of QKD and classical cryptography. XOR hybridization of multiple QKD links and PQC-derived keys at border nodes. QKD-assisted relay with PQC-secured DCE bridging and orches-tration. Standards align-ment ETSI GS QKD 014 and 020 ori-ented. ETSI GS QKD 004, 014, and 015 compliant. Strong ETSI GS QKD 004/014/015 alignment with SDN integration. ETSI GS QKD 014/015 aligned with extensible DSSP APIs. Key management Distributed inter-domain KMS federation. LKMS coordinated by SDN con-troller. Distributed LKMSes with SDN-assisted inter-domain key forward-ing. DSSP-centric orchestration with cloud-assisted trust services. Long-distance sup-port PQC-secured inter-domain federa-tion. Metropolitan-scale SDN-QKD de-ployment. PQC-emulated long-haul QKD links between Madrid and Munich. Supports geographically dis-tributed DCE-connected domains. Operational philos-ophy Carrier-grade federated KMS ar-chitecture. Production-grade telecom-integrated QKD networking blueprint. SDN-enabled hybrid quantum-safe inter-domain communication framework. Software-defined enterprise quantum-secure networking framework. Main contribution Hybrid PQC/QKD inter-domain federation using ETSI-compliant KMS overlays. Large-scale heterogeneous SDN-QKD deployment in real telecom infrastructure. Practical SDN-based inter-domain QKD/PQC forwarding and border-node hybridization. Vendor-agnostic DSSP frame-work for practical multi-domain quantum-secure orchestration. 
+
+18
