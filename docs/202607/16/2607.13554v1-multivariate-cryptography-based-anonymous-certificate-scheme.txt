@@ -1,0 +1,2120 @@
+Title: Paper Title (use style: paper title)
+
+URL Source: https://arxiv.org/pdf/2607.13554v1
+
+Published Time: Thu, 16 Jul 2026 00:42:12 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+Multivariate Cryptography -Based Anonymous 
+
+# Certificate Scheme 
+
+Abel C. H. Chen 
+
+Information & Communications Security Laboratory, 
+
+Chunghwa Telecom Laboratories 
+
+Taoyuan, Taiwan 
+
+ORCID:  0000 -0003 -3628 -3033 
+
+Abstract —As quantum computing technology continues to 
+
+mature, the US National Institute of Standards and Technology 
+
+(NIST) has outlined a migration timeline for Post -Quantum 
+
+Cryptography (PQC), recommending the deprecation of certain 
+
+elliptic curve cryptograph y (ECC)  by 2030.  Furthermore ,
+
+privacy -sensitive application scenarios, such as vehicular 
+
+communications , require the use of anonymous certificates. 
+
+However, existing anonymous certificate schemes are still 
+
+largely based on  ECC . Therefore , this study proposes a
+
+multivariate cryptography -based  anonymous certificate scheme, 
+
+aiming to design quantum -safe  anonymous certificates suitable 
+
+for privacy -sensitive application services. The proposed 
+
+multivariate cryptography -based anonymous certificate scheme 
+
+is supported by rigorous mathematical proofs and illustrated 
+
+with computational  cases .
+
+Keywords —Multivariate Cryptography , Post -Quantum 
+
+Cryptography,  Matsumoto -Imai  Cryptosystem , Key Expansion, 
+
+Anonymous Certificate Scheme .
+
+I.  INTRODUCTION 
+
+In recent years, continuous technological breakthroughs in 
+
+the field of quantum computing [1] have accelerated the 
+
+anticipated arrival of Q -Day by several years [2], thereby 
+
+posing a potential threat to the security of RSA and elliptic 
+
+curve cryptography ( ECC) [3]. Consequently, in November 
+
+2024, the US National Institute of Standards and Technology 
+
+(NIST) published the draft of NIST IR 8547, recommending 
+
+a transition to Post -Quantum Cryptography (PQC). The draft 
+
+further outlines a plan to deprecate certain RSA and ECC 
+
+schemes by 2030 and to fully prohibit the use of RSA and 
+
+ECC by 2035 [4]. These developments indicate that the 
+
+mi gration of Public Key Infrastructure (PKI) to PQC has 
+
+become an urgent and ongoing imperative. 
+
+To establish PQC standards, NIST has conducted multiple 
+
+rounds of PQC standardization conferences and evaluations, 
+
+resulting in the selection of several candidate algorithms [5], 
+
+[6]. The currently dominant approaches include lattice -based 
+
+cryptography, for which the Module -Lattice -Based Key -
+
+Encapsulation Mechanism (ML -KEM) for encryption and key 
+
+encapsulation [7], the Module -Lattice -Based Digital 
+
+Signature Algorithm (ML -DSA) for digital signatures [8], and 
+
+the Falcon algorithm, which is still under standardization [5], 
+
+have been proposed. Furthermore , the Stateless Hash -Based 
+
+Digital Signature Algorithm (SLH -DSA) based on hash -based 
+
+cryptography [9], and the Hamming Quasi -Cyclic (HQC) key -
+
+encapsulation mechanism based on code -based cryptography 
+
+[6], have also been selected by NIST for standardization. 
+
+Nevertheless, the aforementioned digital signature schemes 
+
+may suffer from relatively large signature sizes. To address 
+
+this limitation, NIST has initiated an additional digital 
+
+signature scheme standardization process, aiming to identify 
+
+solutions with shorter signature lengths and higher signing 
+
+efficiency. Within this process, several multivariate 
+
+cryptography -based digital signature algorithms (DSAs) , such 
+
+as the Unbalanced Oil and Vinegar (UOV) scheme, have been 
+
+selected as candidate proposals [10]. 
+
+Furthermore , certain application scenarios (e.g., 
+
+healthcare systems [11] and vehicular communications [12], 
+
+[13] ) have stringent requirements for privacy protection, 
+
+which motivate the development of cryptographic 
+
+mechanisms such as anonymous certificates. In the context of 
+
+vehicular communications, the IEEE 1609.2 standard [12] and 
+
+the IEEE 1609.2.1 standard [13] int roduce the Butterfly Key 
+
+Expansion (BKE) method. By deriving butterfly public keys 
+
+that cannot be used to infer the original caterpillar public keys, 
+
+BKE enables the deployment of anonymous certificates and 
+
+provides privacy protection. However, the butterf ly key 
+
+expansion mechanisms specified in IEEE 1609.2 and IEEE 
+
+1609.2.1 are built upon ECC and therefore may be vulnerable 
+
+to quantum computing attacks. 
+
+Therefore , the primary objective of this study is to design 
+
+an anonymous certificate scheme that is resistant to quantum 
+
+computing attacks. Furthermore, reports from the additional 
+
+digital signature scheme standardization process indicate that 
+
+multivariate cryptography offers advantages such as short 
+
+signature lengths and high signing efficiency. Accordingly, 
+
+this study proposes a multivariate cryptography -based 
+
+anonymous certificate scheme. The main contributions of this 
+
+work are summarized as follows .
+
+• This study proposes a multivariate cryptography -based 
+
+key expansion method built upon the Matsumoto -Imai 
+
+cryptosystem. 
+
+• Based on the proposed key expansion method, this 
+
+study further proposes a multivariate cryptography -
+
+based anonymous certificate scheme that provides 
+
+privacy protection. 
+
+• This study presents theoretical analysis, security 
+
+proofs, and illustrative computational cases , and 
+
+describes the implementation methods and tools used 
+
+in the experimental environment. 
+
+This paper is organized into five sections. Section II 
+
+introduces the core principles of the Matsumoto -Imai 
+
+cryptosystem. Section III presents the proposed multivariate 
+
+cryptography -based key expansion method and the proposed 
+
+multivariate cryptography -based anonymous certificate 
+
+scheme. Section IV describes the implementation s and 
+
+computational cases . Finally, Section V summarizes the 
+
+contributions of this study and discusses future work .
+
+II.  MATSUMOTO -IMAI  CRYPTOSYSTEM 
+
+This section presents the key pair generation, 
+
+encryption/decryption, and digital signature based on the 
+
+Matsumoto -Imai cryptosystem .A.  Key Pair Generation 
+
+Let  𝑟  be a finite field of characteristic two, namely  𝑟 =
+
+𝐺𝐹 (2), with cardinality  𝑐 . Let  𝑔 (𝑥 ) ∈ 𝑟 [𝑥 ] be an irreducible 
+
+polynomial of degree  𝑛  . The field  𝑅 = 𝑟 [𝑥 ] 𝑔 (𝑥 )⁄ is then 
+
+defined as a degree -𝑛  extension field of  𝑟 .
+
+A mapping  ℎ is defined to associate each element of  𝑅 
+
+with its coefficient vector in  𝑟 𝑛  , that is,  ℎ: 𝑅 → 𝑟 𝑛  . The 
+
+inverse mapping  ℎ−1: 𝑟 𝑛 → 𝑅  reconstructs the corresponding 
+
+field element from its coefficient vector. Accordingly, for any 
+
+element  𝑎 0 + 𝑎 1𝑥 1 + ⋯ + 𝑎 𝑛 −1𝑥 𝑛 −1 ∈ 𝑅  , the mapping  ℎ is 
+
+defined as  ℎ(∑ 𝑎 𝑖 𝑥 𝑖 𝑛 −1 
+
+> 𝑖 =0
+
+) = (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1), and the inverse 
+
+mapping  ℎ−1 is defined as  ℎ−1(𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1) = (𝑎 0 +
+
+𝑎 1𝑥 1 + ⋯ + 𝑎 𝑛 −1𝑥 𝑛 −1) = ∑ 𝑎 𝑖 𝑥 𝑖 𝑛 −1 
+
+> 𝑖 =0
+
+.
+
+Let  𝜏  be an integer satisfying  0 < 𝜏 < 𝑛  and  𝑔𝑐𝑑 (𝑐 𝜏 +
+
+1, 𝑐 𝑛 − 1) = 1. When  𝜏  is chosen such that this condition 
+
+holds, a mapping  𝐾  can be defined over the field  𝑅 . Owing to 
+
+the above condition on  𝜏  , this mapping is invertible. The 
+
+mapping  𝐾  is defined as  𝐾 (𝑋 ) = 𝑋 𝑐 𝜏 +1 . Assume that there 
+
+exists an integer  𝑡  satisfying  𝑡 (𝑐 𝜏 + 1) ≡ 1 (𝑚𝑜𝑑 𝑐 𝑛 − 1) .
+
+Under this assumption, the inverse mapping  𝐾 −1 can be 
+
+expressed as  𝐾 −1(𝑋 ) = 𝑋 𝑡 . Proofs of the fact that  𝐾  and  𝐾 −1
+
+are mutual inverses can be found in [14] and [15]. The 
+
+mappings  𝐾  and  𝐾 −1 serve as the core public and private 
+
+functions, respectively, in the Matsumoto -Imai cryptosystem. 
+
+Let  𝐾 ̃ be a mapping defined over  𝑟 𝑛  as 
+
+𝐾 ̃ (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1) = ℎ ∘ 𝐾 ∘ ℎ−1(𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1) =
+
+(𝑘 ̃ 0, 𝑘 ̃1, … , 𝑘 ̃ 𝑛 −1), where  𝑘 ̃ 0, 𝑘 ̃1, … , 𝑘 ̃ 𝑛 −1 ∈ 𝑟 [𝑥 ]. Let  𝑀 1 and 
+
+𝑀 2 be two invertible affine transformations defined on  𝑟 𝑛  .
+
+The public mapping  𝐾 ̅ is then defined as 
+
+𝐾 ̅ (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1) = 𝑀 1 ∘ 𝐾 ̃ ∘ 𝑀 2(𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1) =
+
+(𝑘 ̅ 0, 𝑘 ̅1, … , 𝑘 ̅ 𝑛 −1) , where  𝑘 ̅ 0, 𝑘 ̅1, … , 𝑘 ̅ 𝑛 −1 ∈ 𝑟 [𝑥 ] . As the 
+
+public key, the mapping  𝐾 ̅ can be used by any party for 
+
+encryption or signature verification. The affine 
+
+transformations  𝑀 1 and  𝑀 2 are primarily employed to 
+
+conceal the structure of the core function  𝐾  . This design 
+
+principle is analogous to that of the McEliece cryptosystem 
+
+[16] and aims to reduce the cryptanalysis problem to an NP -
+
+hard problem in terms of computational complexity [14], [16]. 
+
+Accordingly, the public key  𝐾 ̅ (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1) is defined 
+
+over the finite field  𝑟  , while the private key 
+
+𝐾 ̅ −1(𝑏 0, 𝑏 1, … , 𝑏 𝑛 −1) consists of the inverse function  𝐾 −1
+
+together with the inverses of the two affine transformations, 
+
+𝑀 1−1 and  𝑀 2−1. Explicitly, the private inversion is given by 
+
+𝑀 2−1 ∘ 𝐾 ̃ −1 ∘ 𝑀 1−1(𝑏 0, 𝑏 1, … , 𝑏 𝑛 −1) = 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘
+
+ℎ ∘ 𝑀 1−1(𝑏 0, 𝑏 1, … , 𝑏 𝑛 −1).
+
+B.  Encryption and Decryption 
+
+In encryption and decryption applications, it is assumed 
+
+that the plaintext has been encoded as a set of coefficient 
+
+vectors  𝐴 = {𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1}. The coefficient vector is then 
+
+substituted into the public key  𝐾 ̅ to perform encryption, and 
+
+the resulting coefficient vector set is obtained as the ciphertext 
+
+𝐵 = {𝑏 0, 𝑏 1, … , 𝑏 𝑛 −1}, as shown in Eq . (1). 
+
+𝐾 ̅ (𝐴 ) = 𝐾 ̅ (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1),
+
+= (𝑏 0, 𝑏 1, … , 𝑏 𝑛 −1) = 𝐵 . (1) 
+
+During decryption, the coefficient vector of the ciphertext 
+
+is substituted into the private key  𝐾 ̅ −1 . The resulting 
+
+coefficient vector set corresponds to the recovered plaintext 
+
+{𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1}, as shown in Eq . (2). 
+
+𝐾 ̅ −1(𝐵 ) = 𝐾 ̅ −1(𝑏 0, 𝑏 1, … , 𝑏 𝑛 −1),
+
+= (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1) = 𝐴 . (2)
+
+The mathematical proof of the correctness of the 
+
+encryption and decryption processes is given in Eq . (3), as 
+
+detailed in [14] and [15]. 
+
+𝐾 ̅ −1(𝐵 ) = 𝐾 ̅ −1(𝐾 ̅ (𝐴 )),
+
+= 𝑀 2−1 ∘ 𝐾 ̃ −1 ∘ 𝑀 1−1 (𝑀 1 ∘ 𝐾 ̃ ∘ 𝑀 2(𝐴 )),
+
+= 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘ ℎ(ℎ ∘ 𝐾 ∘ ℎ−1 ∘ 𝑀 2(𝐴 )),
+
+= 𝑀 2−1(𝑀 2(𝐴 )),
+
+= 𝐴 = (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1).
+
+(3)
+
+C.  Digital Signature 
+
+In digital signature applications, it is assumed that the 
+
+message has been encoded as a set of coefficient vectors  𝑃 =
+
+{𝑝 0, 𝑝 1, … , 𝑝 𝑛 −1}. The coefficient vector is then substituted 
+
+into the private key  𝐾 ̅ −1 to generate the signature, and the 
+
+resulting coefficient vector set is obtained as the signature 
+
+value  𝑆 = {𝑠 0, 𝑠 1, … , 𝑠 𝑛 −1}, as shown in Eq . (4). 
+
+𝐾 ̅ −1(𝑃 ) = 𝐾 ̅ −1(𝑝 0, 𝑝 1, … , 𝑝 𝑛 −1),
+
+= (𝑠 0, 𝑠 1, … , 𝑠 𝑛 −1) = 𝑆 . (4)
+
+For signature verification, the coefficient vector of the 
+
+signature value is substituted into the public key  𝐾 ̅ . The 
+
+resulting coefficient vector set is obtained as the verification 
+
+value  𝑉 = {𝑣 0, 𝑣 1, … , 𝑣 𝑛 −1} , as shown in Eq . (5). If the 
+
+verification value  𝑉  is identical to the message  𝑃  , the 
+
+signature is considered valid; otherwise, the verification fails. 
+
+𝐾 ̅ (𝑆 ) = 𝐾 ̅ (𝑠 0, 𝑠 1, … , 𝑠 𝑛 −1),
+
+= (𝑣 0, 𝑣 1, … , 𝑣 𝑛 −1) = 𝑉 . (5)
+
+The mathematical proof of the correctness of the signature 
+
+generation and verification processes is given in Eq . (6), as 
+
+detailed in [14] and [15]. 
+
+𝑉  = 𝐾 ̅ (𝑆 ) = 𝐾 ̅ (𝐾 ̅ −1(𝑃 )),
+
+= 𝑀 1 ∘ 𝐾 ̃ ∘ 𝑀 2 (𝑀 2−1 ∘ 𝐾 ̃ −1 ∘ 𝑀 1−1(𝑃 )),
+
+= 𝑀 1 ∘ ℎ ∘ 𝐾 ∘ ℎ−1 (ℎ−1 ∘ 𝐾 −1 ∘ ℎ ∘ 𝑀 1−1(𝑃 )),
+
+= 𝑀 1 (𝑀 1−1(𝑃 ))
+
+= 𝑃  = (𝑝 0, 𝑝 1, … , 𝑝 𝑛 −1).
+
+(6)
+
+III.  THE  PROPOSED  METHODS AND  SCHEMES 
+
+This study first presents, in Section III.A, a key expansion 
+
+method designed based on the Matsumoto -Imai cryptosystem, 
+
+such that the expanded public key and the expanded private 
+
+key remain computationally paired. Section III.B introduces 
+
+the proposed anonymous certificate scheme, and Section III.C 
+
+further integrates the butterfly key expansion concept to 
+
+achieve anonymity even with respect to  both  the Certificate 
+
+Authority (CA) and Registration Authority (RA) .
+
+A.  Key Expansion Method 
+
+To achieve anonymity and to prevent the derivation of any 
+
+linkage between the original public key  𝐾 ̅ and the expanded 
+
+public key  𝐾 ̅ ′, a key expansion method is designed in this section . Specifically, a random seed  𝑒  is used to generate a 
+
+random invertible matrix (i.e., an invertible affine 
+
+transformation)  𝑀 𝑒 ,𝑗  . The original public key is then 
+
+composed with this random invertible matrix to obtain the 
+
+expanded public key, as shown in Eq . (7). Correspondingly, 
+
+the inverse of the random invertible matrix,  𝑀 𝑒 ,𝑗 −1 , is 
+
+composed with the original private key to derive the expanded 
+
+private key  𝐾 ̅ ′−1, as shown in Eq . (8). 
+
+𝐾 ̅ ′(𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1) = 𝑀 𝑒 ,𝑗 ∘ 𝐾 ̅ (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1),
+
+= 𝑀 𝑒 ,𝑗 ∘ 𝑀 1 ∘ 𝐾 ̃ ∘ 𝑀 2(𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1). (7)
+
+𝐾 ̅ ′−1(𝑏 0, 𝑏 1, … , 𝑏 𝑛 −1)
+
+= 𝐾 ̅ −1 ∘ 𝑀 𝑒 ,𝑗 −1(𝑏 0, 𝑏 1, … , 𝑏 𝑛 −1),
+
+= 𝑀 2−1 ∘ 𝐾 ̃ −1 ∘ 𝑀 1−1 ∘ 𝑀 𝑒 ,𝑗 −1(𝑏 0, 𝑏 1, … , 𝑏 𝑛 −1).
+
+(8)
+
+Using encryption and decryption as an example, Eq . (9) 
+
+demonstrates that the expanded public key  𝐾 ̅ ′ and the 
+
+expanded private key  𝐾 ̅ ′−1 remain a valid key pair. By the 
+
+same reasoning, it can be shown that, in digital signature 
+
+applications, the expanded public key  𝐾 ̅ ′ and the expanded 
+
+private key  𝐾 ̅ ′−1 also form a valid pair. For efficient 
+
+generation of the random invertible matrix (i.e., invertible 
+
+affine transformation)  𝑀 𝑒 ,𝑗 , previously published work by the 
+
+author [16] can be referenced, which describes a method to 
+
+generate a random invertible matrix and its inverse with time 
+
+complexity  O( n).
+
+𝐾 ̅ ′−1(𝐵 ) = 𝐾 ̅ ′−1(𝐾 ̅ ′(𝐴 )),
+
+= 𝐾 ̅ −1 ∘ 𝑀 𝑒 ,𝑗 −1 (𝑀 𝑒 ,𝑗 ∘ 𝐾 ̅ (𝐴 )) = 𝐾 ̅ −1(𝐾 ̅ (𝐴 )),
+
+= 𝑀 2−1 ∘ 𝐾 ̃ −1 ∘ 𝑀 1−1 (𝑀 1 ∘ 𝐾 ̃ ∘ 𝑀 2(𝐴 )),
+
+= 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘ ℎ(ℎ ∘ 𝐾 ∘ ℎ−1 ∘ 𝑀 2(𝐴 )),
+
+= 𝑀 2−1(𝑀 2(𝐴 )),
+
+= 𝐴 = (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1).
+
+(9)
+
+By applying the random invertible matrix  𝑀 𝑒 ,𝑗  , the 
+
+original public key is protected, preventing an adversary from 
+
+deriving the original public key  𝐾 ̅ from the expanded public 
+
+key  𝐾 ̅ ′. As a result, anonymity and privacy protection are 
+
+achieved. 
+
+B.  The Proposed  Anonymous Certificate Scheme 
+
+This section assumes a setting in which an anonymous 
+
+certificate is issued by a CA to an End Entity (EE). The 
+
+anonymous certificate scheme proposed in this study is 
+
+primarily built upon the key expansion method  proposed  in 
+
+Section III.A, as illustrated in Fig. 1. 
+
+First, the  EE  generates an original key pair, consisting of 
+
+the original public key  𝐾 ̅ and the original private key  {𝑀 1−1,
+
+𝑀 2−1, 𝐾 −1}. The  EE  then encrypts  (𝐾 ̅ , 𝐼 ) using the public key 
+
+of the  CA  to produce a ciphertext  𝑤 1, which is subsequently 
+
+transmitted to the  CA . Here,  𝐼  denotes the  content of  to -be -
+
+signed -certificate, such as the application permissions of the 
+
+EE .
+
+Upon receiving the ciphertext  𝑤 1 , the  CA  decrypts  the 
+
+ciphertext  𝑤 1 using its private key to obtain  (𝐾 ̅ , 𝐼 ). The  CA 
+
+then generates a random value  𝑒 2 and applies a secure 
+
+pseudorandom function  (e.g. , a keyed -Hash Message 
+
+Authentication Code (HMAC) ) by using  𝑒 2 as the HMAC key 
+
+and an integer  j as the HMAC message, in order to derive 
+
+pseudorandom values and an invertible matrix (i.e., an 
+
+invertible affine transformation)  𝑀 𝑒 2,𝑗  . The detailed 
+
+construction of this process can be found in [16]. The  CA 
+
+subsequently composes the original public key  𝐾 ̅ with the 
+
+random invertible matrix  𝑀 𝑒 ,𝑗  to obtain the expanded public 
+
+key  𝐾 ̅ ′ = 𝑀 𝑒 2,𝑗  ∘ 𝐾 ̅ . The certificate authority then generates 
+
+an anonymous certificate  Cert  for the end entity, in which the 
+
+public key field contains the expanded public key  𝐾 ̅ ′. Finally, 
+
+the  CA  encrypts  (Cert , 𝑒 2) using the original public key of the 
+
+EE  to obtain a ciphertext  𝑤 3, and transmits  𝑤 3 to the  EE .      
+
+> Fig. 1.The proposed anonymous certificate scheme .
+
+Upon receiving the ciphertext  𝑤 3 , the  EE  decrypts the 
+
+ciphertext  𝑤 3 using its original private key to obtain ( Cert , 𝑒 2). 
+
+The  EE  then retrieves the random value  𝑒 2 and uses it as the 
+
+HMAC key, with the integer  j as the HMAC message, to 
+
+derive pseudorandom values and the inverse matrix  𝑀 𝑒 2,𝑗 −1.
+
+Based on this result, the expanded private key  { 𝑀 1−1 ∘
+
+𝑀 𝑒 2,𝑗 −1, 𝑀 2−1, 𝐾 −1} is computed. 
+
+Because the public key field of the anonymous certificate 
+
+contains the expanded public key  𝐾 ̅ ′, and because the original 
+
+public key  𝐾 ̅ cannot be derived from  𝐾 ̅ ′ without knowledge 
+
+of the random value  𝑒 2 or the invertible matrix  𝑀 𝑒 2,𝑗  , the 
+
+proposed anonymous certificate scheme satisfies the 
+
+anonymity requirement. However, under this scheme, the  CA 
+
+is still able to determine the relationship between the expanded 
+
+public key and the original public key. To further achieve 
+
+anonymity with respect to the  CA , a n anonymous certificate 
+
+scheme  based on  butterfly key expansion is designed in 
+
+Section III.C. 
+
+C.  The Proposed  Anonymous Certificate Scheme  Based on 
+
+Butterfly Key Expansion 
+
+By performing one key expansion at the  RA  and a second 
+
+key expansion at the  CA , followed by the issuance of an 
+
+anonymous certificate to the  EE , anonymity with respect to 
+
+both the  RA  and the  CA  is achieved, as illustrated in Fig. 2. 
+
+First, the  EE  generates a caterpillar key pair, consisting of 
+
+the caterpillar public key  𝐾 ̅ and the caterpillar private key 
+
+{𝑀 1−1 , 𝑀 2−1, 𝐾 −1}, and generates a random value  𝑒 1. The 
+
+EE  then encrypts  (𝐾 ̅ , 𝑒 1, 𝐼 ) using the public key of the  RA  to EE CA                            
+
+> 1. Generate an original key pair
+> {,,}and
+> 2. Use CA’s public key to encrypt
+> (,)as the ciphertext 3. Use CA’s private key to decrypt
+> and get (,)
+> 4. Generate a random number
+> 5. Generate the matrix
+> based on
+> 6. Generate the expanded public
+> key based on
+> 7. Generate EE’s anonymous
+> certificate Cert
+> 8. Use EE’s original public key to
+> encrypt (Cert ,)as the
+> ciphertext
+> 9. Use the original private key to
+> decrypt and get (Cert ,)
+> 10. Generate the matrix
+> based on
+> 11. Generate the expanded
+> private key based on
+> {,,}
+
+produce a ciphertext  𝑤 1, which is transmitted to the  RA . Here, 
+
+𝐼  denotes the  content of to -be -signed -certificate, such as the 
+
+application permissions of the  EE .
+
+Upon receiving the ciphertext  𝑤 1 , the  RA  decrypts the 
+
+ciphertext  𝑤 1 using its private key to obtain  (𝐾 ̅ , 𝑒 1, 𝐼 ). The 
+
+registration authority then retrieves the random value  𝑒 1 and 
+
+applies a secure pseudorandom function  (e.g.,  HMAC ) using 
+
+𝑒 1 as the HMAC key and an integer  j as the HMAC message, 
+
+to generate pseudorandom values and an invertible matrix (i.e., 
+
+an invertible affine transformation)  𝑀 𝑒 1,𝑗  . The registration 
+
+authority subsequently composes the caterpillar public key  𝐾 ̅
+
+with the random invertible matrix  𝑀 𝑒 1,𝑗  to obtain the cocoon 
+
+public key  𝐾 ̅ ′ = 𝑀 𝑒 1,𝑗  ∘ 𝐾 ̅ . The registration authority then 
+
+encrypts  ( 𝐾 ̅ ′ , 𝐼  ) using the public key of the certificate 
+
+authority to produce a ciphertext  𝑤 2, and transmits  𝑤 2 to the 
+
+CA .
+
+Upon receiving the ciphertext  𝑤 2 , the  CA  decrypts the 
+
+ciphertext  𝑤 2 using its private key to obtain  (𝐾 ̅ ′, 𝐼 ). The  CA 
+
+then generates a random value  𝑒 2 and applies a secure 
+
+pseudorandom function  (e.g.,  HMAC ) using  𝑒 2 as the HMAC 
+
+key and an integer  j as the HMAC message, to derive 
+
+pseudorandom values and an invertible matrix (i.e., an 
+
+invertible affine transformation)  𝑀 𝑒 2,𝑗 . The  CA  subsequently 
+
+composes the cocoon public key  𝐾 ̅ ′ with the random 
+
+invertible matrix  𝑀 𝑒 2,𝑗  to obtain the butterfly public key  𝐾 ̅ ′′  =
+
+𝑀 𝑒 2,𝑗  ∘ 𝐾 ̅ ′. The  CA  then generates an anonymous certificate 
+
+Cert  for the  EE , in which the public key field contains the 
+
+butterfly public key  𝐾 ̅ ′′  . Finally, the certificate authority 
+
+encrypts  (Cert , 𝑒 2) using the cocoon public key of the  EE  to 
+
+produce a ciphertext  𝑤 3, which is transmitted to the  EE .
+
+The  EE  uses the random value  𝑒 1 as the HMAC key and 
+
+the integer  j as the HMAC message to derive pseudorandom 
+
+values and the inverse matrix  𝑀 𝑒 1,𝑗 −1, and thereby computes 
+
+the cocoon private key  {𝑀 1−1 ∘ 𝑀 𝑒 1,𝑗 −1, 𝑀 2−1, 𝐾 −1}. Upon 
+
+receiving the ciphertext  𝑤 3, the  EE  decrypts the ciphertext  𝑤 3
+
+using the cocoon private key to obtain  (Cert , 𝑒 2). The  EE  then 
+
+retrieves the random value  𝑒 2 and applies it as the HMAC key, 
+
+with the integer  j as the HMAC message, to derive 
+
+pseudorandom values and the inverse matrix  𝑀 𝑒 2,𝑗 −1. Based 
+
+on this result, the butterfly private key is computed as  {𝑀 1−1 ∘
+
+𝑀 𝑒 1,𝑗 −1 ∘ 𝑀 𝑒 2,𝑗 −1, 𝑀 2−1, 𝐾 −1}.
+
+D.  Proofs 
+
+Using encryption and decryption as an example, Eq . (10) 
+
+demonstrates that the butterfly public key  𝐾 ̅ ′′  and the butterfly 
+
+private key  𝐾 ̅ ′′ −1 remain a valid key pair. By the same 
+
+reasoning, it can be shown that, in digital signature 
+
+applications, the butterfly public key  𝐾 ̅ ′′  and the butterfly 
+
+private key  𝐾 ̅ ′′ −1 also form a valid pair. For efficient 
+
+generation of the random invertible matrices  𝑀 𝑒 1,𝑗  and  𝑀 𝑒 2,𝑗 ,
+
+previously published work [16] can be referenced, which 
+
+describes a method to generate random invertible matrices and 
+
+their inverses with time complexity  O( n).
+
+𝐾 ̅ ′′ −1(𝐵 ) = 𝐾 ̅ ′′ −1(𝐾 ̅ ′′ (𝐴 )),
+
+= 𝐾 ̅ ′−1 ∘ 𝑀 𝑒 2,𝑗 −1 (𝑀 𝑒 2,𝑗  ∘ 𝐾 ̅ ′(𝐴 )) = 𝐾 ̅ ′−1(𝐾 ̅ ′(𝐴 )),
+
+= 𝐾 ̅ −1 ∘ 𝑀 𝑒 1,𝑗 −1 (𝑀 𝑒 1,𝑗  ∘ 𝐾 ̅ (𝐴 )) = 𝐾 ̅ −1(𝐾 ̅ (𝐴 )),
+
+= 𝐴 = (𝑎 0, 𝑎 1, … , 𝑎 𝑛 −1).
+
+(10 )
+
+Fig. 2.  The  proposed  anonymous  certificate  scheme  based on butterfly key expansion .EE RA CA                                          
+
+> 1. Generate a caterpillar key pair
+> {,,}and
+> 2. Generate a random number
+> 3. Use RA’s public key to encrypt
+> (,,)as the ciphertext 4. Use RA’s private key to decrypt
+> and get (,,)
+> 5. Generate the matrix
+> based on
+> 6. Generate the cocoon public
+> key based on
+> 7. Use CA’s public key to encrypt
+> (,)as the ciphertext 8. Use CA’s private key to decrypt
+> and get (,)
+> 9. Generate a random number
+> 10. Generate the matrix
+> based on
+> 11. Generate the butterfly public
+> key based on
+> 12. Generate EE’s anonymous
+> certificate Cert
+> 13. Use EE’s cocoon public key to
+> encrypt (Cert ,)as the
+> ciphertext 14. Generate the matrix
+> based on
+> 15. Generate the cocoon private
+> key based on
+> {,,}
+> 16. Use the cocoon private key to
+> decrypt and get (Cert ,)
+> 17. Generate the matrix
+> based on
+> 18. Generate the butterfly private
+> key based on
+> {,,
+> }
+
+E.  Security Discussions 
+
+From the perspective of the  RA , the  RA  knows the 
+
+relationship between the  EE ’s caterpillar public key  𝐾 ̅ and 
+
+cocoon public key  𝐾 ̅ ′, but does not know the random value  𝑒 2
+
+or the invertible matrix  𝑀 𝑒 2,𝑗 . Therefore, it cannot derive the 
+
+relationship between the butterfly public key  𝐾 ̅ ′′  and the 
+
+cocoon public key  𝐾 ̅ ′, nor between the butterfly public key  𝐾 ̅ ′′ 
+
+and the caterpillar public key  𝐾 ̅ . This demonstrates that the  EE 
+
+remains anonymous with respect to the  RA .
+
+From the perspective of the  CA , the  CA  knows the 
+
+relationship between the cocoon public key  𝐾 ̅ ′ and the 
+
+butterfly public key  𝐾 ̅ ′′ , but does not know the random value 
+
+𝑒 1 or the invertible matrix  𝑀 𝑒 1,𝑗 . Therefore, it cannot derive 
+
+the relationship between the cocoon public key  𝐾 ̅ ′ and the 
+
+caterpillar public key  𝐾 ̅ , nor between the butterfly public key 
+
+𝐾 ̅ ′′  and the caterpillar public key  𝐾 ̅ . This demonstrates that 
+
+the  EE  remains anonymous with respect to the  CA .
+
+From the perspective of other entities, they do not know 
+
+the random values  𝑒 1 and  𝑒 2, nor the invertible matrices  𝑀 𝑒 1,𝑗 
+
+and  𝑀 𝑒 2,𝑗 . Consequently, they cannot derive the relationship 
+
+between the butterfly public key  𝐾 ̅ ′′  and the cocoon public 
+
+key  𝐾 ̅ ′ , nor between the cocoon public key  𝐾 ̅ ′ and the 
+
+caterpillar public key  𝐾 ̅ . This demonstrates that the  EE 
+
+remains anonymous with respect to other entities. 
+
+IV.  EXPERIMENTAL  ENVIORMENT AND  CALCULATION 
+
+CASE S
+
+A.  Experimental Enviorment 
+
+The implementation environment for this study uses the 
+
+Ubuntu 22.04.3 operating system, with Python 3.10.12 as the 
+
+programming language and SageMath 9.5 for mathematical 
+
+computations. Operations such as multivariate calculations, 
+
+inverse functions, matrix inverses, and finite field arithmetic 
+
+are all developed and executed based on the SageMath 9.5. 
+
+A simple illustrative example is provided in this section; it 
+
+should be noted that more secure parameter sets should be 
+
+used in practical deployment. This example is intended solely 
+
+to demonstrate the feasibility of the method. Let  𝑟 = 𝐺𝐹 (2)
+
+with cardinality  𝑐 = 2. Let  𝑅  be a degree -5 extension of  𝑟 , so 
+
+that  𝑛 = 5. Select the parameter  𝜏 = 4, which satisfies the 
+
+condition  0 < 𝜏 < 𝑛 . The elements of the base finite field are 
+
+{0,1} . Let  𝑔 (𝑥 ) = 𝑥 5 + 𝑥 2 + 1 , which is an irreducible 
+
+polynomial of degree  𝑛  over  𝑟 [𝑥 ]. The mapping  𝐾  is defined 
+
+as  𝐾 (𝑋 ) = 𝑋 24+1 = 𝑋 17  . Next, by solving the congruence 
+
+using Eq . (11), the integer  𝑡 = 11  is obtained, yielding the 
+
+inverse mapping  𝐾 −1(𝑋 ) = 𝑋 11 .
+
+𝑡 (24 + 1) ≡ 1 (𝑚𝑜𝑑 25 − 1),
+
+17 𝑡 ≡ 1 (𝑚𝑜𝑑 31 ),
+
+𝑡 ≡ 11  (𝑚𝑜𝑑 31 ).
+
+(11) 
+
+Sections IV.B through IV.D adopt these parameters and 
+
+provide computational  cases  using encryption and decryption 
+
+as an illustrative application. In these  cases , the plaintext is 
+
+assumed to be encoded as the polynomial  𝐴 =       
+
+> {𝑎 0,𝑎 1,𝑎 2,𝑎 3,𝑎 4}={0,1,0,1,0}=
+> [
+> 1
+> 0
+> 0
+> 0
+> 1]
+
+, which will be used for 
+
+encryption calculations in the subsequent sections. 
+
+B.  Calculation al  Case  1: Original Key Pair 
+
+As described in Section II, the original public key is 
+
+defined as  𝐾 ̅ (𝐴 ) = 𝑀 1 ∘ 𝐾 ̃ ∘ 𝑀 2(𝐴 ) = 𝑀 1 ∘ ℎ ∘ 𝐾 ∘ ℎ−1 ∘
+
+𝑀 2(𝐴 ), and encrypting the plaintext  𝐴  with this public key 
+
+produces the ciphertext  𝐵 . The original private key is defined 
+
+as  𝐾 ̅ −1(𝐵 ) = 𝑀 2−1 ∘ 𝐾 ̃ −1 ∘ 𝑀 1−1(𝐵 ) = 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘
+
+ℎ ∘ 𝑀 1−1(𝐵 ) , and decrypting the ciphertext  𝐵  with this 
+
+private key recovers the plaintext  𝐴 .
+
+In this section, the matrices are assumed as follows:  𝑀 1 =              
+
+> [
+> 0
+> 1
+> 0
+> 1
+> 0
+> 0
+> 101
+> 010
+> 101
+> 10001
+> 01010]
+
+and  𝑀 2 =              
+
+> [
+> 0
+> 1
+> 0
+> 1
+> 1
+> 0
+> 101
+> 011
+> 100
+> 10000
+> 10011]
+
+. Their inverses 
+
+are  𝑀 1−1 =              
+
+> [
+> 1
+> 1
+> 1
+> 1
+> 0
+> 1
+> 101
+> 100
+> 011
+> 10101
+> 11111]
+
+and  𝑀 2−1 =              
+
+> [
+> 0
+> 0
+> 0
+> 0
+> 1
+> 0
+> 010
+> 001
+> 100
+> 11110
+> 11101]
+
+.
+
+For the encryption calculation, the plaintext  𝐴  is 
+
+substituted into the original public key  𝐾 ̅ (𝐴 ). The detailed 
+
+computational process is shown in Eq . (12) and Eq . (13), 
+
+resulting in the ciphertext  𝐵  =      
+
+> [
+> 1
+> 0
+> 0
+> 0
+> 0]
+> ={1,0,0,0,0}=
+> {𝑏 0,𝑏 1,𝑏 2,𝑏 3,𝑏 4}
+
+.
+
+𝐾 ̅ (𝐴 ) = 𝑀 1 ∘ 𝐾 ̃ ∘ 𝑀 2(𝐴 ),
+
+= 𝑀 1 ∘ ℎ ∘ 𝐾 ∘ ℎ−1 ∘ 𝑀 2(𝐴 ),
+
+= 𝑀 1 ∘ ℎ ∘ 𝐾 ∘ ℎ−1
+
+([
+
+0
+
+1
+
+0
+
+1
+
+1
+
+0
+
+1 0 1
+
+0 1 1
+
+1 0 0
+
+1 0 0 0 0
+
+1 0 0 1 1] [
+
+0
+
+1
+
+0
+
+1
+
+0])
+
+,
+
+= 𝑀 1 ∘ ℎ ∘ 𝐾 ∘ ℎ−1
+
+([
+
+1
+
+0
+
+0
+
+0
+
+1])
+
+,
+
+= 𝑀 1 ∘ ℎ ∘ 𝐾 (1 + 𝑥 4),
+
+= 𝑀 1 ∘ ℎ(1 + 𝑥 + 𝑥 2 + 𝑥 3 + 𝑥 4),
+
+= 𝑀 1
+
+([
+
+1
+
+1
+
+1
+
+1
+
+1])
+
+=
+
+[
+
+0
+
+1
+
+0
+
+1
+
+0
+
+0
+
+1 0 1
+
+0 1 0
+
+1 0 1
+
+1 0 0 0 1
+
+0 1 0 1 0] [
+
+1
+
+1
+
+1
+
+1
+
+1]
+
+=
+
+[
+
+1
+
+0
+
+0
+
+0
+
+0]
+
+.
+
+(12 )
+
+𝐾 (1 + 𝑥 4) = (1 + 𝑥 4)17 (𝑚𝑜𝑑 𝑔 (𝑥 ))(𝑚𝑜𝑑 2),
+
+≡ (1 + 𝑥 4)17 (𝑚𝑜𝑑 (𝑥 5 + 𝑥 2 + 1))(𝑚𝑜𝑑 2),
+
+≡ 16625291 − 13925975 𝑥 + 28289979 𝑥 2
+
+− 23696129 𝑥 3 + 19848157 𝑥 4
+
+(𝑚𝑜𝑑 𝑔 (𝑥 ))(𝑚𝑜𝑑 2),
+
+≡ 1 + 𝑥 + 𝑥 2 + 𝑥 3 + 𝑥 4.
+
+(13) 
+
+For the de cryption calculation, the ciphertext  𝐵  is 
+
+substituted into the original private key  𝐾 ̅ −1(𝐵 ). The detailed 
+
+computational process is shown in Eq . (1 4) and Eq . (1 5), resulting in the plaintext  𝐴 =
+
+[
+
+0
+
+1
+
+0
+
+1
+
+0]
+
+= {0,1,0,1,0} =
+
+{𝑎 0, 𝑎 1, 𝑎 2, 𝑎 3, 𝑎 4}, which matches the original plaintext. 
+
+𝐾 ̅ −1(𝐵 ) = 𝑀 2−1 ∘ 𝐾 ̃ −1 ∘ 𝑀 1−1(𝐵 ),
+
+= 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘ ℎ ∘ 𝑀 1−1(𝐵 ),
+
+= 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘ ℎ
+
+([
+
+1
+
+1
+
+1
+
+1
+
+0
+
+1
+
+1 0 1
+
+1 0 0
+
+0 1 1
+
+1 0 1 0 1
+
+1 1 1 1 1] [
+
+1
+
+0
+
+0
+
+0
+
+0])
+
+,
+
+= 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘ ℎ
+
+([
+
+1
+
+1
+
+1
+
+1
+
+1])
+
+,
+
+= 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1(1 + 𝑥 + 𝑥 2 + 𝑥 3 + 𝑥 4),
+
+= 𝑀 2−1 ∘ ℎ−1(1 + 𝑥 4),
+
+= 𝑀 2−1
+
+([
+
+1
+
+0
+
+0
+
+0
+
+1])
+
+=
+
+[
+
+0
+
+0
+
+0
+
+0
+
+1
+
+0
+
+0 1 0
+
+0 0 1
+
+1 0 0
+
+1 1 1 1 0
+
+1 1 1 0 1] [
+
+1
+
+0
+
+0
+
+0
+
+1]
+
+=
+
+[
+
+0
+
+1
+
+0
+
+1
+
+0]
+
+.
+
+(14 )
+
+𝐾 (1 + 𝑥 + 𝑥 2 + 𝑥 3 + 𝑥 4),
+
+= (1 + 𝑥 + 𝑥 2 + 𝑥 3 + 𝑥 4)11 
+
+(𝑚𝑜𝑑 𝑔 (𝑥 ))(𝑚𝑜𝑑 2),
+
+≡ (1 + 𝑥 + 𝑥 2 + 𝑥 3 + 𝑥 4)17 
+
+(𝑚𝑜𝑑 (𝑥 5 + 𝑥 2 + 1))(𝑚𝑜𝑑 2),
+
+≡ 22353 + 20668 𝑥 + 29772 𝑥 2 + 12574 𝑥 3
+
+−9147 𝑥 4 (𝑚𝑜𝑑 𝑔 (𝑥 ))(𝑚𝑜𝑑 2),
+
+≡ 1 + 𝑥 4.
+
+(15) 
+
+C.  Calculation al  Case  2: Expanded Key Pair 
+
+As described in Section II I.B , the expanded public key is 
+
+defined as  𝐾 ̅ ′(𝐴 ) = 𝑀 𝑒 2,𝑗  ∘ 𝐾 ̅ (𝐴 ) = 𝑀 𝑒 2,𝑗  ∘ 𝑀 1 ∘ 𝐾 ̃ ∘
+
+𝑀 2(𝐴 ) = 𝑀 𝑒 2,𝑗  ∘ 𝑀 1 ∘ ℎ ∘ 𝐾 ∘ ℎ−1 ∘ 𝑀 2(𝐴 ) , and encrypting 
+
+the plaintext  𝐴  with this public key produces the ciphertext  𝐵 ′.
+
+The expanded private key is defined as  𝐾 ̅ ′−1(𝐵 ′) = 𝐾 ̅ −1 ∘
+
+𝑀 𝑒 2,𝑗 −1(𝐵 ′) = 𝑀 2−1 ∘ 𝐾 ̃ −1 ∘ 𝑀 1−1 ∘ 𝑀 𝑒 2,𝑗 −1(𝐵 ′) = 𝑀 2−1 ∘
+
+ℎ−1 ∘ 𝐾 −1 ∘ ℎ ∘ 𝑀 1−1 ∘ 𝑀 𝑒 2,𝑗 −1(𝐵 ′) , and decrypting the 
+
+ciphertext  𝐵 ′ with this private key recovers the plaintext  𝐴 .
+
+In this section, the matr ix  𝑀 𝑒 2,𝑗  is assumed as  𝑀 𝑒 2,𝑗  =
+
+[
+
+0
+
+0
+
+1
+
+1
+
+0
+
+0
+
+0 0 0
+
+0 1 0
+
+0 0 0
+
+0 0 1 0 0
+
+0 0 0 0 1]
+
+, and the inversed matr ix  𝑀 𝑒 2,𝑗 −1 is 
+
+𝑀 𝑒 2,𝑗  −1 =
+
+[
+
+0
+
+1
+
+0
+
+0
+
+0
+
+0
+
+1 0 0
+
+0 0 0
+
+0 1 0
+
+0 1 0 0 0
+
+0 0 0 0 1]
+
+.
+
+For the encryption calculation, the plaintext  𝐴  is 
+
+substituted into the expanded public key  𝐾 ̅ ′(𝐴 ). The detailed 
+
+computational process is shown in Eq . (16 ), resulting in the 
+
+ciphertext  𝐵 ′ =
+
+[
+
+0
+
+0
+
+1
+
+0
+
+0]
+
+= {0,0,1,0,0} = {𝑏 0, 𝑏 1, 𝑏 2, 𝑏 3, 𝑏 4}.
+
+𝐾 ̅ ′(𝐴 ) = 𝑀 𝑒 2,𝑗  ∘ 𝐾 ̅ (𝐴 ),
+
+= 𝑀 𝑒 2,𝑗 
+
+([
+
+1
+
+0
+
+0
+
+0
+
+0])
+
+=
+
+[
+
+0
+
+0
+
+1
+
+1
+
+0
+
+0
+
+0 0 0
+
+0 1 0
+
+0 0 0
+
+0 0 1 0 0
+
+0 0 0 0 1] [
+
+1
+
+0
+
+0
+
+0
+
+0]
+
+=
+
+[
+
+0
+
+0
+
+1
+
+0
+
+0]
+
+.
+
+(16)
+
+For the de cryption calculation, the ciphertext  𝐵 ′ is 
+
+substituted into the expanded private key  𝐾 ̅ ′−1(𝐵 ′) . The 
+
+detailed computational process is shown in Eq . (1 7), resulting 
+
+in the plaintext  𝐴 =
+
+[
+
+0
+
+1
+
+0
+
+1
+
+0]
+
+= {0,1,0,1,0} = {𝑎 0, 𝑎 1, 𝑎 2, 𝑎 3, 𝑎 4} ,
+
+which matches the original plaintext. 
+
+𝐾 ̅ ′−1(𝐵 ′) = 𝐾 ̅ −1 ∘ 𝑀 𝑒 2,𝑗 −1(𝐵 ′),
+
+𝐾 ̅ −1
+
+([
+
+0
+
+1
+
+0
+
+0
+
+0
+
+0
+
+1 0 0
+
+0 0 0
+
+0 1 0
+
+0 1 0 0 0
+
+0 0 0 0 1] [
+
+0
+
+0
+
+1
+
+0
+
+0])
+
+,
+
+= 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘ ℎ ∘ 𝑀 1−1
+
+([
+
+1
+
+0
+
+0
+
+0
+
+0])
+
+=
+
+[
+
+0
+
+1
+
+0
+
+1
+
+0]
+
+.
+
+(17)
+
+D.  Calculation al  Case  3: Butterfly Key Pair 
+
+As described in Section II I.C , the butterfly public key is 
+
+defined as  𝐾 ̅ ′′ (𝐴 ) = 𝑀 𝑒 2,𝑗  ∘ 𝑀 𝑒 1,𝑗  ∘ 𝐾 ̅ (𝐴 ) = 𝑀 𝑒 2,𝑗  ∘ 𝑀 𝑒 1,𝑗  ∘
+
+𝑀 1 ∘ 𝐾 ̃ ∘ 𝑀 2(𝐴 ) = 𝑀 𝑒 2,𝑗  ∘ 𝑀 𝑒 1,𝑗  ∘ 𝑀 1 ∘ ℎ ∘ 𝐾 ∘ ℎ−1 ∘ 𝑀 2(𝐴 ) ,
+
+and encrypting the plaintext  𝐴  with this public key produces 
+
+the ciphertext  𝐵 ′′  . The butterfly private key is defined as 
+
+𝐾 ̅ ′′ −1(𝐵 ′′ ) = 𝐾 ̅ −1 ∘ 𝑀 𝑒 1,𝑗 −1 ∘ 𝑀 𝑒 2,𝑗 −1(𝐵 ′′ ) = 𝑀 2−1 ∘ 𝐾 ̃ −1 ∘
+
+𝑀 1−1 ∘ 𝑀 𝑒 1,𝑗 −1 ∘ 𝑀 𝑒 2,𝑗 −1(𝐵 ′′ ) = 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘ ℎ ∘
+
+𝑀 1−1 ∘ 𝑀 𝑒 1,𝑗 −1 ∘ 𝑀 𝑒 2,𝑗 −1(𝐵 ′′ ), and decrypting the ciphertext 
+
+𝐵 ′′  with this private key recovers the plaintext  𝐴 .
+
+In this section, the matr ix  𝑀 𝑒 1,𝑗  is assumed as  𝑀 𝑒 1,𝑗  =
+
+[
+
+0
+
+0
+
+0
+
+0
+
+1
+
+0
+
+0 1 0
+
+0 0 0
+
+0 0 1
+
+1 0 0 0 0
+
+0 0 1 0 0]
+
+, and the inversed matr ix  𝑀 𝑒 1,𝑗 −1 is 
+
+𝑀 𝑒 1,𝑗  −1 =
+
+[
+
+0
+
+0
+
+0
+
+0
+
+1
+
+0
+
+0 1 0
+
+0 0 0
+
+0 0 1
+
+1 0 0 0 0
+
+0 0 1 0 0]
+
+.
+
+For the encryption calculation, the plaintext  𝐴  is 
+
+substituted into the butterfly public key  𝐾 ̅ ′(𝐴 ). The detailed computational process is shown in Eq . (18 ), resulting in the 
+
+ciphertext  𝐵 ′′  =
+
+[
+
+0
+
+1
+
+0
+
+0
+
+0]
+
+= {0,1,0,0,0} = {𝑏 0, 𝑏 1, 𝑏 2, 𝑏 3, 𝑏 4}.
+
+𝐾 ̅ ′′ (𝐴 ) = 𝑀 𝑒 2,𝑗  ∘ 𝑀 𝑒 1,𝑗  ∘ 𝐾 ̅ (𝐴 ),
+
+= 𝑀 𝑒 2,𝑗  ∘ 𝑀 𝑒 1,𝑗 
+
+([
+
+1
+
+0
+
+0
+
+0
+
+0])
+
+,
+
+= 𝑀 𝑒 2,𝑗 
+
+([
+
+0
+
+0
+
+0
+
+0
+
+1
+
+0
+
+0 1 0
+
+0 0 0
+
+0 0 1
+
+1 0 0 0 0
+
+0 0 1 0 0] [
+
+1
+
+0
+
+0
+
+0
+
+0])
+
+,
+
+= 𝑀 𝑒 2,𝑗 
+
+([
+
+0
+
+0
+
+0
+
+1
+
+0])
+
+=
+
+[
+
+0
+
+0
+
+1
+
+1
+
+0
+
+0
+
+0 0 0
+
+0 1 0
+
+0 0 0
+
+0 0 1 0 0
+
+0 0 0 0 1] [
+
+0
+
+0
+
+0
+
+1
+
+0]
+
+=
+
+[
+
+0
+
+1
+
+0
+
+0
+
+0]
+
+.
+
+(18 )
+
+For the de cryption calculation, the ciphertext  𝐵 ′′  is 
+
+substituted into the butterfly private key  𝐾 ̅ ′′ −1(𝐵 ′′ ) . The 
+
+detailed computational process is shown in Eq . (1 9), resulting 
+
+in the plaintext  𝐴 =
+
+[
+
+0
+
+1
+
+0
+
+1
+
+0]
+
+= {0,1,0,1,0} = {𝑎 0, 𝑎 1, 𝑎 2, 𝑎 3, 𝑎 4} ,
+
+which matches the original plaintext. 
+
+𝐾 ̅ ′′ −1(𝐵 ′′ ) = 𝐾 ̅ −1 ∘ 𝑀 𝑒 1,𝑗 −1 ∘ 𝑀 𝑒 2,𝑗 −1(𝐵 ′′ ),
+
+= 𝐾 ̅ −1 ∘ 𝑀 𝑒 1,𝑗 −1 ∘ 𝑀 𝑒 2,𝑗 −1
+
+([
+
+0
+
+1
+
+0
+
+0
+
+0])
+
+,
+
+= 𝐾 ̅ −1 ∘ 𝑀 𝑒 1,𝑗 −1
+
+([
+
+0
+
+1
+
+0
+
+0
+
+0
+
+0
+
+1 0 0
+
+0 0 0
+
+0 1 0
+
+0 1 0 0 0
+
+0 0 0 0 1] [
+
+0
+
+1
+
+0
+
+0
+
+0])
+
+,
+
+= 𝐾 ̅ −1
+
+([
+
+0
+
+0
+
+0
+
+0
+
+1
+
+0
+
+0 1 0
+
+0 0 0
+
+0 0 1
+
+1 0 0 0 0
+
+0 0 1 0 0] [
+
+0
+
+0
+
+0
+
+1
+
+0])
+
+,
+
+= 𝑀 2−1 ∘ ℎ−1 ∘ 𝐾 −1 ∘ ℎ ∘ 𝑀 1−1
+
+([
+
+1
+
+0
+
+0
+
+0
+
+0])
+
+=
+
+[
+
+0
+
+1
+
+0
+
+1
+
+0]
+
+.
+
+(19 )
+
+V.  CONCLUSIONS 
+
+This study proposes a multivariate cryptography -based 
+
+anonymous certificate scheme. Building upon the principles 
+
+of multivariate cryptography, a key expansion method and an 
+
+anonymous certificate scheme are designed, and the butterfly 
+
+key expansion is incorporated to achieve anonymity with 
+
+respect to both the RA and the CA . Mathematical proofs are 
+
+provided, along with computational examples to demonstrate 
+
+the feasibility of the proposed methods. The results indicate 
+
+that the proposed approach can achieve anonymity without 
+
+increasing ciphertext or signature lengths. 
+
+REFERENCES 
+
+[1]  D. Bluvstein  et al. , " A Fault -tolerant  Neutral -atom  Architecture for 
+
+Universal  Quantum  Computation ," in  Nature , vol . 649 , pp.  39 -46 , Jan .
+
+202 6, doi:  10.1038/s41586 -025 -09848 -5.
+
+[2]  O. Freyer, M . Ostermann, T . Minssen , and  S. Gilbert , " Quantum 
+
+cryptography and data protection for medical devices before and after 
+
+they meet Q -Day ," in  npj Digital Medicine volume , vol.  8, Art no.  620 ,
+
+Oct . 2025, doi:  10.1038/s41746 -025 -02082 -3.
+
+[3]  K. Kishi, J. Yamaguchi, T. Izu and N. Kunihiro, "Simulation of Shor 
+
+Algorithm for Discrete Logarithm Problems With Comprehensive 
+
+Pairs of Modulo p and Order q ," in  IEEE Transactions on Quantum 
+
+Engineering , vol. 6, pp. 1-12, 2025, Art no. 2100512, doi: 
+
+10.1109/TQE.2025.3591213. 
+
+[4]  D. Moody, R . Perlner, A . Regenscheid, A . Robinson, D . Cooper, " 
+
+Transition to Post -Quantum Cryptography Standards," in  NIST 
+
+Interagency or Internal Reports (NIST IR) , NIST IR 8547  (Initial 
+
+Public Draft) , pp. 1 -29 , 202 4, doi:  10.6028/NIST.IR.8547.ipd .
+
+[5]  G. Alagic et al., "Status Report on the Third Round of the NIST Post -
+
+Quantum Cryptography Standardization Process," in  NIST 
+
+Interagency/Internal Report , NIST IR 8413 -upd1, pp. 1 -93, 5 July 
+
+2022, doi: 10.6028/NIST.IR.8413 -upd1. 
+
+[6]  G. Alagic et al., "Status Report on the Fourth Round of the NIST Post -
+
+Quantum Cryptography Standardization Process," in  NIST 
+
+Interagency/Internal Report , NIST IR 8545, pp. 1 -27, March 2025, doi: 
+
+10.6028/NIST.IR.8545. 
+
+[7]  "Module -Lattice -Based Key -Encapsulation Mechanism Standard," in 
+
+Federal Information Processing Standards, FIPS 203 , pp.1 -47, 13 
+
+August 2024, doi: 10.6028/NIST.FIPS.203. 
+
+[8]  "Module -Lattice -Based Digital Signature Standard," in  Federal 
+
+Information Processing Standards, FIPS 204 , pp.1 -55, 13 August 2024, 
+
+doi: 10.6028/NIST.FIPS.204. 
+
+[9]  "Stateless Hash -Based Digital Signature Standard," in  Federal 
+
+Information Processing Standards, FIPS 205 , pp.1 -51, 13 August 2024, 
+
+doi: 10.6028/NIST.FIPS.205. 
+
+[10]  G. Alagic et al., "Status Report on the First Round of the Additional 
+
+Digital Signature Schemes for the NIST Post -Quantum Cryptography 
+
+Standardization Process," in  NIST Interagency/Internal Report , NIST 
+
+IR 8528, pp. 1 -22, October  202 4, doi: 10.6028/NIST.IR.8528. 
+
+[11]  D. Zhang et al., "Privacy Parameter Setting and Usability Optimization 
+
+Algorithm for Medical Data," in  IEEE Transactions on Consumer 
+
+Electronics , vol. 71, no. 2, pp. 4883 -4891, May 2025, doi: 
+
+10.1109/TCE.2025.3569752. 
+
+[12]  "IEEE Approved Draft Standard for Wireless Access in Vehicular 
+
+Environments --Security Services for Application and Management 
+
+Messages," in  IEEE P1609.2/D5 , pp.1 -376, 15 Dec. 2025.  [Online] 
+
+URL:  https://ieeexplore.ieee.org/document/11193142 .
+
+[13]  "IEEE Draft Standard for Wireless Access in Vehicular Environments 
+
+(WAVE)  - Certificate Management Interfaces for End Entities," in 
+
+IEEE P1609.2.1/D3 , pp.1 -259, 24 Dec. 2025.  [Online] URL: 
+
+https://ieeexplore.ieee.org/document/11345653 .
+
+[14]  T.  Matsumoto  and  H. Imai , " Public Quadratic Polynomial -Tuples for 
+
+Efficient Signature -Verification and Message -Encryption ," in  In: 
+
+Barstow, D., et al. Advances in Cryptology  — EUROCRYPT ’88. 
+
+EUROCRYPT 1988.  Lecture Notes in Computer Science , vol . 330 , pp. 
+
+419 -453, 1988,  doi:  10.1007/3 -540 -45961 -8_39 .
+
+[15]  A. Skanthamany , Multivariate Public Key Cryptography , Bachelor 
+
+Thesis , Department of Mathematical Sciences , Norwegian University 
+
+of Science and Technology , Trondheim , Norway , 2022. [Online] URL: 
+
+https://nva.sikt.no/registration/0198ec13d7f2 -74ce038f -0fa1 -4ffa -
+
+b603 -add4eb08248e .
+
+[16]  A. C. H. Chen, "Code -Based Butterfly Key Expansion for 
+
+Pseudonymous Certificates," in  IEICE Communications Express , vol. 
+
+14, no. 7, pp. 296 -299, July 2025, doi: 10.23919/comex.2025XBL0066.
