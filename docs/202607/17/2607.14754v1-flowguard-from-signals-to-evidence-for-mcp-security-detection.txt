@@ -1,0 +1,851 @@
+Title: FlowGuard: From Signals to Evidence for MCP Security Detection
+
+URL Source: https://arxiv.org/pdf/2607.14754v1
+
+Published Time: Fri, 17 Jul 2026 00:55:54 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# FlowGuard: From Signals to Evidence for MCP Security Detection 
+
+Baichao An, Pei Chen, Geng Hong, Yueyue Chen, Mengying Wu 
+
+Fudan University, Shanghai, China 
+
+{bcan20, peichen19, ghong }@fudan.edu.cn, {yueyuechen25, wumy21 }@m.fudan.edu.cn 
+
+Abstract —The Model Context Protocol (MCP) enables LLM agents to interact with external tools through metadata exchange, tool invocation, and response consumption. Existing MCP secu-rity scanners primarily reason about suspicious semantic signals rather than real execution behaviors, which can lead to unreliable risk assessment. For example, credential-like strings may simply be placeholders rather than actual leakage. This gap requires runtime evidence for execution-related risks and careful semantic analysis for risks carried in metadata or returned content. We present FlowGuard, an evidence-grounded MCP security detection system. FlowGuard combines semantic risk triage, recon-guided payload narrowing, schema-valid probe generation, evidence adjudication, and history-guided refinement. It verifies execution-related risks through runtime evidence and detects semantic risks in tool metadata and returned content. We evaluate FlowGuard on an executable benchmark containing 1,880 MCP cases across five vulnerability categories. FlowGuard achieves F1 scores of 0.879 and 0.942 on the execution-related Command Injection and File System Access categories, respec-tively. Compared with existing dynamic scanners, FlowGuard reduces end-to-end latency by up to 2.23 ×. In the real-world evaluation, FlowGuard reports 523 findings across 326 servers. These results show that evidence-grounded detection can assess both execution-related and semantic risks in MCP interactions. 
+
+Index Terms —Model Context Protocol, security testing, dy-namic analysis, large language models 
+
+I. I NTRODUCTION 
+
+Large language models are rapidly evolving from passive text generators into autonomous agents that can invoke exter-nal tools, access proprietary data, and operate over real-world system resources. As the agent ecosystem expands, the Model Context Protocol (MCP) has emerged as a unified standard for connecting LLM agents with external tools and services, and has become a foundational component of modern AI agent ecosystems and application supply chains. By standardizing Session Initialization, Tool Discovery, Tool Invocation, and Response Consumption, MCP substantially lowers the barrier for integrating third-party capabilities and accelerates the deployment of tool-driven AI systems. However, MCP also fundamentally expands the attack sur-face of LLM systems. Unlike traditional LLM applications that are largely confined to text input and output, MCP agents directly interact with file systems, databases, cloud services, DevOps platforms, and network interfaces through external tools. A flawed or malicious MCP server may therefore expose risky metadata, route parameters into unsafe backend operations, or return content that contaminates downstream agent reasoning. Existing MCP scanners can already detect large numbers of suspicious signals from metadata, parameters, or runtime outputs, but these signals can be misleading. For example, credential-like strings may simply be placeholders rather than actual leakage, while command-like outputs may originate from user-input reflection or syntax errors instead of real command execution success. As a result, signal-based scanners often struggle to distinguish suspicious outputs from real security risks. This limitation appears across existing MCP security approaches. Static analysis lacks runtime behavior observation (e.g., MCPScan [1]); metadata auditing cannot determine runtime reachability (e.g., Agent-Scan [2]); and dynamic methods often rely on broad payloads and weak response feedback, limiting their ability to confirm the vulner-ability evidence (e.g., A.I.G [3]). As a result, MCP security assessment must distinguish verified execution behavior from semantic content that may influence an agent. This gap motivates an evidence-grounded scanner that com-bines semantic interpretation of tool metadata, schema-valid invocation, runtime feedback, and response attribution, using LLMs only for ambiguous semantic steps. Although related to black-box fuzzing and web security scanning, MCP requires separate treatment of backend execution evidence and content that may influence downstream LLM agents. 
+
+Challenges. Runtime MCP security detection therefore raises three core challenges: (1) Probes must simultaneously satisfy schema validity and attack effectiveness. A malformed probe is rejected before reaching backend logic, while abenign valid input may reveal little about exploitability. (2) Scanners must decide where to spend their probing budget under limited semantic visibility. Parameters such as path ,
+
+query , or url look similar at the schema level even when they feed very different backend operations. (3) Runtime responses are inherently ambiguous, since suspicious outputs may reflect user input, defensive behavior, or genuine evidence of exploitation. 
+
+Key Insight. Our key insight is that MCP exposes com-plementary signals for two forms of security assessment. Tool Discovery metadata supports semantic risk detection and provides priors for runtime probing, while Tool Invocation and Response Consumption can provide concrete execution or disclosure evidence. During Tool Invocation, runtime failures are not merely noise: schema-compliant probes may reveal backend fingerprints such as language, database engine, op-erating system, or path conventions. During Response Con-sumption, returned content provides candidate evidence, but that evidence must be adjudicated against source attribution and expected tool behavior. 
+
+Our Work. Based on this insight, we design FlowGuard, an evidence-grounded MCP security detection system. It ver-ifies execution-related findings through runtime probing and arXiv:2607.14754v1 [cs.CR] 16 Jul 2026 identifies semantic risks in tool metadata and returned content without assuming that a downstream agent follows the content. LLMs are used as bounded semantic subroutines in this process. The core design is the structured verification loop that constrains probing and decisions with MCP schemas, risk states, runtime feedback, and evidence-adjudication rules. We evaluate FlowGuard on an executable MCP security benchmark containing 1,880 cases across five vulnerability categories. FlowGuard detects both execution-related and se-mantic risks, reaching F1 scores of 0.879 on Command Injection and 0.942 on File System Access while reducing mean latency by up to 2.23 ×. We further evaluate FlowGuard on 8,000 real-world MCP servers from MCPZoo. FlowGuard reports 523 findings across 326 servers. These findings show the value of separating verified runtime evidence from seman-tic risk signals. 
+
+Contributions. We make the following key contributions:  
+
+> •
+
+We design and implement FlowGuard, an evidence-grounded MCP scanner that combines semantic risk detection with schema-valid probing, runtime feedback, and evidence adjudication.  
+
+> •
+
+We construct an executable MCP security benchmark spanning five vulnerability categories, enabling system-atic evaluation of black-box MCP security scanners under realistic runtime interaction settings.  
+
+> •
+
+We evaluate FlowGuard on the benchmark and 8,000 real-world MCP servers, covering detection effectiveness, runtime overhead, and report quality. II. B ACKGROUND 
+
+A. MCP Overview 
+
+The Model Context Protocol (MCP) defines a common interface for connecting applications, models, tools, and data sources [4]. Its message layer encodes communication in JSON-RPC 2.0 [5], while its transport layer supports stdio, SSE, and Streamable HTTP. An MCP deployment typically involves three roles: the host application, the MCP client, and one or more MCP servers. The host application, such as an AI assistant, editor, or IDE, manages the user-facing interaction and decides when external capabilities should be made available to the model. The MCP client implements the protocol on behalf of the host, while each MCP server exposes external capabilities through standardized primitives such as tools, resources, and prompts. Among these primitives, tools are the most security-critical for our study because they allow the agent to invoke server-side functionality with structured arguments and receive execution results. A typi-cal tool interaction proceeds through four conceptual stages: 
+
+Session Initialization , Tool Discovery , Tool Invocation , and 
+
+Response Consumption . We use these stages to describe the protocol workflow, while FlowGuard focuses on the latter three stages, where tool metadata, invocation parameters, and returned content are exposed. MCP Client                             
+
+> (AI Agent)
+> MCP Server
+> (Tool Provider)
+> 1. Session Initialization
+> Initialize Request
+> { " method ": " initialize "}
+> Capability Negotiation Response
+> {"capabilities": { "tools": true, "resources": true }}
+> 2. Tool Discovery
+> Tool Discovery Request
+> { "method": "tools/list", "params": { }}
+> Tool List Response
+> { "tools": [
+> { "name": "get_user", "description": "Get user by ID",
+> "inputSchema": { "type": "object",
+> "properties": { "user_id": { "type": "string" }}
+> }}]}
+> 3. Tool Invocation
+> Tool Call Request
+> { "method": "tools/call",
+> "params": {"name": "get_user",
+> "arguments": {"user_id": "42" }}
+> }
+> 4. Response Consumption
+> Tool Call Result
+> {"user": { "id": "42", "name": "Alice",
+> "email": "alice@example.com" }}}
+> Metadata Surface
+> Tool Poisoning ,Rug -pull
+> Execution Surface
+> Command Injection, SSRF
+> Response Surface
+> Credential Leakage
+
+Fig. 1. MCP interaction workflow and the attack surfaces analyzed by Flow-Guard during Tool Discovery, Tool Invocation, and Response Consumption. 
+
+B. Attack Surfaces in MCP Interaction 
+
+As illustrated in Figure 1, Session Initialization establishes the protocol context, while FlowGuard analyzes security risks exposed during Tool Discovery, Tool Invocation, and Response Consumption. These stages expose metadata, parameters, and returned content to the agent. 
+
+Session Initialization. During this stage, the client establishes a session with the server and negotiates their supported capa-bilities. We treat this as a setup stage rather than a detection target because it carries less attacker-controlled semantic con-tent than later tool interactions. 
+
+Tool Discovery. During this stage, the client requests the available tool list, through which it obtains each tool’s name, natural-language description, and parameter schema. These metadata are often incorporated into the LLM context and used to guide tool selection and subsequent reasoning. An attacker can embed hidden instructions in a tool description to manipulate the LLM’s behavior, commonly known as tool poisoning; register a malicious tool with a confusingly similar or overlapping interface to a legitimate one, known as tool shadowing; or change a tool’s behavior after it has passed an initial review, known as a rug-pull attack. Existing defenses have made progress on metadata auditing through rule-based matching, static inspection, and LLM semantic analysis. 
+
+Tool Invocation. In this stage, the client sends a structured invocation request. Tool parameters may be propagated into backend sinks such as file systems, databases, command interpreters, or network clients, leading to path traversal, SQL injection, command execution, or SSRF. These risks often cannot be verified from descriptions and schemas alone, because they depend on how the server handles parameters at runtime. Dynamic analysis can exercise this stage through real invocations, but confirming exploitability requires probes that satisfy tool constraints and response analysis that can use runtime feedback. 
+
+Response Consumption. In this stage, the client receives the corresponding execution result. Tool call results are consumed by the LLM and may shape its subsequent actions. An attacker can embed malicious instructions in a tool response to hijack later agent behavior through indirect prompt injection, or cause the response to expose sensitive information such as system paths, database schemas, and API keys. Unlike metadata auditing, this level requires runtime interpretation: the detector must distinguish genuine leaks or injections from benign errors and normal tool outputs. Overall, existing work has built substantial detection capa-bility at the Tool Discovery stage, but important gaps remain at the Tool Invocation and Response Consumption stages. Metadata-stage risks can often be flagged before execution, but invocation-stage and response-stage risks require runtime evidence because their exploitability depends on backend data flow and returned content. 
+
+C. Threat Model 1) System Architecture and Trust Boundaries: We consider a typical MCP deployment in which a host application (e.g., Claude Desktop [6] or Cursor [7]) embeds an MCP client that connects to one or more MCP servers. The host application, embedded MCP client, user, underlying LLM, and FlowGuard scanning environment are trusted, while MCP servers are out-side the trust boundary. This assumption reflects FlowGuard’s role as a server-side security scanner: it runs under the op-erator’s authority and attributes evidence from standard MCP interactions to external servers. If the host, client, or scanner is compromised, probes, metadata, responses, or reports may be tampered with, invalidating server-side attribution. Such endpoint-compromise scenarios are outside our scope and re-quire complementary defenses such as hardening, sandboxing, attestation, or independent traffic auditing. 
+
+2) Attacker Model: We model two kinds of server behavior, rather than trying to decide whether the server operator is malicious. 
+
+Behavior A: Malicious or Policy-Violating MCP Behavior. 
+
+A server may expose harmful tool metadata, schemas, or returned content, such as tool poisoning, misleading descrip-tions, prompt-injection payloads, or credential-related disclo-sures. FlowGuard treats these artifacts as untrusted obser-vations and checks whether they provide concrete security evidence under standard MCP interactions. 
+
+Behavior B: Vulnerable-but-Benign MCP Implementation. 
+
+A server may be benign in intent but vulnerable in imple-mentation. In this case, tool parameters may reach dangerous backend operations, such as command execution, path traver-sal, unauthorized file reads, SQL queries, or SSRF. FlowGuard checks whether schema-valid invocations can produce observ-able evidence of such behavior. In both cases, FlowGuard verifies observable evidence rather than deciding why the server exposes the behavior. 
+
+3) Attacker Capabilities: Session Initialization provides connection and capability context, but is not itself a detection target. Our analysis treats server-provided metadata, execu-tion behavior, and returned content as untrusted observations during Tool Discovery, Tool Invocation, and Response Con-sumption. During a scan, we assume the server does not try to recognize FlowGuard, hide evidence only from the scanner, or change behavior only to evade probing. Servers that adapt to the scanner, delay malicious behavior across sessions, or behave differently for benign-looking clients are outside our current threat model. 
+
+4) Scope and Limitations: We focus on security risks exposed through standard MCP interactions, particularly high-risk behaviors triggered by tool parameters or returned outputs. Our analysis targets MCP servers accessible through standard runtime interfaces and evaluates whether suspicious interaction signals correspond to real security-relevant behaviors under runtime execution. The four stages describe the protocol work-flow, but FlowGuard detects risks only in Tool Discovery, Tool Invocation, and Response Consumption. The five evaluated categories are representative risks in these stages rather than a complete classification of MCP security. We do not consider scenarios in which the host application, embedded MCP client, or FlowGuard execution environment is already compromised. We also exclude vulnerabilities that require white-box code analysis, local system privileges, adaptive probe evasion, long-term cross-session behavior, or attacks that bypass MCP tool interaction entirely, such as standalone social-engineering attacks unrelated to tool invocation. III. M ETHODOLOGY 
+
+A. Challenges and Key Ideas 
+
+Challenge 1: Probes must be both schema-valid and attack-effective, but these two goals conflict without backend visibility. A useful security probe must satisfy two conflicting requirements. It must conform to the tool’s type and format constraints, otherwise it will be rejected before reaching the backend. At the same time, it must carry a payload capable of triggering vulnerability behavior. Without knowledge of the backend implementation, constructing such probes is non-trivial. We decouple probing into two phases: a reconnaissance phase that extracts backend signals using low-impact, schema-compliant inputs, followed by a targeted phase that generates exploit-oriented probes guided by the inferred backend con-text. 
+
+Challenge 2: Parameters with similar schemas can have different security semantics, yet probing should be efficient and effective. At the schema level, parameters such as path ,
+
+query , or url appear similar regardless of whether they are used in benign operations or passed directly into dangerous Untrusted           
+
+> MCP Server
+> Tool Discovery
+> Stage I: Probe Generation
+> Risk Knowledge
+> LLM Reasoning
+> Recon
+> low -impact
+> schema -valid
+> probes
+> Fingerprint
+> Extraction
+> Strike
+> fingerprint -guided
+> attack probes
+> Legality
+> Validation
+> Tool Invocation
+> Tool Responses
+> Stage II: Response Analysis
+> Signal Extraction Evidence Adjudication
+> Stage III : History -Guided Refinement
+> Probe History
+> payloads | responses |
+> fingerprints | decisions
+> Triage
+> Description -Layer Source Attribution
+> Behavioral Expectation Execution -Layer
+> Refinement
+> Termination Fig. 2. An overview of FlowGuard.
+
+backend calls. This semantic ambiguity makes it difficult to identify which inputs are security-relevant. At the same time, exhaustively probing all parameters is inefficient, increases un-necessary load on MCP servers, and reduces the likelihood of triggering real vulnerabilities under a limited probing budget. In the triage phase, we combine tool descriptions, parameter names, and JSON schemas to rank parameters by semantic risk. This reduces the probe space from all parameters to a small subset that is most likely to reach unsafe operations. 
+
+Challenge 3: Tool responses do not provide a reliable signal for distinguishing benign failures from true vulnera-bilities. Responses by MCP tools may correspond to schema validation failures, normal business logic, or genuine vulner-ability triggers, and these cases often appear similar. Error formats vary widely across backend environments, making simple pattern matching unreliable, while overly conservative interpretation leads to missed findings. Relying on single-response heuristics can therefore lead to both false positives and missed vulnerabilities. We maintain a local history of probes and responses, and iteratively refine both probing strategies and vulnerability hypotheses, enabling the system to accumulate evidence over multiple rounds rather than relying on any single response. 
+
+B. System Overview 
+
+Our system operates as a closed-loop active probing pipeline, as illustrated in Figure 2. FlowGuard performs se-mantic risk detection for metadata and returned instructions, and runtime evidence verification for execution-related risks. It takes Tool Discovery metadata from an MCP server as input and passes it through five phases: T RIAGE , R ECON , S TRIKE ,ANALYSIS , and R EFINEMENT . The pipeline iterates over these structured states until it reaches a verdict, exhausts the probe budget, or observes no actionable new signal. Appendix A lists the prompts used to instantiate the bounded semantic subroutines. TRIAGE analyzes tool names, descriptions, and parameter schemas from Tool Discovery, and outputs candidate tool, parameter, and risk tuples for probing. RECON sends low-impact, schema-compliant probes to se-lected parameters and extracts environment fingerprints such as backend language, database engine, and path conventions. STRIKE uses these fingerprints and schema constraints to issue targeted Tool Invocation probes that are more likely to reach security-relevant backend paths. ANALYSIS extracts candidate response signals and applies source-attribution and behavioral-expectation checks to pro-duce candidate signals or confirmed evidence. REFINEMENT updates the probe history and decides whether to continue probing, stop as inconclusive, or emit a final report. The following subsections detail how these states are constructed, validated, and refined during the scan. 
+
+C. Probe Generation 
+
+This subsection describes target selection and schema-valid probe construction. 
+
+1) Recon-Guided Payload Narrowing: Effective attack payloads are highly environment-dependent. For example, command-injection syntax for a Python backend differs from that for Node.js, and schema-enumeration queries for SQLite differ from those for MySQL. In a black-box setting where the backend is unknown, issuing strike probes directly expands the payload space into broad enumeration, resulting in low hit rates. Prior black-box fuzzing work has shown that im-plementation clues exposed in target responses are critical for specializing subsequent inputs [8]. We therefore split probing into a R ECON phase and a S TRIKE phase. A low-impact probe is first sent to extract environment signals from a single call, and the resulting fingerprints are then used to select a small number of high-yield payloads, narrowing the candidate payload space from broad enumeration to a targeted set. 
+
+Recon Probe Design. For each threat category, a low-impact fault value triggers a controlled, information-rich fail-ure. For example, file-system parameters may use non-existent paths to elicit errors, and command-execution parameters may include minimal shell markers to test interpretation. The goal of a R ECON probe is not to complete a successful Tool Invoca-tion, but to obtain responses that reveal path formats, language frameworks, database engines, or system error messages at minimal cost. 
+
+Fingerprint Extraction. After receiving a RECON re-sponse, we apply rule-based extraction to identify environ-ment fingerprints, including the operating system, backend language, and database type. For example, traceback or 
+
+django suggests a Python backend; goroutine or panic 
+
+suggests Go; sqlite3 suggests SQLite; and C: \ or win32 
+
+suggests Windows. If rule-based extraction is incomplete, a bounded semantic fingerprinter returns the missing fields as a structured JSON object. The extracted fingerprints are then used to select and rank payloads for the S TRIKE phase. 
+
+Strike Probe Generation. The extracted fingerprints are used to generate a single threat-specific strike payload for each high-risk parameter and threat family. For example, command-execution parameters leverage backend language and OS to craft appropriate shell commands, file-like parameters preserve a benign prefix before adding minimal shell markers, and database parameters may query platform-specific tables. For cases not covered by deterministic templates, the generator uses the structured fingerprint, schema constraints, and threat family to produce one bounded candidate payload. The pay-load is coerced to the declared parameter type before being embedded into an otherwise safe base invocation. All strike payloads are additionally constrained to avoid state-modifying side effects, external network contact, and destructive opera-tions such as writes or deletes. 
+
+Probe Legality. Tool Invocation requests are constrained by JSON Schema fields such as type , enum , pattern , and 
+
+maxLength . Non-conforming probes may be rejected by the MCP schema-validation layer before they reach the vulnerable backend path. FlowGuard therefore makes probe generation schema-aware. During triage, it extracts parameter types and explicit constraints from the tool schema and includes them in the structured context used for payload generation. During probing, candidate payloads are coerced or wrapped according to the declared parameter type: numeric and boolean parame-ters require parseable values, arrays receive schema-shaped elements, object parameters require structured objects, and string parameters preserve the attack intent when possible. If a probe is rejected by schema validation, the validation response is fed back into the refinement loop to generate a more compatible follow-up probe. 
+
+2) Semantic Risk Triage: Before Tool Invocation, an MCP server already exposes tool descriptions, JSON schemas, and parameter names during Tool Discovery. These static signals provide useful priors about backend behavior. For example, parameters such as cmd , command , and exec often indicate command execution risk; file , path , and dir suggest file system access; and url , host , and callback commonly appear in network-request contexts [9]. The goal of T RIAGE 
+
+is to use these signals to focus probing on a small set of high-risk parameters, reducing exploration cost while retaining potentially impactful targets. 
+
+Risk Knowledge Construction. The risk knowledge base provides fast-path rules for three parameter patterns: command-like inputs, file-like inputs, and prompt-bearing inputs. It accelerates routing for clear parameter semantics rather than defining all risks supported by FlowGuard. Each entry is assigned a risk score based on the strength and consistency of evidence from CVE-derived parameter names, Fluffy’s parameter to sink observations, and the OWASP Top 25 Parameters list. Parameters with strong and unambiguous scores are selected as fast path parameters and can be routed directly to the corresponding probe type. Table VI summarizes the resulting knowledge base. Prompt-bearing inputs are an internal routing pattern and are distinct from the response-layer Prompt Injection category evaluated in our benchmark. 
+
+Risk Vectors and Fast-Path Routing. Each parameter is represented as a risk vector over the three fast-path patterns in the knowledge base. As summarized in Table VI, parameters with strong and unambiguous signals are routed to a fast path, where they directly receive probes for the corresponding risk type. Parameters with weaker or conflicting signals enter an uncertainty path rather than being immediately pruned. In this path, FlowGuard retains parameters whose names, descriptions, schema constraints, or cross-parameter compo-sition suggest possible high-impact behavior, while pruning only parameters with consistently low-risk evidence. Risks not covered by the fast path, including Credential Leakage, are retained through uncertainty-path triage or identified from returned content during Response Analysis. 
+
+Uncertainty-Path Triage. For parameters that the fast path cannot resolve, FlowGuard invokes a bounded semantic triage step with structured JSON output. This step infers tool intent, parameter roles, cross-parameter composition, and risk labels from concrete metadata evidence; its output is used only to choose among high-confidence routing, uncertainty retention, and low-risk pruning. Appendix A provides the implementa-tion prompt and expected output fields. 
+
+D. Response Analysis 1) Signal Extraction from MCP Responses: Security sig-nals in an MCP workflow are not limited to tool execution results. Before Tool Invocation, the agent obtains tool names, descriptions, and JSON schemas during Tool Discovery, and this metadata may directly affect tool selection and argument construction. We therefore separate signal identification into two categories: metadata-layer signals from Tool Discovery, and execution-layer signals from Tool Invocation and Re-sponse Consumption. 
+
+Description-Layer Detection. Tool Discovery metadata is itself an attack surface. A malicious MCP server can embed hidden instructions in tool descriptions or schemas, influencing the agent before Tool Invocation. To balance efficiency and coverage, we use a three-tier pipeline. First, name-confusion detection normalizes tool names by lowercasing, removing non-alphanumeric characters, and applying common leet sub-stitutions, then compares them against high-risk authoritative tool names. Second, fast rule matching applies regular ex-pressions to the concatenated text of tool names, descriptions, and key schema fields to detect hidden instructions, cross-tool control, schema manipulation, and Unicode obfuscation. Third, when explicit rules do not fire, a bounded semantic check returns structured labels for subtler poisoning semantics. Only unresolved cases reach this step, and its labels are passed to evidence adjudication rather than emitted as findings. 
+
+Execution-Layer Detection. During Tool Invocation and Response Consumption, different vulnerability types leave dif-ferent observable signals. For credential leakage, we use rule libraries such as Gitleaks to match high-confidence structured credential patterns, including API keys, tokens, private keys, cloud credentials, and configuration fragments. For command injection, we extract explicit execution evidence from re-sponses, such as id output, system file fragments, OS version strings, shell paths, and command-not-found errors. These pat-terns are not used as standalone proof of a vulnerability; they only mark response fragments that may indicate interaction with a dangerous backend context. Signal identification is therefore a high-recall evidence collection step rather than a final decision procedure. Rule-matched fragments are retained as inputs to the subsequent EVIDENCE ADJUDICATION step. Conversely, responses with-out rule matches are not immediately considered safe, since subtle leaks, blind execution, or context-dependent failures may only become meaningful when analyzed together with the probe, tool metadata, and probe history. FlowGuard therefore treats suspicious fragments as candidate signals rather than findings. A candidate becomes vulnerability evidence only af-ter it is attributed to backend behavior and judged inconsistent with the tool’s expected semantics. Thus, signal extraction can raise suspicion, but it never emits a finding by itself. 
+
+2) Evidence Adjudication: In a black-box MCP setting, the scanner can only observe tool outputs without access to backend implementations or execution paths. As a result, the presence of a suspicious signal does not necessarily indicate a real vulnerability. Determining whether an observed response constitutes a true security finding requires reasoning beyond the response itself. We perform adjudication along two dimensions of evidence. 
+
+E1: Source Attribution. This dimension determines whether suspicious content in the response is produced by the backend or merely reflects the probe input. If the content is an echo of attacker-controlled input, it does not indicate information disclosure. Only content independently generated by the system constitutes valid vulnerability evidence. For example, a response that simply echoes a probe marker is not treated as credential leakage or command output, even if the marker matches a suspicious pattern. 
+
+E2: Behavioral Expectation. This dimension determines whether the response can be explained by the tool’s intended functionality or defensive mechanisms. Responses such as authentication failures, invalid input rejections, permission errors, and resource-not-found messages are consistent with expected behavior. Although they may appear anomalous, they reflect correct handling of malicious input rather than success-ful exploitation. For example, a file-reading tool returning an allowed fixture file is expected behavior, whereas returning content outside its declared workspace boundary becomes evidence for a File System Access finding. 
+
+Decision Outcome. For execution-related risks, the system classifies a signal as input reflection, normal defense, or confirmed runtime evidence. Reflections and normal defenses are fed back as constraints, while only backend-originated behavior outside the tool’s expected boundary is confirmed. For Tool Poisoning and Prompt Injection, the output is instead a semantic-risk verdict; it does not claim that a downstream agent will follow the detected instruction. The adjudicator records the source, expected behavior, and verdict in structured fields. Appendix A gives one implementation prompt for producing these fields. 
+
+E. History-Guided Refinement 
+
+An initial S TRIKE probe does not always trigger a vul-nerability directly, but even a failed response can provide useful information. Instead of treating a failed probe as merely invalid, we treat the response as feedback that constrains the next probe. For each parameter and risk type, the system maintains a local probe history: 
+
+Ht = {(p1, r 1), (p2, r 2), . . . , (pt, r t)},
+
+where pi is the payload sent in round i, and ri records the response, validation outcome, extracted signals, and adjudi-cation result. The refinement module summarizes this history into constraints and either proposes the next payload or stops when no actionable signal remains. 
+
+Distinguishing Failure Types. The refinement module distinguishes between two broad classes of failures. If the response indicates that the payload was rejected by schema or format validation, the next probe repairs the structural issue while preserving the original attack intent. If the pay-load passes schema validation but triggers a business-logic error, the system treats this as evidence that the input has reached part of the backend execution path and generates a more targeted follow-up. For example, a file-not-found error suggests that path parsing has occurred, so the next probe can adjust directory depth or target file names; a SQL syntax error suggests that the input has entered query construction logic, so the next probe can adjust quote escaping or comment characters. The refinement step also consumes the adjudication outcome from the previous round: input reflections lead to payload-marker changes, normal defensive responses reduce the priority of that direction, partial backend clues trigger more specialized probes, and confirmed evidence terminates the loop with a report. 
+
+Termination. The refinement loop stops when FlowGuard obtains confirmed evidence, exhausts the probing budget B,repeats an equivalent probe, or when the refinement module determines from the probe history that subsequent rounds provide no actionable new signal. At that point, the refinement module emits a stop decision, and FlowGuard terminates TABLE I OVERVIEW OF THE MCP SECURITY BENCHMARK . T HREAT STAGE INDICATES WHERE IN THE MCP INTERACTION FLOW THE ATTACK IS INTRODUCED .                                 
+
+> Category Threat Stage Representative Patterns Total Pos. Neg. Command Injection Tool Invocation shell construction, eval, config dispatch, staged execution 360 144 216
+> Tool Poisoning Tool Discovery explicit/implicit hijacking, parameter tampering, benign metadata 550 485 65
+> Prompt Injection Response Consumption unsolicited instruction, fake error, indirect injection 500 300 200
+> Credential Leakage Response Consumption filesystem, runtime, database, cloud, SCM leakage 220 180 40
+> File System Access Tool Invocation traversal, absolute path, symlink, archive extraction 250 200 50
+> Total 1,880 1,309 571
+
+refinement for the current parameter and risk type. This loop lets later probes adapt to explicit schema constraints and runtime backend constraints observed from prior responses. Algorithm 1 gives the pseudocode for the loop. IV. B ENCHMARK CONSTRUCTION 
+
+A. Benchmark Overview 
+
+Traditional software-security benchmarks provide a use-ful model for constructing executable test suites with ex-plicit ground truth. OWASP Benchmark [10] and NIST SARD/Juliet [11], for example, pair vulnerable and benign cases for evaluating program-analysis tools. However, they do not capture risks in MCP tool metadata, invocation parameters, and returned content, and therefore cannot directly evaluate scanner performance across Tool Discovery, Tool Invocation, and Response Consumption. Several existing MCP benchmarks place an LLM agent in an attack scenario and measure whether the attack induces unsafe agent behavior. MSB [12], MCPSecBench [13], and MCP-SafetyBench [14] follow this evaluation setting. Their outcomes therefore depend on the agent model, prompt, and execution policy in addition to the MCP server. FlowGuard evaluates a different target: the security scanner. Each bench-mark case must therefore provide a known positive or negative label together with explicit evidence for determining whether the scanner’s report is correct. This ground truth enables scanner-level precision, recall, and false-positive measurement, but is not systematically provided by agent-behavior bench-marks. The two evaluation settings are complementary: one measures the downstream effect of an attack on an agent, while the other measures whether a scanner can identify the corresponding risk from MCP metadata, invocations, and responses. To address these gaps, we construct an executable MCP security benchmark spanning five categories: Command Injec-tion , Tool Poisoning , Prompt Injection , Credential Leakage ,and File System Access . These categories cover common high-risk behaviors observed in real MCP ecosystems across Tool Discovery, Tool Invocation, and Response Consumption, including tool metadata exposure, unsafe parameter execution, and untrusted runtime outputs. The benchmark contains two task groups. Command Injection, Credential Leakage, and File System Access are execution-evidence risks labeled by observable execution or disclosure. Tool Poisoning and Prompt Injection are semantic-content risks labeled by adversarial intent in metadata or returned content; they do not establish that a downstream agent will follow the instruction. The benchmark construction follows established security speci-fications adapted to MCP, including CWE-78 [15], CWE-22 [16], OWASP WSTG [17], MCPTox-derived poisoning patterns, and the positive-negative pairing style of OWASP Benchmark and SARD/Juliet [10], [11]. Each sample consists of a runnable MCP server, defined attack triggers, ground-truth labels, and verification evidence, enabling quantitative evaluation of both detection accuracy and false-positive rates. Table I summarizes the benchmark composition. In to-tal, the benchmark contains 1,880 executable MCP cases, including 1,309 positive cases and 571 negative or hard-negative cases. The distribution is intentionally not uniform across categories: semantic attacks such as tool poisoning and prompt injection contain more variants due to their diverse textual realizations, while execution-path vulnerabilities are organized around representative backend patterns and paired safe implementations. Ground-truth labels are assigned by benchmark design rather than by scanner output. A positive case has a defined trigger and category-specific evidence, such as command markers, fixture file contents, synthetic canaries, or instruction patterns in metadata or responses. A negative or hard-negative case preserves similar surface semantics, high-risk names, or suspicious-looking outputs, but its safe imple-mentation should not produce the corresponding evidence. We further validate the benchmark with category-specific checks. For Command Injection, File System Access, and Credential Leakage, we run each generated MCP server with both benign and trigger inputs. These checks confirm that benign inputs do not expose evidence, positive triggers produce the expected marker or synthetic canary, and paired safe variants block the same evidence. For tool poisoning and prompt injection, we check the generated metadata and templates: positive cases contain the intended instruction pattern, while benign and hard-negative cases keep similar surface language but omit that pattern. 
+
+B. Category-Specific Design 
+
+We construct each category according to where the risk appears in the three stages analyzed by FlowGuard. Execution-path vulnerabilities model unsafe flows from Tool Invocation parameters to backend operations, while semantic risks appear in Tool Discovery metadata or Response Consumption content. Each category includes positive cases and negative or hard-negative cases with similar surface semantics. 
+
+Command Injection. Command injection occurs when user-controlled input is interpreted as part of an operating-system command, allowing an attacker to alter the intended command semantics or execute unintended commands. Fol-lowing CWE-78 [15], we generate MCP tools whose param-eters flow into command-execution patterns. Positive cases cover direct shell construction, string concatenation, f-string command construction, configuration-driven shell dispatch, and environment-variable expansion. Negative cases preserve similar business semantics but use safer argument-vector ex-ecution, validated argument-vector calls, fixed or constant command templates, quoted shell arguments, timeout-bounded execution, or documentation-only command examples, follow-ing the positive-negative pairing style of OWASP Benchmark and SARD/Juliet. 
+
+Tool Poisoning. Tool poisoning refers to attacks in which malicious instructions are embedded in tool metadata, such as tool names, descriptions, or parameter schemas, so that an LLM agent is induced to misuse a tool or change its intended behavior before Tool Invocation. A positive case must contain metadata that attempts to alter tool selection, parameter construction, privilege assumptions, or cross-tool behavior; benign controls may contain rich tool descriptions without such steering intent. This category targets the Tool Discovery stage, where the agent first observes tool metadata and incorporates it into planning. We adapt tool poisoning cases from MCPTox [18], convert the original poisoned tool descriptions into executable FastMCP servers, and preserve their template/paradigm annotations and risk categories. We additionally generate P0 benign tool-metadata controls to measure scanner false positives, which is different from ASR-oriented agent robustness evaluation. 
+
+Prompt Injection. Prompt injection refers to attacks in which untrusted textual content is crafted to override, manip-ulate, or conflict with the agent’s original instructions. In our benchmark, this category focuses on indirect prompt injection through tool outputs rather than direct user prompts. The malicious content is returned during Response Consumption and may be mistaken by the agent as trustworthy execution context. Positive cases inject exfiltration-oriented instructions into normal outputs, forged error messages, or simulated external data sources, corresponding to unsolicited-instruction, false-error, and remote-injection paradigms. Negative cases in-clude clean outputs and hard negatives that contain instruction-like text, logs, code fragments, or command snippets but do not ask the agent to change task goals or violate its authorization boundary. 
+
+Credential Leakage. Credential leakage refers to the un-intended exposure of secrets, authentication tokens, API keys, session identifiers, or other sensitive configuration values through tool execution results. In the MCP setting, such leakage can occur when a tool reads from sensitive runtime state, local files, databases, cloud or Kubernetes-style config-uration, runtime command outputs, provider debug outputs, or application metadata and returns the content to the agent. Our samples use synthetic canary secrets as ground truth to avoid exposing real credentials. The canaries cover structured secret formats and configuration-like fragments, and a positive label requires canary exposure outside the tool’s intended semantics. Negative cases return redacted values, look-alike tokens, safe placeholders, or explicitly sanitized outputs. 
+
+File System Access. File system access vulnerabilities occur when user-controlled path input allows a tool to read, include, or otherwise operate on files outside the intended directory boundary. Following CWE-22 and OWASP WSTG [16], [17], we construct path-based MCP tools over local fixtures. The evaluated dataset focuses on read-evidence cases, covering traversal read, absolute-path read, symlink-follow escape, and template-include escape. Negative cases implement bound-ary checks, path normalization, symlink rejection, allowlisted roots, or template/file-name validation. The generator also supports side-effect families such as unsafe writes, deletes, and archive extraction, but these are not included in the default evaluated benchmark. V. E VALUATION 
+
+We evaluate FlowGuard through the following five research questions:  
+
+> •
+
+RQ1 (Detection Effectiveness): How accurate is Flow-Guard in detecting different types of MCP vulnerabilities, and can it maintain high coverage while effectively con-trolling false positives?  
+
+> •
+
+RQ2 (Probe Quality and Efficiency): Can the constraint-aware probe generation strategy produce schema-compliant inputs while improving probe success rate and overall detection efficiency?  
+
+> •
+
+RQ3 (Runtime Overhead): What is the runtime over-head of FlowGuard, and does its time and interaction cost meet the requirements of practical deployment?  
+
+> •
+
+RQ4 (Mechanism Contribution): What are the contribu-tions of key components, including semantic risk triage, the Recon and Strike probing strategy, and response anal-ysis with attribution, to the overall system performance?  
+
+> •
+
+RQ5 (Real-World Effectiveness): When applied to real-world MCP servers, what risks does FlowGuard report, and how many sampled reports contain concrete runtime evidence? 
+
+A. Experiment Setup 
+
+Evaluation Targets. We deploy FlowGuard as an active se-curity scanner that interacts with target servers strictly through the standard MCP protocol. For benchmark evaluation, each case is executed as an independent MCP server instance with its ground-truth trigger and label hidden from the scanner. RQ1 reports end-to-end detection results over all five benchmark categories. Subsequent mechanism-oriented analyses focus on Command Injection, Credential Leakage, and File System Access, because they directly exercise FlowGuard’s active parameter-level probing, refinement, runtime overhead, and TABLE II DETECTION EFFECTIVENESS ACROSS FIVE MCP VULNERABILITY CATEGORIES . E RROR DENOTES FAILED RUNS AND IS EXCLUDED FROM DENOMINATORS .                                                                                                                                                                                              
+
+> Category Method TP FP TN FN Error Precision Recall F1 Accuracy
+> Credential Leakage FlowGuard 140 436 40 00.9722 0.7778 0.8642 0.8000 MCPScan 0040 180 00.0000 0.0000 0.0000 0.1818 MCP-Scanner 13 139 167 00.9286 0.0722 0.1340 0.2364 A.I.G 115 14 26 65 00.8915 0.6389 0.7443 0.6409 Tool Poisoning FlowGuard 480 065 501.0000 0.9897 0.9948 0.9909 MCPScan 324 13 52 161 00.9614 0.6680 0.7883 0.6836 MCP-Scanner 329 857 156 00.9763 0.6784 0.8005 0.7018 A.I.G 327 49 16 158 00.8697 0.6742 0.7596 0.6236 Command Injection FlowGuard 113 0216 31 01.0000 0.7847 0.8794 0.9139 MCPScan 144 180 36 000.4444 1.0000 0.6154 0.5000 MCP-Scanner 00216 144 00.0000 0.0000 0.0000 0.6000 A.I.G 69 41 165 66 19 0.6273 0.5111 0.5633 0.6862 Prompt Injection FlowGuard 281 6194 19 00.9791 0.9367 0.9574 0.9500 MCPScan 100 66 134 200 00.6024 0.3333 0.4292 0.4680 MCP-Scanner 00200 300 00.0000 0.0000 0.0000 0.4000 A.I.G 252 72 104 30 42 0.7778 0.8936 0.8317 0.7773 File System Access FlowGuard 178 050 22 01.0000 0.8900 0.9418 0.9120 MCPScan 190 48 210 00.7983 0.9500 0.8676 0.7680 MCP-Scanner 2149 198 00.6667 0.0100 0.0197 0.2040 A.I.G 64 050 134 21.0000 0.3232 0.4885 0.4597
+
+evidence collection mechanisms, whereas Tool Poisoning and Prompt Injection are primarily metadata- or response-semantic threats. For real-world evaluation, we interact with MCPZoo servers through MCPZoo’s provided access interface. 
+
+Baselines. We compare FlowGuard with three representa-tive MCP security scanners covering different analysis mech-anisms. For static source-code analysis, we use MCPScan, which analyzes MCP server implementations to identify po-tentially risky behaviors. For metadata-based analysis, we use MCP-Scanner, which inspects tool descriptions and related metadata for suspicious patterns. For dynamic interaction analysis, we use A.I.G (AI Infra Guard), which performs runtime probing by generating tool invocations and analyzing execution responses. These baselines collectively represent the major existing MCP scanning approaches and allow us to compare FlowGuard across different detection mechanisms. 
+
+Implementation and Configuration. FlowGuard uses Qwen3-235B-A22B-Instruct as the default LLM across all experiments. Unless otherwise specified, the timeout for each scanning run is set to 900 seconds, and the maximum prob-ing budget B is limited to 5 rounds. The probing process terminates earlier once sufficient evidence is collected or no additional useful signal is observed. For fair comparison, all baseline scanners use their default or recommended configu-rations under the same LLM and overall timeout constraint. 
+
+Metrics. We evaluate performance using multiple metrics, including detection accuracy (Precision, Recall, and F1 score), false positive rate, probe validity, average number of probing rounds, and overall runtime cost. For real-world MCP servers, we additionally perform manual verification of selected find-ings to assess their practical validity. 
+
+B. RQ1: Detection Effectiveness 
+
+This section evaluates whether FlowGuard can verify execution-evidence risks and detect semantic-content risks while controlling false positives. Table II reports the results across five categories. We compare FlowGuard with A.I.G as the main runtime baseline, MCP-Scanner as a metadata-level baseline, and MCPScan as a complementary static baseline. FlowGuard achieves the best overall results among all baselines. Compared with A.I.G, FlowGuard achieves higher F1 scores in all five categories. The largest improvements appear in Command Injection and File System Access, where FlowGuard reaches F1 scores of 0.879 and 0.942, compared to 0.563 and 0.489 for A.I.G, respectively. These gains are most pronounced for vulnerabilities that require runtime validation, where generic probing strategies often fail to confirm ex-ploitability. MCP-Scanner performs poorly on these execution-layer risks, obtaining zero recall on Command Injection and only 0.010 recall on File System Access, which shows the lim-itation of relying only on tool descriptions. For the semantic-content categories, the results measure whether scanners rec-ognize adversarial content rather than whether a downstream agent follows it. For Tool Poisoning, FlowGuard reaches near-perfect performance with an F1 score of 0.995, outperforming A.I.G and MCP-Scanner. For Prompt Injection, FlowGuard achieves the highest F1 score of 0.957, outperforming both A.I.G and MCP-Scanner. For Credential Leakage, FlowGuard improves recall from 0.639 to 0.778 and precision from 0.892 to 0.972 over A.I.G, demonstrating better discrimination between true secret exposure and benign or reflected content. MCP-Scanner achieves high precision but very low recall on Credential Leakage, indicating that metadata-level matching can identify a few obvious cases but misses most runtime TABLE III PROBE QUALITY COMPARISON . R EACHED CALLS REPORTS THE NUMBER OF PROBES THAT REACH BACKEND EXECUTION PATHS , WITH THE CORRESPONDING PERCENTAGE IN PARENTHESES . E VIDENCE CALLS REPORTS THE NUMBER OF REACHED PROBES THAT PRODUCE SECURITY -RELEVANT EVIDENCE , WITH THE CORRESPONDING PERCENTAGE IN PARENTHESES .                                       
+
+> Task Method Total Probes Reached Calls (%) Evidence Calls (%) TP Probes/TP
+> Command Injection FlowGuard 2,048 2,044 (99.80%) 1,171 (57.29%) 113 18.12 A.I.G 3,709 3,578 (96.47%) 660 (18.45%) 69 53.78 Credential Leakage FlowGuard 1,386 1,355 (97.76%) 407 (30.04%) 140 9.90 A.I.G 1,857 1,800 (96.93%) 730 (40.56%) 115 16.14 File System Access FlowGuard 1,433 1,419 (99.02%) 1,199 (84.50%) 178 8.05 A.I.G 2,721 2,642 (97.10%) 2,381 (90.12%) 64 42.52
+
+leakage behaviors. Overall, FlowGuard performs consistently across the two task groups while avoiding the broad false positives observed in static analysis. 
+
+C. RQ2: Probe Quality and Efficiency 
+
+This section evaluates whether FlowGuard generates high-quality probes rather than merely issuing more probes. We report five metrics: Total Probes , the number of probes sent; 
+
+Reached Calls , the number of probes that reached backend ex-ecution paths; Evidence Calls , the number of reachable probes that induced security-relevant signals; True Positives (TP) , the number of vulnerabilities triggered; and Probes/TP , the mean number of probes required per true positive. The Reached Calls and Evidence Calls metrics include both absolute counts and percentages. As shown in Table III, FlowGuard achieves substantially higher probe efficiency across the three execution-evidence categories. For example, on Command Injection, it generates 113 true positives using only 2,048 probes (18.12 probes per TP), compared with A.I.G, which produces 69 true positives with 3,709 probes (53.78 probes per TP). Similarly, for Cre-dential Leakage and File System Access, FlowGuard requires far fewer probes per detected vulnerability while still inducing a high fraction of evidence, demonstrating that effective probe design and targeting are more important than total probe volume. 
+
+D. RQ3: Runtime Overhead 
+
+This section evaluates whether FlowGuard’s runtime over-head is bounded and whether dynamic probing introduces unacceptable cost (RQ3). We measure end-to-end latency per completed case, from connecting to the target MCP server to producing the final risk decision. Figure 3 shows the CDF of per-case latency on three representative categories. FlowGuard consistently achieves lower latency across all three categories, with left-shifted CDF curves indicating im-provements in both median and tail latency. Compared with A.I.G, FlowGuard reduces mean latency by 2.05 × on Com-mand Injection, 1.15 × on Credential Leakage, and 2.23 × on File System Access. Tail latency also decreases substantially, with P90 latency reduced from 495.97s to 297.07s, 188.07s to 163.44s, and 444.81s to 199.38s, respectively. These results show that FlowGuard improves efficiency while maintaining better detection performance (Table II). The lower latency does not contradict multi-round probing: the probing budget is an upper bound, and FlowGuard stops once evidence is confirmed or no new useful signal appears. As shown in Table III, FlowGuard requires fewer probes per true positive on key execution-path risks and achieves a higher evidence-call rate on Command Injection, reducing low-value probes that dominate broader dynamic scanning. The overhead is suitable for offline scanning and CI/CD integration, and can be adapted for online deployment by separating lightweight checks from full dynamic validation. 
+
+E. RQ4: Mechanism Contribution 
+
+This section analyzes whether FlowGuard’s gains come from its structured verification loop rather than from using an LLM as a generic detector. We focus on four design questions: how many probing rounds are needed, how Triage, Recon, and Feedback affect different risk types, whether response verification improves final evidence reliability, and whether the framework depends on a specific LLM backbone. 
+
+1) Probing Budget: We first evaluate how the probing-round budget affects FlowGuard’s closed-loop validation. FlowGuard does not generate a single payload and imme-diately make a final decision; instead, it refines later probes based on previous responses. The probing budget therefore determines how many rounds of feedback the system can use, and directly controls the trade-off between detection effectiveness and runtime cost. Figure 4 shows Recall, F1, and mean per-case runtime across 830 cases spanning Credential Leakage, Command Injection, and File System Access. Detection quality improves rapidly in the early rounds. Recall rises from 0.668 in round 1 to 0.822 in round 5, and F1 increases from 0.797 to 0.898. Beyond round 5, gains largely saturate: Recall fluctuates between 0.805–0.823 and F1 between 0.885–0.900 up to round 10. Meanwhile, average runtime per case grows steadily from 54.4 s in round 1 to 300.4 s in round 10. These results indicate that early feedback is sufficient to repair invalid probes, specialize payloads, and focus on high-yield parameters. The feedback loop therefore acts as bounded refinement rather than open-ended fuzzing, and we use 5 rounds as the default maximum budget. 10 20.0   
+
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> CDF
+> (a) Credential Leakage (n=220/220)
+> p50=86.57s
+> p90=163.44s
+> p50=119.2s
+> p90=188.07s
+> 10 210 3
+> (b) Command Injection (n=360/360)
+> p50=187.91s
+> p90=297.07s
+> p50=372.61s
+> p90=495.97s
+> 10 2
+> (c) File System Access (n=250/250)
+> p50=93.21s
+> p90=199.38s
+> p50=355.17s
+> p90=444.81s
+> FlowGuard A.I.G
+> P
+> P
+> P
+> P
+> P
+> P
+> P
+> P
+> P
+> P
+> P
+> P
+
+Fig. 3. CDF of per-case end-to-end analysis latency on three benchmark categories. The x-axis uses log scale. FlowGuard’s curves are consistently left-shifted, indicating lower median and tail latency than A.I.G. 
+
+Fig. 4. Effect of the probing-round budget on detection effectiveness and runtime. Detection quality improves rapidly in early rounds and peaks around 5–10 rounds, while average runtime increases substantially with additional probing rounds. TABLE IV REPRESENTATIVE ABLATION RESULTS FOR TRIAGE , RECON , AND FEEDBACK .                                                     
+
+> Task Variant Precision Recall F1 Accuracy
+> Credential Leakage Full 0.9722 0.7778 0.8642 0.8000 w/o Triage 0.9636 0.2944 0.4511 0.4136 w/o Feedback 0.9623 0.5667 0.7133 0.6273 w/o Recon 1.0000 0.5833 0.7368 0.6591 Command Injection Full 1.0000 0.7847 0.8794 0.9139 w/o Triage 1.0000 0.9306 0.9640 0.9722 w/o Feedback 1.0000 0.6042 0.7532 0.8417 w/o Recon 1.0000 0.6458 0.7848 0.8583 File System Access Full 1.0000 0.8900 0.9418 0.9120 w/o Triage 1.0000 0.8350 0.9101 0.8680 w/o Feedback 1.0000 0.8224 0.9025 0.8579 w/o Recon 1.0000 0.1500 0.2609 0.3200
+
+2) Triage, Recon, and Feedback: We further ablate concrete workflow components to understand how structured routing, fingerprint-guided probing, and history feedback affect de-tection effectiveness. Table IV reports representative results on Credential Leakage, Command Injection, and File System Access, as these categories directly exercise active parameter-level probing and evidence validation. The results show that module contributions are risk-dependent. For Credential Leakage, Triage is the dominant factor: removing it reduces Recall from 0.7778 to 0.2944 and F1 from 0.8642 to 0.4511. This indicates that leakage detection needs semantic focus, because secret-like signals are sparse and the probing budget can otherwise be diluted over irrelevant tools and parameters. Recon and Feedback also improve leakage detection by adding runtime cues and helping distinguish true leaks from reflected or look-alike content. Command Injection shows a different trade-off. Recon and Feedback help validate selected parameters: removing Recon or Feedback reduces F1 to 0.7848 and 0.7532, respectively. However, removing Triage increases Recall from 0.7847 to 0.9306. This does not mean that Triage is unnecessary; rather, it shows that the current triage policy is too conservative for execution-path vulnerabilities, where exploitable param-eters may have benign or domain-specific names. For File System Access, all three modules contribute meaningfully. Removing Recon drastically reduces Recall and F1, while removing Triage or Feedback leads to smaller but noticeable decreases, highlighting their complementary roles in guiding and validating probes. Thus, Triage should be viewed as a cost-control module rather than a component that always improves accuracy in isolation. This motivates recall-preserving triage for high-impact execution risks: skip only clearly low-risk parameters while retaining lightweight probes for uncertain ones. 
+
+3) Evidence Adjudication: We evaluate the Evidence Ad-judication mechanism introduced in Section III-D, which determines whether a candidate signal constitutes valid vul-nerability evidence by checking two dimensions: (E1) source attribution and (E2) behavioral expectation. Table V reports an ablation study over these two components, including variants that use only E1, only E2, or neither. Across all tasks, combining both dimensions consistently achieves the highest F1. The improvement primarily comes from increasing decision reliability by filtering spurious sig-nals that would otherwise be misclassified as vulnerabilities. For Command Injection, applying both E1 and E2 raises F1 to 0.8794 from 0.8446 (E2 only) or 0.7929 (neither), TABLE V RESPONSE VERIFICATION ABLATION .                                             
+
+> Task Scheme Precision Recall F1
+> Credential Leakage E1 + E2 0.9722 0.7778 0.8642 E1 Only 0.9787 0.7667 0.8598 E2 Only 0.9855 0.7556 0.8553 Neither 0.9927 0.7556 0.8580 Command Injection E1 + E2 1.0000 0.7847 0.8794 E1 Only 0.9910 0.7639 0.8627 E2 Only 0.9907 0.7361 0.8446 Neither 0.8162 0.7708 0.7929 File System Access E1 + E2 1.0000 0.8900 0.9418 E1 Only 1.0000 0.8750 0.9333 E2 Only 1.0000 0.8800 0.9362 Neither 1.0000 0.8850 0.9390 Qwen3-235B
+> Qwen2.5-72B
+> DeepSeek-V3
+> Llama-3.3-70B
+> DeepSeek-R1
+> Qwen3-32B
+> GLM-4.7
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Score
+> 0.898
+> 0.832
+> 0.752
+> 0.704
+> 0.595
+> 0.343 0.327
+> Precision Recall Accuracy F1
+> Fig. 5. Sensitivity of FlowGuard to different LLM backbones. Bars show Precision, Recall, and Accuracy, while the black line shows F1.
+
+eliminating false positives caused by command-like outputs, benign errors, and reflected inputs. For Credential Leakage and File System Access, the improvement is smaller but consistent. These tasks already provide clearer initial signals, while Evidence Adjudication mainly improves robustness by distinguishing true system-generated outputs from benign or reflected content. Overall, this ablation confirms the design of Evidence Adjudication: the main gain is not extracting more suspicious strings, but preventing candidate signals from becoming findings unless they pass both source and behavioral validation. 
+
+4) LLM Backbone Sensitivity: Since FlowGuard uses bounded semantic subroutines in triage, probe generation, and evidence attribution, we evaluate whether the verification framework depends on a particular LLM backbone. All back-bones are queried with a temperature of 0.7. FlowGuard achieves reasonable performance across a range of LLM backbones, indicating that the overall framework is not tied to a single model. Different models exhibit dis-tinct trade-offs. Qwen3-235B achieves the highest overall F1 (0.898), while Qwen2.5-72B maintains similar perfor-mance with higher precision (0.997) but slightly lower recall. DeepSeek-V3 further increases precision to 1.000, at the cost of reduced recall (0.603), reflecting a more conservative de-tection behavior. DeepSeek-R1 tends to be more conservative, leading to lower recall, while Qwen3-32B and GLM-4.7 are limited by context window, resulting in missed detections. This suggests that model capability mainly affects ambiguous semantic decisions, while the workflow structure, schema constraints, evidence checks, and stopping rules remain fixed. Overall, these results indicate that FlowGuard provides arobust verification framework across different models, and 70B-scale backbones are sufficient for practical automated assessment. Together with the ablation results above, this shows that the performance gain comes from MCP-specific routing, schema-constrained probing, bounded feedback, and evidence adjudication rather than simply increasing fuzzing rounds or relying on a single LLM backbone. 
+
+F. RQ5: Real-World Effectiveness 1) Server Selection: To evaluate FlowGuard in realistic MCP ecosystems, we conduct large-scale experiments on MCPZoo’s runnable MCP server corpus [19]. MCPZoo ag-gregates public servers from sources such as GitHub reposi-tories and MCP registries, covering various domains such as developer tools, data access, cloud services, and productivity integrations. We select the top 8,000 runnable servers based on popularity, and interact with servers through standard MCP interfaces without independently redeploying each backend. We use the same server subset for FlowGuard and baseline comparison. 
+
+2) Findings: Across the 8,000 evaluated servers, Flow-Guard enumerates 20,452 tools and issues 90,079 probes. Overall, FlowGuard reports risks in 326 servers, corresponding to 4.08% of the evaluated servers, and produces 523 individual findings. These findings span four categories: Prompt Injection (161), Credential Leakage (155), Command Injection (129), and File System Access (78). At the server level, Command Injection is the most widely distributed category and is re-ported in 115 servers. The Command Injection, Credential Leakage, and File System Access findings report execution or disclosure evidence, whereas Prompt Injection findings represent semantic risks whose downstream impact depends on the consuming agent. Overall, the findings span multiple MCP interaction surfaces, including returned semantic content, sensitive-information disclosure, backend command execution, and file system access. 
+
+3) Baseline Comparison: To examine whether FlowGuard’s real-world findings are also visible to existing MCP scanners, we compare against A.I.G on the same 8,000-server subset. Since MCPZoo does not provide complete vulnerability labels, this comparison characterizes reporting behavior rather than ground-truth accuracy. On this subset, A.I.G reports risks in 4,947 servers and emits 11,055 findings, compared with FlowGuard’s 326 reported servers and 523 findings. The two scanners overlap on 222 reported servers, meaning A.I.G covers 68.10% of FlowGuard-reported servers, while only 4.49% of servers reported by A.I.G are also reported by FlowGuard. This gap mainly reflects different reporting criteria: A.I.G reports many metadata-level Rug Pull and Tool Poisoning risks, and 2,358 servers reported by A.I.G have no recorded MCP tool call. FlowGuard re-quires concrete runtime evidence for execution-related findings and reports instruction-bearing outputs separately as semantic risks. 
+
+4) Manual Verification: To assess report quality, we manu-ally inspect a risk-stratified random sample of 100 reported servers. For each server, we inspect its reported findings, affected tools, probe inputs, runtime responses, risk labels, and supporting evidence generated by FlowGuard. An execution-or disclosure-related finding is considered confirmed only when the response contains concrete security-relevant evi-dence, such as unexpected command output, content read out-side an expected filesystem boundary, or credential disclosure. Prompt Injection findings are evaluated separately as agent-dependent semantic risks because their downstream impact depends on the consuming agent and its execution policy. A sampled server satisfies the concrete-evidence criterion if at least one of its reported findings is confirmed. In this risk-stratified sample, 84 of the 100 servers satisfy this criterion. The remaining servers contain only agent-dependent seman-tic findings or findings for which the observed response is insufficient to establish exploitability. Confirmed issues are currently undergoing responsible disclosure when appropriate. Appendix D presents a detailed case study of a confirmed file-system vulnerability in a convert_to_markdown tool, illustrating how FlowGuard’s refinement mechanism surfaces non-obvious risks through iterative probe adaptation. VI. D ISCUSSION 
+
+A. From Offline Scanning to Runtime Protection 
+
+Although FlowGuard is evaluated as an offline scanner, its design naturally supports runtime deployment. Since MCP follows a standardized interaction workflow, FlowGuard can operate as a security middleware or transparent proxy between LLM hosts and MCP servers. It can inspect tool metadata during Tool Discovery, analyze parameters before Tool Invo-cation, and examine returned content before Response Con-sumption. Depending on the detected risk, the system may log suspicious behaviors, block dangerous invocations, sanitize re-turned outputs, or require user confirmation. Such deployment is particularly valuable in open MCP ecosystems, where agents frequently interact with third-party servers under different trust assumptions. Offline scanning and runtime guarding are complementary: offline analysis helps identify risky MCP servers before integration, while runtime monitoring can detect and mitigate unexpected behaviors that only emerge during live agent-server interaction. 
+
+B. Limitations 
+
+FlowGuard has several limitations. First, as a black-box scanner, it cannot directly observe internal control flow or hidden backend logic, and may therefore miss vulnerabili-ties that depend on specific application states, authentication contexts, or complex multi-step interactions. Second, active probing introduces an inherent trade-off between coverage and operational safety. Although FlowGuard uses low-side-effect probes, testing tools that interact with real files, databases, networks, or external services may still trigger unintended be-haviors. Third, FlowGuard’s semantic triage, probe generation, and response attribution depend partly on the capabilities of the underlying LLM. Future advances in language models may further improve FlowGuard’s performance. Finally, the current prototype focuses on non-adaptive, runtime-visible evidence from standard MCP interactions. It does not address servers that recognize the scanner and hide evidence, long-term or cross-session behavior, ecosystem-level supply-chain risks, or client-policy attacks that do not produce observable evidence within a bounded scan. Extending FlowGuard to these broader risks would require more diverse client views, longer traces, and new evidence rules. VII. R ELATED WORK 
+
+A. MCP Attacks and Benchmarks 
+
+A large body of recent work studies attacks against MCP tool metadata, tool selection, and agent behavior. Guo et al. [20] develop MCPLIB, a library of 31 MCP attack methods covering tool poisoning, credential leakage, command injec-tion, and other MCP-specific threats. MCPTox [18] evaluates tool poisoning attacks on real-world MCP servers. ToolHi-jacker [21], MPMA [22], and MCP-ITP [23], together with Mo et al. [24], show that manipulating tool names, descriptions, schemas, or poisoned metadata can bias tool retrieval, tool selection, parameter construction, and downstream tool use. Other studies examine risks beyond metadata manipulation: Maloyan and Namiot [25] and Yang et al. [26] identify protocol-level and SDK-level attack opportunities, while Li et al. [27] study mismatches between tool descriptions and actual behavior. Beyond MCP-specific attacks, InjecAgent [28] and ToolEmu [29] show that indirect prompt injection and unsafe tool observations can manipulate tool-integrated agents or cause privacy leakage. Recent MCP survey and landscape papers provide broader views of the MCP security space [30], [31]. FlowGuard does not aim to replace these broader clas-sifications; it focuses on risks that can be checked through observable runtime evidence. Several benchmarks and red-teaming frameworks evaluate these risks at scale. MSB [12] and MCPSecBench [13] eval-uate agent robustness across tool discovery, invocation, and response handling, while AutoMalTool [32] and T-MAP [33] automate malicious-tool generation and multi-step agent red teaming. These benchmarks mainly measure whether an agent can be induced to perform unsafe actions, usually through attack success rate or robustness metrics. Our benchmark in-stead evaluates MCP security scanners, including FlowGuard. It measures whether a scanner can distinguish security risks from benign behavior in MCP interactions. 
+
+B. MCP Defenses and Runtime Analysis 
+
+Static and metadata-oriented defenses inspect MCP servers before or without executing real tool calls. MCPScan [1] analyzes server code and configurations, while Agent-Scan [2], MCP-Scanner [34], and mcp-armor [35] audit metadata, ex-posed capabilities, and client settings. Semantic-artifact de-fenses such as MindGuard [36], MCP-GUARD [37], and CASCADE [38] analyze descriptions, schemas, prompts, or returned text for poisoning and prompt-injection risks. These methods are useful for metadata-level and prompt-level threats, but they cannot verify whether a schema-valid parameter reaches a dangerous backend operation. Runtime-oriented defenses exercise tools or analyze exe-cution behavior. A.I.G [3] and MCPSafetyScanner [39] issue tool calls, while mcp-sec-audit [40], MCP-SandboxScan [41], Connor [42], and MCPShield [43] use sandboxing, monitoring, behavioral comparison, or trust calibration. These systems show the value of runtime evidence, but they mainly au-dit broad capabilities or server-level behavior. FlowGuard instead performs parameter-level runtime verification with schema-valid probes, reconnaissance-guided refinement, and attribution-based response adjudication. 
+
+C. Fuzzing and Web Security Scanning 
+
+Black-box fuzzing explores a target by generating inputs, observing responses, and using runtime feedback to guide subsequent tests. Snipuzz [8] infers message snippets from black-box responses, while LLM-assisted fuzzers such as ChatAFL [44] and AgentFuzz [45] use language models for protocol-state exploration, input generation, or agent-guided testing. These systems primarily optimize exploration, cov-erage, crash discovery, or protocol reachability. FlowGuard adopts a similar feedback-guided interaction loop but applies it to evidence-grounded MCP security detection. Its objective is to determine whether tool metadata, schema-valid invocations, and returned content provide concrete security evidence rather than reflected input, benign errors, placeholders, or expected tool behavior. Black-box web vulnerability scanners similarly discover input surfaces and validate vulnerabilities through remote interaction. BlackWidow [46] uses data-driven crawling and input discovery for web applications, while YuraScanner [47] uses LLM guidance for task-driven web scanning. MCP servers, however, expose their input surfaces through natural-language tool metadata and JSON schemas, and their re-sponses may subsequently enter an LLM agent’s context. FlowGuard therefore combines schema-valid probing with response attribution to distinguish backend execution evidence from semantic content that may influence downstream agents. VIII. C ONCLUSION 
+
+We present FlowGuard, an evidence-grounded security de-tection framework for MCP tools. By combining seman-tic triage, recon-guided probing, and evidence adjudication, FlowGuard verifies execution-related findings and identifies semantic risks without conflating them with downstream agent behavior. On a 1,880-case executable benchmark, FlowGuard achieves reliable detection effectiveness with the largest gains on execution-path vulnerabilities, while reducing end-to-end latency by up to 2.23 ×. These results highlight the value of separating runtime evidence from semantic risk signals in MCP security analysis. ETHICS CONSIDERATIONS 
+
+This work raises three ethical considerations related to active MCP probing, real-world evaluation, and the handling of discovered security issues. 
+
+Bounded Runtime Probing. FlowGuard actively inter-acts with MCP servers to assess security risks through run-time probing. To reduce operational impact, the system uses bounded probe budgets, schema-valid payloads, and low-side-effect testing strategies. The current prototype avoids destruc-tive actions, persistence, privilege escalation attempts, denial-of-service behaviors, or modification of external systems. Its goal is to identify security evidence through standard MCP interaction workflows rather than to maximize exploitation capability. 
+
+Real-World Evaluation Scope. Our benchmark uses syn-thetic MCP servers and canary secrets rather than real creden-tials or private user data. For real-world experiments, we re-strict evaluation to interactable MCP servers exposed through MCPZoo and only use standard MCP interfaces intended for normal runtime interaction. We do not attempt authentication bypass, infrastructure persistence, lateral movement, or access to unrelated third-party environments. All experiments are conducted under controlled interaction settings with bounded runtime behavior. 
+
+Responsible Disclosure and Dual-Use Risk. FlowGuard is designed for defensive MCP security assessment, but au-tomated runtime probing techniques may still introduce dual-use risks if misapplied outside authorized settings. To reduce publication risk, the paper reports findings at the category and aggregate levels and avoids exposing real credentials, deployment details, or unnecessary high-impact payloads. For confirmed real-world issues, we report them to the correspond-ing maintainers by opening issues in the project repositories when available. The reports include the affected MCP tool and sanitized evidence, while avoiding real secrets or unnecessary exploit details. REFERENCES [1] Ant Group, “MCPScan: Security analysis tool for MCP servers,” https: //github.com/antgroup/MCPScan, 2025, GitHub repository. Accessed: 2026-05-01. [2] Snyk, “Snyk Agent Scan,” https://github.com/snyk/agent-scan, 2025, GitHub repository. Accessed: 2026-05-01. [3] Tencent Zhuque Lab, “AI-Infra-Guard: A Comprehensive, Intelligent, and Easy-to-Use AI Red Teaming Platform,” https://github.com/Tence nt/AI-Infra-Guard, 2025, GitHub repository. Accessed: 2026-05-01. [4] “Model Context Protocol,” https://modelcontextprotocol.io/, accessed: 2026-05-01. [5] JSON-RPC Working Group, “JSON-RPC 2.0 specification,” https://ww w.jsonrpc.org/specification, 2010, accessed: 2026-05-01. [6] Anthropic, “Claude Desktop,” https://claude.ai/download, 2025, accessed: 2026-05-01. [7] Anysphere, “Cursor: The AI Code Editor,” https://www.cursor.com/, 2025, accessed: 2026-05-01. [8] X. Feng, R. Sun, X. Zhu, M. Xue, S. Wen, D. Liu, S. Nepal, and Y. Xiang, “Snipuzz: Black-box fuzzing of iot firmware via message snippet inference,” in Proceedings of the 2021 ACM SIGSAC conference on computer and communications security , 2021, pp. 337–350. [9] Y. W. Chow, M. Sch¨ afer, and M. Pradel, “Beware of the unexpected: Bimodal taint analysis,” in Proceedings of the 32nd ACM SIGSOFT International Symposium on Software Testing and Analysis , 2023, pp. 211–222. [10] OWASP Foundation, “OWASP Benchmark Project,” https://owasp.org/ www-project-benchmark/, 2024, accessed: 2026-05-01. [11] National Security Agency (NSA) and National Institute of Standards and Technology (NIST), “Juliet Test Suite v1.3 for C/C++ and Java,” https://www.nist.gov/publications/juliet-11-cc-and-java-test-suite, 2017, accessed: 2026-05-01. [12] D. Zhang, Z. Li, X. Luo, X. Liu, P. Li, and W. Xu, “MCP security bench (MSB): Benchmarking attacks against model context protocol in LLM agents,” in The Fourteenth International Conference on Learning Representations , 2026. [Online]. Available: https: //iclr.cc/virtual/2026/poster/10007929 [13] Y. Yang, C. Gao, D. Wu, Y. Chen, Y. Li, and S. Wang, “MCPSecBench: A systematic security benchmark and playground for testing model context protocols,” 2026. [Online]. Available: https://arxiv.org/abs/2508.13220 [14] X. Zong, Z. Shen, L. Wang, Y. Lan, and C. Yang, “MCP-SafetyBench: A benchmark for safety evaluation of large language models with real-world MCP servers,” 2026. [Online]. Available: https://arxiv.org/abs/2512.15163 [15] MITRE Corporation, “CWE-78: Improper Neutralization of Special Elements used in an OS Command (’OS Command Injection’),” https: //cwe.mitre.org/data/definitions/78.html, 2024, accessed: 2026-05-01. [16] ——, “CWE-22: Improper Limitation of a Pathname to a Restricted Directory (’Path Traversal’),” https://cwe.mitre.org/data/definitions/22. html, 2024, accessed: 2026-05-01. [17] OWASP Foundation, “OWASP Web Security Testing Guide: Testing for Path Traversal (WSTG-ATHZ-01),” https://owasp.org/www-project-w eb-security-testing-guide/, 2024, accessed: 2026-05-01. [18] Z. Wang, Y. Gao, Y. Wang, S. Liu, H. Sun, H. Cheng, G. Shi, H. Du, and X. Li, “MCPTox: A benchmark for tool poisoning attack on real-world MCP servers,” 2025. [Online]. Available: https://arxiv.org/abs/2508.14925 [19] M. Wu, P. Chen, G. Hong, B. An, J. Chen, B. Wan, X. Pan, J. Dai, and M. Yang, “MCPZoo: A large-scale dataset of runnable model context protocol servers for ai agent,” 2025. [Online]. Available: https://arxiv.org/abs/2512.15144 [20] Y. Guo, P. Liu, W. Ma, Z. Deng, X. Zhu, P. Di, X. Xiao, and S. Wen, “Systematic analysis of MCP security,” 2025. [Online]. Available: https://arxiv.org/abs/2508.12538 [21] J. Shi, Z. Yuan, G. Tie, P. Zhou, N. Z. Gong, and L. Sun, “Prompt injection attack to tool selection in LLM agents,” in Network and Distributed System Security Symposium , 2026. [Online]. Available: https://www.ndss-symposium.org/ndss-paper/prompt-injection-attack-t o-tool-selection-in-llm-agents/ [22] Z. Wang, R. Zhang, Y. Liu, W. Fan, W. Jiang, Q. Zhao, H. Li, and G. Xu, “MPMA: Preference manipulation attack against model context protocol,” 2025. [Online]. Available: https://arxiv.org/abs/2505.11154 [23] R. Li, Z. Wang, Y. Yao, and X.-Y. Li, “MCP-ITP: An automated framework for implicit tool poisoning in MCP,” 2026. [Online]. Available: https://arxiv.org/abs/2601.07395 [24] K. Mo, L. Hu, Y. Long, and Z. Li, “Attractive metadata attack: Inducing LLM agents to invoke malicious tools,” in Advances in Neural Information Processing Systems , 2025. [Online]. Available: https://arxiv.org/abs/2508.02110 [25] N. Maloyan and D. Namiot, “Breaking the protocol: Security analysis of the model context protocol specification and prompt injection vulnerabilities in tool-integrated LLM agents,” 2026. [Online]. Available: https://arxiv.org/abs/2601.17549 [26] N. Yang, W. Bai, and K. Lu, “Compatibility at a cost: Systematic discovery and exploitation of MCP clause-compliance vulnerabilities,” 2026. [Online]. Available: https://arxiv.org/abs/2603.10163 [27] Z. Li, B. Ma, X. Dai, M. Xu, Y. Zhang, B. Yan, and K. Li, “Don’t believe everything you read: Understanding and measuring MCP behavior under misleading tool descriptions,” 2026. [Online]. Available: https://arxiv.org/abs/2602.03580 [28] Q. Zhan, Z. Liang, Z. Ying, and D. Kang, “Injecagent: Benchmarking indirect prompt injections in tool-integrated large language model agents,” in Findings of the Association for Computational Linguistics: ACL 2024 , 2024, pp. 10 471–10 506. [Online]. Available: https: //aclanthology.org/2024.findings-acl.624/ [29] Y. Ruan, H. Dong, A. Wang, S. Pitis, Y. Zhou, J. Ba, Y. Dubois, C. J. Maddison, and T. Hashimoto, “Identifying the risks of LM agents with an LM-emulated sandbox,” in The Twelfth International Conference on Learning Representations , 2024. [Online]. Available: https://openreview.net/forum?id=GEcwtMk1uA [30] X. Hou, Y. Zhao, S. Wang, and H. Wang, “Model context protocol (MCP): Landscape, security threats, and future research directions,” 
+
+ACM Trans. Softw. Eng. Methodol. , Feb. 2026, just Accepted. [Online]. Available: https://doi.org/10.1145/3796519 [31] X. Li and X. Gao, “A first look at the security issues in the model context protocol ecosystem,” 2026. [Online]. Available: https://arxiv.org/abs/2510.16558 [32] P. He, C. Li, B. Zhao, T. Du, and S. Ji, “Automatic red teaming LLM-based agents with model context protocol tools,” 2025. [Online]. Available: https://arxiv.org/abs/2509.21011 [33] H. Lee, S. Park, Y. Choi, S. An, S. Lee, and S. J. Hwang, “T-MAP: Red-teaming LLM agents with trajectory-aware evolutionary search,” 2026. [Online]. Available: https://arxiv.org/abs/2603.22341 [34] Cisco AI Defense, “MCP Scanner,” https://github.com/cisco-ai-defense /mcp-scanner, 2025, GitHub repository. Accessed: 2026-05-01. [35] Aira Security, “mcp-armor: MCP Configuration Scanner with Client-Aware Security Analysis,” https://github.com/aira-security/mcp-armor, 2026, GitHub repository. Accessed: 2026-05-01. [36] Z. Wang, H. Du, G. Shi, J. Zhang, H. Cheng, Y. Yao, K. Guo, and X.-Y. Li, “Mindguard: Intrinsic decision inspection for securing LLM agents against metadata poisoning,” 2026. [Online]. Available: https://arxiv.org/abs/2508.20412 [37] W. Xing, Z. Qi, Y. Qin, Y. Li, C. Chang, J. Yu, C. Lin, Z. Xie, and M. Han, “MCP-Guard: A multi-stage defense-in-depth framework for securing model context protocol in agentic AI,” 2026. [Online]. Available: https://arxiv.org/abs/2508.10991 [38] ˙Ipek Abasıkeles ¸ Turgut and E. G¨ um¨ us ¸, “CASCADE: A cascaded hybrid defense architecture for prompt injection detection in MCP-based systems,” 2026. [Online]. Available: https://arxiv.org/abs/2604.17125 [39] B. Radosevich and J. Halloran, “MCP Safety Audit: LLMs with the Model Context Protocol Allow Major Security Exploits,” https://www. arxiv.org/abs/2504.03767, 2025, MCPSafetyScanner. [40] C. Huang, X. Huang, and A. M. Fard, “Auditing MCP servers for over-privileged tool capabilities,” 2026. [Online]. Available: https://arxiv.org/abs/2603.21641 [41] Z. Tan, R. Hao, J. Singer, Y. Tang, and C. Anagnostopoulos, “MCP-SandboxScan: WASM-based secure execution and runtime analysis for MCP tools,” 2026. [Online]. Available: https://arxiv.org/abs/2601.01241 [42] Y. Huang, Z. Zhao, B. Chen, S. Wu, Z. Zhou, Y. Cao, X. Hu, and X. Peng, “From component manipulation to system compromise: Understanding and detecting malicious MCP servers,” 2026. [Online]. Available: https://arxiv.org/abs/2604.01905 [43] Z. Zhou, Y. Zhang, H. Cai, M. Aloqaily, O. Bouachir, L. Pang, P. Mehrotra, K. Wang, and Q. Wen, “MCPShield: A security cognition layer for adaptive trust calibration in model context protocol agents,” 2026. [Online]. Available: https://arxiv.org/abs/2602.14281 [44] R. Meng, M. Mirchev, M. B¨ ohme, and A. Roychoudhury, “Large language model guided protocol fuzzing.” in NDSS , 2024. [45] F. Liu, Y. Zhang, J. Luo, J. Dai, T. Chen, L. Yuan, Z. Yu, Y. Shi, K. Li, C. Zhou et al. , “Make agent defeat agent: Automatic detection of 
+
+{Taint-Style } vulnerabilities in {LLM-based } agents,” in 34th USENIX Security Symposium (USENIX Security 25) , 2025, pp. 3767–3786. [46] B. Eriksson, G. Pellegrino, and A. Sabelfeld, “Black widow: Blackbox data-driven web scanning,” in 2021 IEEE Symposium on Security and Privacy (SP) . IEEE, 2021, pp. 1125–1142. [47] A. Stafeev, T. Recktenwald, G. De Stefano, S. Khodayari, and G. Pellegrino, “YuraScanner: Leveraging LLMs for task-driven web app scanning,” in Network and Distributed System Security Symposium (NDSS) , 2025. [Online]. Available: https://www.ndss-symposium.org/n dss-paper/yurascanner-leveraging-llms-for-task-driven-web-app-scann ing/ [48] Microsoft, “MarkItDown,” https://github.com/microsoft/markitdown, 2025, accessed: 2026-05-01. 
+
+APPENDIX APROMPT TEMPLATES 
+
+This appendix lists the LLM prompt locations used by FlowGuard. Each prompt is used as a bounded structured subroutine in the pipeline described in Section III. 
+
+A. Prompt A: LLM Triage Reasoning 
+
+This prompt is used in the T RIAGE phase when fast-path matching cannot confidently classify a tool parameter. Its goal is to decide whether a parameter should be routed to a concrete risk family, retained for lightweight uncertainty probing, or pruned as low risk. The prompt should include the tool name, tool description, full parameter schema, target parameter name, sibling parameters, and fast-path risk scores. The expected output fields include risk_labels , safe_default ,
+
+reason , threat_signals , and combined_risks .
+
+Prompt A: LLM Triage Reasoning 
+
+You are an MCP (Model Context Protocol) tool security analyst specializing in semantic risk triage and backend execution-path inference. 
+
+Goal: reduce the number of parameters that require active prob-ing by assigning risk labels from tool metadata, JSON Schema, parameter semantics, and cross-parameter relationships. Use the following criteria to produce concise JSON evidence. Do not reveal step-by-step reasoning. 
+
+Step 1 – Tool Intent Recognition. Infer the primary backend operation from tool_name and tool_desc : 
+
+> •
+
+File operations (read/write/delete/list/search/convert/ compress) → prioritize FS; consider RCE if shell-like execution is suggested.  
+
+> •
+
+Network operations (fetch/request/send/callback/ webhook) → prioritize SSRF.  
+
+> •
+
+Database operations (query/insert/update/delete/filter/ search) → prioritize DB.  
+
+> •
+
+AI/LLM operations (generate/analyze/chat/summarize) →
+
+prioritize PI.  
+
+> •
+
+System operations (execute/run/schedule/config/build/ deploy) → prioritize RCE and FS. 
+
+Step 2 – Per-parameter Semantic Role Inference. For each parameter, infer its likely backend role using concrete evidence:  
+
+> •
+
+Name semantics: tokens such as path , file ,
+
+directory , folder , url , host , query , command ,
+
+script , prompt , token , secret , key , config . 
+
+> •
+
+Description verbs: read, write, delete, list, execute, run, fetch, query, search, send, render, generate.  
+
+> •
+
+Schema constraints: unconstrained strings, arrays, and objects expose larger input spaces; enums and booleans are usually lower risk unless their values select sensitive behavior.  
+
+> •
+
+Positional role: primary operation target parameters are higher risk than control parameters such as limit ,
+
+offset , sort , verbose , or dry_run .
+
+Conditional FS-to-RCE elevation. Assign both FS and RCE only when a path-like parameter appears in a tool whose name or description suggests shell-like processing, external utilities, command execution, scanning, compression, extraction, diffing, or subprocess behavior. Otherwise, assign FS only and mention any RCE concern as conditional evidence. 
+
+Step 3 – Cross-parameter Combination Risk Analysis. 
+
+Identify parameter pairs or groups whose combination creates additional risk:  
+
+> •
+
+base_dir + filename/path → FS path traversal.  
+
+> •
+
+command/script + args/options → RCE.  
+
+> •
+
+table/query/filter/where/search → DB.  
+
+> •
+
+template/prompt/context + user_input → PI.  
+
+> •
+
+config/env/key/token/secret selector +
+
+output/log/debug → CRED. 
+
+Step 4 – Risk Label Assignment. Assign one or more labels:  
+
+> •
+
+RCE: value may reach command execution, subprocess, shell, code interpreter, or dynamic evaluation.  
+
+> •
+
+FS: value may reach file path construction, file reads/writes, directory traversal, archive extraction, or file deletion.  
+
+> •
+
+DB: value may reach SQL construction, ORM filtering, database queries, or table/field selection.  
+
+> •
+
+PI: value may be embedded into prompts, instructions, templates, or another LLM call.  
+
+> •
+
+CRED: value may select, expose, or retrieve credentials, secrets, environment variables, configs, keys, or tokens.  
+
+> •
+
+LOW: indirect or weak risk that requires additional con-ditions.  
+
+> •
+
+SAFE: pure control logic with no sensitive sink, such as pagination, sorting, formatting, theme, or verbosity. 
+
+Output Rules.  
+
+> •
+
+Output ONLY valid JSON, with no markdown fences or extra text.  
+
+> •
+
+For each parameter, include: name , risk_labels ,
+
+safe_default , reason , threat_signals , and 
+
+combined_risks . 
+
+> •
+
+safe_default MUST pass the parameter’s JSON Schema: string → "test" ; integer → 1; number → 1.0 ;boolean → false ; array → [] ; enum → choose the first allowed value; object → minimal object satisfying required fields.  
+
+> •
+
+reason MUST cite concrete words from the parameter name, parameter description, tool name, tool description, or schema.  
+
+> •
+
+threat_signals MUST list the concrete clues that triggered the assigned labels.  
+
+> •
+
+If threat_signals is empty, assign LOW or SAFE.  
+
+> •
+
+Keep reasons concise and evidence-based. 
+
+B. Prompt B: Schema-Valid Probe Generation 
+
+This prompt is used in the STRIKE phase to generate Tool Invocation arguments that preserve attack intent while satisfying the target tool’s JSON schema. The prompt should include the tool metadata, target parameter schema, selected risk family, environment fingerprints from R ECON .
+
+Prompt B: Schema-Valid Probe Generation 
+
+You are an MCP security probe generator for the Strike phase of a Recon-then-Strike workflow. You will receive an environment fingerprint, one high-risk parameter, its schema constraints, and a threat family. Gener-ate a single non-destructive payload value for an authorized benchmark or pre-deployment security assessment. The pay-load should be most likely to produce an observable security signal while remaining schema-compatible and minimizing side effects. 
+
+Method: 
+
+1) Respect explicit schema constraints, including type, enum, pattern, minimum and maximum length, numeric range, and format. 2) Specialize the payload to the observed operating system, backend language, database, and threat family. Prefer compact, high-signal probes over generic enumeration. 3) For FS and CRED risks, prefer benchmark-defined canary files, synthetic secrets, environment markers, application configuration markers, or other non-destructive runtime indicators when compatible with the schema. 4) For DB and PI risks, choose a compact, constraint-aware payload that is likely to produce an observable signal in the response. 5) Avoid destructive or intrusive behavior. Do not generate payloads that delete files, modify persistent state, ex-filtrate real credentials, establish persistence, or contact external hosts. 
+
+Output Rules: Output only the raw payload value. Do not output JSON, markdown, explanations, labels, or quotes unless quotes are part of the payload itself. 
+
+C. Prompt C: Evidence Adjudication 
+
+This prompt is used in the A NALYSIS phase after can-didate response signals have been extracted. Its goal is to decide whether the observed signal is input reflec-tion, normal defensive behavior, or credible vulnerability evidence. The prompt should include the tool metadata, invocation arguments, raw MCP response, extracted can-didate signals, expected tool semantics, and probe his-tory. The expected output fields include signal_type ,
+
+source_attribution , behavioral_expectation ,
+
+evidence_label , confidence , and rationale .
+
+Prompt C: Evidence Adjudication 
+
+You are a security verdict specialist for MCP tool testing. Your task is to determine whether a tool response constitutes genuine runtime evidence of a vulnerability, or a false positive caused by the probe itself. First identify whether the response contains security-relevant evidence, such as system-originated sensitive content, execution-bearing output, file-system feed-back, or instruction-bearing content. Do not return a positive verdict merely because the probe contains malicious-looking text. A normal error that reflects a quoted or escaped payload as a filename or argument is not a genuine finding. We use the following verdict rule: 
+
+R = S ∧ O ∧ ¬ E. 
+
+Here, R denotes is_real_finding , S
+
+denotes signal_identified , O denotes 
+
+is_system_originated , and E denotes 
+
+is_expected_behavior .
+
+Dimension 1 – Source Attribution. Determine whether the sensitive or execution-bearing content was independently pro-duced by the tool backend, or whether it originated from the probe parameters. Set is_system_originated = false when the re-sponse reproduces the probe value verbatim, contains only a minor transformation of the probe value, or when the suspicious content is fully explained by the submitted probe. This case is treated as echo reflection. Set is_system_originated = true when the response contains content that was not present in the probe and appears to originate from the backend, such as file contents, database output, environment-derived values, runtime execution output, or backend-generated instructions. 
+
+Dimension 2 – Behavioral Expectation. Determine whether the response is expected under the tool’s declared behavior. 
+
+Set is_expected_behavior = true when the tool cor-rectly rejects the input, returns an authentication or permission failure, reports an input validation error, or treats the payload as a literal quoted or escaped value. Such cases are expected defensive behavior and should not be reported as vulnerabilities. Set is_expected_behavior = false when the tool ex-ecutes or processes input that should have been rejected, returns content outside the declared tool purpose, reveals internal infor-mation not implied by the tool description, or otherwise violates its expected security contract. 
+
+Attribution Types.  
+
+> •
+
+echo_reflection : suspicious content originates from the probe.  
+
+> •
+
+expected_rejection : backend-originated response, but the tool correctly rejected or safely handled the input.  
+
+> •
+
+genuine_evidence : backend-originated content that violates the expected behavior.  
+
+> •
+
+anomaly : insufficient information to determine attribu-tion. 
+
+Content Classes. Classify the response con-tent as: hint_only , metadata_only ,
+
+probable_sensitive_value ,
+
+confirmed_sensitive_value , or unknown .
+
+Output Rules. Output only the following JSON object, with no markdown or extra text: 
+
+{"is_system_originated": true/false, "is_expected_behavior": true/false, "is_real_finding": true/false, "confidence": 0.0-1.0, "attribution_type": ["echo_reflection", "expected_rejection", "genuine_evidence", "anomaly" ], "content_class": ["hint_only", "metadata_only", "probable_sensitive_value", "confirmed_sensitive_value", "unknown" ], "reason": "one sentence overall summary" }
+
+D. Prompt D: History-Guided Refinement 
+
+This prompt is used in the R EFINEMENT phase to decide whether FlowGuard should continue probing, stop without a finding, or report confirmed evidence. The prompt should include the current tool–parameter–risk tuple, environment fingerprints, previous probes, response summaries, rejected-candidate reasons, latest adjudication result, and remaining budget. 
+
+Prompt D: History-Guided Refinement 
+
+You are an expert MCP security probe planner for authorized benchmark or pre-deployment security testing. You are performing history-guided iterative refinement for one high-risk parameter. You will receive a chronological probe history, schema constraints, and runtime hints extracted from TABLE VI FAST -PATH PARAMETER PATTERNS USED IN SEMANTIC TRIAGE .                                    
+
+> Parameter Pattern Dominant Params Fast-path Fast-path Parameters Params
+> Command-Like Input 42 10 code ,cmd ,command ,exec ,run ,execute ,process ,func ,module ,payload
+> File-Like Input 32 6file ,filename ,root ,include ,path ,dir
+> Prompt-Bearing Input 88prompt ,system ,instruction ,context ,role ,persona ,memory ,history
+> Total 82 24 –
+
+prior responses. Your job is not to blindly mutate payloads. Your job is to: 1) Infer how the target is currently interpreting the parameter at runtime. 2) Extract actionable clues from the history, such as accepted structure, revealed paths, file names, table names, column names, environment-variable names, protocol hints, coer-cion hints, and failure modes. 3) Decide the single most informative next probe for the current hypothesis while minimizing side effects. 
+
+Planning rules.  
+
+> •
+
+If the history indicates schema, type, format, or protocol validation failure, repair the payload so it preserves the test intent while better satisfying the explicit constraints.  
+
+> •
+
+If the history shows deeper runtime reachability, such as file-not-found, permission-denied, SQL syntax error, connection-refused, unsupported scheme, or target-specific parsing behavior, treat that as evidence about the sink and adapt the next probe to that sink.  
+
+> •
+
+If a response reveals concrete artifacts such as file names, directories, table names, columns, environment-variable names, or URL targets, use them to plan the next probe instead of switching to an unrelated generic payload.  
+
+> •
+
+If the response suggests type coercion or serialization, for example lists or objects being stringified before use, reason about the runtime sink semantics rather than only the declared schema semantics.  
+
+> •
+
+If the history is repetitive, provides no new signal, or further progress is unlikely, stop.  
+
+> •
+
+Avoid destructive actions, persistent state changes, real credential exfiltration, and external network contact. 
+
+Output requirements. Output only valid JSON using exactly this schema: 
+
+{"decision": "continue|stop", "payload_mode": "declared|underlying", "runtime_hypothesis": "<short sentence>", "key_observations": ["<obs1>", "<obs2>"], "next_step": "<short sentence>", "payload": "<raw payload value or null>" }
+
+If decision is stop , set payload to null. Use declared 
+
+when the next payload should still follow the declared schema shape directly. Use underlying only when the history strongly suggests the parameter is being coerced or serialized before the sink uses it. If decision is continue , payload 
+
+must be the single best next value for the target parameter, not a list. Do not repeat a logically equivalent prior payload. 
+
+APPENDIX BRISK KNOWLEDGE BASE 
+
+Table VI shows the risk knowledge base for Section III-C. APPENDIX CFLOW GUARD VERIFICATION ALGORITHMS 
+
+This appendix gives pseudocode for the closed-loop verifi-cation process described in Section III-B. Algorithm 1 shows the full T RIAGE –R ECON –S TRIKE –A NALYSIS –R EFINEMENT 
+
+loop. APPENDIX DREAL -W ORLD CASE STUDY 
+
+This case study illustrates how FlowGuard detects a non-obvious file-system vulnerability in a real-world MCP server through recon-guided refinement. The target is the MCP interface of Microsoft MarkItDown [48], a popular document-conversion project with over 120K GitHub stars. MarkIt-Down is designed to convert files and office documents into Markdown for downstream LLM and text-analysis workflows, making it a natural fit for MCP-based agent integrations. 
+
+A. Target and Tool 
+
+The server exposes a single tool, 
+
+convert_to_markdown , which is described as converting a URI-addressed resource into Markdown format. The tool accepts http: , https: , file: , and data: URIs through a single uri parameter. At the metadata level, this interface appears benign: the tool name refers to document conversion, the description does not mention shell execution or file reading, and the parameter is expressed as a generic resource identifier rather than an explicit path argument. As a result, name- or description-based heuristics may treat the tool as a normal converter and fail to recognize that allowing caller-controlled file: URIs creates an attack surface for local file access. The risk only becomes evident when the server’s runtime behavior is tested: the backend accepts a local-file URI and returns the corresponding file content. We reported this issue through Microsoft’s official MarkItDown issue tracker and received a public reply proposing that 
+
+file:// URIs be blocked by default and enabled only through an explicit --allow-local-files startup flag. Algorithm 1 FlowGuard Closed-Loop Runtime Evidence Ver-ification 
+
+Require: MCP endpoint E, probing budget B, no-new-signal patience k, risk knowl-edge base K
+
+Ensure: Verified findings F , inconclusive signals U , scan log L
+
+1: M ← DISCOVER TOOLS (E)
+
+2: C ← ∅ , F ← ∅ , U ← ∅ , L ← ∅ 
+
+3: for all t ∈ M, p ∈ PARAMETERS (t) do 
+
+4: r ← FAST PATH RISK VECTOR (t, p, K )
+
+5: if UNAMBIGUOUS HIGH RISK (r) then 
+
+6: C ← C ∪ { (t, p, RISK FAMILY (r)) }
+
+7: else if UNCERTAIN ORCOMPOSITIONAL (t, p, r ) then 
+
+8: d ← LLMT RIAGE (t, p, r ) ▷ Prompt A 
+
+9: if d. routing ∈ { HIGH CONFIDENCE ROUTE , UNCERTAINTY RETAIN } then 
+
+10: C ← C ∪ { (t, p, d. riskFamily )}
+
+11: else 
+
+12: L ← L ∪ { LOG PRUNED (t, p, d )}
+
+13: end if 
+
+14: end if 
+
+15: end for 
+
+16: for all (t, p, g ) ∈ C do 
+
+17: H ← ∅ , S ← ∅ , stale ← 0
+
+18: q0 ← BUILD RECON PROBE (t, p, g )
+
+19: (ok, a 0) ← VALIDATE SCHEMA (q0, SCHEMA (t), p )
+
+20: if ok then 
+
+21: y0 ← INVOKE TOOL (E, t, a 0)
+
+22: S ← EXTRACT FINGERPRINTS (y0)
+
+23: H ← H ∪ { (a0, y 0, RECON )}
+
+24: end if 
+
+25: for i = 1 to B do 
+
+26: Q ← GENERATE STRIKE CANDIDATES (t, p, g, S, H ) ▷ Prompt B 
+
+27: (a, rej ) ← FIRST VALID CANDIDATE (Q, SCHEMA (t), p )
+
+28: if a = ⊥ then 
+
+29: H ← H ∪ { (Q, rej, INVALID )}
+
+30: break 
+
+31: end if 
+
+32: y ← INVOKE TOOL (E, t, a )
+
+33: Z ← EXTRACT SIGNALS (y, g )
+
+34: e ← ADJUDICATE EVIDENCE (t, a, y, Z, H ) ▷ Prompt C 
+
+35: H ← H ∪ { (a, y, e )}, L ← L ∪ { (t, p, g, a, e )}
+
+36: if e. label = CONFIRMED EVIDENCE then 
+
+37: F ← F ∪ { BUILD FINDING (t, p, g, a, y, e )}
+
+38: break 
+
+39: end if 
+
+40: stale ← UPDATE STALENESS (e, H, stale )
+
+41: ρ ← PLAN REFINEMENT (t, p, g, S, H, B − i) ▷ Prompt D 
+
+42: if stale ≥ k or REPEATED INVALID PROBES (H) then 
+
+43: U ← U ∪ { SUMMARIZE INCONCLUSIVE (t, p, g, H )}
+
+44: break 
+
+45: else if ρ. decision ∈ { STOP , REPORT } then 
+
+46: APPLY REFINEMENT DECISION (ρ, F, U, L )
+
+47: break 
+
+48: end if 
+
+49: end for 
+
+50: end for 
+
+51: return F, U, L 
+
+B. Detection Process 
+
+FlowGuard first identifies the uri parameter as a po-tential file-system risk because the schema and descrip-tion allow resource locations to be supplied by the caller. During recon, FlowGuard sends a traversal-style probe, 
+
+../../../../etc/passwd , which the server rejects be-cause the value does not conform to a valid URI scheme. Rather than treating this rejection as a dead end, the refinement loop interprets it as a schema constraint signal and generates a syntactically valid follow-up probe: 
+
+{"uri": "file:///etc/passwd"} 
+
+The server then returns real /etc/passwd content, begin-ning with system account records. The evidence adjudication step confirms that the response is system-originated rather than reflected from the probe, and that exposing local system files falls outside the intended document-conversion bound-ary. FlowGuard therefore reports a confirmed file-disclosure finding with confidence 0.95. 
+
+C. Root Cause 
+
+The root cause is that the server passes the caller-controlled 
+
+uri value to a fetching backend without enforcing a policy boundary between remote documents and local files. Sup-porting file: URIs may be reasonable in a trusted local CLI setting, but in an MCP deployment the same parameter becomes agent-callable. As a result, the converter can be repurposed into an unintended local-file disclosure primitive. 
+
+D. Significance 
+
+This case demonstrates two advantages of FlowGuard. First, semantic triage can surface non-obvious file-system risks even when the tool metadata appears benign and lacks explicit danger keywords. The vulnerability is not exposed by the tool name or description alone; it arises from the combination of a caller-controlled URI parameter, support for the file: scheme, and the backend’s failure to enforce a policy boundary between remote documents and local files. Second, recon-guided refinement turns an initially rejected probe into confirmed evidence by adapting to runtime schema feedback instead of abandoning the hypothesis. The finding was independently confirmed during manual verification.

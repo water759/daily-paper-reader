@@ -6,62 +6,47 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-16
-- 运行时间：2026-07-16 19:50:19 UTC
+- 最新运行日期：2026-07-17
+- 运行时间：2026-07-17 21:04:18 UTC
 - 运行状态：成功
-- 本次总论文数：14
-- 精读区：6
-- 速读区：8
+- 本次总论文数：9
+- 精读区：5
+- 速读区：4
 
 ### 今日简报（AI）
-今日精选14篇AI安全与系统论文，精读6篇，重点关注AI智能体的可扩展防护与漏洞测试新思路。最值得深究的是《SingGuard-NSFA》的生成式推理+实时分类防护架构，以及《Rethinking Penetration Testing》提出的行为目标违规测试框架。建议优先阅读这两篇9分论文，理解AI安全从资源破坏向行为违规评估的范式转变。
-- 详情：[/202607/16/README](/202607/16/README)
+今日聚焦 LLM 提示注入攻击检测与密码学前沿，精读 5 篇、速读 4 篇。最值得关注的是《PVDetector》通过政策违规概念分析防御注入攻击，以及《Proof in a Bottle》提出抗量子承诺的长寿命秘密共享方案。建议优先精读这两篇，把握 AI 安全与密码学交叉领域的最新防御思路。
+- 详情：[/202607/17/README](/202607/17/README)
 
 ### 精读区论文标签
-1. [SingGuard-NSFA: Extensible Guardrails for Agentic AI via Generative Reasoning and Real-Time Classification](/202607/16/2607.13081v1-singguard-nsfa-extensible-guardrails-for-agentic-ai-via-generative-reasoning-and-real-time-classification)  
+1. [PVDetector: Detecting Prompt Injection Attacks on Purpose-Specific LLM Agents through Policy-Violation Concept Analysis](/202607/17/2607.12624v1-pvdetector-detecting-prompt-injection-attacks-on-purpose-specific-llm-agents-through-policy-violation-concept-analysis)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：智能体AI安全护栏框架
-2. [Rethinking Penetration Testing for AI-Enabled Systems: From Resource Compromise to Behavioral Objective Violation](/202607/16/2607.14006v1-rethinking-penetration-testing-for-ai-enabled-systems-from-resource-compromise-to-behavioral-objective-violation)  
+   evidence：检测LLM代理的提示注入攻击
+2. [Proof in a Bottle: Long-Lived Verifiable Secret Sharing via Pre-Quantum Commitment and Immutable Ledger Binding](/202607/17/2607.13235v1-proof-in-a-bottle-long-lived-verifiable-secret-sharing-via-pre-quantum-commitment-and-immutable-ledger-binding)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：重新定义AI系统的渗透测试，关注行为目标违反
-3. [Video Transformer for Remote Identity Document Hologram Detection](/202607/16/2607.11419v1-video-transformer-for-remote-identity-document-hologram-detection)  
+   evidence：基于前量子承诺和区块链绑定的长期可验证秘密共享，实现安全密钥托管
+3. [Context Contamination in LLM Analysis of Network Security Logs: Poison with Passive Prompt Injection and Mitigation Evaluation](/202607/17/2607.14493v1-context-contamination-in-llm-analysis-of-network-security-logs-poison-with-passive-prompt-injection-and-mitigation-evaluation)  
+   标签：评分：9.0/10、query:sec-cloud-ai
+   evidence：基于LLM的网络日志分析中的被动提示注入攻击，以及系统化基准LogInject
+4. [ε-Indistinguishability In Moving Target Defense: Framework, Algorithms, And Cloud Case Studies](/202607/17/2607.13440v1--indistinguishability-in-moving-target-defense-framework-algorithms-and-cloud-case-studies)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：利用视频和AI进行远程身份证件认证
-4. [When Local Monitors Miss Compositional Harm: Diagnosing Distributed Backdoors in Multi-Agent Systems](/202607/16/2607.11751v1-when-local-monitors-miss-compositional-harm-diagnosing-distributed-backdoors-in-multi-agent-systems)  
+   evidence：移动目标防御框架与云案例研究
+5. [From Classification to Consistent Templates: Multiple Permuted-Label Classifier Encoding for Biometric Template Protection](/202607/17/2607.13845v1-from-classification-to-consistent-templates-multiple-permuted-label-classifier-encoding-for-biometric-template-protection)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：多智能体系统中的分布式后门检测
-5. [Securing LLMs in the Wild: Privacy and Security Challenges at the Edge](/202607/16/2607.13088v1-securing-llms-in-the-wild-privacy-and-security-challenges-at-the-edge)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：边缘LLM的隐私与安全挑战
-6. [Efficient and Privacy Aware Edge Cloud Collaborative Inference for Large Language Models](/202607/16/2607.13093v1-efficient-and-privacy-aware-edge-cloud-collaborative-inference-for-large-language-models)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：隐私保护的端云协作LLM推理
+   evidence：使用加密哈希的生物特征模板保护
 
 ### 速读区论文标签
-1. [Aurora DSQL: Scalable, Multi-Region OLTP](/202607/16/2607.13276v1-aurora-dsql-scalable-multi-region-oltp)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：多区域主动-主动云数据库架构
-2. [Adversarial Prompting Framework for AI Safety Assessment](/202607/16/2607.13453v1-adversarial-prompting-framework-for-ai-safety-assessment)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：对抗提示攻击评估
-3. [MemExchange: Utility-Driven Distributed Memory Reallocation for Multi-Tenant Datacenters](/202607/16/2607.11579v2-memexchange-utility-driven-distributed-memory-reallocation-for-multi-tenant-datacenters)  
+1. [SafeGuard: A Lightweight Client-Server Architecture for Real-Time Endpoint Threat Detection and Response](/202607/17/2607.10027v1-safeguard-a-lightweight-client-server-architecture-for-real-time-endpoint-threat-detection-and-response)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：多租户数据中心分布式内存重分配
-4. [Privacy Preserving Recommender Systems Balancing Personalization with Privacy](/202607/16/2607.13328v1-privacy-preserving-recommender-systems-balancing-personalization-with-privacy)  
+   evidence：云安全挑战：轻量级端点威胁检测架构
+2. [FlowGuard: From Signals to Evidence for MCP Security Detection](/202607/17/2607.14754v1-flowguard-from-signals-to-evidence-for-mcp-security-detection)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：结合联邦学习与差分隐私的隐私保护推荐系统
-5. [ReBound: Reuse-Aware Privacy For Interactive Decision Support](/202607/16/2607.13441v1-rebound-reuse-aware-privacy-for-interactive-decision-support)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：提出复用差分隐私查询结果以减少隐私成本，与AI隐私保护相关
-6. [Multivariate Cryptography-Based Anonymous Certificate Scheme](/202607/16/2607.13554v1-multivariate-cryptography-based-anonymous-certificate-scheme)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：匿名证书方案用于身份认证
-7. [How Agents Ask for Permission: User Permissions for AI Agents, from Interfaces to Enforcement](/202607/16/2607.13718v1-how-agents-ask-for-permission-user-permissions-for-ai-agents-from-interfaces-to-enforcement)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：AI代理安全与权限控制应对安全威胁
-8. [PriEval-Protect: A Unified Framework for Privacy Evaluation and Protection in Healthcare Systems](/202607/16/2607.13754v1-prieval-protect-a-unified-framework-for-privacy-evaluation-and-protection-in-healthcare-systems)  
+   evidence：基于证据的MCP安全检测系统，用于LLM代理，应对AI安全威胁
+3. [Designing a GDPR-Compliant Security Architecture for Remote Elderly Care Systems: A Privacy-by-Design Approach](/202607/17/2607.13122v1-designing-a-gdpr-compliant-security-architecture-for-remote-elderly-care-systems-a-privacy-by-design-approach)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：结合LLM和技术分析的隐私评估与保护框架
+   evidence：面向远程老年护理的GDPR合规安全架构，含边缘层假名化和威胁验证
+4. [NFSA: Non-Forward Secure Aggregation with One Server via Two Layer Secret Sharing](/202607/17/2607.15052v1-nfsa-non-forward-secure-aggregation-with-one-server-via-two-layer-secret-sharing)  
+   标签：评分：6.0/10、query:sec-cloud-ai
+   evidence：基于两层秘密共享的联邦学习非前向安全聚合
 
 
 <div class="dpr-home-promo-card">

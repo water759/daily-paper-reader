@@ -1,0 +1,893 @@
+Title: From Classification to Consistent Templates: Multiple Permuted-Label Classifier Encoding for Biometric Template Protection
+
+URL Source: https://arxiv.org/pdf/2607.13845v1
+
+Published Time: Thu, 16 Jul 2026 01:06:44 GMT
+
+Number of Pages: 13
+
+Markdown Content:
+> JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 1
+
+# From Classification to Consistent Templates: Multiple Permuted-Label Classifier Encoding for Biometric Template Protection 
+
+Baogang Song ∗, Zhongshu Zhao ∗, Qianrong Zheng ∗, Jianwen Xiang ∗ and Dongdong Zhao ∗∗School of Artificial Intelligence, Wuhan University of Technology 
+
+Abstract —Biometric template protection (BTP) must secure stored templates while tolerating intra-class variations. Existing methods rely on protected-domain similarity matching, error correction, or predefined-template mappings, potentially retain-ing exploitable similarity structures, introducing helper-data risks, depending on artificial targets, or coupling protection to specific modalities. Storing only cryptographic hash digests eliminates directly comparable representations and conceals pre-hash templates, but hash-based exact-match verification requires genuine samples to generate identical intermediate templates before hashing. Identity classification is naturally suited to this requirement because it maps variable biometric samples to stable and discriminative identity-level outputs. Based on this insight, we propose Multiple Permuted-Label Classifier Encod-ing (MPLCE). Through classifier-specific label permutations, MPLCE assigns each identity different labels across multiple classifiers. The predicted labels are encoded and concatenated to form an intermediate template, preventing repeated encodings of a single identity label and enlarging the effective candidate space while preserving classification consistency. The template is randomized with an application-specific XOR string and cryp-tographically hashed, enabling exact-match verification without error correction codes or biometric-dependent helper data. Using modality-specific classifiers, MPLCE retains the same template generation and protection procedure across modalities. On four face and two iris datasets, MPLCE achieves competitive perfor-mance, including a GAR of 98.61% at a FAR of 5.51 ×10 -5 %on YTF and a GAR of 99.10% at a FAR of 0.00% on CASIA-Iris-Lamp. Security analyses and attack evaluations support its irreversibility, revocability, and unlinkability under the threat model. 
+
+Index Terms —Privacy protection, biometric template protec-tion, face recognition, iris recognition, permuted-label classifiers. 
+
+I. I NTRODUCTION 
+
+Biometric recognition is increasingly deployed for identity authentication in access control, mobile payments, forensics, and border inspection [1]. Compared with passwords and phys-ical tokens, biometric traits provide convenience and strong identity binding. However, the long-term storage of biometric templates introduces serious security and privacy concerns [2], [3]. Once compromised, these templates may be exploited for identity impersonation and cross-application linkage, and may expose sensitive biometric information. More critically, bio-metric traits are persistent and non-replaceable; compromised 
+
+> This work was supported by the Fundamental Research Funds for the Central Universities under Grant 104972026ZHZXhp0024. (Corresponding author: Dongdong Zhao, e-mail: zdd@whut.edu.cn.)
+
+biometric information cannot be reset or reissued in the same manner as passwords or tokens. Therefore, secure and privacy-preserving generation, storage, and verification of biometric templates has become a fundamental problem in BTP. To mitigate these risks, numerous BTP methods have been proposed to support irreversibility, revocability, and unlink-ability [3]. Traditional BTP methods are commonly divided into cancelable biometrics (CB) and biometric cryptosystems (BCS) [2], [4]. CB methods protect biometric templates through noninvertible and revocable transformations. How-ever, many CB schemes perform similarity matching in the protected domain [5], [6], [7] and therefore retain matcha-bility structures that may be exploited for similarity leakage or cross-application linkage [8], [9], [10], [11], [12]. BCS, including fuzzy commitment, fuzzy vault, and fuzzy extractor schemes, bind or derive cryptographic keys from noisy biomet-ric data [13], [14], [15]. These schemes generally rely on error correction or recovery mechanisms and public helper data to tolerate intra-class variations, which may introduce additional security and privacy risks [16], [17], [18], [19], [20], [21], [22]. Moreover, many existing BTP methods are coupled with modality-specific feature representations, transformations, or matching rules, making it difficult to formulate a unified template generation principle across biometric modalities [23]. Existing neural network (NN)-based BTP studies use neu-ral networks to learn protected representations, stable codes, or mappings from biometric samples to predefined user templates [4], [24], [25], [26], [27], [28], [29]. Many of these methods tolerate residual intra-class variations through protected-domain similarity matching, secure sketches, or er-ror correction mechanisms, and therefore retain comparable protected representations or rely on auxiliary recovery struc-tures, which may introduce additional security and privacy risks. Hash-based methods such as BioDeepHash reduce this exposure by combining learned stable codes with application-specific randomization and cryptographic hashing so that only hash digests are stored [26]. However, hash-based exact-match verification requires genuine samples from the same identity to generate exactly the same intermediate template before hashing. For existing NN-based methods that adopt cryptographic hashing, the network must directly generate the complete intermediate template, with all bit positions remaining identical across samples from the same identity. Achieving such exact consistency is difficult because biometric samples from the same subject naturally exhibit intra-class arXiv:2607.13845v1 [cs.CR] 15 Jul 2026 JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 2Existing BTP 
+
+Bottlenecks 
+
+Classification -Based 
+
+Perspective 
+
+Multi -Classifier 
+
+Template Generation    
+
+> Intra -Class Variation vs. Exact Hashing
+> Modality -dependent and hard to unify
+> Stable Semantics Across Modalities
+> Limited Single -Label Search Space
+> Hashing
+> Hashing
+> 1010110
+> 1100111
+> features Templates
+> face
+> embedding
+> Iris code
+> Modality -
+> specific code
+
+7
+
+7
+
+7               
+
+> {1, 2, …, N}
+> Label Space Attacker
+> 10 1010
+> 0111
+> 0011
+> 1110
+> 1010 || 0111 || …|| 0011 || 1110
+> Intermediate template
+> Multiple encoded labels expand the template
+> space for p rotected template generation
+> enumerate
+> classifiers labels Binary
+> encodings
+> 7
+> 3
+> 14
+> classifiers labels
+> …
+> …
+
+Fig. 1: Motivation of MPLCE: addressing existing BTP bottlenecks through classification-based template generation. variations caused by pose, illumination, acquisition conditions, and other factors [1], while a difference at any bit position changes the hash input and leads to verification failure. Consequently, directly generating identity-discriminative and intra-class-consistent intermediate templates remains a key challenge. As illustrated in Fig. 1, we address this challenge by revisiting classification as a mechanism for generating sta-ble intermediate templates. For a fixed enrolled user set, a classifier learns discriminative decision regions that map biometric samples to predicted labels. When these predictions remain stable under intra-class variations, samples from the same subject can be converted from variable biometric ob-servations into consistent discrete outputs, which are more suitable as inputs to cryptographic hashing. Compared with templates constructed directly from continuous biometric fea-tures, classification outputs provide a more abstract label-level basis for template generation and reduce the dependence of protected template construction on modality-specific feature representations. However, directly using a single classification label as the intermediate template provides only a limited and easily enumerable candidate space. Therefore, the template generation mechanism should retain the consistency provided by identity classification while enlarging the candidate space of intermediate templates and removing the direct identity-to-label structure. Motivated by this observation, we propose Multiple Permuted-Label Classifier Encoding (MPLCE) , a BTP framework for consistent intermediate template generation and protected template construction. MPLCE constructs multiple classifier-specific label permutations over a fixed enrolled identity set and trains one classifier under each permutation, such that the same identity is assigned different label indices across classifiers. For an input sample, the predicted permuted labels are encoded and concatenated in a fixed classifier order to form an intermediate template. The label permu-tations prevent the multi-classifier output from degenerating into repeated encodings of a single identity label, while the combination of multiple predictions enlarges the effective candidate space of the intermediate template and preserves classification-level consistency. The intermediate template is then randomized with an application-specific XOR string and processed by a cryptographic hash function to generate the stored protected template, enabling exact-match verification. Because the protection process operates on identity-level label outputs, modality-specific classifiers can be used for different biometric traits while retaining the same label-based template construction and protection procedure. MPLCE therefore pro-vides a modality-agnostic template construction principle at the protection level. The main contributions of this paper are summarized as follows:  
+
+> •
+
+We propose MPLCE, a BTP framework that uses identity classification to generate consistent intermediate tem-plates and combines application-specific randomization with cryptographic hashing for exact-match verification without error correction codes or biometric-dependent helper data.  
+
+> •
+
+We introduce a permuted-label multi-classifier mecha-nism that assigns different labels to the same identity across classifiers, preventing repeated identity-label en-codings and enlarging the effective candidate space of intermediate templates while preserving classification-level consistency. JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 3 
+
+> •
+
+We establish a modality-agnostic template construction principle at the protection level, allowing the same label-based template construction and protection procedure to be used with modality-specific classifiers.  
+
+> •
+
+We conduct extensive experiments on four face and two iris datasets. The results demonstrate competitive protected verification performance and support the ir-reversibility, revocability, and unlinkability of MPLCE under the considered threat model. II. R ELATED WORK 
+
+We review existing BTP methods in two groups: traditional BTP methods and NN-based BTP methods. 
+
+A. Traditional BTP Methods 
+
+CB methods protect biometric templates through revocable and noninvertible transformations, allowing new protected templates to be generated by changing the transformation parameters. Representative designs include random projec-tion [30], Bloom filters [5], local ranking [31], Index-of-Max (IoM) hashing [6], and R ·HoG transformations [7]. These methods protect biometric representations through random-ized projection, binary set encoding, local order relations, maximum-index encoding, or alignment-robust feature trans-formation, respectively. Recent studies have further combined partial Walsh transformations with SimHash for protected face template generation [32] and with MinHash for cancelable binary template generation [33]. A recent benchmark eval-uated representative CB schemes across multiple biometric modalities and showed that their recognition and privacy behavior depends on both the protection mechanism and the underlying modality [23]. Despite their different designs, many CB methods retain matchable structures for protected-domain comparison. Security analyses of CB schemes have demon-strated that their structural information can be exploited under specific attack models [8], [9]. Known-sample and similarity-based attacks further show that relations preserved in protected templates may facilitate template compromise or cross-record analysis [10], [11], [12]. BCS combine biometric data with cryptographic con-structions for key binding or key generation. Representa-tive schemes include fuzzy vault [14], [34], fuzzy commit-ment [13], [35], and fuzzy extractor [15]. Fuzzy vault conceals a secret using genuine biometric feature points and chaff points, fuzzy commitment binds a biometric representation to an error-correcting codeword, and fuzzy extractor derives a re-producible cryptographic key from noisy biometric inputs with the aid of public helper data. These constructions typically rely on helper data and error correction or recovery mechanisms to tolerate intra-class variations and reproduce consistent keys or codewords. Recent studies have extended BCS to deep and multi-biometric representations. WiFaKey adapts deep face representations to error-correction requirements and em-ploys neural decoding for key generation under unconstrained conditions [36], while a recent deep multi-biometric fuzzy commitment scheme fuses fingerprint and iris embeddings using different fusion and error-correction strategies [37]. These studies also indicate that the effectiveness of BCS depends on the compatibility among biometric representations, error distributions, and recovery mechanisms. The security of BCS further depends on the specific construction and threat model. Fuzzy-vault schemes have been shown vulnerable to point-set recovery, cracking, and collusion attacks [16], [17], [18]. Fuzzy commitment schemes and biometric sketches may expose statistical or auxiliary information [19], [20], [22], while the reuse of secure sketches or fuzzy extractors across records can introduce additional security risks [21]. 
+
+B. BTP Methods Based on Neural Networks 
+
+Existing NN-based BTP methods can be broadly divided according to the role of neural networks: some use NNs only for biometric feature extraction and rely on subsequent non-NN protection mechanisms, whereas others directly learn protected templates [4]. This subsection focuses on the latter category, which mainly includes methods that learn protected representations or stable codes and methods that learn map-pings to predefined user templates. The first category directly learns protected representations or stable codes from biometric samples [24], [25], [26]. The method in [24] trains a network to approximate an IoM trans-formation and performs similarity matching on the resulting protected templates. The method in [25] combines a random convolutional neural network (CNN), random triplet loss, and user-specific keys to generate protected representations, while secure sketches are used to avoid directly storing the keys. BioDeepHash [26] learns stable binary codes and further applies application-specific randomization and cryptographic hashing to generate the stored protected templates. Although their protection mechanisms differ, these methods all require the learned representation or code to remain sufficiently stable under intra-class variations. Residual differences are handled through protected-domain matching, secure sketches, or the direct generation of sufficiently consistent codes before hash-ing. The second category assigns each enrolled user a predefined binary template or code and trains a network to reproduce the assigned target [27], [28], [29]. The method in [27] uses random maximum-entropy binary codes, whereas [28] adopts low-density parity-check (LDPC) codewords and exploits their error correction capability to improve robustness against intra-class variations. These methods produce user-specific discrete outputs suitable for subsequent cryptographic processing, but their template generation depends on learning a direct mapping from biometric samples to complete predefined codes. Despite their different constructions, these methods gen-erally require the network to learn or reproduce a complete protected representation or predefined code, with intra-class variations handled through protected-domain matching, secure sketches, error correction, or sufficiently stable output gen-eration. In contrast, MPLCE uses identity classification to generate discrete label sequences, shifting the consistency re-quirement from reproducing a complete representation or code to maintaining stable identity predictions before subsequent template protection. JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 4Enrollment     
+
+> 1010
+> 0111
+> 0011
+> 1110
+> 1010 0111 0011 1110
+
+Cryptographic 
+
+Hash 
+
+Pu
+
+MPLCE Template Generation       
+
+> 0110 1101 0110 1101 0110 1101 0110 1101
+> A1B2 …7890
+
+Ru
+
+ID 
+
+Tu  
+
+> 1
+> 2
+> …
+> F38C …21D7
+> A1B2 …7890
+> …
+> N9E0A …4C61
+> ID Protected
+> template
+
+Database    
+
+> XOR string I
+> 1100101001010011
+> 1
+> 2
+> …
+> F38C …21D7
+> A1B2 …7890
+> …
+> N9E0A …4C61
+> ID Protected
+> template
+
+Database  
+
+> XOR string I
+> 1100101001010011
+
+Verification 
+
+MPLCE 
+
+Template 
+
+Generation    
+
+> 1010 0111 0011 1110
+
+Pu=P q
+
+Accept Reject 
+
+Query 
+
+Sample Tq Rq      
+
+> A1B2 …7890
+> 0110 1101 0110 1101 0110 1101 0110 1101
+
+ID 
+
+Cryptographic 
+
+Hash 
+
+> A1B2 …7890
+
+Pq
+
+Pu1  
+
+> 2
+> …
+> F38C …21D7
+> A1B2 …7890
+> …
+> N9E0A …4C61
+> ID Protected
+> template
+
+Database    
+
+> XOR string I
+> 1100101001010011
+> 1
+> 2
+> …
+> F38C …21D7
+> A1B2 …7890
+> …
+> N9E0A …4C61
+> ID Protected
+> template
+
+Database  
+
+> XOR string I
+> 1100101001010011
+
+Enroll 
+
+Sample 
+
+Permuted -Label Classifier 
+
+Construction      
+
+> ID 1 ID 2 ID N-1ID N
+> ...
+
+1
+
+2
+
+3
+
+…
+
+N
+
+3
+
+N
+
+1
+
+…
+
+2
+
+N - 1
+
+1
+
+N
+
+…
+
+4
+
+2
+
+N - 2
+
+4
+
+…
+
+N
+
+Enrolled identity set 
+
+Label permutations 
+
+Permutation -specific training sets 
+
+Ordered permuted -label classifiers 
+
+> ...
+> ...
+> ...
+
+relabel 
+
+train 
+
+Fig. 2: Overall framework of MPLCE for classifier construction, enrollment, and verification. III. MPLCE This section presents the MPLCE framework. We first provide an overview of permuted-label classifier construction, enrollment, and verification. We then formulate the consis-tency requirement of intermediate templates for hash-based verification and describe the generation of intermediate and protected templates together with the verification procedure. 
+
+A. Overview of MPLCE 
+
+Fig. 2 illustrates the overall workflow of MPLCE, which consists of three stages: permuted-label classifier construc-tion, enrollment, and verification. In the classifier construc-tion stage, MPLCE trains an ordered set of classifiers over classifier-specific permuted-label spaces. During enrollment, an enrollment sample is processed by the trained classifiers to generate an intermediate template, which is then randomized with an application-specific XOR string and processed by a cryptographic hash function to obtain the protected template. The database stores the registered identity index, the protected template, and the application-specific XOR string, whereas the intermediate template, the randomized template, and the original biometric sample are not stored. During verification, a query sample is processed through the same template generation and protection procedure using the application-specific XOR string associated with the claimed identity. The resulting query protected template is compared with the stored protected template by exact matching. Because exact matching of cryptographic hash outputs requires identi-cal hash inputs, genuine enrollment and query samples must generate consistent intermediate templates before hashing. Therefore, intra-class consistency and identity discrimination are central requirements for intermediate template generation in MPLCE, as formulated next. 
+
+B. Formulation of Stable Intermediate Template Generation 
+
+In MPLCE, protected templates generated after application-specific randomization and cryptographic hashing are verified by exact matching. This verification rule requires the pre-hash intermediate templates to be consistent for genuine samples and distinguishable across different users. Therefore, we formulate intermediate template generation as a problem of satisfying intra-class consistency and inter-class separability before protection. Let X denote the biometric sample space, and let Y =
+
+{1, 2, . . . , N } denote the enrolled user label space, where N
+
+is the number of enrolled users. For the enrolled user set, the enrollment data are denoted as D = {(xi, y i)}ni=1 , where 
+
+xi ∈ X is a biometric sample and yi ∈ Y is its user label. In MPLCE, the enrollment data are used to construct the permuted-label classifiers, and enrolled samples are used to JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 5
+
+generate the stored protected templates. The objective is to construct an intermediate template generation function 
+
+T : X → { 0, 1}L, (1) where L is the length of the generated intermediate template. An ideal intermediate template generation function should satisfy two desired properties: intra-class consistency and inter-class separability. Given two biometric samples xi and 
+
+xj with user labels yi and yj , intra-class consistency requires genuine samples to produce identical intermediate templates: 
+
+T (xi) = T (xj ), if yi = yj . (2) This property supports protected verification based on exact matching, because inconsistent intermediate templates from the same user lead to verification failure after protection. Inter-class separability requires samples from different users to produce different intermediate templates: 
+
+T (xi)̸ = T (xj ), if yi̸ = yj . (3) This property reduces false acceptance caused by intermediate-template collisions across users. 
+
+C. Permuted-Label Multi-Classifier Template Generation 
+
+MPLCE implements the intermediate template generation function T (·) through a permuted-label multi-classifier mech-anism. The key idea is to construct multiple classifier-specific label spaces over the same enrolled user label space, so that each classifier provides one permuted-label prediction for template generation. The following part formalizes label permutation, classifier construction, and intermediate template construction. To construct multiple permuted-label classifiers, MPLCE first generates m label permutations over the enrolled user label space: 
+
+πj : Y → Y, j = 1 , 2, . . . , m, (4) where each πj (·) is a bijective mapping over Y . For the j-th permutation, each original user label yi is replaced by its permuted label 
+
+z(j) 
+
+> i
+
+= πj (yi), (5) which defines the relabeled dataset for the j-th classifier: 
+
+D(j) = {(xi, z (j) 
+
+> i
+
+)}ni=1 . (6) Thus, different classifier-specific label spaces are constructed by changing only the user label mappings, while the biometric samples themselves remain unchanged. For each relabeled dataset D(j), MPLCE trains one permuted-label classifier fj (·; θj ). The classifiers share the same classification architecture but are optimized under differ-ent label mappings. The training objective of the j-th classifier is formulated as 
+
+θ∗ 
+
+> j
+
+= arg min 
+
+> θj
+> n
+
+X
+
+> i=1
+
+Lcls 
+
+
+
+fj (xi; θj ), z (j)
+
+> i
+
+
+
+, (7) where Lcls (·) denotes the classification loss used for train-ing the permuted-label classifier. After training all m clas-sifiers, MPLCE obtains an ordered classifier sequence F =
+
+Algorithm 1: MPLCE Classifier Construction and Intermediate Template Generation 
+
+Input: training set D = {(xi, y i)}ni=1 , enrolled identity label space Y , number of classifiers m,classifier architecture f (·; θ), label encoding function Enc( ·), input sample x
+
+Output: ordered classifier sequence 
+
+F = ( f1, . . . , f m), intermediate template 
+
+T (x)
+
+Permuted-label classifier construction: 
+
+F ← [ ] ;
+
+for j ← 1 to m do 
+
+Generate a bijective label permutation πj : Y → Y ;
+
+D(j) ← ∅ ;
+
+for i ← 1 to n do 
+
+z(j) 
+
+> i
+
+← πj (yi);
+
+D(j) ← D(j) ∪ { (xi, z (j) 
+
+> i
+
+)};
+
+end 
+
+Initialize fj (·; θj ) with architecture f (·; θ);Train fj (·; θj ) on D(j) and obtain θ∗ 
+
+> j
+
+;
+
+F[j] ← fj (·; θ∗ 
+
+> j
+
+);
+
+end Intermediate template generation for sample x:for j ← 1 to m do 
+
+ˆzj (x) ← arg max k∈Y
+
+fj (x; θ∗ 
+
+> j
+
+)
+
+> k
+
+;
+
+bj (x) ← Enc (ˆ zj (x)) ;
+
+end 
+
+T (x) ← b1(x)∥b2(x)∥ · · · ∥ bm(x);
+
+return F, T (x);
+
+(f1(·; θ∗ 
+
+> 1
+
+), f 2(·; θ∗ 
+
+> 2
+
+), . . . , f m(·; θ∗
+
+> m
+
+)) . The order of F is fixed and used consistently during enrollment and verification for intermediate template construction. Given an input sample x, each trained classifier fj (·; θ∗ 
+
+> j
+
+)
+
+predicts a label in its own permuted-label space. The predicted label of the j-th classifier is defined as 
+
+ˆzj (x) = arg max 
+
+> k∈Y
+
+fj (x; θ∗ 
+
+> j
+
+) 
+
+> k
+
+, (8) where fj (x; θ∗ 
+
+> j
+
+) 
+
+> k
+
+denotes the classification score for label k
+
+in the j-th permuted-label space. The predicted label is then converted into a fixed-length binary segment. Let 
+
+ℓ = ⌈log 2 N ⌉. (9) For a label k ∈ Y , the label encoding function is defined as 
+
+Enc( k) = ( eℓ−1(k), e ℓ−2(k), . . . , e 0(k)) , (10) where 
+
+er (k) = 
+
+ k − 12r
+
+
+
+mod 2 , r = 0 , 1, . . . , ℓ − 1. (11) Thus, Enc( k) is the ℓ-bit binary representation of k − 1,ordered from the most significant bit to the least significant bit. The binary segment generated by the j-th classifier is 
+
+bj (x) = Enc (ˆ zj (x)) , bj (x) ∈ { 0, 1}ℓ. (12) JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 6
+
+The binary segments generated by all classifiers are con-catenated in the fixed classifier order to form the intermediate template: 
+
+T (x) = b1(x)∥b2(x)∥ · · · ∥ bm(x), (13) where ∥ denotes concatenation. The resulting intermediate template has a binary length of L = mℓ . However, not every 
+
+L-bit string corresponds to a valid intermediate template in MPLCE, because each segment must encode one of the N
+
+valid labels. Therefore, the effective candidate space of the intermediate template contains N m candidates rather than all 
+
+2L binary strings. The same classifier order is used during enrollment and verification, ensuring that identical predicted label sequences produce identical intermediate templates. Algorithm 1 summarizes the construction of the permuted-label classifiers and the generation of intermediate templates. 
+
+D. Protected Template Generation and Exact-Match Verifica-tion 
+
+Given the intermediate template T (x), MPLCE applies an application-specific XOR string I before cryptographic hashing: 
+
+R(x) = T (x) ⊕ I, (14) where I ∈ { 0, 1}L and ⊕ denotes bitwise XOR. The XOR string I is generated independently of biometric data and is not treated as secret information. The randomized template is then processed by a cryptographic hash function h(·) to generate the protected template: 
+
+P (x) = h(R(x)) = h(T (x) ⊕ I). (15) Both T (x) and R(x) are temporary values and are discarded after P (x) is generated. For an enrolled user u with enrollment sample xu, the stored protected template is denoted by Pu = P (xu). The protected-template database stores the registered user index, Pu, and the application-specific XOR string I, but does not retain the intermediate template T (xu), the randomized template 
+
+R(xu), or the enrollment sample xu. Because I is generated independently of biometric data, its storage does not constitute biometric-dependent helper data. During verification, given a query sample xq and a claimed user u, the system retrieves Pu and I from the corresponding protected record. The query sample is processed using the same template generation and protection procedure: 
+
+Pq = h(T (xq ) ⊕ I). (16) The verification decision is made by exact matching: 
+
+Verify( xq , u ) = 1 [Pq = Pu] , (17) where 1[·] denotes the indicator function. The query is ac-cepted only when the query and enrolled protected templates are identical. IV. S ECURITY ANALYSIS 
+
+A. Threat Model 
+
+To analyze the security of MPLCE, we adopt the full-disclosure model specified in ISO/IEC 30136:2018, which assumes the strongest adversarial knowledge considered in BTP evaluation [38]. In this model, the protection mechanism is assumed to be public, and the adversary may obtain compro-mised protected records. The adversary’s goals and knowledge are defined as follows.  
+
+> •
+
+Adversary’s goals : The adversary aims to compromise the security or privacy of an enrolled user by exploiting compromised protected records. The main concerns are whether the compromised records can be used to generate accepted impostor attempts, recover biometric-related in-formation, or determine whether protected templates from different applications belong to the same user.  
+
+> •
+
+Adversary’s knowledge : The adversary is assumed to know the public MPLCE specification, including the template protection workflow, the construction principle, architectures, and trained parameters of the permuted-label classifiers, the label encoding rule, the XOR ran-domization operation, the cryptographic hash function, and the exact-match verification rule. In addition to this public knowledge, the adversary may obtain the records stored in the protected template database, including the protected templates Pu and their correspond-ing application-specific XOR strings I. Therefore, I is not assumed to be secret. The compromised database records do not contain the enrolled intermediate templates Tu, the ran-domized hash inputs Tu ⊕ I, the original enrollment samples, continuous biometric feature representations, or the concrete permutation tables used to instantiate the classifier-specific label assignments. The concrete permutation tables are not included in the protected-template records and, because they are generated independently of biometric information, do not constitute biometric-dependent helper data. 
+
+B. Irreversibility Analysis 
+
+Irreversibility requires that an adversary cannot feasibly recover the enrolled intermediate template or the original biometric information from a compromised protected template. In MPLCE, the protected template of user u is generated by applying cryptographic hashing to the randomized inter-mediate template. Under the threat model defined above, the adversary may obtain both the protected template Pu and the corresponding application-specific XOR string I. Even in this case, the enrolled intermediate template Tu is not directly exposed, because the hash input Tu ⊕ I is only used during protected template generation and is not retained. Given that neither Tu nor Tu ⊕ I is available from the compromised record, recovering Tu from Pu, even when 
+
+I is known, would require recovering the randomized hash input from the cryptographic hash output. Under the standard preimage-resistance assumption of the hash function, this recovery is computationally infeasible. If the adversary does not directly invert the hash function, an alternative strategy JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 7
+
+is to enumerate candidate intermediate templates and test whether they produce the compromised protected template. The difficulty of this enumeration-based recovery path depends on the candidate space induced by the multiple permuted-label classifiers, and is further quantified in Section IV-F. 
+
+C. Revocability Analysis 
+
+Revocability requires that a compromised protected record can be invalidated and replaced without changing the user’s biometric trait. In MPLCE, revocability is achieved by renew-ing the application-specific XOR string. Let Tu denote the enrolled intermediate template of an arbitrary user u. When the application uses the XOR string I, the protected template of user u is Pu = h(Tu ⊕ I). After the application-specific XOR string is renewed from I to I′, where I′̸ = I, the protected template of the same user is reissued as P ′ 
+
+> u
+
+= h(Tu⊕I′). Since the hash input changes from Tu ⊕ I to Tu ⊕ I′, the resulting protected template differs from the compromised one except with negligible hash-collision probability. This process does not require changing the user’s biometric trait or retraining the MPLCE classifiers; it only requires generating a new application-specific XOR string and reissuing the protected template through the enrollment pipeline. 
+
+D. Unlinkability Analysis 
+
+Unlinkability requires that an adversary cannot reliably determine whether protected templates generated in different applications belong to the same enrolled user. In MPLCE, this property is supported by applying application-specific XOR randomization before cryptographic hashing. Consider user u enrolled in two different applications s and 
+
+t. Let Tu denote the intermediate template generated for this user. The corresponding protected templates are 
+
+P (s) 
+
+> u
+
+= h(Tu ⊕ Is), P (t) 
+
+> u
+
+= h(Tu ⊕ It), (18) where Is and It are independently generated application-specific XOR strings. Under the full-disclosure model, the application-specific XOR strings may be known to the adversary. However, knowing Is and It does not by itself allow the adversary to derive the underlying intermediate template or transform P (s)
+
+> u
+
+and P (t) 
+
+> u
+
+into a directly comparable representation, because the randomized hash inputs are hidden by the cryptographic hash function. Recovering these hash inputs from the pro-tected templates would require inverting the cryptographic hash function, which is computationally infeasible under the preimage-resistance assumption of h(·). Therefore, protected templates generated in different applications do not expose a directly comparable intermediate template representation. This property is further evaluated in Section IV-F, where mated and non-mated cross-application protected template pairs are compared using standard unlinkability metrics. 
+
+E. Discussion of Theoretical Security Boundaries 
+
+MPLCE comprises two functionally distinct stages. The classifier stage generates intermediate templates from bio-metric samples, whereas the protection stage applies XOR randomization and cryptographic hashing to generate the protected records stored in the database. The analysis in this section addresses the security of these stored records after compromise, specifically their irreversibility, revocability, unlinkability, and resistance to offline enumeration. This boundary is defined by the security object under analysis rather than by restricting the adversary’s knowledge. As specified in the threat model, the adversary is assumed to know the architectures and trained parameters of the permuted-label classifiers, together with the complete template protection procedure. Nevertheless, model-level vulnerabilities that affect the correctness or confidentiality of intermediate template generation constitute a separate attack surface. Such vulnera-bilities may affect the security of the overall biometric system, but they are not direct consequences of compromising the stored protected records. Accordingly, the security conclusions in this section apply to the protection of the stored records and should not be interpreted as comprehensive security guarantees for every component of the biometric recognition system. 
+
+F. Security Evaluation Against Representative Attacks 
+
+To complement the preceding analysis, we evaluate MPLCE against three representative attack categories: brute-force at-tacks, similarity-based attacks, and attacks via record multi-plicity (ARM). 
+
+1) Brute-Force Attack: Brute-force resistance in BTP is commonly characterized by the effort required to search for a preimage or an equivalent template that satisfies the system’s matching rule [39]. Under the defined threat model, we con-sider an offline attack against MPLCE in which the adversary enumerates candidate intermediate templates and tests whether the resulting protected templates match any record in the com-promised database. Given the stored protected templates and the application-specific XOR string I, the adversary computes 
+
+eP = h( eT ⊕ I) for each candidate intermediate template eT and compares it with the stored protected templates. For an enrolled identity set of size N , each of the m
+
+classifiers contributes one label with N possible values. Since the fixed-length label encoding is injective, every valid label sequence corresponds to one candidate intermediate template. Therefore, the offline candidate space under the defined threat model is 
+
+|ΩT | = N m, (19) where ΩT denotes the candidate intermediate templates con-sidered in offline enumeration. This space contains only valid encoded label sequences rather than all 2L binary strings. We further perform randomized brute-force search under each (N, m ) setting to evaluate random guessing under a finite budget. In each trial, a candidate is sampled uniformly from 
+
+ΩT , converted into an intermediate template, randomized using 
+
+I, and hashed for comparison with all protected templates in the compromised database. Since each of the N enrolled identities has one stored protected template, the per-guess success probability of this untargeted attack is at most N/ |ΩT |.JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 8
+
+TABLE I: Candidate-space analysis and random-search results for untargeted offline enumeration with GBF = 10 9.                                          
+
+> NmTheoretical analysis Random search
+> |ΩT|PBF Succ.
+> 100 12 1.00 ×10 24 ≤1.00 ×10 -13 016 1.00 ×10 32 ≤1.00 ×10 -21 020 1.00 ×10 40 ≤1.00 ×10 -29 0200 12 4.10 ×10 27 ≤4.88 ×10 -17 016 6.55 ×10 36 ≤3.05 ×10 -26 020 1.05 ×10 46 ≤1.91 ×10 -35 0300 12 5.31 ×10 29 ≤5.65 ×10 -19 016 4.30 ×10 39 ≤6.97 ×10 -29 020 3.49 ×10 49 ≤8.60 ×10 -39 0
+
+For GBF independent guesses with replacement, the success probability is bounded by 
+
+PBF ≤ 1 −
+
+
+
+1 − N
+
+|ΩT |
+
+GBF 
+
+. (20) Table I reports the candidate-space size, the finite-budget success probability upper bound, and the observed number of successful matches under GBF = 10 9. Succ. denotes the number of successful matches observed during randomized brute-force search. No successful match is observed in any evaluated setting. This result is consistent with the theoretical upper bounds and indicates that offline brute-force search is practically infeasible under the considered guessing budget. 
+
+2) Similarity-Based Attack: A similarity-based attack ex-ploits meaningful protected-domain distances to guide the search for a biometric preimage or pseudo-template [11]. Since MPLCE performs exact matching on cryptographic hash outputs, it does not provide such a similarity score. We therefore evaluate the key prerequisite of this attack category by examining whether distances between stored protected templates remain correlated with distances in the unprotected biometric feature space. We use VGGFace2 with IR101 and CASIA-Iris-Lamp with ResNet18 as representative face and iris settings, respectively, with N = 200 . For a non-mated pair (xi, x j ), the unprotected feature distance is 
+
+dfeat (xi, x j ) = 1 − cos( ei, e j ), (21) where ei and ej are the corresponding biometric features. The protected templates are generated using the same application-specific XOR string, and their normalized Hamming distance is 
+
+dprot (Pi, P j ) = dH (Pi, P j )
+
+λ , (22) where λ = 512 for SHA3-512. Although Hamming distance is not used for MPLCE verification, it is employed here to diagnose potential distance leakage. For each setting, we sample 10 5 non-mated pairs and report the Pearson and Spearman correlations between dfeat and dprot , together with the mean normalized Hamming distance. As shown in Table II, all correlations are close to zero, with a maximum absolute TABLE II: Distance correlation analysis on representative face and iris settings under N = 200 .                        
+
+> Dataset mPearson rSpearman ρdprot
+> VGGFace2 12 0.0030 0.0038 0.5000 16 0.0107 0.0122 0.5001 20 0.0042 0.0007 0.4998 Lamp 12 -0.0005 -0.0053 0.4999 16 0.0023 -0.0011 0.4997 20 0.0050 0.0058 0.5000
+
+value of 0.0122, while the mean normalized Hamming dis-tance remains approximately 0.5. These results indicate that, under the evaluated settings and metrics, the stored protected templates do not provide an observable distance signal for guiding similarity-based attacks. 
+
+3) Attacks via Record Multiplicity: We evaluate ARM as a cross-application record linkage attack using the unlinka-bility framework in [40]. Mated cross-application pairs are constructed from protected templates generated for the same user in different applications, whereas non-mated pairs are constructed from templates generated for different users in different applications. The framework compares the score distributions of these two types of pairs and computes the local unlinkability measure D↔(s) and the global system-level measure Dsys  
+
+> ↔
+
+. Both measures range from 0 to 1, with values closer to 0 indicating stronger unlinkability. Following this framework, we use a similarity score derived from the normalized Hamming distance between protected templates, where larger values indicate a higher likelihood of a mated pair. As shown in Fig. 3, the mated and non-mated score dis-tributions substantially overlap across all evaluated settings. The values of Dsys  
+
+> ↔
+
+range from 0.03899 to 0.07639, indicating limited distinguishability between the two types of cross-application pairs. Therefore, under the evaluated settings, the protected records do not provide a reliable signal for ARM-based cross-application linkage. V. E XPERIMENTS 
+
+A. Experimental Setup 1) Datasets and Data Splits: We evaluate MPLCE on both face and iris modalities. For face, VGGFace2 [41] and FaceScrub [42] are used for controlled evaluations across different values of N and m and multiple backbone models. YouTube Faces (YTF) [43] and Extended Yale B (Yale-B) [44] are used for comparisons with existing BTP methods under aligned benchmark protocols. For iris, we use CASIA-Iris-Lamp (Lamp) and CASIA-Iris-Thousand (Thousand). The left and right irises of each subject are treated as separate identity classes. For each experimental setting, N enrolled identity classes are selected according to the protocol specified in the cor-responding subsection. For each class, K samples are used for both permuted-label classifier construction and template enrollment. After classifier training, these K samples are processed by the ordered classifiers, and the most frequently JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 90.425 0.450 0.475 0.500 0.525 0.550 0.575     
+
+> Score
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> 17.5
+> 20.0
+> Probability Density
+> Unlinkability analysis, Dsys
+> ↔= 0.07639
+> Mated
+> Non-mated
+> D↔(s)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> D ↔ (s)
+
+(a) VGGFace2, m = 12 0.40 0.45 0.50 0.55 0.60      
+
+> Score
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> 17.5
+> Probability Density
+> Unlinkability analysis, Dsys
+> ↔= 0.04451
+> Mated
+> Non-mated
+> D↔(s)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> D ↔ (s)
+
+(b) VGGFace2, m = 16 0.425 0.450 0.475 0.500 0.525 0.550 0.575      
+
+> Score
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> 17.5
+> Probability Density
+> Unlinkability analysis, Dsys
+> ↔= 0.05718
+> Mated
+> Non-mated
+> D↔(s)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> D ↔ (s)
+
+(c) VGGFace2, m = 20 0.425 0.450 0.475 0.500 0.525 0.550 0.575     
+
+> Score
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> 17.5
+> Probability Density
+> Unlinkability analysis, Dsys
+> ↔= 0.06400
+> Mated
+> Non-mated
+> D↔(s)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> D ↔ (s)
+
+(d) Lamp, m = 12 0.425 0.450 0.475 0.500 0.525 0.550 0.575      
+
+> Score
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> 17.5
+> Probability Density
+> Unlinkability analysis, Dsys
+> ↔= 0.03899
+> Mated
+> Non-mated
+> D↔(s)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> D ↔ (s)
+
+(e) Lamp, m = 16 0.425 0.450 0.475 0.500 0.525 0.550 0.575      
+
+> Score
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> 17.5
+> Probability Density
+> Unlinkability analysis, Dsys
+> ↔= 0.04156
+> Mated
+> Non-mated
+> D↔(s)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> D ↔ (s)
+
+(f) Lamp, m = 20 
+
+Fig. 3: Unlinkability evaluation of MPLCE on VGGFace2 and CASIA-Iris-Lamp under different numbers of classifiers. occurring intermediate template is used to generate the single protected template stored for that class. Query samples are excluded from classifier construction and template enrollment and are used only for verification. The specific values of N ,
+
+m, and K, together with the backbone models, data splits, and comparison protocols, are provided in the corresponding experimental subsections. 
+
+2) Implementation Details: SHA3-512 is used through-out all experiments. For face, we use IR50 and IR101 AdaFace models pretrained on MS1MV2 [45], and an Inception-ResNet-v1 FaceNet model pretrained on CASIA-WebFace [46]. The IR50 and IR101 models take 112 × 112 
+
+images as input, with the last four backbone blocks and classifier head fine-tuned using learning rates of 10 −4 and 
+
+10 −3, respectively. FaceNet takes 160 × 160 images as input and is fully fine-tuned using learning rates of 10 −5 for the backbone and 10 −3 for the classifier head. All face classifiers use Adam with a batch size of 64 and zero weight decay. IR50 and IR101 are trained for 20 epochs, and FaceNet for 30 epochs. For iris, we use ResNet18, ResNet34 [47], and DeepIris-Net [48], all trained from scratch on 64 ×64 images. The classi-fiers use Adam with an initial learning rate of 3×10 −4, a batch size of 32, and zero weight decay. Cross-entropy and center loss [49] are jointly used, with both the center loss weight and center parameter learning rate set to 10 −3. ResNet18 and ResNet34 are trained for 30 epochs, and DeepIrisNet for 60 epochs, with the learning rate reduced by a factor of 0.1 halfway through training. Within each dataset–backbone setting, the permuted-label classifiers share the same architecture and training config-uration but are independently trained under different label permutations. When multiple values of m are compared within the same experimental setting, we train a single ordered classifier set using the largest tested value of m and use its first m classifiers for each configuration. This shared-prefix design reduces variations caused by independently trained classifier sets, so the differences across configurations mainly reflect the number of classifier outputs used for intermediate template construction. The enrolled intermediate template is regenerated for each m. In each run, the permutations are generated once and fixed throughout training, enrollment, and verification. For each application, an application-specific XOR string I ∈ { 0, 1}L is uniformly sampled and shared across its protected records. Unless otherwise specified, results are averaged over three independent runs. Models in different ex-perimental subsections are trained independently, so identical 
+
+N , m, and K settings may produce small variations across tables. 
+
+3) Evaluation Protocol and Metrics: During evaluation, each query sample is converted into a query protected template using the same MPLCE template generation and protection procedure. The query protected template is compared with the stored protected templates in the enrolled database by exact matching. The comparison with the stored protected template of the same identity is counted as a genuine attempt, while comparisons with the stored protected templates of other identities are counted as impostor attempts. A comparison is accepted only when the two protected templates are identical, and rejected otherwise. We report verification performance using Genuine Accep-tance Rate (GAR) and False Acceptance Rate (FAR). Since MPLCE performs exact-match verification in the protected domain, each comparison produces a binary accept/reject deci-JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 10 
+
+TABLE III: Protected verification performance of MPLCE on face and iris datasets under different N and m. Each entry reports GAR@FAR (%).                                                                                                                                     
+
+> Dataset Backbone N= 100 N= 200 N= 300
+> m= 12 m= 16 m= 20 m= 12 m= 16 m= 20 m= 12 m= 16 m= 20
+> VGGFace2 IR50 94.35@1.01e-3 93.85@5.05e-4 93.40@5.05e-4 92.17@7.54e-4 91.57@6.28e-4 90.95@3.77e-4 91.27@6.13e-4 90.47@5.02e-4 89.82@3.34e-4 IR101 94.40@1.01e-3 93.85@1.01e-3 93.40@1.01e-3 92.55@6.28e-4 91.92@5.03e-4 91.40@5.03e-4 91.72@5.57e-4 91.12@3.34e-4 90.53@3.34e-4 FaceNet 93.40@7.58e-3 92.95@5.05e-3 92.50@5.05e-3 90.45@7.54e-3 90.22@6.66e-3 89.80@5.90e-3 89.43@5.63e-3 88.95@4.96e-3 88.57@4.74e-3 FaceScrub IR50 89.20@2.53e-3 87.95@1.52e-3 86.85@1.52e-3 85.70@1.01e-3 84.52@8.79e-4 83.47@6.28e-4 84.95@3.90e-4 83.63@2.79e-4 82.47@2.23e-4 IR101 89.95@1.01e-3 88.95@1.01e-3 87.95@1.01e-3 86.85@5.03e-4 85.78@2.51e-4 84.82@2.51e-4 85.63@3.90e-4 84.40@3.34e-4 83.30@2.23e-4 FaceNet 90.25@1.52e-2 89.60@1.46e-2 89.05@1.46e-2 87.20@7.16e-3 86.48@5.78e-3 85.90@5.03e-3 86.15@4.29e-3 85.53@3.79e-3 84.98@3.29e-3 Thousand ResNet18 94.00@5.05e-3 93.00@5.05e-3 92.00@5.05e-3 92.75@2.51e-3 92.25@2.51e-3 91.75@2.51e-3 91.17@1.67e-3 90.00@1.67e-3 89.17@1.67e-3 ResNet34 93.00@0.00 92.50@0.00 91.00@0.00 89.50@1.26e-3 88.25@1.26e-3 87.25@1.26e-3 88.67@2.23e-3 87.50@2.23e-3 86.50@1.67e-3 DeepIrisNet 94.00@0.00 93.00@0.00 92.00@0.00 89.50@5.03e-3 89.00@5.03e-3 88.00@3.77e-3 85.33@5.57e-4 84.17@5.57e-4 82.67@5.57e-4 Lamp ResNet18 99.50@0.00 99.50@0.00 99.50@0.00 99.12@6.28e-4 99.12@6.28e-4 98.75@0.00 99.42@0.00 99.33@0.00 99.33@0.00 ResNet34 99.50@0.00 99.50@0.00 99.25@0.00 98.75@0.00 98.25@0.00 98.00@0.00 99.17@0.00 99.00@0.00 98.83@0.00 DeepIrisNet 99.00@0.00 98.50@0.00 98.25@0.00 99.00@1.26e-3 99.00@1.26e-3 99.00@1.26e-3 99.17@0.00 99.17@0.00 99.00@0.00
+
+sion without a tunable threshold. Let T P denote the number of accepted genuine attempts, F N denote the number of rejected genuine attempts, F P denote the number of accepted impostor attempts, and T N denote the number of rejected impostor attempts. GAR and FAR are defined as 
+
+GAR = T P T P + F N , FAR = F P F P + T N . (23) Both GAR and FAR are reported as percentages throughout this paper. 
+
+B. Main Protected Verification Performance 
+
+We evaluate MPLCE on VGGFace2, FaceScrub, Thou-sand, and Lamp under enrolled identity numbers N ∈{100 , 200 , 300 } and numbers of permuted-label classifiers 
+
+m ∈ { 12 , 16 , 20 }. For VGGFace2 and FaceScrub, 40 images are randomly selected per identity, with 20 used for enrollment and 20 for queries. For Thousand, 8 of 10 selected images per identity are used for enrollment and 2 for queries, while Lamp uses 16 enrollment and 4 query images from 20 selected images per identity. Within each dataset and N setting, all backbone models use the same enrolled identities and sample splits. Table III reports the protected verification performance under different datasets, backbone models, N , and m. MPLCE achieves high GARs with low FARs on both face and iris modalities. On VGGFace2, GAR remains above 88% across all evaluated settings, and IR101 achieves a GAR of 90.53% at a FAR of 3.34 ×10 -4 % when N = 300 and m = 20 . On Lamp, ResNet18 achieves a GAR of 99.50% at a FAR of 0.00% for all evaluated values of m when N = 100 , and maintains 99.33% GAR at 0.00% FAR when N = 300 and m = 20 . Performance differences across datasets and backbones reflect the stability of the underlying identity predictions. VGGFace2 generally yields higher GAR than FaceScrub, while Lamp outperforms Thousand under comparable settings. Because a genuine query is accepted only when its predicted label sequence matches the enrolled sequence, reduced prediction stability directly lowers GAR. Both N and m affect protected verification performance. Increasing N generally increases the difficulty of identity classification and may reduce prediction stability. For example, on VGGFace2 with IR101 and m = 12 , GAR decreases from 94.40% to 91.72% as N increases from 100 to 300. Increasing m requires genuine samples to produce consistent predictions across more classifier positions. On FaceScrub with IR50 and N = 200 , GAR decreases from 85.70% to 83.47% as m increases from 12 to 20. At the same time, a larger m expands the effective candidate space and can reduce cross-identity template collisions. Therefore, m introduces a tradeoff between candidate-space expansion and genuine-template consistency. 
+
+C. Design Analysis of Multiple Classifiers and Label Permu-tation 
+
+MPLCE combines multiple classifiers with classifier-specific label permutations. To examine their distinct roles, we compare MPLCE with a single-classifier variant, denoted as Single, and a multi-classifier variant without label permutation, denoted as Multi w/o perm. The variants are evaluated in terms of protected verification performance and the effective offline candidate space of intermediate templates under the defined threat model. We quantify the candidate-space size as 
+
+BT = log 2 |ΩT |, (24) where ΩT denotes the candidate intermediate templates con-sidered in offline enumeration. This quantity is used as a candidate-space diagnostic rather than a complete crypto-graphic security level. Single uses one classifier trained with the original labels and therefore has N candidate label encodings. Multi w/o perm. uses m independently trained classifiers with the same original label mapping; consequently, each stable label sequence con-sists of repeated encodings of one original label, and its candi-date space also contains N sequences. In MPLCE, the concrete classifier-specific label permutations are not contained in the compromised protected records, so offline enumeration must JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 11 
+
+TABLE IV: Design analysis of multiple classifiers and label permutation under N = 200 . The multi-classifier variants use 
+
+m = 16 . Values in parentheses denote the absolute change in 
+
+BT and the relative changes in GAR and FAR with respect to the Single variant.                          
+
+> Variant BT(bits) GAR (%) FAR (%) Face: VGGFace2 + IR101
+> Single 7.64 95.79 2.11 ×10 -2
+> Multi w/o perm. 7.64 91.68 (-4.29%) 7.54 ×10 -4 (-96.43%) MPLCE 122.30 (+114.66) 91.92 (-4.04%) 5.03 ×10 -4 (-97.62%)
+> Iris: Lamp + ResNet18
+> Single 7.64 99.17 4.16 ×10 -3
+> Multi w/o perm. 7.64 98.50 (-0.68%) 0.00 (-100.00%) MPLCE 122.30 (+114.66) 99.12 (-0.05%) 6.28 ×10 -4 (-84.90%)
+
+consider N possible labels at each of the m classifier positions. Accordingly, 
+
+BT =
+
+
+
+log 2 N, Single ,
+
+log 2 N, Multi w/o perm. ,m log 2 N, MPLCE .
+
+(25) We evaluate the three variants using VGGFace2 with IR101 and Lamp with ResNet18. The enrolled identity number is fixed to N = 200 . Single uses one classifier, whereas both multi-classifier variants use m = 16 independently trained classifiers. All variants use the same enrolled identities and sample splits within each setting. Table IV reports BT , GAR, and FAR. Values in parentheses denote the absolute change in 
+
+BT and the relative changes in GAR and FAR with respect to Single. Table IV shows that Single achieves the highest GAR but also the highest FAR in both settings. Introducing multiple independently trained classifiers substantially reduces FAR by imposing consistency across multiple classifier positions, although GAR decreases moderately. However, without label permutation, the effective candidate space remains N , corre-sponding to BT = 7 .64 bits. MPLCE achieves verification performance close to Multi w/o perm., while increasing BT
+
+to 122.30 bits. These results show that multiple classifiers and label permutation play complementary roles: multiple classifiers impose a stricter verification condition, whereas label permutation prevents repeated original-label encodings and expands the effective offline candidate space from N to 
+
+N m.
+
+D. Parameter Sensitivity Analysis 
+
+We analyze the sensitivity of MPLCE to the number of permuted-label classifiers m and the number of samples per identity K used for classifier construction and template enroll-ment. Since the effect of N has been examined in the main performance evaluation, we fix N = 200 and vary m and 
+
+K. VGGFace2 with IR101 and Lamp with ResNet18 are used as representative face and iris settings, respectively. For each dataset, the enrolled identities and verification query samples are fixed across all values of K, while the K construction and enrollment samples are selected from a separate sample pool. TABLE V: Parameter sensitivity of MPLCE to m and K under 
+
+N = 200 . Each entry reports GAR@FAR (%).                                     
+
+> Face: VGGFace2 + IR101
+> mK= 10 K= 15 K= 20
+> 891.63@2.26 ×10 -3 92.53@1.63 ×10 -3 93.18@8.79 ×10 -4
+> 12 90.78@1.63 ×10 -3 91.75@1.38 ×10 -3 92.40@6.28 ×10 -4
+> 16 90.10@1.51 ×10 -3 91.13@8.79 ×10 -4 91.78@2.51 ×10 -4
+> 20 89.58@1.51 ×10 -3 90.63@7.54 ×10 -4 91.20@1.26 ×10 -4
+> Iris: Lamp + ResNet18
+> mK= 8 K= 12 K= 16
+> 894.38@1.26 ×10 -3 98.13@6.28 ×10 -4 99.13@0.00 12 93.63@1.26 ×10 -3 98.00@6.28 ×10 -4 99.13@0.00 16 93.13@1.26 ×10 -3 97.50@0.00 98.88@0.00 20 92.50@1.26 ×10 -3 97.38@0.00 98.63@0.00
+
+Therefore, varying K changes the number of samples used for classifier construction and template enrollment without changing the verification query set. The classifiers are trained separately for each value of K.Table V shows that increasing m generally reduces GAR because genuine samples must produce consistent predictions across more classifier positions, while simultaneously expand-ing the effective candidate space exponentially with m, since the space contains N m possible intermediate templates. In the face setting with K = 20 , GAR decreases from 93.18% to 91.20% as m increases from 8 to 20; in the iris setting with K = 16 , it decreases from 99.13% to 98.63%. By contrast, increasing K generally improves GAR by providing more samples for classifier training and more observations for selecting the enrolled intermediate template. With m = 16 ,GAR increases from 90.10% to 91.78% in the face setting as 
+
+K increases from 10 to 20, and from 93.13% to 98.88% in the iris setting as K increases from 8 to 16. FAR remains below 2.26 ×10 -3 % across all settings, with several iris configurations achieving 0.00%. These results indicate that m should balance candidate-space expansion against genuine matching perfor-mance, whereas a sufficiently large K improves intermediate-template consistency. 
+
+E. Comparison with Existing Methods 
+
+We compare MPLCE with representative BTP methods on commonly used face and iris benchmarks. Because existing studies use different datasets, splits, model configurations, and reporting protocols, not all results are obtained under fully controlled settings. We therefore report published re-sults under their original protocols and evaluate MPLCE using the benchmark setting adopted by BioDeepHash [26]. All available identities under each benchmark protocol and 
+
+m = 16 classifiers are used. For Lamp and Thousand, the previously described iris class definitions and query splits are retained, while the remaining images are used for classifier construction and template enrollment. For YTF, 40 images per identity are used for classifier construction and enrollment and 5 for queries. For cropped Yale-B, 10 images per identity are used for classifier construction and enrollment, with the remaining images used as queries following the illumination JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 12 
+
+TABLE VI: Comparison with representative face and iris BTP methods on benchmark datasets.                                                         
+
+> Iris Face Method Lamp Thousand E/R/H Method YTF Yale-B E/R/H
+> Zhao et al. [50] 97.01@0.01 88.95@0.01 ✓/✓/×Pandey et al. [27] –96.74@0.00 ✓/×/✓
+> Lee et al. [7] –84.68@0.01 ✓/✓/×Chen et al. [28] –99.16@1.00 ×/×/✓
+> Zhao et al. [31] 79.07@0.01 –✓/✓/×Jang et al. [51] 97.04@0.10 –✓/✓/×
+> Othman et al. [52] 79.95@0.01 78.50@0.01 ✓/×/×Pinto et al. [53] 84.96@0.10 –✓/✓/×
+> BioDeepHash [26] 97.17@0.00 92.46@0.00 ✓/✓/✓BioDeepHash [26] 95.88@2.02 ×10 -4 99.31@0.00 ✓/✓/✓
+> MPLCE (Ours) 99.10@0.00 93.23@5.10 ×10 -3 ✓/✓/✓MPLCE (Ours) 98.61@5.51 ×10 -5 98.92@0.00 ✓/✓/✓
+
+Entries are GAR@FAR values in percent. E/R/H indicate ECC-free, revocable, and cryptographic-hash-based template storage, respectively. “–” indicates that the corresponding result was not reported. 
+
+normalization procedure of BioDeepHash. Table VI reports GAR@FAR and several template protection properties. MPLCE achieves competitive protected verification perfor-mance across the evaluated benchmarks. It obtains 99.10% GAR at 0.00% FAR on Lamp, exceeding the BioDeepHash result under the same FAR, and achieves 98.61% GAR on YTF with a substantially low FAR. On Thousand, MPLCE obtains slightly higher GAR than BioDeepHash, although the reported FARs differ. On Yale-B, MPLCE achieves 98.92% GAR at 0.00% FAR, slightly below the 99.31% reported by BioDeepHash. These results demonstrate competitive perfor-mance across both face and iris benchmarks, while differences in protocols should be considered when comparing methods reported under their original settings. From a security perspective, MPLCE avoids retaining similarity-preserving protected representations and does not rely on error correction codes or biometric-dependent helper data. By storing only cryptographic hash outputs and applying application-specific XOR randomization, it reduces exposure to similarity-based and helper-data-related attacks while sup-porting revocability and unlinkability across applications. VI. C ONCLUSION 
+
+In this paper, we proposed MPLCE, a biometric tem-plate protection framework for secure biometric verification. MPLCE uses multiple permuted-label classifiers to convert biometric samples into identity-level predicted labels and constructs intermediate templates from the resulting classi-fication outputs. The intermediate templates are then pro-tected by application-specific XOR randomization and cryp-tographic hashing, while their consistency across genuine samples enables exact-match verification. By using identity classification as the basis for intermediate template generation, MPLCE provides a modality-agnostic template construction principle at the protection level without relying on ECC or biometric-dependent helper data. Under the defined full-disclosure model, the database stores only protected templates and the application-specific XOR string, without retaining in-termediate templates, hash inputs, or biometric representations. Security analyses and representative attack evaluations support the irreversibility, revocability, and unlinkability of MPLCE under the considered threat model. Experiments on face and iris datasets, together with analyses of design variants and pa-rameter sensitivity, demonstrate practical protected verification performance with low false acceptance rates and characterize the effects of the main design parameters. Future work will investigate the integration of AI model security techniques to strengthen the classifier stage under classifier-side or system-level compromise scenarios, as well as incremental learning techniques for scalable enrollment of new users while pre-serving the stability of existing users’ intermediate templates. REFERENCES [1] A. K. Jain, A. Ross, and S. Prabhakar, “An introduction to biometric recognition,” IEEE Transactions on Circuits and Systems for Video Technology , vol. 14, no. 1, pp. 4–20, Jan. 2004. [2] A. K. Jain, K. Nandakumar, and A. Nagar, “Biometric template security,” 
+
+EURASIP Journal on Advances in Signal Processing , vol. 2008, p. 579416, 2008. [3] Information Security, Cybersecurity and Privacy Protection—Biometric Information Protection , ISO/IEC Std. 24745, Feb. 2022. [4] V. K. Hahn and S. Marcel, “Biometric template protection for neural-network-based face recognition systems: A survey of methods and evaluation techniques,” IEEE Transactions on Information Forensics and Security , vol. 18, pp. 639–666, 2023. [5] C. Rathgeb, F. Breitinger, and C. Busch, “Alignment-free cancelable iris biometric templates based on adaptive bloom filters,” in Proceedings of the International Conference on Biometrics (ICB) , 2013, pp. 1–8. [6] Z. Jin, J. Y. Hwang, Y.-L. Lai, S. Kim, and A. B. J. Teoh, “Ranking-based locality sensitive hashing-enabled cancelable biometrics: Index-of-max hashing,” IEEE Transactions on Information Forensics and Security , vol. 13, no. 2, pp. 393–407, 2018. [7] M. J. Lee, Z. Jin, S.-N. Liang, and M. Tistarelli, “Alignment-robust cancelable biometric scheme for iris verification,” IEEE Transactions on Information Forensics and Security , vol. 17, pp. 3449–3464, 2022. [8] J. Hermans, B. Mennink, and R. Peeters, “When a bloom filter is a doom filter: Security assessment of a novel iris biometric template protection system,” in Proceedings of the International Conference of the Biometrics Special Interest Group (BIOSIG) , 2014, pp. 1–6. [9] J. Bringer, C. Morel, and C. Rathgeb, “Security analysis of bloom filter-based iris biometric template protection,” in Proceedings of the International Conference on Biometrics (ICB) , 2015, pp. 527–534. [10] Y.-L. Lai, Z. Jin, K.-S. Wong, and M. Tistarelli, “Efficient known-sample attack for distance-preserving hashing biometric template protection schemes,” IEEE Transactions on Information Forensics and Security ,vol. 16, pp. 3170–3185, 2021. [11] X. Dong, Z. Jin, and A. B. J. Teoh, “A genetic algorithm enabled similarity-based attack on cancellable biometrics,” in Proceedings of the IEEE International Conference on Biometrics Theory, Applications and Systems (BTAS) , 2019, pp. 1–8. [12] N. Fan, D. Zhao, and H. Liao, “Security analysis of alignment-robust cancelable biometric scheme for iris verification,” in Proceedings of the International Conference on Information and Communications Security (ICICS) , 2023, pp. 267–283. [13] A. Juels and M. Wattenberg, “A fuzzy commitment scheme,” in Pro-ceedings of the ACM Conference on Computer and Communications Security (CCS) , 1999, pp. 28–36. [14] A. Juels and M. Sudan, “A fuzzy vault scheme,” Designs, Codes and Cryptography , vol. 38, pp. 237–257, 2006. [15] Y. Dodis, L. Reyzin, and A. Smith, “Fuzzy extractors: How to generate strong keys from biometrics and other noisy data,” in Proceedings of the International Conference on the Theory and Applications of Cryptographic Techniques (EUROCRYPT) , 2004, pp. 523–540. JOURNAL OF L ATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020 13 
+
+[16] E.-C. Chang, R. Shen, and F. W. Teo, “Finding the original point set hidden among chaff,” in Proceedings of the ACM Symposium on Information, Computer and Communications Security (ASIACCS) , 2006, pp. 182–188. [17] W. J. Scheirer and T. E. Boult, “Cracking fuzzy vaults and biometric encryption,” in Proceedings of the Biometrics Symposium , 2007, pp. 1–6. [18] H. T. Poon and A. Miri, “A collusion attack on the fuzzy vault scheme,” 
+
+The ISC International Journal of Information Security , vol. 1, no. 1, pp. 27–34, 2009. [19] T. Ignatenko and F. M. J. Willems, “Information leakage in fuzzy commitment schemes,” IEEE Transactions on Information Forensics and Security , vol. 5, no. 2, pp. 337–348, 2010. [20] K. Simoens, P. Tuyls, and B. Preneel, “Privacy weaknesses in biometric sketches,” in Proceedings of the IEEE Symposium on Security and Privacy , 2009, pp. 188–203. [21] M. Blanton and M. Aliasgari, “Analysis of reusability of secure sketches and fuzzy extractors,” IEEE Transactions on Information Forensics and Security , vol. 8, no. 9, pp. 1433–1445, 2013. [22] C. Rathgeb and A. Uhl, “Statistical attack against iris-biometric fuzzy commitment schemes,” in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition Workshops , 2011, pp. 23–30. [23] H. Otroshi Shahreza, P. Melzi, D. Osorio-Roig, C. Rathgeb, C. Busch, S. Marcel, R. Tolosana, and R. Vera-Rodriguez, “Benchmarking of cancelable biometrics for deep templates,” Journal on Image and Video Processing , vol. 2026, no. 1, p. 4, 2026. [24] J. Cui and A. B. J. Teoh, “Deep index-of-maximum hashing for face template protection,” in Proceedings of the International Conference on Computer and Communication Systems (ICCCS) , 2020, pp. 413–418. [25] G. Mai, K. Cao, X. Lan, and P. C. Yuen, “SecureFace: Face template protection,” IEEE Transactions on Information Forensics and Security ,vol. 16, pp. 262–277, 2021. [26] B. Song, D. Zhao, J. Yan, H. Li, and H. Jiang, “BioDeepHash: Generating consistent templates for secure biometric recognition,” IEEE Transactions on Dependable and Secure Computing , 2026. [27] R. Kumar Pandey, Y. Zhou, B. Urala Kota, and V. Govindaraju, “Deep secure encoding for face template protection,” in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition Workshops , 2016, pp. 9–15. [28] L. Chen, G. Zhao, J. Zhou, A. T. S. Ho, and L.-M. Cheng, “Face template protection using deep LDPC codes learning,” IET Biometrics , vol. 8, no. 3, pp. 190–197, 2019. [29] A. Kumar Jindal, S. Chalamala, and S. Kumar Jami, “Face template protection using deep convolutional neural network,” in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition Workshops , 2018, pp. 462–470. [30] A. B. J. Teoh and C. T. Yuang, “Cancelable biometrics realization with multispace random projections,” IEEE Transactions on Systems, Man, and Cybernetics, Part B (Cybernetics) , vol. 37, no. 5, pp. 1096–1106, 2007. [31] D. Zhao, S. Fang, J. Xiang, J. Tian, and S. Xiong, “Iris template pro-tection based on local ranking,” Security and Communication Networks ,vol. 2018, pp. 1–9, 2018. [32] C. Gao, K. Zhang, W. Wang, Z. Cao, L. Pang, E. Liu, and H. Zhao, “Pro-tected face templates generation based on multiple partial walsh trans-formations and SimHash,” IEEE Transactions on Information Forensics and Security , vol. 19, pp. 4100–4113, 2024. [33] S. Song, Y. Yang, M. Yu, Y. Liao, W. Guo, J. Li, and S. Guo, “Cancelable binary biometric template generation scheme based on partial walsh transformation and MinHash algorithm,” Applied Soft Computing , vol. 175, p. 113049, 2025. [34] C. Rathgeb, J. Merkle, J. Scholz, B. Tams, and V. Nesterowicz, “Deep face fuzzy vault: Implementation and performance,” Computers &Security , vol. 113, p. 102539, 2022. [35] K.-C. Lin and Y.-M. Chen, “A high-security-level iris cryptosystem based on fuzzy commitment and soft reliability extraction,” IEEE Transactions on Dependable and Secure Computing , vol. 21, no. 4, pp. 1770–1784, 2024. [36] X. Dong, H. Zhang, Y. L. Lai, Z. Jin, J. Huang, W. Kang, and A. B. J. Teoh, “WiFaKey: Generating cryptographic keys from face in the wild,” 
+
+IEEE Transactions on Instrumentation and Measurement , vol. 73, pp. 1–16, 2024. [37] V. Fohr and C. Rathgeb, “Deep multi-biometric fuzzy commitment scheme: Fusion methods and performance,” EURASIP Journal on In-formation Security , vol. 2025, no. 1, p. 20, 2025. [38] Information Technology—Performance Testing of Biometric Template Protection Schemes , ISO/IEC Std. 30136, Mar. 2018. [39] K. Nandakumar and A. K. Jain, “Biometric template protection: Bridg-ing the performance gap between theory and practice,” IEEE Signal Processing Magazine , vol. 32, no. 5, pp. 88–100, 2015. [40] M. Gomez-Barrero, J. Galbally, C. Rathgeb, and C. Busch, “General framework to evaluate unlinkability in biometric template protection systems,” IEEE Transactions on Information Forensics and Security ,vol. 13, no. 6, pp. 1406–1420, 2018. [41] Q. Cao, L. Shen, W. Xie, O. M. Parkhi, and A. Zisserman, “Vggface2: A dataset for recognising faces across pose and age,” in 2018 13th IEEE international conference on automatic face & gesture recognition (FG 2018) . IEEE, 2018, pp. 67–74. [42] H.-W. Ng and S. Winkler, “A data-driven approach to cleaning large face datasets,” in 2014 IEEE international conference on image processing (ICIP) . IEEE, 2014, pp. 343–347. [43] L. Wolf, T. Hassner, and I. Maoz, “Face recognition in unconstrained videos with matched background similarity,” in Proceedings of the IEEE conference on computer vision and pattern recognition (CVPR) . IEEE, 2011, pp. 529–534. [44] A. S. Georghiades, P. N. Belhumeur, and D. J. Kriegman, “From few to many: Illumination cone models for face recognition under variable lighting and pose,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 23, no. 6, pp. 643–660, 2001. [45] M. Kim, A. K. Jain, and X. Liu, “Adaface: Quality adaptive margin for face recognition,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , 2022, pp. 18 750–18 759. [46] F. Schroff, D. Kalenichenko, and J. Philbin, “Facenet: A unified embed-ding for face recognition and clustering,” in Proceedings of the IEEE conference on computer vision and pattern recognition , 2015, pp. 815– 823. [47] K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual learning for image recognition,” in Proceedings of the IEEE conference on computer vision and pattern recognition , 2016, pp. 770–778. [48] A. Gangwar and A. Joshi, “Deepirisnet: Deep iris representation with applications in iris recognition and cross-sensor iris recognition,” in 2016 IEEE international conference on image processing (ICIP) . IEEE, 2016, pp. 2301–2305. [49] Y. Wen, K. Zhang, Z. Li, and Y. Qiao, “A discriminative feature learning approach for deep face recognition,” in European conference on computer vision . Springer, 2016, pp. 499–515. [50] D. Zhao, H. Liao, S. Liao, H. Li, and J. Xiang, “Cancelable iris biometrics based on transformation network,” in Proceedings of the IEEE International Conference on Software Quality, Reliability, and Security (QRS) , 2023, pp. 507–516. [51] Y. K. Jang and N. I. Cho, “Deep face image retrieval for cancelable biometric authentication,” in Proceedings of the IEEE International Conference on Advanced Video and Signal Based Surveillance (AVSS) ,2019, pp. 1–8. [52] N. Othman, B. Dorizzi, and S. Garcia-Salicetti, “OSIRIS: An open source iris recognition software,” Pattern Recognition Letters , vol. 82, pp. 124–131, 2016. [53] J. R. Pinto, M. V. Correia, and J. S. Cardoso, “Secure triplet loss: Achieving cancelability and non-linkability in end-to-end deep biomet-rics,” IEEE Transactions on Biometrics, Behavior, and Identity Science ,vol. 3, no. 2, pp. 180–189, Apr. 2021.
