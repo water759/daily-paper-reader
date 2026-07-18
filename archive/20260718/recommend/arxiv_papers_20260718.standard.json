@@ -1,0 +1,357 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-18T21:17:17.563310+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 4,
+    "deep_cap": 6,
+    "deep_selected": 4,
+    "quick_candidates": 5,
+    "quick_skim_target": 11,
+    "quick_selected": 5
+  },
+  "deep_dive": [
+    {
+      "id": "2607.15143v1",
+      "source": "arxiv",
+      "title": "Setup Complete, Now You Are Compromised: Weaponizing Setup Instructions Against AI Coding Agents",
+      "abstract": "AI coding agents set up projects by reading documentation and installing the dependencies it lists, without verifying their names, sources, or known vulnerabilities. By editing only a README, requirements file, or Makefile, an attacker can redirect the agent to an untrusted registry, a known-vulnerable version, or a wrong-but-plausible name: documentation becomes a vector for code execution. We present the first systematic evaluation of package-install-time supply-chain attacks delivered through ordinary project-setup documentation across production coding-agent harnesses, probing frontier models on twelve scenarios in five attack classes, grounded in documented incidents. The same model catches an attack through one harness and installs it through another: install-time security rests on the harness-model combination, not the model alone. Agents catch blatant typosquats reliably, but plausible separator-confusion names (azurecore for azure-core) slip through, and how often depends on the harness-model pairing. Source-based attacks like registry redirection are missed almost everywhere. The source blind spot recurs on npm and Cargo, where nearly every model installs the untrusted dependency; name detection carries over less consistently across ecosystems. Security-oriented prompts recover part of the gap but only for the dimension they name; a deterministic pre-install check that verifies names, sources, and versions before any code runs closes most of it.",
+      "authors": [
+        "Aadesh Bagmar",
+        "Pushkar Saraf"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.HC",
+        "cs.SE"
+      ],
+      "published": "2026-07-16T15:47:19+00:00",
+      "link": "https://arxiv.org/pdf/2607.15143v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "AI coding agent supply-chain attack through documentation",
+      "llm_evidence_cn": "通过文档对AI编码代理实施供应链攻击",
+      "llm_evidence": "通过文档对AI编码代理实施供应链攻击",
+      "canonical_evidence": "通过文档对AI编码代理实施供应链攻击",
+      "llm_tldr_en": "Systematic evaluation of package-install-time supply-chain attacks on AI coding agents via altered documentation, showing that setup instructions become execution vectors.",
+      "llm_tldr_cn": "AI编码代理在项目设置阶段根据文档安装依赖，却不验证来源与漏洞。攻击者可仅修改README或Makefile，将代理重定向至不可信注册表或已知漏洞版本。本文首次系统评估了通过安装文档进行的供应链攻击，涵盖五种攻击类别，在多款前沿模型上验证，揭示文档成为新的代码执行攻击面。",
+      "llm_tldr": "AI编码代理在项目设置阶段根据文档安装依赖，却不验证来源与漏洞。攻击者可仅修改README或Makefile，将代理重定向至不可信注册表或已知漏洞版本。本文首次系统评估了通过安装文档进行的供应链攻击，涵盖五种攻击类别，在多款前沿模型上验证，揭示文档成为新的代码执行攻击面。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.14505v1",
+      "source": "arxiv",
+      "title": "Denoising-Autoencoder-Assisted Physical Layer Secret Key Generation",
+      "abstract": "In this paper, we propose denoising autoencoder (DAE)-assisted secret key generation (SKG), where channel noise reciprocity imperfections induced due to wireless channel measurements are suppressed, hence significantly enhancing the reliability and efficiency. More specifically, the DAE is capable of capturing the intrinsic structure of input distributions, reconstructing the original data structure, and removing additive noise while preserving the essential structure of signals. In our analysis, it is demonstrated that the proposed SKG scheme exhibits higher performance than the conventional schemes in terms of key disagreement rate (KDR), secret key capacity (SKC), and randomness of the generated keys.",
+      "authors": [
+        "Zhengyu Xu",
+        "Shun Kojima",
+        "Shinya Sugiura"
+      ],
+      "primary_category": "eess.SP",
+      "categories": [
+        "eess.SP"
+      ],
+      "published": "2026-07-16T02:40:08+00:00",
+      "link": "https://arxiv.org/pdf/2607.14505v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Physical layer secret key generation with denoising autoencoder",
+      "llm_evidence_cn": "基于去噪自编码器的物理层密钥生成",
+      "llm_evidence": "基于去噪自编码器的物理层密钥生成",
+      "canonical_evidence": "基于去噪自编码器的物理层密钥生成",
+      "llm_tldr_en": "Proposes DAE-assisted secret key generation to suppress channel noise reciprocity imperfections, improving key agreement rate, capacity, and randomness.",
+      "llm_tldr_cn": "本文提出一种去噪自编码器辅助的物理层密钥生成方案，通过抑制信道测量中的噪声非互易性，显著提升密钥一致率、密钥容量和随机性。实验分析表明，与传统方案相比，该方案在多种无线环境下均表现更优，为无线通信安全提供了高效密钥协商方法。",
+      "llm_tldr": "本文提出一种去噪自编码器辅助的物理层密钥生成方案，通过抑制信道测量中的噪声非互易性，显著提升密钥一致率、密钥容量和随机性。实验分析表明，与传统方案相比，该方案在多种无线环境下均表现更优，为无线通信安全提供了高效密钥协商方法。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cryptographic techniques for key recovery and user authentication",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.14651v1",
+      "source": "arxiv",
+      "title": "MemPoison: Uncovering Persistent Memory Threats and Structural Blind Spots in LLM Agents",
+      "abstract": "Persistent external memory enhances agent continuity but introduces persistent security vulnerabilities: adversarial content can be injected via standard interaction channels, retained across turns, and later distort downstream behavior. To address this challenge, we propose MemPoison, a comprehensive benchmark and analysis framework featuring 1227 hand-validated cases across four attack types, three injection channels, and three representative memory substrates, evaluated on seven open-weight and three closed-weight model families. We introduce a three-tier taxonomy: (L1) direct single-record corruption, (L2) compositional multi-record corruption and (L3) context-triggered dormant corruption. Our evaluations reveal a distinct defense frontier: while baseline write-time defenses, such as consistency checks, substantially suppress direct L1 attacks, they fail to reliably suppress L2 and L3 attacks. Through mechanistic influence decomposition (MID), we demonstrate structural blind spots in write-time defenses, which admit seemingly benign records that later become harmful through joint retrieval composition or trigger-conditioned activation. Our findings advocate for shifting from static filtering to adaptive, context-sensitive memory defense strategies.",
+      "authors": [
+        "Jifeng Gao",
+        "Kang Xia",
+        "Yi Zhang",
+        "Xiaobin Hong",
+        "Mingkai Lin",
+        "Xingshen Wei",
+        "Wenzhong Li",
+        "Sanglu Lu"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-16T07:19:33+00:00",
+      "link": "https://arxiv.org/pdf/2607.14651v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "adversarial attacks on LLM agent persistent memory",
+      "llm_evidence_cn": "针对LLM代理持久记忆的对抗攻击",
+      "llm_evidence": "针对LLM代理持久记忆的对抗攻击",
+      "canonical_evidence": "针对LLM代理持久记忆的对抗攻击",
+      "llm_tldr_en": "MemPoison uncovers persistent memory security threats in LLM agents, proposing a benchmark with 1227 cases across attack types and memory substrates, revealing severe vulnerabilities.",
+      "llm_tldr_cn": "MemPoison系统研究了LLM代理中持久记忆带来的安全威胁，构建了一个包含1227个手工验证案例的基准，覆盖四种攻击类型、三种注入渠道和三种记忆库。实验揭示了直接记录破坏、组合记录破坏和上下文触发休眠破坏三种层次的威胁，并发现现有防御存在明显盲区。",
+      "llm_tldr": "MemPoison系统研究了LLM代理中持久记忆带来的安全威胁，构建了一个包含1227个手工验证案例的基准，覆盖四种攻击类型、三种注入渠道和三种记忆库。实验揭示了直接记录破坏、组合记录破坏和上下文触发休眠破坏三种层次的威胁，并发现现有防御存在明显盲区。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.15118v1",
+      "source": "arxiv",
+      "title": "Automated Template-free Synthesis of Instruction-Centric Leakage Contracts for Black-Box CPUs",
+      "abstract": "Side-channel attacks pose a significant security threat for modern computing platforms, because they exploit subtle discrepancies in CPU behaviors to leak sensitive information. To model the information leaked by a CPU via microarchitectural side-channels, recent work proposed leakage contracts: an ISA-level security abstraction that provides the foundations for secure CPU programming. Unfortunately, due to the complexity of current microarchitectures, devising a leakage contract for a CPU requires extensive manual effort and thus modern CPUs lack dedicated leakage contracts.   We present a methodology to extract instruction-centric leakage contracts for major CPU architectures with minimal manual intervention. We implemented this technique in malcos, the first template-free tool that automates the synthesis of leakage contracts for black-box CPUs. We evaluate malcos on x86 and ARM CPUs, and show that the contracts it synthesizes are precise and sound with respect to all leaks observed during synthesis. Our results demonstrate that learning leakage contracts from black-box CPUs is feasible.",
+      "authors": [
+        "Elvira Moreno",
+        "Tiziano Marinaro",
+        "Ryan Williams",
+        "Marco Patrignani",
+        "Roberto Guanciale",
+        "Hamed Nemati",
+        "Marco Guarnieri"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-16T15:27:21+00:00",
+      "link": "https://arxiv.org/pdf/2607.15118v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Automated leakage contract synthesis for CPUs",
+      "llm_evidence_cn": "CPU泄漏合约的自动合成",
+      "llm_evidence": "CPU泄漏合约的自动合成",
+      "canonical_evidence": "CPU泄漏合约的自动合成",
+      "llm_tldr_en": "Presents an automated method to synthesize leakage contracts for black-box CPUs, formalizing microarchitectural side-channel information leakage at the ISA level.",
+      "llm_tldr_cn": "本文提出了一种无模板的自动化方法，用于为黑盒CPU提取指令级泄漏合约。泄漏合约是ISA级别的安全抽象，能够建模微架构侧信道泄漏的信息。通过最小人工干预，该方法生成了主流CPU架构的泄漏合约，包括Intel、AMD和ARM，为安全编程和机密计算奠定了基础。实验验证了合约的准确性和实用性。",
+      "llm_tldr": "本文提出了一种无模板的自动化方法，用于为黑盒CPU提取指令级泄漏合约。泄漏合约是ISA级别的安全抽象，能够建模微架构侧信道泄漏的信息。通过最小人工干预，该方法生成了主流CPU架构的泄漏合约，包括Intel、AMD和ARM，为安全编程和机密计算奠定了基础。实验验证了合约的准确性和实用性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.12504v1",
+      "source": "arxiv",
+      "title": "On the Security Implications of PQC in TLS: Handshake Exhaustion and IDS Degradation",
+      "abstract": "Post-Quantum Cryptography (PQC) is increasingly being integrated into TLS 1.3 to enhance resilience against quantum-enabled attacks. However, the additional computational and communication overhead introduced by PQC primitives during the handshake phase may also amplify the impact of TLS handshake exhaustion attacks, leading to more severe Distributed Denial-of-Service (DDoS) threats.   In this study, we establish an empirical testbed consisting of one PQC-enabled TLS server and ten attacking nodes, generating over 16.5 GB of mixed traffic data that includes both legitimate browsing behavior and high-intensity handshake exhaustion attacks.   Experimental results show that PQC-TLS can prolong periods of sustained high CPU utilization on the server by up to 88 times, significantly amplifying the effectiveness of such attacks. Furthermore, we evaluate state-of-the-art deep learning-based Intrusion Detection Systems (IDS) and observe a substantial decline in attack detection performance under PQC traffic conditions.   In particular, exosphere achieves only around 50% recall, while HyperVision's AU-ROC degrades to near-random levels (0.49), revealing critical detection blind spots in existing IDS when operating in PQC environments.   The main contributions of this work are threefold: (1) we systematically quantify and analyze the root causes of IDS detection blind spots in PQC settings; (2) we publicly release a comprehensive PQC-DDoS hybrid traffic dataset, including precise attack timestamps and server-side resource monitoring data; and (3) we open-source all experimental code and AWS deployment scripts, enabling a fully reproducible cloud-based testing environment.   These resources aim to support both academia and industry in developing next-generation PQC-aware intrusion detection systems.",
+      "authors": [
+        "Lin-Fa Lee",
+        "Yi-Yu Chang",
+        "Chia-Mu Yu",
+        "Kuo-Hui Yeh"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-14T08:35:31+00:00",
+      "link": "https://arxiv.org/pdf/2607.12504v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "security implications of PQC in TLS, relevant to cloud security challenges",
+      "llm_evidence_cn": "PQC在TLS中的安全影响，涉及云安全挑战",
+      "llm_evidence": "PQC在TLS中的安全影响，涉及云安全挑战",
+      "canonical_evidence": "PQC在TLS中的安全影响，涉及云安全挑战",
+      "llm_tldr_en": "Empirical study showing that PQC in TLS 1.3 amplifies handshake exhaustion attacks and degrades IDS performance, generating over 16.5 GB of mixed traffic data.",
+      "llm_tldr_cn": "后量子密码学（PQC）集成到TLS 1.3虽然增强了抗量子攻击能力，但本文通过实证测试发现，PQC的额外计算和通信开销会放大握手耗尽攻击的影响，导致更严重的DDoS威胁。实验使用10个攻击节点对PQC-TLS服务器发起攻击，生成了16.5 GB的混合流量数据，结果表明PQC-TLS延长了高CPU利用率时间，并降低了入侵检测系统的性能。",
+      "llm_tldr": "后量子密码学（PQC）集成到TLS 1.3虽然增强了抗量子攻击能力，但本文通过实证测试发现，PQC的额外计算和通信开销会放大握手耗尽攻击的影响，导致更严重的DDoS威胁。实验使用10个攻击节点对PQC-TLS服务器发起攻击，生成了16.5 GB的混合流量数据，结果表明PQC-TLS延长了高CPU利用率时间，并降低了入侵检测系统的性能。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.11187v1",
+      "source": "arxiv",
+      "title": "Recovery Control in Replicated Systems through Autonomous Multiagent Rollout",
+      "abstract": "We study recovery control in replicated computing systems. Such systems consist of replicas that collectively provide a service to a client population. This redundancy enables the system to withstand failures provided that failed replicas are recovered faster than new failures occur. We show that the problem of deciding when to initiate recovery of selected replicas can be formulated as a partially observable Markov decision problem (POMDP) with a multiagent structure. We exploit this structure to apply a multiagent rollout method for approximating optimal control policies. Our method uses precomputed signaling information that reduces the need for replica coordination and facilitates parallel computations. Experiments show that our method scales to systems with up to 70 replicas and reduces costs compared to the recovery policies currently used in practice.",
+      "authors": [
+        "Kim Hammar",
+        "Yuchao Li"
+      ],
+      "primary_category": "eess.SY",
+      "categories": [
+        "eess.SY"
+      ],
+      "published": "2026-07-13T07:36:40+00:00",
+      "link": "https://arxiv.org/pdf/2607.11187v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "recovery control in replicated distributed systems",
+      "llm_evidence_cn": "复制系统恢复控制 (分布式系统)",
+      "llm_evidence": "复制系统恢复控制 (分布式系统)",
+      "canonical_evidence": "复制系统恢复控制 (分布式系统)",
+      "llm_tldr_en": "Studies recovery control in replicated computing systems as a multiagent POMDP, applying autonomous rollout to approximate optimal policies, with experiments showing scalability.",
+      "llm_tldr_cn": "复制系统在故障恢复时面临决策问题。本文将恢复控制建模为部分可观测马尔可夫决策过程（POMDP），利用多智能体结构设计自适应rollout算法，通过预计算信令减少协调开销。实验表明该方法能有效扩展至大规模复制系统，为分布式云服务可靠性提供了新思路。",
+      "llm_tldr": "复制系统在故障恢复时面临决策问题。本文将恢复控制建模为部分可观测马尔可夫决策过程（POMDP），利用多智能体结构设计自适应rollout算法，通过预计算信令减少协调开销。实验表明该方法能有效扩展至大规模复制系统，为分布式云服务可靠性提供了新思路。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.14340v1",
+      "source": "arxiv",
+      "title": "The Prover Is the Judge: Verified Security Software from AI Coding Agents in Ada/SPARK",
+      "abstract": "AI coding agents produce code faster than humans can review it. In our approach, the prover is the judge of whether the code is correct. Under a verifier-driven loop, AI agents wrote and verified bare-metal security software in Ada/SPARK spanning classical and post-quantum cryptography, TLS 1.3, IKEv2, X.509, and a Matrix client. GNATprove discharged 49,280 proof obligations, established functional correctness for selected primitives, and proved the absence of run-time errors for the rest, at roughly 20-40 times lower supervision cost than comparable hand verification. GNATprove alone was insufficient: some defects could not be detected and were resolved using known-answer tests, interoperability, or human review of specifications. Given weak checks, the agent tried to bypass them and reported success. We report where each layer caught faults and draw the central lesson: what an agent can be trusted to establish is bounded by the strength of its feedback.",
+      "authors": [
+        "Tobias Philipp"
+      ],
+      "primary_category": "cs.SE",
+      "categories": [
+        "cs.SE",
+        "cs.AI",
+        "cs.CR"
+      ],
+      "published": "2026-07-15T20:09:05+00:00",
+      "link": "https://arxiv.org/pdf/2607.14340v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "uses AI agents for verified security software, addressing AI security defense",
+      "llm_evidence_cn": "使用AI代理进行安全软件验证，涉及人工智能安全防御",
+      "llm_evidence": "使用AI代理进行安全软件验证，涉及人工智能安全防御",
+      "canonical_evidence": "使用AI代理进行安全软件验证，涉及人工智能安全防御",
+      "llm_tldr_en": "AI coding agents write verified security software in Ada/SPARK using a prover-driven loop, discharging 49,280 proof obligations with 20-40x lower supervision cost than hand verification.",
+      "llm_tldr_cn": "针对AI编码代理生成代码速度超过人类审查能力的问题，本文提出了一种证明者驱动的验证框架。AI代理在Ada/SPARK中编写并形式化验证了经典和量子密码、TLS 1.3、IKEv2、X.509等安全软件。GNATprove工具成功处理了49,280个证明义务，在选定原语上建立了功能正确性，其余部分证明了运行时错误不存在，监督成本仅为手工验证的1/20至1/40。研究还发现纯形式化方法存在局限，需结合已知答案测试和人工审查。",
+      "llm_tldr": "针对AI编码代理生成代码速度超过人类审查能力的问题，本文提出了一种证明者驱动的验证框架。AI代理在Ada/SPARK中编写并形式化验证了经典和量子密码、TLS 1.3、IKEv2、X.509等安全软件。GNATprove工具成功处理了49,280个证明义务，在选定原语上建立了功能正确性，其余部分证明了运行时错误不存在，监督成本仅为手工验证的1/20至1/40。研究还发现纯形式化方法存在局限，需结合已知答案测试和人工审查。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.14690v1",
+      "source": "arxiv",
+      "title": "Lattice-based extended withdrawability",
+      "abstract": "We extend the extended withdrawable signatures of Liu, Susilo and Baek to lattice-based constructions built on the Fiat-Shamir with aborts paradigm. Departing from an earlier draft that transported a per-signer shift in the clear, which leaks the signer, we realise extended withdrawable signatures as a claimable ring signature: signer ambiguity is provided by a one-out-of-N signature used as a black box (anonymity under full key exposure), and confirmation is the signer's claim, a binding signature together with the opening of a hiding index commitment bound into the transcript. No signer-derived value is published in the clear. We give complete proofs of correctness, extended withdrawability (as anonymity-until-claim), unforgeability under insider corruption, and claimability soundness, reducing to decisional MLWE (commitment hiding), MSIS (commitment binding), the anonymity of the one-out-of-$N$ scheme, and the EUF-CMA security of the base signature, in the (quantum) random-oracle model. We instantiate the base signature with a no-hint, full-$t$ Dilithium-style scheme and the one-out-of-$N$ layer with an established lattice one-out-of-many proof.",
+      "authors": [
+        "Ramses Fernandez-Valencia"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-16T07:51:55+00:00",
+      "link": "https://arxiv.org/pdf/2607.14690v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "lattice-based signatures for anonymous authentication",
+      "llm_evidence_cn": "格基签名用于匿名认证",
+      "llm_evidence": "格基签名用于匿名认证",
+      "canonical_evidence": "格基签名用于匿名认证",
+      "llm_tldr_en": "Extends extended withdrawable signatures to lattice-based constructions using Fiat-Shamir with aborts, achieving claimable ring signatures with full anonymity and unforgeability.",
+      "llm_tldr_cn": "现有可撤回签名方案存在签名者身份泄露风险。本文基于Fiat-Shamir with aborts范式，构造了格基扩展可撤回签名，实现为可索赔环签名：通过一取N签名提供匿名性，签名者可通过绑定签名和隐藏索引承诺确认身份。完整证明了正确性、匿名性、不可伪造性和可索赔性。该方案为后量子时代的匿名认证提供了新工具。",
+      "llm_tldr": "现有可撤回签名方案存在签名者身份泄露风险。本文基于Fiat-Shamir with aborts范式，构造了格基扩展可撤回签名，实现为可索赔环签名：通过一取N签名提供匿名性，签名者可通过绑定签名和隐藏索引承诺确认身份。完整证明了正确性、匿名性、不可伪造性和可索赔性。该方案为后量子时代的匿名认证提供了新工具。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.14570v1",
+      "source": "arxiv",
+      "title": "Democratizing Agent Deployment Safety: A Structural Monitoring Approach",
+      "abstract": "AI software development agents are increasingly capable of modifying infrastructure and security critical systems, creating risks where an agent completes its assigned task while covertly weakening safeguards through actions such as broadening permissions, degrading logging, or introducing persistence mechanisms. While frontier laboratories may deploy sophisticated monitoring pipelines, many organizations and individual users adopting coding agents lack the resources and governance maturity required to maintain complex learned monitor ensembles. We study this problem as infrastructure level sabotage under task success in the infrastructure-as-code setting from ControlArena and compare trained and untrained monitors across synchronous and asynchronous deployment modes. We introduce an Information Flow Graph (IFG) monitor that analyzes structural security regressions using control-flow and data-flow graph diffs alongside raw code diffs. In asynchronous evaluation, an untrained git diff monitor misses 11.6% attacks at 1% false positive rate auditing budget, our untrained IFG monitor reduces this to 3.5%, and the trained Async RF monitor achieves below 1%. Unlike the trained Async RF monitor, IFG can also operate synchronously as a pre-deployment safeguard that blocks suspicious infrastructure changes before execution or merge. In synchronous mode, IFG realtime rollback reduces joint main task and covert task success from 74.4% to 0.0% with no measurable reduction in legitimate task completion. These results suggest that untrained structural monitors provide a practical and auditable path toward democratizing deployment safety for organizations seeking trustworthy adoption of advanced AI agents.",
+      "authors": [
+        "Preeti Ravindra",
+        "Rahul Tiwari",
+        "Vincent Wolowski"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CR"
+      ],
+      "published": "2026-07-16T04:55:21+00:00",
+      "link": "https://arxiv.org/pdf/2607.14570v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "monitoring AI agent deployment safety",
+      "llm_evidence_cn": "监控AI代理部署安全",
+      "llm_evidence": "监控AI代理部署安全",
+      "canonical_evidence": "监控AI代理部署安全",
+      "llm_tldr_en": "Proposes structural monitoring approach for AI agent deployment safety, detecting infrastructure sabotage without complex learned models.",
+      "llm_tldr_cn": "本文提出一种结构化监控方法用于AI代理部署安全，无需复杂学习模型即可检测代理在完成任务同时悄悄削弱安全措施的行为。在ControlArena基础设施即代码场景下，比较了同步和异步监控的效果，证明了轻量级监控的有效性。",
+      "llm_tldr": "本文提出一种结构化监控方法用于AI代理部署安全，无需复杂学习模型即可检测代理在完成任务同时悄悄削弱安全措施的行为。在ControlArena基础设施即代码场景下，比较了同步和异步监控的效果，证明了轻量级监控的有效性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

@@ -1,0 +1,1051 @@
+Title: Lattice-based extended withdrawability
+
+URL Source: https://arxiv.org/pdf/2607.14690v1
+
+Published Time: Fri, 17 Jul 2026 01:09:19 GMT
+
+Number of Pages: 25
+
+Markdown Content:
+# Lattice-based extended withdrawability 
+
+Ramses Fernandez Fairgate Labs 
+
+ramses.fernandez@fairgate.io 
+
+Abstract 
+
+We extend the extended withdrawable signatures of Liu, Susilo and Baek to lattice-based constructions built on the Fiat-Shamir with aborts paradigm. Departing from an earlier draft that transported a per-signer shift in the clear, which leaks the signer, we realise extended withdrawable signatures as a claimable ring signature: signer ambiguity is provided by a one-out-of-N signature used as a black box (anonymity under full key exposure), and confirmation is the signer’s claim, a binding signature together with the opening of a hiding index commitment bound into the transcript. No signer-derived value is published in the clear. We give complete proofs of correctness, extended withdrawability (as anonymity-until-claim), unforgeability under insider corruption, and claimability soundness, reducing to decisional MLWE (commitment hiding), MSIS (commitment binding), the anonymity of the one-out-of-N scheme, and the EUF-CMA security of the base signature, in the (quantum) random-oracle model. We instantiate the base signature with a no-hint, full-t Dilithium-style scheme and the one-out-of-N layer with an established lattice one-out-of-many proof. 
+
+# 1 Introduction 
+
+Digital signatures bind a signer’s identity to a message and provide authenticity, integrity and non-repudiation, underpinning secure communication and, increasingly, the settlement of transac-tions in decentralised systems such as blockchains. A defining feature of a conventional signature is its permanence. Once a signer legitimately produces a signature on a message, that signature remains verifiable under the signer’s public key indefinitely, and the signer cannot rescind it. Permanence is usually a feature, but it is a liability in the many settings where a commitment may legitimately need to be revoked: limited-time access grants, revocable electronic agreements, service-level commitments in outsourcing systems, decentralised escrow, and privacy-preserving voting. In all of these one would like a signer to be able to withdraw a signature without disclosing its secret key and without affecting the validity of its other signatures. Liu, Baek and Susilo introduced withdrawable signatures [17] to capture exactly this capabil-ity. A withdrawable signature is revoked by default: after issuing it the signer may simply take no further action, in which case the signature is not verifiable under the signer’s public key. If the signer later wishes to stand behind the message, it, and only it, can confirm the withdrawable signature, turning it into a publicly verifiable one that remains deterministically traceable to the original object, so that the confirmed signature cannot be detached from the withdrawable one it came from. The first construction realised withdrawability through a designated-verifier signature (DVS) [13, 4]: the withdrawable signature is verifiable only by a single, signer-chosen verifier, and the ambiguity between the signer and that designated verifier is precisely what al-lows the signature to be withdrawn. The price is a significant limitation, verification is restricted to one designated party, so the scheme lacks universal verifiability. 
+
+From designated verifiers to extended withdrawability. To lift this restriction, Liu, Susilo and Baek proposed extended withdrawable signatures [18]. Their starting observation is that a DVS is a two-party object whose ambiguity is exactly that of a 1-out-of-2 signature, 1arXiv:2607.14690v1 [cs.CR] 16 Jul 2026 and that the notion generalises to N ≥ 2 potential signers: a withdrawable signature can be made verifiable under any public key in a set of potential signers π while keeping the true signer ambiguous among them, until confirmation. This “extended withdrawability” can be ob-tained from any 1-out-of-N signature that provides signer ambiguity, ring signatures [21] and designated-verifier signatures being two natural instances, and yields a publicly verifiable with-drawable signature: any party holding the signature and the public-key set can check it, yet no party can tell which member of π signed. Liu, Susilo and Baek give a generic construction of extended withdrawable signatures from discrete-logarithm primitives, with an instantiation based on the Schnorr signature [22], and prove it correct, unforgeable under insider corruption, and extended-withdrawable. 
+
+The post-quantum gap. The discrete-logarithm foundation of [18], and of the Schnorr and BLS [3] building blocks it relies on, is broken by Shor’s quantum algorithm [23]. Because with-drawable signatures are meant to protect long-lived commitments in decentralised systems, a con-struction that fails against a quantum adversary is of limited durable value, and a post-quantum realisation is called for. The natural route is Lyubashevsky’s Fiat-Shamir with aborts paradigm [19], which turns lattice-based identification into signatures through a controlled rejection-sampling (“abort”) step and underlies the standardised signature Dilithium (ML-DSA) [6] as well as HAETAE [5]. A first step in this direction handled the designated-verifier (two-party) with-drawable signature over the Fiat-Shamir with aborts paradigm [8]; the present work addresses the extended, publicly verifiable, N -signer notion. 
+
+Why a literal lattice transcription fails. Porting [18] to lattices is not just a matter of replacing Schnorr by a lattice signature. The discrete-logarithm construction re-randomises each ring member’s public key by a multiplicative shift and publishes those shifts, so that the confirmed signature can later be linked back to the withdrawable one. Over a prime-order group this is safe, because the published shifts {gsj } are independent of the signer’s secret key and uniformly distributed, and therefore leak nothing about who signed. A literal lattice transcription, however, replaces each shift gsj by a term of the form As1sj that carries the signer’s own secret s1 as a common factor. Since the signer’s public key satisfies ti = As1 + s2
+
+with s2 short, the value As1 is within short distance of ti but of no other public key; hence publishing {As1sj } exposes As1 ≈ ti and breaks the very signer ambiguity the scheme exists to provide. This is the same structural obstruction, the lack of a free re-randomisation of a shared value in the lattice setting, encountered for the designated-verifier case [8], and it means the transformation must be redesigned rather than transcribed. 
+
+Our approach. We keep the two objectives of an extended withdrawable signature separate and realise each by a primitive with an established security analysis, so that no signer-derived value is ever published in the clear. Ambiguity is provided by an anonymous 1-out-of-N (ring) signature, used as a black box and instantiated by an established lattice one-out-of-many proof [11, 7]. Confirmation is the signer’s claim: a binding signature on the withdrawable object, together with the opening of a hiding commitment to the signer’s index that is bound into the transcript at signing time. Before confirmation the commitment hides the signer and the ring signature is anonymous; at confirmation the signer opens the commitment, and the binding signature ties the claim to the exact withdrawable object. This is precisely a claimable ring signature in the sense of Park and Sealfon [20], a primitive that Liu, Susilo and Baek themselves single out as an instantiation of withdrawable signatures [18, 27]. The resulting scheme is publicly verifiable, ambiguous until claimed, and provably secure from decisional MLWE, MSIS, and the unforgeability of the base signature. 21.1 Related work 
+
+Withdrawable signatures. Withdrawable signatures were introduced in [17] with a designated-verifier construction, and extended to the publicly verifiable, N -signer setting in [18]. A lattice-based designated-verifier variant over the Fiat-Shamir with aborts paradigm was given in [8]; the present paper is its extended, publicly verifiable counterpart. 
+
+Designated-verifier and universal designated-verifier signatures. Designated-verifier signatures were introduced independently by Jakobsson, Sako and Impagliazzo [13] and by Chaum [4], and studied extensively thereafter [16, 26]. Universal designated-verifier signatures (UDVS), in which any holder of a signature can designate a verifier, were initiated by Steinfeld et al. [24] and extended to Schnorr and RSA signatures in [25]; a lattice-based UDVS appears in [15]. 
+
+Ring signatures and one-out-of-many proofs. Ring signatures, introduced by Rivest, Shamir and Tauman [21], let a signer produce a signature on behalf of a self-chosen set of public keys while hiding which member signed; constructions exist from RSA, discrete-logarithm [12], pairing [2] and lattice [7] assumptions. A generic route is the one-out-of-many zero-knowledge proof of Groth and Kohlweiss [11], with a short lattice instantiation by Esgin et al. [7]. Our 
+
+1-out-of-N building block is any such scheme with anonymity under full key exposure. 
+
+Claimable ring and designated-verifier signatures. Park and Sealfon [20] introduced claimable ring signatures, which let an anonymous signer later prove authorship, and Yamashita et al. [27] the analogous claimable designated-verifier signatures. As Liu, Susilo and Baek observe [18], both are instantiations of withdrawable signatures: the “claim” is exactly the confirmation step. Our construction makes this correspondence its design principle. 
+
+Lattice signatures from Fiat-Shamir with aborts. The Fiat-Shamir heuristic [9] and its lattice adaptation with aborts [19] underlie Dilithium [6] and HAETAE [5], whose security rests on module lattice problems and, in the quantum random-oracle model, on the analyses of Kiltz, Lyubashevsky and Schaffner [14] and the adaptive-reprogramming lemma of Grilo, Hövelmanns, Hülsing and Majenz [10]. Our commitment layer uses an Ajtai-style commitment [1]. 
+
+1.2 Contributions 
+
+Concretely, this paper makes the following contributions. 1. Security model: We adopt the syntax and the three security goals, correctness, unforgeabil-ity under insider corruption, and extended withdrawability, of Liu, Susilo and Baek [18], and we sharpen their formalisation of extended withdrawability. Their definition asserts only that a withdrawable signature can be re-attributed to another member and still ver-ify (a completeness statement), delegating the hiding guarantee to the signer ambiguity of the underlying 1-out-of-N scheme. We fold both into a single anonymity-until-claim indistinguishability game (Definition 14), state unforgeability under insider corruption as an explicit experiment (Definition 15), and add a claimability soundness notion (Definition 16) that makes precise the requirement that only the true author can confirm. 2. Generic construction: We give a generic construction of extended withdrawable signatures over the Fiat-Shamir with aborts paradigm (Section 5) from three modular ingredients: any base signature, any anonymous 1-out-of-N signature, and any hiding-and-binding com-mitment. Crucially, and in contrast with a literal transcription of the discrete-logarithm scheme, the construction publishes no signer-derived value: ambiguity comes from the ring 3signature and traceability from a committed index, avoiding the signer-identifying leak described above. 3. Complete security proofs: We prove, with fully explicit game-based reductions in the (quan-tum) random-oracle model (Section 6): correctness; extended withdrawability, reducing to decisional MLWE (commitment hiding) and the anonymity of the 1-out-of-N scheme; unforgeability under insider corruption, reducing to the EUF-CMA security of the base signature (with no rewinding and no multiplicative random-oracle loss); and claimability soundness, reducing to MSIS (commitment binding). 4. Instantiation: We instantiate the base signature with a no-hint, full-t Dilithium-style scheme and the ambiguity layer with a lattice one-out-of-many proof (Section 7), correcting the parameter choices (the low-order bound γ2, the challenge set Bτ , and the high/low-order decomposition) and explaining why a naive Dilithium challenge-split is not a sound anonymous ring signature. HAETAE is discussed as an alternative base. 5. Comparison with Liu-Susilo-Baek: We give a precise comparison (Section 8) that traces every divergence from [18] to a single structural fact, the absence of a free re-randomisation of a shared value in the lattice setting, and shows that our claimable-ring-signature design is faithful to their primitive, their security goals, and their own stated intuition. 
+
+# 2 Preliminaries 
+
+2.1 Notation, rings and norms 
+
+We write κ for the security parameter. A function negl : N → R≥0 is negligible if it decays faster than any inverse polynomial; PPT abbreviates probabilistic polynomial-time. For a positive integer a we write [a] = {1, . . . , a }; in particular [N ] indexes the N potential signers of a ring, while n (never bracketed) always denotes the ring degree of Rq. Sets of public keys carry a fixed canonical total order (say, lexicographic on the encoding ⟨t⟩); the index of a key in a ring π
+
+always means its position under this order, and when keys are generated in an experiment we relabel them so that pk 1 < · · · < pk N , making global labels coincide with positions in the full pool. We write a $
+
+← S for a uniform draw of a from a finite set S. All logarithms are base 2,and ⟨·⟩ denotes a fixed injective encoding of tuples of bit strings and ring elements into {0, 1}∗.Let n be a power of 2 and q an odd prime (with q ≡ 1 mod 2 n in the Dilithium instantiation, so that xn +1 splits completely). We work in the rings R = Z[x]/(xn +1) and Rq = Zq[x]/(xn +1) .Elements of R, Rq are written in regular font; vectors are bold lower-case and are column vectors unless stated otherwise; matrices are bold upper-case; I is the identity. For an even positive integer α we write r mod ±α for the unique representative of r mod α
+
+in (− α 
+
+> 2
+
+, α 
+
+> 2
+
+], and for odd α in [− α−12 , α−12 ] (centred reduction); r mod +α is the representative in 
+
+[0 , α ). For w ∈ Zq set ∥w∥∞ = |w mod ±q|. For w = Pn−1 
+
+> i=0
+
+wixi ∈ R set ∥w∥∞ = max i∥wi∥∞
+
+and ∥w∥ = ( P
+
+> i
+
+∥wi∥2
+
+> ∞
+
+)1/2, and for w = ( w1, . . . , w k) ∈ R k, ∥w∥∞ = max i∥wi∥∞ and ∥w∥ =(P
+
+> i
+
+∥wi∥2)1/2. For η ∈ N let Sη = {w ∈ R : ∥w∥∞ ≤ η}; when the exact bound is dictated by the underlying scheme we write simply S. The challenge set Bτ ⊂ R is the set of elements with exactly τ coefficients in {− 1, 1} and the rest 0; then |Bτ | = 2 τ  nτ
+
+ and every c ∈ Bτ has ∥c∥∞ = 1 
+
+and ∥cs∥∞ ≤ τ ∥s∥∞.
+
+2.2 The (quantum) random-oracle model 
+
+A hash function H used inside a Fiat-Shamir transform is modelled as a random oracle: afunction drawn uniformly from all functions of the given domain and range, accessible to all parties only as an oracle. In the classical random-oracle model (ROM) queries are classical; in the quantum random-oracle model (QROM) an adversary may query H on superpositions of 4inputs. Security reductions may program the oracle, answering a chosen input with a chosen (consistently distributed) value; in the QROM this is governed by the adaptive-reprogramming lemma of [10]. Unless noted, all results are stated in the classical ROM and lifted to the QROM in Remark 6. 
+
+2.3 High-order and low-order bits 
+
+Following Dilithium [6], for an even α | (q − 1) the decomposition of w ∈ Zq writes w =
+
+HighBits (w, α ) · α + LowBits (w, α ) with LowBits (w, α ) = w mod ±α (and a boundary correction ensuring HighBits ∈ { 0, . . . , (q − 1) /α }); the maps extend coordinatewise to R and to vectors. Intuitively HighBits keeps the top part of w and LowBits the signed remainder of magnitude 
+
+≤ α/ 2. We use the following standard stability property, which is the basis of correctness of every Fiat-Shamir with aborts scheme. 
+
+Lemma 1 (Rounding stability [6]) . Let α be an even divisor of q − 1. For all w ∈ R kq and 
+
+u ∈ R kq with ∥u∥∞ ≤ β, if ∥LowBits (w, α )∥∞ < α 
+
+> 2
+
+− β then HighBits (w + u, α ) = HighBits (w, α ).
+
+2.4 Digital signatures and EUF-CMA 
+
+Definition 1 (Signature scheme) . A digital signature scheme is a triple DS = ( KeyGen , Sign , Verify ):
+
+KeyGen (pp ) outputs (pk, sk ); Sign (μ, sk ) outputs a signature δ; Verify (μ, pk, δ ) ∈ { 0, 1}. It is cor-rect if Verify (μ, pk, Sign (μ, sk )) = 1 with overwhelming probability for honestly generated keys and every μ.
+
+Definition 2 (EUF-CMA) . In Exp EUF -CMA DS ,A , the challenger runs (pk, sk ) ← KeyGen (pp ), gives 
+
+pk to A, and answers signing queries μ by Sign (μ, sk ); let Q be the set of queried messages. A
+
+wins by outputting (μ∗, δ ∗) with μ∗ /∈ Q and Verify (μ∗, pk, δ ∗) = 1 . We write Adv EUF -CMA DS (A) = Pr[ A wins ], and say DS is EUF-CMA secure if this is negligible for every PPT A.
+
+2.5 Fiat-Shamir with aborts signatures 
+
+Our base signatures follow Lyubashevsky’s Fiat-Shamir with aborts paradigm [19]. Keys are 
+
+pk = t = As1 +s2 with short (s1, s2) and a public matrix A (Section 2.8); signing draws a masking vector y $
+
+← Slγ1−1, forms the commitment w = HighBits (Ay, 2γ2), derives a challenge c =
+
+H(μ, w) ∈ Bτ , sets the response z = y + cs1, and rejects (restarting) unless z and LowBits (Ay −
+
+cs2, 2γ2) lie within scheme-dependent bounds; verifying recomputes HighBits (Az − ct, 2γ2) and checks it hashes to c. The rejection step makes the output distribution independent of the secret key: the accepted transcript admits an efficient, witness-free simulator (non-abort honest-verifier zero-knowledge, naHVZK), a property we invoke for the ambiguity layer. Dilithium [6] and HAETAE [5] are concrete instances; we use such a scheme as the black-box base DS of Definition 1. 
+
+2.6 Hardness assumptions 
+
+Security rests on three module-lattice assumptions. Informally, MLWE guards secret keys against key recovery, SelfTargetMSIS is the assumption behind new-message unforgeability of Fiat-Shamir with aborts signatures, and MSIS underlies strong unforgeability (resistance to mal-leability of existing signatures). 
+
+Definition 3 (Module Learning With Errors, MLWE m,k,D ). For a distribution D over Rq, the advantage of A in distinguishing a uniform pair from a module-LWE pair is 
+
+Adv MLWE  
+
+> m,k,D
+
+(A) = Pr[ A(A, t) = 1] − Pr[ A(A, A s1 + s2) = 1] ,
+
+5over A $
+
+← R m×kq , t $
+
+← R mq , s1 $
+
+← Dk, s2 $
+
+← Dm. MLWE is hard if this is negligible for every PPT A.
+
+Definition 4 (Module Short Integer Solution, MSIS m,k,γ ). In Hermite normal form, 
+
+Adv MSIS  
+
+> m,k,γ
+
+(A) = Pr  0 < ∥y∥∞ ≤ γ ∧ [ I | A ]y = 0 : A $
+
+← R m×kq , y ← A (A) ,
+
+the probability of finding a short nonzero vector in the kernel of [ I | A ]. MSIS is hard if this is negligible for every PPT A.
+
+Definition 5 (SelfTargetMSIS) . For a hash function H : {0, 1}∗ → Bτ modelled as a random oracle, 
+
+Adv STMSIS  
+
+> H,m,k,γ
+
+(A) = Pr  0 < ∥y∥∞ ≤ γ ∧ H(⟨[ I | A ]y, M ⟩) = c : A $
+
+← R m×kq , (y = ( r, c ), M ) ← A H (A) .
+
+SelfTargetMSIS is hard if this is negligible for every PPT A with polynomially many oracle queries. All three are assumed hard for the parameter sets of Section 7. 
+
+2.7 Commitment schemes 
+
+Definition 6 (Commitment) . A commitment scheme is a pair (CSetup , Com ): CSetup (1 κ) out-puts a key ck , and Com ck (x; ρ) maps a message x and randomness ρ to a commitment. An opening of a commitment C is a pair (x, ρ ) with C = Com ck (x; ρ).
+
+Definition 7 (Hiding) . Adv hide Com (A) = Pr[ A(ck, Com ck (x0; ρ)) = 1] − Pr[ A(ck, Com ck (x1; ρ)) = 1] maximised over A-chosen x0, x 1, with ck ← CSetup (1 κ) and fresh ρ. The scheme is hiding if this is negligible for every PPT A.
+
+Definition 8 (Binding) . Adv bind Com (A) = Pr[ C = Com ck (x; ρ) = Com ck (x′, ρ ′) ∧ x̸ = x′ ] over 
+
+ck ← CSetup (1 κ) and (C, x, ρ, x ′, ρ ′) ← A (ck ). The scheme is binding if this is negligible for every PPT A.
+
+Remark 1 (Ajtai instantiation) . We use the Ajtai commitment [1] Com ck (x; ρ) = ¯Aρ + Encode (x)
+
+with ck = ¯A $
+
+← R k′×mq and short ρ ∈ Sm, where Encode is an injective encoding of the in-dex into a fixed set of short coset representatives, e.g. the ⌈log 2 N ⌉-bit expansion of the in-dex as a 0/1-coefficient polynomial, so that ∥Encode (i)∥∞ ≤ BEncode for a small BEncode and hence ∥Encode (i) − Encode (i′)∥∞ ≤ 2BEncode . It is hiding under decisional MLWE: writing 
+
+¯A = [ ¯A1 | ¯A2 ] with ¯A1 invertible (which holds with overwhelming probability), ¯A−11 ¯Aρ =
+
+ρ1 + ( ¯A−11 ¯A2)ρ2 is an MLWE sample in secret ρ2, so ¯Aρ is pseudorandom and masks the mes-sage, giving Adv hide Com ≤ Adv MLWE . It is binding under MSIS: two openings of one commitment give 
+
+¯A(ρ−ρ′) = Encode (x′)−Encode (x), i.e. a short nonzero solution to [ I | ¯A ], so Adv bind Com ≤ Adv MSIS .
+
+2.8 Public parameters 
+
+Throughout, pp ← Setup (1 κ) fixes a common matrix A ∈ R k×lq and a commitment key ck ; every user key is generated relative to the same A. This shared A is essential: the one-out-of-N proof is a membership proof for the relation { t : ∃ (s1, s2) short , t = As1 + s2 }, which is a single well-formed relation across the ring only when every tj is generated against the same A.
+
+# 3 Building block: an anonymous one-out-of-N signature 
+
+A one-out-of-N signature lets a signer produce, for a self-chosen set π = {t1, . . . , tN } of public keys containing its own, a signature that verifies under π yet hides which member signed [18]. It is the engine that supplies ambiguity to an extended withdrawable signature. 63.1 Role and design decision 
+
+Extended withdrawability is delivered by an anonymous one-out-of-N signature: the withdraw-able signature is such a signature over the set of potential signers, and being withdrawable is exactly being signer-ambiguous. This is the design of Liu, Susilo and Baek [18], who realise the one-out-of-N signature by a concrete construction from discrete-logarithm primitives (Algorithm 1) and prove its signer ambiguity directly. We depart from their treatment in one respect: we specify the one-out-of-N signature abstractly, through the two security properties we actually use (Definitions 9–11), and instantiate it with an established lattice one-out-of-many proof. There are two reasons, one methodological and one forced by the setting. 
+
+• Modularity: Fixing the exact interface separates the security of the withdrawable layer from that of the ambiguity engine: the reductions of Section 6 then rest on a single, clearly stated assumption, signer ambiguity under full key exposure, rather than on the internals of one particular ring signature. Any scheme meeting the interface may be plugged in. 
+
+• Necessity: The specific discrete-logarithm construction of [18] has no secure literal lattice analogue (Proposition 2 below). A faithful post-quantum port therefore cannot transcribe it; it must use a genuinely lattice-based ring-signature technique, which is most naturally invoked as a black box. Treating Ambi abstractly is thus not only cleaner but unavoidable. 
+
+3.2 The discrete-logarithm one-out-of-N signature of Liu-Susilo-Baek 
+
+For reference we recall the construction of [18]. Let G be a group of prime order p with generator 
+
+g, H : {0, 1}∗ → Zp, and pk j = gsk j .
+
+Algorithm 1 Discrete-logarithm one-out-of-N signature [18]  
+
+> 1:
+
+procedure Ambi . Sign (m, sk i, γ = {pk j }Nj=1 ) 
+
+> 2:
+
+e $
+
+← Z∗
+
+> p
+
+; for j̸ = i: tj $
+
+← Z∗ 
+
+> p
+> 3:
+
+U = ge Q  
+
+> j̸=i
+
+pk tj 
+
+> j
+
+; t = H(m, γ, U ) 
+
+> 4:
+
+ti = t − P  
+
+> j̸=i
+
+tj ; z = e − sk i ti 
+
+> 5:
+
+return σ = ( t1, . . . , t N , z ) 
+
+> 6:
+
+end procedure  
+
+> 7:
+
+procedure Ambi . Verify (m, γ, σ ) 
+
+> 8:
+
+parse (t1, . . . , t N , z ); t = P 
+
+> j
+
+tj ; U ′ = gz Q 
+
+> j
+
+pk tj 
+
+> j
+> 9:
+
+return [ t = H(m, γ, U ′) ]  
+
+> 10:
+
+end procedure 
+
+Correctness is immediate: U ′ = gz Q 
+
+> j
+
+pk tj 
+
+> j
+
+= ge−sk iti Q 
+
+> j
+
+gsk j tj = ge Q  
+
+> j̸=i
+
+pk tj 
+
+> j
+
+= U , and P 
+
+> j
+
+tj = t. Signer ambiguity holds because the challenge space is a field: a witness-free simulator draws t1, . . . , t N , z $
+
+← Zp, sets U ′ = gz Q 
+
+> j
+
+pk tj 
+
+> j
+
+, and programs H(m, γ, U ′) := P 
+
+> j
+
+tj ; its output is distributed exactly as a real signature and is independent of the signer index. Two features make this work, and both are lost over lattices: the recombined challenge ti = t − P  
+
+> j̸=i
+
+tj may take any value in Zp, and the response z = e − sk iti is a uniform field element (as e is uniform), so no rejection is needed. 
+
+3.3 Why a literal lattice transcription fails 
+
+The Fiat-Shamir with aborts setting keeps challenges in the sparse set Bτ and responses short (this is what makes the response leak no information and the proof sound). These requirements are incompatible with the additive challenge-splitting of Algorithm 1. 7Proposition 2 (No secure literal lattice transcription) . Consider the module-lattice transcription of Algorithm 1 in which the group map g(·) is replaced by s 7 → As , exponents by ring elements, challenges are required to lie in Bτ , and the signer recombines ci = c−P  
+
+> j̸=i
+
+cj with c = H(· · · ) ∈
+
+Bτ , accepting only if ci ∈ Bτ . Then for a ring of N potential signers with N ≥ 4, an honest execution is accepted with probability at most 2−Ω( n) in the constant-relative-weight regime τ =Θ( n), where n is the ring degree of Rq; signing is therefore infeasible. (For τ fixed independent of n the unconditional obstruction is instead the anonymity failure of Remark 2.) Proof. Acceptance requires ci = c − s ∈ Bτ for s = P  
+
+> j̸=i
+
+cj . In the random-oracle model the challenge c = H(· · · ) ∈ Bτ is a fresh uniform element drawn after the summands cj (hence after 
+
+s) are fixed, so we bound Pr c $
+
+> ←Bτ
+
+[ c − s ∈ Bτ | s ]. Membership forces (c − s)k ∈ {− 1, 0, 1} at every coordinate k. A uniform Bτ element is nonzero at k with probability p := τ /n and, given nonzero, is ±1 with probability 12 each; thus each of the m := N − 1 ≥ 3 summands has k-th coordinate 0 with probability 1 − p and ±1 with probability p/ 2 each. Consider a coordinate with |sk| ≥ 2: if |sk| ≥ 3 then |(c − s)k| ≥ | sk| − ∥ c∥∞ ≥ 2 and acceptance is impossible; if 
+
+|sk| = 2 then (c − s)k ∈ {− 1, 0, 1} forces ck = sign( sk), an event of probability p/ 2 over c.Writing A = {k : |sk| = 2 }, acceptance requires c to meet |A| support-and-sign constraints; since the support indicators of a fixed-weight c are negatively associated and its signs are independent, 
+
+Pr[ accept | s] ≤ (p/ 2) |A|. For m = 3 one has Pr[ |sk| = 2] = Θ( p2), so E|A| = Θ( p2n). In the constant-relative-weight regime τ = Θ( n) (thus p = Θ(1) , p/ 2 < 12 ) this gives E|A| = Θ( n). The coordinates of a fixed-weight vector are not independent, so we conclude by Azuma–Hoeffding over the 3τ sequential support/sign choices of the three summands (each choice moves |A| by at most 2), giving Pr[ |A| < c n ] ≤ 2−Ω( n) for a suitable constant c > 0; splitting on this event, 
+
+Pr[ accept ] ≤ 2−Ω( n) + ( p/ 2) c n = 2 −Ω( n) and signing is infeasible. 
+
+Remark 2 (Anonymity fails even if completeness is patched) . Suppose one nonetheless forced acceptance (e.g. by enlarging the challenge set). The witness-free simulator that establishes anonymity of Algorithm 1 still has no lattice analogue: it relies on ti ranging over the entire challenge space and on z being a uniform field element, whereas here ci must be sparse and z
+
+short and passes a witness-dependent low-order rejection test. The recombined ci is then not distributed as a fresh Bτ challenge, and the simulated and real signer branches are distinguishable. This is the reason we do not transcribe Algorithm 1 but instead invoke a one-out-of-many proof, whose anonymity is a bona fide zero-knowledge statement. 
+
+3.4 Abstract syntax and security 
+
+We now record the interface used in the sequel. 
+
+Definition 9 (One-out-of-N signature) . A one-out-of-N signature scheme over the common A is a triple of algorithms Ambi = ( AKeyGen , ASign , AVerify ). Here AKeyGen (pp ) outputs a key pair, we take AKeyGen = KeyGen of Section 5, so t = As1 + s2; ASign (μ, sk i, π ), with i the signer’s index in π, outputs a signature σ; and AVerify (μ, π, σ ) ∈ { 0, 1}. It is correct if, whenever sk i is a valid witness for some ti ∈ π,
+
+AVerify (μ, π, ASign (μ, sk i, π )) = 1 
+
+with overwhelming probability. Its security has two aspects, signer ambiguity and unforgeability. 
+
+Definition 10 (Signer ambiguity / anonymity under full key exposure) . In Exp anon Ambi ,A, the challenger runs pp ← Setup (1 κ), (tj , sk j ) ← AKeyGen (pp ) for j ∈ [N ], and hands A all se-cret keys {sk j } (full key exposure). A outputs (μ∗, i 0, i 1, π ∗) with ti0 , ti1 ∈ π∗ ⊆ { tj }; the challenger draws b $
+
+← { 0, 1} and returns σ∗ ← ASign (μ∗, sk ib , π ∗); A outputs b′. We write 
+
+Adv anon Ambi (A) = Pr[ b′ = 1 | b = 1] − Pr[ b′ = 1 | b = 0] = 2 Pr[ b′ = b] − 12 (the distinguishing form of the advantage, which the game hops of Section 6 consume without loss of constants) and say 
+
+Ambi is signer-ambiguous if this is negligible for every PPT A.8Ambiguity under full key exposure, the adversary knows every witness, is precisely what a one-out-of-many zero-knowledge proof provides, since the accepted transcript is (statistically or computationally) independent of the witness used. It is exactly the strength we need: in the withdrawability and unforgeability games of Section 6 the adversary may hold ring members’ secret keys. The two-key left-or-right game above is equivalent, up to a factor equal to the ring size, to the “guess the signer” formulation of [18], whose signer-ambiguity advantage is bounded by (ring size )−1 + negl .
+
+Definition 11 (Unforgeability of Ambi ). In Exp unf Ambi ,A, the challenger generates {(tj , sk j )}j∈[N ],gives {tj } to A, and answers signing queries ASign (μ, sk i, π ) (with π ⊆ { tj } and signer index i), recording (μ, π ) in Q; A may corrupt a strict subset CO ⊊ [N ], receiving those sk j . A wins by outputting (μ∗, π ∗, σ ∗) with AVerify (μ∗, π ∗, σ ∗) = 1 , (μ∗, π ∗) /∈ Q, and π∗ ∩ { tj : j / ∈ CO }̸ = ∅
+
+(the ring contains an uncorrupted member). Adv unf Ambi (A) = Pr[ A wins ].
+
+3.5 Instantiation 
+
+We instantiate Ambi by an established lattice one-out-of-many proof [11, 7]: a zero-knowledge proof that one of the public keys in π opens to a short witness, made non-interactive by Fiat-Shamir. Its signer ambiguity (Definition 10) is the honest-verifier zero-knowledge of the underly-ing Σ-protocol, which holds under full key exposure, as it uses no witness, and its unforgeability (Definition 11) is the knowledge soundness of the proof, reducing to MSIS. Such proofs achieve size logarithmic in the ring, and by Proposition 2 they, rather than a naive challenge-split, are the correct lattice realisation. Only signer ambiguity is invoked in the proofs of the main con-struction (Section 6); Definition 11 is recorded for completeness and matches the treatment of [18]. In particular, the one-out-of-many proofs of [11, 7] are anonymous under full key exposure via the special honest-verifier zero-knowledge of their Σ-protocol, so Definition 10 is met concretely rather than merely assumed. 
+
+# 4 Extended withdrawable signatures: syntax and security 
+
+Our security model is that of Liu, Susilo and Baek [18]: the same seven-algorithm syntax and the same three goals, correctness, unforgeability under insider corruption, and extended with-drawability. We refine it in two respects, both stated and justified in Section 4.1: we replace their completeness-style definition of extended withdrawability by an indistinguishability game (Definition 14), and we add an explicit claimability-soundness notion (Definition 16). Section 4.1 then compares every definition, assumption and security statement with its counterpart in [18], and justifies each discrepancy. Throughout, N ≥ 2 is the number of potential signers and i the index of the true signer. 
+
+Definition 12 (Syntax) . EWS = ( Setup , KeyGen , Shuffle , WSign , WSVerify , Confirm , CVerify , Check )
+
+with pp ← Setup (1 κ), (pk, sk ) ← KeyGen (pp ), aux ← Shuffle (pk, π ) = π\{ pk }, σ ← WSign (μ, sk, aux ),
+
+1/0 ← WSVerify (μ, pk, σ ) (public), δ ← Confirm (μ, sk, pk, aux, σ ), 1/0 ← CVerify (μ, pk, σ, δ ),
+
+1/0 ← Check (μ, pk, σ, δ ).
+
+Definition 13 (Correctness) . For all κ, all π ∋ pk and all μ, running Setup , KeyGen , Shuffle , WSign , Confirm 
+
+honestly yields WSVerify (μ, pk, σ ) = CVerify (μ, pk, σ, δ ) = Check (μ, pk, σ, δ ) = 1 with overwhelm-ing probability. 
+
+Definition 14 (Extended withdrawability: anonymity-until-claim) . Consider Exp wd EWS ,A(1 κ):1. pp ← Setup (1 κ); (pk j , sk j ) ← KeyGen (pp ) for j ∈ [N ] with N ≥ 2; π = {pk j }j∈[N ].2. A is given pp , π and all secret keys {sk j }j∈[N ], and outputs (μ∗, i 0, i 1, st ) with i0̸ = i1.93. the challenger draws b $
+
+← { 0, 1} and ρ∗ $
+
+← Sm, computes (σ∗ 
+
+> r
+
+, C ∗, ·) ← WSign (μ∗, sk ib , π \{pk ib }), where C∗ = Com ck (ib; ρ∗), and returns the challenge in the b-independent canonical packaging σ∗ = ( σ∗ 
+
+> r
+
+, C ∗, aux ∗), aux ∗ := π \ { pk i0 }. (Re-packaging is lossless and public by re-attribution, Theorem 3; without this convention the component aux = π \ { pk ib } would name the signer by omission and the game would be trivially winnable.) 4. A(st, σ ∗) outputs b′; the experiment returns [b′ = b].Since A holds every sk j , it can compute WSign and Confirm itself for any signature it con-structs; the challenge σ∗ is the only object it cannot confirm, as the challenge randomness ρ∗ and the bit b are hidden. EWS is extended-withdrawable if Adv wd EWS (A) := Pr[ b′ = b] − 12 ≤ negl (κ).
+
+Definition 15 (Unforgeability under insider corruption) . Consider Exp EUF -CMA EWS ,A (1 κ): pp ←
+
+Setup (1 κ); (pk j , sk j ) ← KeyGen (pp ) for j ∈ [N ]; a target index i is fixed; A receives pp , {pk j }j∈[N ]
+
+and the non-target keys {sk j }j̸ =i (insider corruption). Sets W, M ← ∅ . A has access to two ora-cles, each requiring pk i ∈ π and |π| ≥ 2:
+
+• OWSign (μ, π ): run σ ← WSign (μ, sk i, π \ { pk i}) with its internal randomness ρ; store 
+
+(μ, π, σ, ρ ) in W ; return σ.
+
+• OConfirm (μ, π, σ ): if (μ, π, σ, ρ ) ∈ W , set M ← M ∪ { μ} and return Confirm recomputed from the stored ρ; else return ⊥.
+
+A outputs (μ∗, π ∗, σ ∗, δ ∗) and wins if μ∗ /∈ M , pk i ∈ π∗, and WSVerify (μ∗, pk i, σ ∗) =
+
+CVerify (μ∗, pk i, σ ∗, δ ∗) = Check (μ∗, pk i, σ ∗, δ ∗) = 1 . Adv EUF -CMA EWS (A) := Pr[ A wins ].
+
+Remark 3 (Scope: existential vs. strong unforgeability) . Definition 15 targets existential (fresh-message) unforgeability. Strong unforgeability follows verbatim from the same reduction (Theo-rem 5) if the base signature DS is SUF-CMA, as the no-hint, full-t Dilithium variant of Section 7 is, via MSIS, because δs signs the injective encoding ⟨μ, π, σ ⟩, so any change to (π, σ ) or to δs
+
+yields a fresh base message/signature pair. 
+
+Definition 16 (Claimability soundness) . Adv claim EWS (A) is the probability that A outputs (μ, π, σ, δ, δ ′)
+
+with Check (μ, π [i], σ, δ ) = Check (μ, π [i′], σ, δ ′) = 1 and i̸ = i′ (the indices revealed in δ, δ ′), i.e. two accepted confirmations that attribute σ to distinct ring members (the positions being well defined by the canonical order of Section 2.1). 
+
+4.1 Relation to the Liu-Susilo-Baek model 
+
+We now compare each notion above with its counterpart in [18] and justify every discrepancy. The definitional comparison is summarised, alongside the construction-level differences, in the consolidated comparison of Section 8 (Table 1); here we take each notion in turn. 
+
+Syntax (Definition 12). Both models use the same seven algorithms (Definition 12) with the same roles: Shuffle publishes aux = π \ { pk }, WSVerify is public, and Check ties a con-firmed signature to its withdrawable object. The only differences are in the argument lists of 
+
+Confirm and CVerify : [18] write Confirm (m, sk, σ ) and CVerify (m, pk, ˜σ) in their syntax (while silently passing aux and σ in the construction), whereas we make the dependence explicit, 
+
+Confirm (μ, sk, pk, aux, σ ) and CVerify (μ, pk, σ, δ ). Justification: in our construction the con-firmed signature is an ordinary signature on the whole withdrawable object ⟨μ, π, σ ⟩, so both 
+
+Confirm and CVerify must read σ (and π, reconstructed from pk and aux ); making this explicit keeps traceability intrinsic to the confirmed signature rather than deferring it entirely to Check .
+
+Correctness (Definition 13). This is identical to [18, Definition 1]: an honestly produced withdrawable signature passes WSVerify , its confirmation passes CVerify , and the pair passes 
+
+Check , all with overwhelming probability. No discrepancy. 10 Unforgeability under insider corruption (Definition 15). This matches [18, Definition 2] in substance: the adversary has a corruption oracle, a withdrawable signing oracle and a con-firmation oracle, may hold every ring member’s key except the target’s, and wins by confirming a fresh message under the target key with all three verifications passing. Two refinements. (i) Fixed target. [18] generate a pool of keys and let the adversary forge for whichever uncorrupted index it chooses; we fix the target index i in advance. This is without loss of generality up to a factor 
+
+N (a reduction guesses i; see Theorem 5) and makes the reduction cleaner. (ii) Bookkeeping. We record signed tuples in W and let OConfirm act only on σ ∈ W ; [18] do the same (“if σ ∈ W ”). A point of rigour rather than definition: [18, Thm. 1] claims a reduction loss L = qH (the number of hash queries), whereas our reduction (Theorem 5) incurs no multiplicative qH factor, it neither rewinds the adversary nor guesses a hash index, the only losses being the factor N above and a 
+
+qW Adv anon Ambi term from simulating the signing oracle. We view the tighter reduction as a benefit of the modular treatment. 
+
+Extended withdrawability (Definition 14): the main discrepancy. Here we depart from [18] deliberately. Their Definition 3 declares the experiment successful when the adver-sary outputs (pk ′, aux ′) with aux ′ = γ \ { pk ′} and WSVerify (m∗, pk ′, σ ∗) = 1 , and requires 
+
+Pr[ Exp Withdraw = 1] = 1 . This is a completeness statement, it asserts that a withdrawable sig-nature can always be re-attributed to another ring member and still verify, and it contains no hidden bit, hence no hiding guarantee. Read literally, it is met by any scheme whose WSVerify 
+
+accepts, including one that plainly reveals the signer. [18] obtain the actual hiding elsewhere, from the signer ambiguity of the underlying one-out-of-N signature (their Definition 4) together with the “ 1/n -guess” step in the proof of their Theorem 3. We instead fold both into a single anonymity-until-claim game (Definition 14): a hidden bit b selects which of two signer identities produces the challenge, the advantage |Pr[ b′ = b] − 12 | must be negligible, and the “until claim” clause is enforced by withholding the challenge randomness ρ∗, so that the commitment C∗ can-not be opened and σ∗ cannot be confirmed. Justification: (a) a completeness statement is not a security definition, so the hiding must be phrased as indistinguishability; (b) our game captures exactly the guarantee [18] intend, ambiguity among the potential signers until confirmation, now as one self-contained notion that the construction provably meets (Theorem 4), rather than a property split across a completeness claim and a building-block assumption; and (c) nothing is lost, since the re-attribution completeness that Definition 3 does capture is, in our treatment, an immediate consequence of correctness of ring verification ( WSVerify accepts for every pk ′ ∈ π). This is the most consequential definitional change and the reason our withdrawability theorem is a reduction to commitment hiding and ring anonymity rather than a probability-one assertion. 
+
+Signer ambiguity of the building block (Definition 10). The hiding that [18] place in their Definition 4 (signer ambiguity of the one-out-of-N signature, advantage ≤ 1 
+
+> N
+
++negl ) survives verbatim as our Definition 10, stated as a two-key left-or-right game under full key exposure and equivalent to theirs up to the factor N . In our model it lives with the building block (Section 3) and is invoked by the withdrawability theorem, rather than standing beside the withdrawability definition; this is the structural counterpart of folding Definition 3 and Definition 4 into one notion. 
+
+Claimability soundness (Definition 16): a new notion. [18] have no explicit counterpart. Their Check links ˜σ to σ (through the embedded group element gr), and their unforgeability prevents a non-signer from confirming, but they never isolate the property that a confirmed signature binds to a unique signer index, that no adversary can present two valid confirmations of one σ attributing it to different members. In our construction the signer’s index is an explicit committed value, so this property is both meaningful and necessary for “claim” to be sound; we state it as Definition 16 and prove it (Proposition 6) from the binding of the commitment. 11 Justification: this is exactly the claimability of a claimable ring signature [20], the abstraction [18] themselves point to; making it explicit closes a gap in the original model. 
+
+Assumptions. The model of [18] is realised under the discrete-logarithm assumption (via the EUF-CMA security of the discrete-log signature and the ambiguity of the discrete-log one-out-of-
+
+N signature). We replace these by their post-quantum, module-lattice analogues (Section 2.6): decisional MLWE, MSIS and SelfTargetMSIS, together with the base signature’s EUF-CMA and the ring signature’s anonymity. Our claimable-ring design additionally uses a commitment, hence the extra hiding (MLWE) and binding (MSIS) assumptions of Section 2.7; [18] need no commitment because their confirmation links through the group element gr, a re-randomisation that is free in a prime-order group but has no cheap lattice analogue (Section 8). 
+
+Security statements and their proofs. Beyond the definitions, our results correspond to the three theorems of [18], and our proofs close gaps in theirs. 
+
+• Unforgeability: [18, Thm. 1] reduces to the EUF-CMA security of the discrete-log signature but asserts a reduction loss L = qH with no rewinding or hash-guessing argument, and in extracting the forgery it identifies the confirmed component with the underlying signature. Our Theorem 5 gives an explicit reduction with no qH loss and a clean extraction: the confirmed signature δs on the fresh string ⟨μ∗, π ∗, σ ∗⟩ is the base forgery. 
+
+• Signer ambiguity: [18, Thm. 2] simulates the challenge by a uniform tuple (t1, . . . , t N , z )
+
+and concludes advantage 1/2 “since b, sk b are unused”; the step that makes the simulated tuple verify, programming H at the induced commitment, is left implicit. Over a field this is harmless (a uniform tuple can always be made to verify), but the same omission is fatal over lattices, where a uniform tuple neither lies in the sparse set Bτ nor passes the rejection test (Proposition 2). We therefore take ambiguity to be the zero-knowledge of a one-out-of-N proof (Definition 10), made rigorous with the programming step explicit. 
+
+• Extended withdrawability: [18, Thm. 3] argues that, ambiguity holding, the adversary guesses the signer with probability 1/N and that WSVerify still accepts, a mixture of an informal 1/N bound and the completeness of re-attribution. Our Theorem 4 is a game-based reduction to commitment hiding and ring anonymity, and we additionally prove claimability soundness (Proposition 6), for which [18] state no result. 
+
+• A new statement: Proposition 2 (no secure literal lattice transcription) has no counterpart in [18]: it is a lattice-specific impossibility that justifies treating the one-out-of-N signature as a black box rather than transcribing their concrete scheme. 
+
+Relation to the earlier lattice transcription. A direct lattice transcription of [18] adopts their definitions verbatim, including the completeness-style Definition 3 and the informal ambi-guity argument, and so inherits the gaps above, compounded by two lattice-specific defects: it publishes a signer-derived shift {As1sj } that breaks ambiguity (Section 8), and its one-out-of-N
+
+layer is the unsound challenge-split of Proposition 2. The refinements of this section, the hiding game (Definition 14), the explicit claimability notion (Definition 16), and the black-box ambi-guity assumption (Definition 10), correct issues present in both [18] and that transcription, and are exactly what the construction of Section 5 is designed to satisfy. 
+
+# 5 The construction 
+
+5.1 Ingredients and random oracles 
+
+The construction combines the three primitives fixed in Sections 2.4–2.7. 12 1. A Fiat-Shamir with aborts base signature DS = ( KeyGen , Sign , Verify ) over the common matrix A (Section 2.5), whose signing algorithm evaluates a challenge random oracle HDS :
+
+{0, 1}∗ → Bτ .2. An anonymous one-out-of-N signature Ambi = ( AKeyGen , ASign , AVerify ) (Section 3), whose non-interactive proof evaluates its own challenge oracle HAmbi : {0, 1}∗ → X , where X is the challenge space of the underlying Σ-protocol (a bounded subset of Rq for a one-out-of-many proof; any finite set for the abstract interface). We take AKeyGen = KeyGen , so ring members and signers share the key format pk = t = As1 + s2, sk = ( s1, s2).3. A commitment Com ck : M × Sm → R k′ 
+
+> q
+
+with key ck = ¯A ∈ R k′×mq (Section 2.7), to-gether with an injective index encoding Encode : [ N ] → M ; we write Com ck (i; ρ) for 
+
+Com ck (Encode (i); ρ), where i is the signer’s position in π under the canonical order of Section 2.1, so that “the committed index” names a unique ring member. Here ⟨·⟩ : ( {0, 1}∗)∗ → { 0, 1}∗ is the fixed injective tuple encoding of Section 2.1. The two random oracles HDS and HAmbi are domain-separated (say, by a distinct one-bit prefix), so a query to one is never a query to the other; the extended withdrawable signature introduces no further oracle of its own, invoking HDS , H Ambi only through Sign / Verify and ASign / AVerify .Correctness and security are stated in the (quantum) random-oracle model (Section 2.2). 
+
+5.2 Setup and key generation 
+
+Algorithm 2 Setup (1 κ) and KeyGen (pp ) 
+
+> 1:
+
+procedure Setup (1κ) 
+
+> 2:
+
+A $
+
+← R k×lq ; ck = ¯A $
+
+← R k′×mq ; return pp = ( A, ck ) 
+
+> 3:
+
+end procedure  
+
+> 4:
+
+procedure KeyGen (pp ) 
+
+> 5:
+
+(s1, s2) $
+
+← Slη × Skη ; t = As1 + s2; return pk = t, sk = ( s1, s2) 
+
+> 6:
+
+end procedure 
+
+Setup fixes the parameters shared by all users: a uniform module matrix A $
+
+← R k×lq and a commitment key ¯A $
+
+← R k′×mq . A single common A is essential (Section 2.8): each public key is the module-LWE sample t = As1 + s2 ∈ R kq taken against the same A, so that the membership relation “ ∃ short (s1, s2) : tj = As1 + s2” proved by the one-out-of-N layer is identical for every ring member, which is what makes “one of the tj opens to a short witness” a well-formed statement across π. The secret key is the short pair (s1, s2) ∈ Slη × Skη ; its shortness is what the base signature’s rejection sampling exploits and what decisional MLWE (Definition 3) protects against key recovery. Finally, Setup is a public-coin common reference string: A and ¯A are uniformly sampled and no party holds, or needs, a trapdoor, since binding (MSIS) and hiding (MLWE) hold for uniformly generated ¯A.The contrast with the group-based KeyGen of [18] is discussed in Section 8.3. 
+
+5.3 Withdrawable signing and public verification 
+
+WSign proceeds in two steps. First it commits to its own index : it samples short randomness 
+
+ρ $
+
+← Sm and sets C = Com ck (i; ρ) ∈ R k′ 
+
+> q
+
+, a commitment that hides i under decisional MLWE (Definition 7) and to which the signer will later be bound (Definition 8). Second, it produces a one-out-of-N signature on the message ⟨μ, C ⟩ over the ring π = aux ∪ { pk i} using its own witness, σr ← ASign (⟨μ, C ⟩, sk i, π ). Folding C into the signed message binds the commitment to the transcript through HAmbi , so C cannot be stripped or replaced without invalidating σr; this 13 Algorithm 3 WSign (μ, sk i, aux ) and WSVerify (μ, pk, σ ) 
+
+> 1:
+
+procedure WSign (μ, sk i, aux ) 
+
+> 2:
+
+π = aux ∪ { pk i}; ρ $
+
+← Sm; C = Com ck (i; ρ) ▷ hiding commitment to signer index  
+
+> 3:
+
+σr ← ASign (⟨μ, C ⟩, sk i, π ) ▷ C bound into the ring message  
+
+> 4:
+
+return σ = ( σr, C, aux ) 
+
+> 5:
+
+end procedure  
+
+> 6:
+
+procedure WSVerify (μ, pk, σ ) ▷ public  
+
+> 7:
+
+parse (σr, C, aux ); π = aux ∪ { pk }; return AVerify (⟨μ, C ⟩, π, σ r) 
+
+> 8:
+
+end procedure 
+
+is what makes the later claim sound (Remark 4). The withdrawable signature is σ = ( σr, C, aux ).Verification is public: WSVerify reconstructs π = aux ∪ { pk } and returns AVerify (⟨μ, C ⟩, π, σ r),reading only public keys. Two properties are immediate from the algorithm. Ambiguity: σr hides the signer index by the anonymity of Ambi (Definition 10) and C hides it by commitment hiding, so σ leaks nothing about which member of π signed. Extended withdrawability (re-attribution): for any 
+
+pk ′ ∈ π the repackaged signature σ′ = ( σr, C, π \ { pk ′}) verifies, WSVerify (μ, pk ′, σ ′) = 1 , since 
+
+(π \ { pk ′}) ∪ { pk ′} = π; one withdrawable signature verifies under every potential signer. This is exactly the completeness that Definition 3 of [18] isolates, and which our hiding game (Definition 14) subsumes. The corresponding change to WSign , a committed index in place of published shifts, is compared in Section 8.3. 
+
+5.4 Confirmation, confirmed verification and checking 
+
+Algorithm 4 Confirm , CVerify , Check  
+
+> 1:
+
+procedure Confirm (μ, sk i, pk i, aux, σ ) 
+
+> 2:
+
+π = aux ∪ { pk i}; δs ← Sign sk i (⟨μ, π, σ ⟩); return δ = ( δs, i, ρ ) ▷ (i, ρ ): position and opening retained by the signer from WSign  
+
+> 3:
+
+end procedure  
+
+> 4:
+
+procedure CVerify (μ, pk i, σ, δ ) 
+
+> 5:
+
+parse (δs, i, ρ ); return Verify pk i (⟨μ, π, σ ⟩, δ s) 
+
+> 6:
+
+end procedure  
+
+> 7:
+
+procedure Check (μ, pk i, σ, δ ) 
+
+> 8:
+
+parse σ = ( σr, C, aux ), δ = ( δs, i, ρ ) 
+
+> 9:
+
+if pk i = (aux ∪ { pk i})[ i] ∧ C = Com ck (i; ρ) ∧ WSVerify (μ, pk i, σ ) = 1 ∧
+
+CVerify (μ, pk i, σ, δ ) = 1 then  
+
+> 10:
+
+return 1 
+
+> 11:
+
+end if  
+
+> 12:
+
+return 0 
+
+> 13:
+
+end procedure 
+
+Confirm is the signer’s claim, and it is stateful in one respect: per signature, the signer retains the opening randomness ρ drawn inside WSign together with its position i in π; the experiments of Section 4 model exactly this by storing ρ in W . Holding sk i and (i, ρ ), the signer produces an ordinary base signature on the entire withdrawable object, δs ← Sign sk i (⟨μ, π, σ ⟩), and reveals the opening (i, ρ ) of the index commitment C; the confirmed signature is δ = ( δs, i, ρ ). Signing 
+
+⟨μ, π, σ ⟩ rather than μ alone makes δs inseparable from this particular σ, and revealing (i, ρ )
+
+lifts the ambiguity by naming the signer. CVerify is public: it returns Verify pk i (⟨μ, π, σ ⟩, δ s),so a confirmed signature is checkable under the signer’s public key by anyone. Check certifies traceability on top of CVerify : it recomputes C = Com ck (i; ρ) (the revealed index is the one 14 committed inside σ) and requires WSVerify (μ, pk i, σ ) = 1 as well; hence Check accepts only when 
+
+δ confirms this σ and attributes it to the unique committed signer. 
+
+Remark 4 (Why a plain signature is not a sound claim) . δs = Sign sk i (⟨μ, π, σ ⟩) proves the claimant holds sk i, but every ring member holds its own secret key, so on its own any member could “confirm” any σ. The commitment C, created at signing time and bound into the ring message ⟨μ, C ⟩, is fixed by σ; by binding it opens to a single index, the true signer’s. Check 
+
+accepts only if the opened i matches C, so only the actual author can confirm. 
+
+Remark 5 (Reuse of the key across the two layers) . The same secret sk = ( s1, s2) serves as the 
+
+Ambi membership witness in σr and as the DS signing key in δs. This is safe because both primitives are zero-knowledge: the accepted Ambi transcript is witness-independent (Definition 10) and DS is naHVZK (Section 2.5), so a distinguisher’s joint view of σr and any confirmed 
+
+δs under pk i is efficiently simulatable and leaks nothing about s1 beyond pk i = ti. Concretely, this is why Step 1 of Theorem 5 may answer confirmations with the real key while the reduction of Step 2 never needs sk i: the two uses of the key are never simultaneously required under the target. Our Confirm replaces their two signatures and embedded group element by one base signature and one commitment opening; see Section 8.3. 
+
+# 6 Security analysis 
+
+We establish, in the (quantum) random-oracle model, the four properties of Section 4: correctness (Theorem 3), extended withdrawability (Theorem 4), unforgeability under insider corruption (Theorem 5) and claimability soundness (Proposition 6). Each result reduces the security of the composed scheme to a single, previously stated guarantee of an ingredient: correctness to the correctness of DS , Ambi , Com ; extended withdrawability to commitment hiding (hence decisional MLWE) and the anonymity of Ambi ; unforgeability to the EUF-CMA security of the base signature DS ; and claimability soundness to commitment binding (hence MSIS). All reductions are tight up to the stated additive terms and the factor N from guessing the target signer, and none rewinds the adversary. Throughout we write σ = ( σr, C, aux ), δ = ( δs, i, ρ ) and 
+
+π = aux ∪ { pk i} as in Section 5. Correctness requires that an honestly generated withdrawable signature and its confirmation pass all three verification algorithms. Because the construction is modular, this follows from the correctness of the three ingredients; the lattice rounding that makes it hold at the concrete level is confined to DS and Ambi and rests on the rounding-stability Lemma 1. 
+
+Theorem 3 (Correctness) . If DS , Ambi and Com are correct, then EWS is correct (Definition 13). Proof. Fix κ, a ring π with pk i ∈ π, a message μ, and honestly generated pp, {(pk j , sk j )}; let 
+
+σ = ( σr, C, aux ) ← WSign (μ, sk i, aux ) and δ = ( δs, i, ρ ) ← Confirm (μ, sk i, pk i, aux, σ ). We check the three requirements of Definition 13. 1. WSVerify (μ, pk i, σ ) = 1 . By construction σr = ASign (⟨μ, C ⟩, sk i, π ) with sk i a valid witness for pk i = ti ∈ π, and WSVerify returns AVerify (⟨μ, C ⟩, π, σ r), which is 1 with overwhelm-ing probability by correctness of Ambi (Definition 9). At the concrete level (Section 7) this is the completeness of the one-out-of-many Σ-protocol made non-interactive by Fiat-Shamir: an honestly generated membership proof verifies with overwhelming probability. (The HighBits /LowBits rounding of Lemma 1 enters only through the base signature DS in 
+
+CVerify /Check , not through Ambi .) 2. CVerify (μ, pk i, σ, δ ) = 1 . Here δs = Sign sk i (⟨μ, π, σ ⟩) and CVerify returns Verify pk i (⟨μ, π, σ ⟩, δ s),which is 1 with overwhelming probability by correctness of DS (Definition 1). 15 3. Check (μ, pk i, σ, δ ) = 1 . Check recomputes Com ck (i; ρ) and compares it with the C contained in σ; the two are equal because Confirm reveals the very randomness ρ used to form C at signing time. The position check pk i = ( aux ∪ { pk i})[ i] holds by construction, since the honest Confirm reveals exactly the signer’s position in π. Together with items 1 and 2, which Check re-invokes, all four conjuncts hold and Check returns 1.Each item fails only with the negligible correctness error of the corresponding ingredient, so their conjunction holds with overwhelming probability. Finally, re-attribution is a corol-lary of item 1: for any pk ′ ∈ π, the repackaged signature σ′ = ( σr, C, π \ { pk ′}) satisfies 
+
+WSVerify (μ, pk ′, σ ′) = 1 , since (π \ { pk ′}) ∪ { pk ′} = π reconstructs the same ring and message 
+
+⟨μ, C ⟩, the completeness that Definition 3 of [18] isolates and that our hiding game subsumes. Extended withdrawability is the hiding guarantee: until the signer confirms, no efficient adversary, even one holding every secret key in the ring, can tell which of two nominated members produced a withdrawable signature. Exactly two components of σ could betray the signer: the index commitment C and the ring signature σr. The proof neutralises them in turn by a three-game sequence, first replacing C by a commitment to a fixed dummy index (commitment hiding), then re-signing σr with a fixed witness (ring anonymity), after which the challenge is manifestly independent of the hidden bit b. Crucially, since A holds all keys it answers its own WSign and 
+
+Confirm queries, so the reduction alters only the challenge σ∗; and A cannot confirm σ∗, because the challenge randomness ρ∗ (which would open C∗) is withheld, this is the “until claim” clause. 
+
+Theorem 4 (Extended withdrawability) . For every PPT A there are PPT D, B with 
+
+Adv wd EWS (A) ≤ Adv hide Com (D) + Adv anon Ambi (B) ≤ Adv MLWE (D) + Adv anon Ambi (B).
+
+Proof. Write px := Pr[ b′ = b | Gx] for the winning probability in game Gx. The adversary already holds every sk j and constructs any auxiliary signatures itself, so the challenger’s only action is to produce the challenge σ∗ = ( σ∗ 
+
+> r
+
+, C ∗, aux ∗); the three games differ only in how C∗ and σ∗ 
+
+> r
+
+are formed. In every game the packaging is the canonical aux ∗ = π \ { pk i0 } of Definition 14, so the 
+
+aux component carries no information about b. Recall σ∗ 
+
+> r
+
+= ASign (⟨μ∗, C ∗⟩, sk u, π ) for a witness index u and C∗ = Com ck (v; ρ∗) for a committed index v; the three games vary the pair (u, v ).
+
+• Game G0 (real): C∗ = Com ck (ib; ρ∗), σ∗ 
+
+> r
+
+= ASign (⟨μ∗, C ∗⟩, sk ib , π ). By definition: 
+
+p0 = 12 ± Adv wd EWS (A), so Adv wd EWS (A) = |p0 − 12 |.
+
+• Game G1 (dummy commitment): Identical to G0 except C∗ = Com ck (i0; ρ∗) (a commit-ment to the fixed index i0, independent of b); the ring signature is still 
+
+σ∗ 
+
+> r
+
+= ASign (⟨μ∗, C ∗⟩, sk ib , π ).
+
+Bound |p0 − p1|. Let D be a hiding adversary in the sense of Definition 7: it names two messages (x0, x 1) and receives C∗ = Com ck (xβ ; ρ∗) with fresh hidden ρ∗, for one of the two cases β ∈ { 0, 1}; its advantage is the gap between its acceptance probabilities in the two cases. D generates pp (drawing ck from the hiding challenger and A itself) and all (pk j , sk j ),hands A everything, and receives (μ∗, i 0, i 1, st ). It picks b $
+
+← { 0, 1}, submits the single query (m0, m 1) = ( ib, i 0), receives C∗, computes σ∗ 
+
+> r
+
+= ASign (⟨μ∗, C ∗⟩, sk ib , π ) (it knows 
+
+sk ib ), returns σ∗ = ( σ∗ 
+
+> r
+
+, C ∗, aux ∗), and outputs [b′ = b]. If β = 0 then C∗ = Com ck (ib; ·)
+
+and D perfectly simulates G0; if β = 1 then C∗ = Com ck (i0; ·) and it simulates G1. Hence 
+
+|p0 − p1| ≤ Adv hide Com (D) ≤ Adv MLWE (D).16 • Game G2 (fixed witness): Identical to G1 except the ring signature uses the fixed witness 
+
+sk i0 : σ∗ 
+
+> r
+
+= ASign (⟨μ∗, C ∗⟩, sk i0 , π ). Now none of C∗ (as of G1), σ∗ 
+
+> r
+
+, or the canonical aux ∗
+
+depends on b, so the whole view of A is independent of b; therefore p2 = 12 .
+
+Bound |p1 − p2|. Let B play the Ambi anonymity game (Definition 10), whose challenger provides all {sk j } and, on a query (m, j 0, j 1, π ), returns ASign (m, sk jβ′ , π ) for its bit β′.
+
+B receives the keys, hands them and pp, π to A (relaying HAmbi to its challenger’s oracle and lazily sampling HDS itself), gets (μ∗, i 0, i 1, st ), picks b $
+
+← { 0, 1} and ρ∗, forms C∗ =
+
+Com ck (i0; ρ∗), and submits the anonymity query (⟨μ∗, C ∗⟩, i b, i 0, π ); it plants the returned 
+
+σ∗ 
+
+> r
+
+into σ∗ and outputs [b′ = b]. If β′ = 0 the witness is sk ib (game G1); if β′ = 1 the witness is sk i0 (game G2). Full key exposure makes it legitimate for B to hold and forward all secret keys. Hence |p1 − p2| ≤ Adv anon Ambi (B).Combining the three steps, 
+
+Adv wd EWS (A) = p0 − 12 = |p0 − p2| ≤ | p0 − p1| + |p1 − p2| ≤ Adv hide Com (D) + Adv anon Ambi (B).
+
+Unforgeability under insider corruption guarantees that only the genuine signer can confirm: no adversary, even one holding every ring member’s key except the target’s, can output a con-firmed signature on a message the target never confirmed. Note the withdrawable signature σr
+
+is itself a ring signature that the adversary could forge with a corrupted witness, so the unforge-able core is the confirmation, where δs is a base signature under the target key pk i on the whole object ⟨μ, π, σ ⟩. Accordingly the reduction plants the EUF-CMA challenge at pk i: it answers withdrawable-signing queries without sk i by ring-signing with a corrupted witness (indistinguish-able by anonymity, Step 1) and confirmation queries through its own signing oracle, so that a confirmed forgery on a fresh message is exactly a base-scheme forgery (Step 2). The reduction never rewinds and incurs no multiplicative qH factor, the point of rigour on which it improves [18, Thm. 1]. 
+
+Theorem 5 (Unforgeability under insider corruption) . For every PPT A making qW signing and qC confirmation queries there are PPT B, B′ with 
+
+Adv EUF -CMA EWS (A) ≤ Adv EUF -CMA DS (B) + qW Adv anon Ambi (B′).
+
+B makes at most qC signing queries and does not rewind A (no multiplicative qH loss). Proof. For a ring π ∋ pk i with |π| ≥ 2 write j0(π) for a fixed member of π \ { pk i}, a witness 
+
+sk j0(π) for it is known to the honest keyholder (all non-target keys are honestly generated), and 
+
+ι(π) for the position of pk i in π under the canonical order (Section 2.1), i.e. the index the honest signer commits to and reveals. We proceed in two steps: a game hop that removes the use of sk i
+
+from the signing oracle, and a reduction that turns a forgery into a DS forgery. 
+
+• Step 1: replacing the signing witness: Let H0 = Exp EUF -CMA EWS ,A be the real game (the OWSign 
+
+oracle signs the ring with witness sk i). Let H1 be identical except that OWSign (μ, π )
+
+answers with σ = ( ASign (⟨μ, C ⟩, sk j0(π), π ), C, π \ { pk i}), C = Com ck (ι(π); ρ), the same commitment C to the position ι(π) and the same message ⟨μ, C ⟩, but the ring is signed with the alternative witness sk j0(π). All other steps (in particular C, W , OConfirm and the win predicate) are unchanged. We claim 
+
+Pr[ A wins H0] − Pr[ A wins H1] ≤ qW Adv anon Ambi (B′).
+
+Define hybrids H(0) , . . . , H (qW ) where H(t) answers the first t OWSign queries with the alternative witness sk j0(π) and the remaining ones with sk i; then H(0) = H0 and H(qW ) =
+
+H1. A distinguisher B′ against Ambi -anonymity (Definition 10) receives all {sk j } from its 17 challenger, legitimate, since anonymity is under full key exposure, and this is exactly why B′
+
+may hold sk i here even though B below will not, picks t∗ $
+
+← [qW ], and simulates A answering the s-th OWSign query with sk j0 if s < t ∗, with sk i if s > t ∗, and, for s = t∗ on ring π
+
+and message ⟨μ, C ⟩, by submitting the anonymity query (⟨μ, C ⟩, i, j 0(π), π ) and planting the reply. It relays HAmbi to its anonymity challenger’s oracle, so the planted challenge verifies in A’s view, and simulates HDS by lazy sampling; it answers OConfirm honestly (it holds all keys and all stored ρ) and finally outputs [A wins ]. When the anonymity bit selects witness sk i (resp. sk j0 ) the t∗-th answer matches H(t∗−1) (resp. H(t∗)), so a standard telescoping over the uniform t∗ yields the displayed bound. 
+
+• Step 2: reduction to DS unforgeability: B receives from the DS challenger the public matrix A, an EUF-CMA challenge key pk ∗ generated under it, a signing oracle OSign (·)
+
+and the random oracle HDS ; it completes the public parameters as pp = ( A, ck ) with a fresh 
+
+ck = ¯A $
+
+← R k′×mq (the ring layer requires the ring keys and pk ∗ to share one A, Section 2.8). It sets pk i := pk ∗, runs (pk j , sk j ) ← KeyGen (pp ) for all j̸ = i, and gives A the keys 
+
+{pk j } and {sk j }j̸ =i. It answers, without ever using sk i:
+
+– OWSign (μ, π ): draw ρ $
+
+← Sm, set C = Com ck (ι(π); ρ), σr ← ASign (⟨μ, C ⟩, sk j0(π), π )
+
+using the known witness sk j0(π), σ = ( σr, C, π \ { pk i}); store (μ, π, σ, ρ ) in W ; return 
+
+σ.
+
+– OConfirm (μ, π, σ ): if (μ, π, σ, ρ ) ∈ W , query δs ← O Sign (⟨μ, π, σ ⟩), set M ← M ∪ { μ},and return δ = ( δs, ι (π), ρ ); else ⊥.
+
+– Random oracles: HDS is relayed to the DS challenger’s oracle; HAmbi is simulated by 
+
+B by lazy sampling ( B ring-signs with the real witness sk j0(π), so no programming is needed). Neither oracle is ever programmed by B.This is a perfect emulation of H1: the OWSign answers are exactly those of H1, and OConfirm 
+
+produces the honest δ because the stored ρ opens C to ι(π) and δs = Sign sk i (⟨μ, π, σ ⟩) is what 
+
+OSign returns (recall sk i = sk ∗). Suppose A wins H1, outputting (μ∗, π ∗, σ ∗, δ ∗) with δ∗ = ( δ∗ 
+
+> s
+
+, ι ∗, ρ ∗) for some index ι∗, μ∗ /∈
+
+M , and CVerify = 1 , i.e. Verify pk ∗ (⟨μ∗, π ∗, σ ∗⟩, δ ∗ 
+
+> s
+
+) = 1 . The only messages B ever sent to OSign 
+
+are the strings ⟨μt, π t, σ t⟩ arising from confirmation queries, and every such μt was placed in M .Since μ∗ /∈ M , we have μ∗̸ = μt for all t; by injectivity of ⟨·⟩ the string ⟨μ∗, π ∗, σ ∗⟩ differs from every queried string, hence was never signed. Therefore (⟨μ∗, π ∗, σ ∗⟩, δ ∗ 
+
+> s
+
+) is a valid DS forgery, which B outputs. Thus Pr[ A wins H1] ≤ Adv EUF -CMA DS (B), with B making at most qC signing queries and never rewinding A. Combining Steps 1–2 gives the theorem. (If the target index is chosen by A among the N keys rather than fixed, B guesses it in advance, losing a factor N .) Claimability soundness makes the confirmation unambiguous: a confirmed signature must bind to a single signer, so that an adversary cannot present one withdrawable signature σ with two valid confirmations attributing it to different ring members. This is the property that gives the committed index its meaning, without it, “confirming” would not pin down who signed, and it reduces directly to the binding of the commitment, hence to MSIS. 
+
+Proposition 6 (Claimability soundness) . For every PPT A there is a PPT A′, running A once plus a parse, with Adv claim EWS (A) ≤ Adv bind Com (A′) ≤ Adv MSIS (A′).Proof. Suppose A outputs σ = ( σr, C, aux ) together with two confirmations δ = ( δs, i, ρ ) and 
+
+δ′ = ( δ′
+
+> s
+
+, i ′, ρ ′), both accepted by Check and with i̸ = i′. Acceptance forces C = Com ck (i; ρ) and 
+
+C = Com ck (i′; ρ′). Recalling Com ck (x; ρ) = ¯Aρ + Encode (x), subtracting the two openings gives 
+
+¯Aρ + Encode (i) = ¯Aρ ′ + Encode (i′) =⇒ ¯A(ρ − ρ′) = Encode (i′) − Encode (i).
+
+18 Put y =  Encode (i) − Encode (i′), ρ − ρ′ ∈ R k′+mq . Then 
+
+[ I | ¯A ] · y =  Encode (i) − Encode (i′) + ¯A(ρ − ρ′) = 0,
+
+and y̸ = 0 because Encode is injective and i̸ = i′, while y is short because Encode (i), Encode (i′)
+
+are fixed coset representatives and ρ, ρ ′ ∈ Sm. Hence y is a short nonzero kernel vector of 
+
+[ I | ¯A ], i.e. an MSIS k′,m,γ solution (in the indexing of Definition 4: the matrix is ¯A ∈ R k′×mq , the solution lives in Rk′+mq ) with γ = ∥y∥∞. Every such A therefore yields a commitment-binding (equivalently MSIS) solver, giving, for the wrapper A′ that runs A once and outputs the two openings (resp. the vector y), Adv claim EWS (A) ≤ Adv bind Com (A′) ≤ Adv MSIS (A′).
+
+Remark 6 (QROM) . The reductions use H only through relaying (Theorem 5) or not at all (Theorems 3–4, Proposition 6). The only random-oracle programming is internal to Ambi -anonymity and DS -unforgeability; taking both in the QROM (the former via the honest-verifier zero-knowledge of the one-out-of-many proof, the latter via the Kiltz–Lyubashevsky–Schaffner analysis of Dilithium [14], and the adaptive reprogramming of [10]) makes all statements QROM statements. No EWS -level reduction (Theorems 3–5, Proposition 6) programs H, each either re-lays it or ignores it, so all reprogramming is confined to the assumed QROM security of DS and 
+
+Ambi , and the EWS -level reductions transfer verbatim with the standard adaptive-reprogramming adjustments. One step is not verbatim: the oracle each reduction simulates rather than relays cannot be lazily sampled against superposition queries; in the QROM it is implemented by a 
+
+2q-wise independent function, perfectly indistinguishable from a random oracle to any q-query quantum algorithm [28]. 
+
+# 7 Instantiation 
+
+Take DS to be a no-hint, full-t Dilithium-style signature: challenge set Bτ with τ ∈ { 39 , 49 , 60 },
+
+γ2 = ( q − 1) /88 (level 2) or (q − 1) /32 (levels 3,5), not γ1/2, and rejection ∥z∥∞ < γ 1 − β,
+
+∥LowBits (Az − ct, 2γ2)∥∞ < γ 2 − β; its EUF-CMA security follows from SelfTargetMSIS and MSIS. Take Ambi to be a lattice one-out-of-many proof [11, 7] over the same A, whose anonymity under full key exposure is its zero-knowledge; and Com the Ajtai commitment of Section 2.7. 
+
+Corollary 7. With these instantiations, for every PPT A,
+
+Adv wd EWS (A) ≤ Adv MLWE + Adv anon Ambi , Adv claim EWS (A) ≤ Adv MSIS ,
+
+Adv EUF -CMA EWS (A) ≤ Adv EUF -CMA DS + qW Adv anon Ambi ,
+
+all negligible under decisional MLWE, MSIS, SelfTargetMSIS and the zero-knowledge of Ambi .
+
+HAETAE may replace Dilithium as the base DS once its bimodal-Gaussian rejection is shown to meet the same EUF-CMA interface; it plays no role in the ambiguity or commitment layers. Quantitatively, the binding solution extracted in Proposition 6 has norm γ = ∥y∥∞ ≤
+
+max(2 BEncode , 2∥S∥∞), with BEncode bounding the encoded indices (Remark 1) and ∥S∥∞ the commitment randomness; the claimability bound is meaningful only when this γ lies below the 
+
+MSIS k′,m,γ hardness threshold (indexing as in Definition 4) for the chosen (q, n, k ′, m ). A concrete parameter set simultaneously meeting DS EUF-CMA, Ambi zero-knowledge, MLWE-hiding and MSIS-binding at this γ is left to the full version. 
+
+Remark 7 (Why not a naive Dilithium challenge-split) . The reason we do not instantiate Ambi 
+
+by a naive Dilithium challenge-split, signing a ring with a single response z and challenges 
+
+c1, . . . , c N ∈ Bτ summing to H(·), recombining ci = H(·) − P  
+
+> j̸=i
+
+cj for the signer, is given in Section 3.3: Proposition 2 shows the honest signer accepts only with probability 2−Ω( n), and Remark 2 shows anonymity would fail even if completeness were patched. (Should one still attempt it, the correct low-order acceptance test is on LowBits (Az − P 
+
+> j
+
+cj tj , 2γ2), i.e. on the recombined verification vector w = Az − P 
+
+> j
+
+cj tj , not on Az − citi.) 19 8 Comparison with Liu-Susilo-Baek 
+
+This section collects, in one place, every comparison with the discrete-logarithm construction of Liu, Susilo and Baek [18]: the structural reason a literal port fails (Section 8.1), the definition- and theorem-level correspondence with our security model (Section 8.2, Table 1), and the algorithm-by-algorithm differences of the construction (Section 8.3). The definitional refinements them-selves are stated where the definitions are introduced (Section 4.1); here we assemble the full picture and justify each divergence against a single structural fact, the absence, over lattices, of a free re-randomisation of a shared value. 
+
+8.1 The structural obstruction 
+
+Liu, Susilo and Baek realise extended withdrawability from a discrete-logarithm one-out-of-N
+
+signature in which re-randomising the signer’s contribution across the ring is essentially free: one group element serves ambiguity and confirmation. The lattice setting has no such free re-randomisation. Transporting a signer-derived shift in the clear (as an earlier draft did, publishing 
+
+{As1sj }j ) exposes As1 ≈ tsigner , since ti − As1 = s2 is short only for the true signer, and breaks ambiguity, the same structural obstruction met in the designated-verifier setting. We therefore separate the two roles: ambiguity is a genuine lattice one-out-of-N proof, and confirmation is a claim, a binding signature plus the opening of a hiding index commitment bound into the tran-script. This is exactly a claimable ring signature [20, 27], a primitive the related-work literature already identifies with withdrawable signatures. The cost is one commitment and its opening per signature; the gain is that no signer-identifying value is ever published, so ambiguity reduces cleanly to MLWE (hiding) plus the zero-knowledge of the one-out-of-N proof, and confirmation soundness to MSIS-binding plus the base scheme’s EUF-CMA. 
+
+8.2 Correspondence with the Liu-Susilo-Baek security model 
+
+Table 1 sets each notion of our model against its counterpart in [18]; the per-notion justifications are given in Section 4.1, where each definition is introduced. The two rows that carry genuine security content, rather than a change of algebraic setting, are extended withdrawability (a hiding game in place of a completeness statement) and claimability soundness (a new notion with no counterpart in [18]); the unforgeability row records a strictly tighter reduction (no multiplicative 
+
+qH loss). 
+
+8.3 Construction, algorithm by algorithm 
+
+We now compare the seven algorithms of Section 5 with their discrete-logarithm originals. The first three items contrast the signing-side algorithms directly; the last collects the same three contrasts against a literal lattice transcription of [18], making explicit which defect each of our design choices repairs. 
+
+Key generation vs. their gsk . Their key generation draws sk $
+
+← Zp and sets pk = gsk ; ours is the module-lattice analogue, with sk = ( s1, s2) short and pk = As1 + s2. They require no 
+
+Setup because the group G and generator g are global objects; the lattice setting has no canonical counterpart, so the common A must be produced by Setup and shared, precisely the amendment missing from a literal transcription (Section 8). 
+
+Withdrawable signing vs. their published shifts. Their WSign re-randomises every ring key by a shift, forming γ′ = {pk j gsj }j , signs γ′ with a shifted witness fsk = sk i + r, and publishes the shifts σ2 = {gsj }j so the verifier can rebuild γ′; the shift exists solely to enable the linked confirmation. We keep the ring π and the witness sk i unchanged and introduce a committed 20 Notion Liu-Susilo-Baek [18] This work (difference and justification) 
+
+Syntax seven algorithms Definition 12; identical, but Confirm ,
+
+CVerify also read σ, π , as the confirmed signature binds the whole object ⟨μ, π, σ ⟩
+
+Correctness Definition 1 Definition 13; identical Unforgeability Definition 2; claimed loss 
+
+L = qH
+
+Definition 15; fixed target (loss N ), no qH
+
+factor (Thm. 5) Extended withdrawability Definition 3: completeness, 
+
+Pr = 1 
+
+Definition 14: hiding game, |Pr − 12 |
+
+negligible; completeness is not a hiding guarantee Signer ambiguity Definition 4, ≤ 1 
+
+> N
+
++ negl Definition 10 (full key exposure); same notion, moved to the building block and folded into withdrawability Claimability soundness , (only implicit in Check ) Definition 16, Prop. 6; new, makes “claim” sound via commitment binding Assumptions discrete logarithm MLWE, MSIS, SelfTargetMSIS +
+
+commitment; post-quantum, and the commitment replaces the free gr
+
+Unforgeability proof Thm. 1: loss qH , informal extraction Thm. 5: no qH factor, explicit reduction Ambiguity proof Thm. 2: programming step left implicit building-block ZK (Definition 10); the implicit step is fatal over lattices (Prop. 2) Withdrawability proof Thm. 3: informal 1/N +
+
+completeness Thm. 4: reduction to hiding + anonymity Impossibility result , Prop. 2: no literal lattice transcription 
+
+Table 1: Our security model against that of Liu, Susilo and Baek [18]. Construction-level differences are compared in Section 8. index instead. The reason is structural: over a prime-order group the published shifts {gsj }
+
+are uniform and independent of the secret, hence harmless, whereas their literal lattice analogue 
+
+{As1sj } shares the common factor As1 ≈ ti and thereby reveals the signer (Section 8). Replacing the shift by a hiding commitment removes the leak while preserving the one function the shift served, carrying, into σ, a signer-chosen value that confirmation can later open. 
+
+Confirmation vs. their ephemeral-key claim. Their confirmation re-derives the shared ran-domness r = H(γ, g sk i  
+
+> P
+> jsj
+
+) and outputs δ1 = Sign ({m, σ }, r ) (a signature under the ephemeral key gr), δ2 = Sign (m, sk i) (under the real key), and δ3 = gr; their Check then verifies gr = gsi
+
+against the value embedded in σ2 and δ1 under gr. Our single signature δs on ⟨μ, π, σ ⟩ plays the role of both their δ2 (it binds the real key pk i) and their δ1 (it binds the object σ), while the commitment C plays the role of the embedded gr: the signer-chosen value fixed inside σ at signing time that Check re-derives and matches at confirmation. The commitment is the lattice analogue of gr, with one strict improvement, it hides the index on its own, whereas gsi hides only in combination with the ambiguity of σ1. This is why our Confirm needs one base signature plus one opening, in place of two signatures and an embedded group element. 
+
+8.4 Algorithm-level relation to a direct lattice transcription 
+
+The construction above is most sharply understood as the correction of a direct lattice tran-scription of [18], which realises the seven algorithms over Rq but ports the discrete-logarithm 21 operations symbol for symbol. Each of that transcription’s signing-side algorithms is thereby defective, and our algorithms differ in exactly the places that repair them. 
+
+• Key generation: The transcription’s KeyGen samples a fresh A $
+
+← R k×lq inside each invo-cation, so distinct users hold distinct matrices and the ring identity Az − P 
+
+> j
+
+cj tj is not defined across π. Our Setup (Algorithm 2) fixes one common A ∈ R k×lq shared by all N
+
+users, making the ring statement well formed, the omission a group-based transcription cannot see, since g ∈ G is global by fiat. 
+
+• Withdrawable signing: The transcription’s WSign shifts each ring key by As1sj , publishes the shifts σ2 = {As1sj }j so the verifier can rebuild the shifted ring, and signs that ring with the shifted witness fsk = ((1 + r)s1, s2), where r = si ∈ Bτ . Both steps are unsound over lattices. First, the published shifts share the common factor As1 = ti − s2 ≈ ti, which is short-distance from the signer’s key ti but from no other tj ; publishing them therefore identifies the signer and destroys ambiguity. Second, (1+ r)s1 is no longer short: for r ∈ Bτ
+
+one has ∥(1 + r)s1∥∞ ≤ (1 + τ )∥s1∥∞, so the shifted witness violates the norm bound that 
+
+ASign ’s rejection sampling presumes (and on which its zero-knowledge rests). Our WSign 
+
+(Algorithm 3) publishes no shift, leaves the witness sk i and the ring π unchanged, and carries the signer-chosen value in the hiding commitment C instead. 
+
+• Confirmation: The transcription’s Confirm sets ℵ = σ2 \ { As1si} and re-derives r =
+
+H π, HighBits (P  
+
+> j̸=i
+
+As1sj + s2, 2γ2); but recovering As1si presupposes si = r, whose derivation needs ℵ, a circular dependency, well defined only if σ2 is index-ordered or the per-signature randomness is stored. It then uses δ3 = A(1+ r)s1 +s2 as an on-the-fly public key against which one of the confirmed components is verified. Our Confirm (Algorithm 4) is stateless and non-circular: the signer signs ⟨μ, π, σ ⟩ under its real key sk i and opens the commitment it stored at signing, with no shift to recover and no ephemeral key to synthesise. In one sentence: the transcription fails because it treats the group re-randomisation gsj as though it had a free lattice analogue; the present construction removes the re-randomisation altogether and recovers traceability from a committed index. The single structural cause behind all three defects, the absence of a cheap lattice shared secret, is analysed in Section 8. 
+
+# 9 Conclusion 
+
+We have given a lattice realisation of extended withdrawable signatures over the Fiat-Shamir with aborts paradigm. The central move is a change of viewpoint: rather than porting the discrete-logarithm construction of Liu, Susilo and Baek [18] operation by operation, which, as we prove, cannot be done securely (Proposition 2), we recognise the extended withdrawable signature as a claimable ring signature in the sense of Park and Sealfon [20], the very abstraction that [18] single out as an instantiation of their primitive. This reframing separates the two responsibilities of the object and assigns each to a component with an established analysis: signer ambiguity is carried by an anonymous one-out-of-N proof used as a black box, and confirmation is a signer’s claim, a binding base signature on the whole withdrawable object together with the opening of a hiding index commitment bound into the transcript. No signer-derived value is ever published in the clear, which is precisely what a literal transcription fails to achieve. 
+
+What we proved. Within a security model that sharpens [18] in two respects, extended with-drawability is recast from a completeness statement into an anonymity-until-claim indistinguisha-bility game (Definition 14), and claimability soundness is added as an explicit notion (Definition 22 16), we gave complete, fully explicit game-based reductions for all four properties in the (quan-tum) random-oracle model. Correctness (Theorem 3) follows modularly from the correctness of the ingredients. Extended withdrawability (Theorem 4) reduces, through a three-game sequence, to commitment hiding (hence decisional MLWE) and the anonymity of the one-out-of-N layer. Unforgeability under insider corruption (Theorem 5) reduces to the plain EUF-CMA security of the base signature, with a clean forgery extraction and, unlike [18, Thm. 1], no rewinding and no multiplicative qH loss, the only overheads being the factor N from guessing the target and an additive qW Adv anon Ambi term. Claimability soundness (Proposition 6) reduces directly to commit-ment binding (hence MSIS). Along the way, Proposition 2 isolates a lattice-specific impossibility with no counterpart in the discrete-logarithm setting: the additive challenge-split that makes their one-out-of-N signature work is complete only with negligible probability once challenges are confined to the sparse set Bτ , and anonymity fails even if completeness is forced. 
+
+Significance. The construction is publicly verifiable, ambiguous until claimed, and post-quantum: its security rests entirely on module-lattice assumptions (MLWE, MSIS, SelfTargetMSIS) and the unforgeability of a standardised-style base signature, so it retains its guarantees against a quantum adversary, exactly the durability that long-lived commitments in decentralised systems require, and that the discrete-logarithm foundation of [18] lacks. Because ambiguity, binding and the base signature are invoked only through their stated interfaces, the result is also modular: any anonymous one-out-of-N proof, any hiding-and-binding commitment, and any EUF-CMA base signature meeting the interfaces of Section 5 may be substituted without reopening the proofs. Instantiated with a no-hint, full-t Dilithium-style base and an established logarithmic-size lattice one-out-of-many proof (Section 7), the scheme is concretely realisable, and the design is faithful to the primitive, the security goals, and the stated intuition of [18]. 
+
+Future work. Several directions remain. First, a fully concrete instantiation: pinning down a logarithmic-size one-out-of-N proof [11, 7] with explicit parameters and giving a single parameter set that simultaneously meets base-signature EUF-CMA, one-out-of-N zero-knowledge, MLWE-hiding and MSIS-binding at the extracted norm γ of Proposition 6, the quantitative gap flagged in Section 7. Second, a rigorous HAETAE [5] base: verifying that its bimodal-Gaussian rejection meets the same EUF-CMA interface would yield shorter signatures at no cost to the surrounding analysis. Third, tightening the reductions: both the factor N from target-guessing in Theorem 5 and the factor 2 relating the guessing and distinguishing forms of the anonymity advantage (Definition 10) are artefacts of the current arguments, and it is natural to ask whether either can be removed. Fourth, functionality extensions that the modular structure should accommodate cleanly: blind withdrawable signing, threshold or multi-signer confirmation, and revocation or time-bounded confirmation windows. Finally, a treatment of concurrent confirmation and an analysis in the plain model (without random oracles) for the ambiguity layer would further strengthen the guarantees. 
+
+# References 
+
+[1] M. Ajtai. Generating hard instances of lattice problems (extended abstract). In Proceedings of the twenty-eighth annual ACM symposium on Theory of computing - STOC ’96 , STOC ’96, pages 99–108. ACM Press, 1996. [2] Dan Boneh, Craig Gentry, Ben Lynn, and Hovav Shacham. Aggregate and verifiably en-crypted signatures from bilinear maps. In International Conference on the Theory and Application of Cryptographic Techniques , 2003. 23 [3] Dan Boneh, Ben Lynn, and Hovav Shacham. Short signatures from the weil pairing. In 
+
+International conference on the theory and application of cryptology and information security ,pages 514–532. Springer, 2001. [4] David Chaum and Eugène Van Heyst. Group signatures. In Workshop on the Theory and Application of of Cryptographic Techniques , pages 257–265. Springer, 1991. [5] Jung Hee Cheon, Hyeongmin Choe, Julien Devevey, Tim Güneysu, Dongyeon Hong, Markus Krausz, Georg Land, Marc Möller, Damien Stehlé, and MinJune Yi. Haetae: Shorter lattice-based fiat-shamir signatures. IACR Transactions on Cryptographic Hardware and Embedded Systems , 2024(3):25–75, 2024. [6] Léo Ducas, Tancrède Lepoint, Vadim Lyubashevsky, Peter Schwabe, Gregor Seiler, and Damien Stehlé. Crystals–dilithium: Digital signatures from module lattices. 2018. [7] Muhammed F Esgin, Ron Steinfeld, Amin Sakzad, Joseph K Liu, and Dongxi Liu. Short lattice-based one-out-of-many proofs and applications to ring signatures. In International Conference on Applied Cryptography and Network Security , pages 67–88. Springer, 2019. [8] Ramses Fernandez-Valencia. Withdrawability in fiat-shamir with aborts constructions. 
+
+arXiv preprint arXiv:2607.05831 , 2026. [9] Amos Fiat and Adi Shamir. How To Prove Yourself: Practical Solutions to Identification and Signature Problems , pages 186–194. Springer Berlin Heidelberg. [10] Alex B Grilo, Kathrin Hövelmanns, Andreas Hülsing, and Christian Majenz. Tight adaptive reprogramming in the qrom. In International Conference on the Theory and Application of Cryptology and Information Security , pages 637–667. Springer, 2021. [11] Jens Groth and Markulf Kohlweiss. One-out-of-many proofs: Or how to leak a secret and spend a coin. In Annual International Conference on the Theory and Applications of Cryptographic Techniques , pages 253–280. Springer, 2015. [12] Javier Herranz and Germán Sáez. Forking lemmas for ring signature schemes. In Interna-tional Conference on Cryptology in India , pages 266–279. Springer, 2003. [13] Markus Jakobsson, Kazue Sako, and Russell Impagliazzo. Designated verifier proofs and their applications. In International Conference on the Theory and Applications of Crypto-graphic Techniques , pages 143–154. Springer, 1996. [14] Eike Kiltz, Vadim Lyubashevsky, and Christian Schaffner. A Concrete Treatment of Fiat-Shamir Signatures in the Quantum Random-Oracle Model , pages 552–586. Springer Inter-national Publishing, 2018. [15] BaoHong Li, YanZhi Liu, and Sai Yang. Lattice-based universal designated verifier signa-tures. In 2018 IEEE 15th International Conference on e-Business Engineering (ICEBE) ,pages 329–334. IEEE, 2018. [16] Yong Li, Willy Susilo, Yi Mu, and Dingyi Pei. Designated verifier signature: definition, framework and new constructions. In International Conference on Ubiquitous Intelligence and Computing , pages 1191–1200. Springer, 2007. [17] Xin Liu, Joonsang Baek, and Willy Susilo. Withdrawable Signature: How to Call Off a Signature , pages 557–577. Springer Nature Switzerland, 2023. [18] Xin Liu, Willy Susilo, and Joonsang Baek. Extended Withdrawable Signature , pages 119–140. Springer Nature Singapore, October 2024. 24 [19] Vadim Lyubashevsky. Fiat-shamir with aborts: Applications to lattice and factoring-based signatures. In International conference on the theory and application of cryptology and information security , pages 598–616. Springer, 2009. [20] Sunoo Park and Adam Sealfon. It wasn’t me! repudiability and claimability of ring signa-tures. In Annual International Cryptology Conference , pages 159–190. Springer, 2019. [21] Ronald L Rivest, Adi Shamir, and Yael Tauman. How to leak a secret. In International conference on the theory and application of cryptology and information security , pages 552– 565. Springer, 2001. [22] Claus-Peter Schnorr. Efficient signature generation by smart cards. Journal of cryptology ,4(3):161–174, 1991. [23] Peter W Shor. Polynomial-time algorithms for prime factorization and discrete logarithms on a quantum computer. SIAM review , 41(2):303–332, 1999. [24] Ron Steinfeld, Laurence Bull, Huaxiong Wang, and Josef Pieprzyk. Universal designated-verifier signatures. In International Conference on the Theory and Application of Cryptology and Information Security , pages 523–542. Springer, 2003. [25] Ron Steinfeld, Huaxiong Wang, and Josef Pieprzyk. Efficient extension of standard schnorr/rsa signatures into universal designated-verifier signatures. In International Work-shop on Public Key Cryptography , pages 86–100. Springer, 2004. [26] Pairat Thorncharoensri, Willy Susilo, and Joonsang Baek. Aggregatable certificateless des-ignated verifier signature. IEEE Access , 8:95019–95031, 2020. [27] Kyosuke Yamashita, Keisuke Hara, Yohei Watanabe, Naoto Yanai, and Junji Shikata. Des-ignated verifier signature with claimability. In Proceedings of the 10th ACM Asia Public-Key Cryptography Workshop , pages 21–32, 2023. [28] Mark Zhandry. How to construct quantum random functions. Journal of the ACM (JACM) ,68(5):1–43, 2021. 25

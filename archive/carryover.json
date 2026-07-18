@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-17T20:59:34.817185+00:00",
-  "updated_date": "20260717",
+  "generated_at": "2026-07-18T21:17:17.564195+00:00",
+  "updated_date": "20260718",
   "carryover_days": 9,
   "tag_states": {
     "sec-cloud-ai": {
-      "updated_date": "20260717",
+      "updated_date": "20260718",
       "carryover_days": 9,
       "items": []
     }
