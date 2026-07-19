@@ -1,0 +1,395 @@
+Title: Trusted Floors Under Untrusted Learners: A Runtime Assured-SLO Guard for ML Serving
+
+URL Source: https://arxiv.org/pdf/2607.09992v1
+
+Published Time: Tue, 14 Jul 2026 00:35:23 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Trusted Floors Under Untrusted Learners: A Runtime Assured-SLO Guard for ML Serving 
+
+## Hsiu-Chi Tsai National Yang Ming Chiao Tung University 
+
+## hctsai1006@cs.nctu.edu.tw 
+
+## NSDI ’27 Frontiers Track 
+
+# Abstract 
+
+Modern ML serving increasingly lets learned, unbounded 
+
+components (routers, latency-SLO admitters, admit ladders) decide a tenant’s quality of service; when one is wrong, the assured SLO can silently break, and the Kubernetes layers beneath (Kueue, DRA, the Gateway-API Inference Extension, GAIE) only add cross-layer surprises. Rather than trust the learner to be right, we bound the damage a wrong one can do : a small trusted guard wraps the untrusted learner— learned proposes, the guard disposes . We observe that a tenant’s assured-SLO obligation splits into two parts with different epistemics. Its safety projection (per-request dispatch feasibility and a per-class, per-window service floor) is a controllable obligation a small guard enforces at runtime .The guard holds it regardless of an arbitrarily-wrong learned admitter , by reservation and priority dispatch, with dropping infeasible work a safety net. Its guarantees are conditional ,scoped by strength: the admission floor and drop rules hold 
+
+by construction , the service floor modulo backend capacity, the worst-case sojourn only in a characterized envelope under the stated assumptions (§2). Its aggregate obligation (a tail-latency percentile over the workload ensemble) is a statistical residual with no per-request enforcement point; it can only be conservatively screened , and a cheap deterministic ( 𝑝 50 )screen is optimistically unsound not only near saturation (𝜌 → 1) but, we measure, well below it. We build the guard (a Simplex-style assured-floor gate plus assured-first priority dispatch) and show on real 2×V100 that it holds assured-class miss 0.0 (admitted-basis; reps 10 , worst upper Wilson CI 0.0053 ) across every miscalibration of a learned admitter under two shed policies that fail in opposite directions (overload, and rejecting assured), with priority dispatch shown load-bearing. Against the strongest 2026 baseline (a real ,deployed GAIE Flow Control on a serving simulator), a mislabelling router flips the same assured requests from miss 
+
+0.0 to 1.0; our guard instead reserves by the true class, so the label cannot break its floor. We characterize when acheap config screen can be trusted (in overload away from the knee, where a 𝑝 50 accept is already sound; a conservative percentile extends this) and when it cannot (near saturation, the tightest deadlines, and, for a 𝑝 50 screen, even below saturation). Assurance is thus a property of the guard’s reservation +priority floor (given its preconditions), not of the learned component, which is hard to evaluate traditionally since one cannot enumerate all wrong learners. As a Frontiers 
+
+submission we evaluate the stance on commodity 2×V100 and a serving simulator, and scope datacenter scale, real-model Flow Control, and a closed worst-case theorem as the agenda. 
+
+# 1 Composition without assurance 
+
+A tenant’s quality of service is no longer set in one place. Mod-ern ML-serving stacks increasingly let learned, unbounded 
+
+components (smart routers, latency-SLO admitters, admit lad-ders) decide it at runtime. That QoS is itself composed across four independently-configured layers: cluster quota and pri-ority (Kueue’s ClusterQueue /WorkloadPriorityClass ), GPU device claims (DRA, resource.k8s.io ), inference-gateway priority and (experimental) Flow-Control admis-sion (GAIE’s InferenceObjective ), and runtime scheduler knobs. When one component is wrong, the tenant’s assured floor can silently collapse. Three facts make this dangerous. 
+
+(i) Cross-layer surprises are real: we catalogue eight hazards where the composed semantics surprise the operator (e.g. a DRA alias double-counts a device; a Kueue quotaCheck-Strategy flag alone flips admission of the same workload; App. A). (ii) Existing tools miss them: kubectl --dry-run 
+
+and single-object OPA validate one object at a time and cannot compose layers. (iii) The new mechanisms are learned and unbounded: GAIE’s latency-SLO admitter, learned routers, and admit ladders “guarantee” SLOs only empirically, and under FIFO they cannot protect the assured class even when well-calibrated .The field’s response has been to predict better . We take a deliberately conservative stance. This paper’s central idea: 
+
+bound the damage a wrong learned component can do, rather than trust it to be right . A small trusted guard wraps the untrusted learner ( learned proposes, the guard disposes )and holds each tenant’s floor by its true contract, however the learner errs; and we are precise about which part of an SLO this stance even makes sense for. 
+
+Two obligations, two epistemics. The idea rests on a split: part of an assured SLO is a safety property a runtime guard can 1arXiv:2607.09992v1 [cs.DC] 10 Jul 2026 enforce request-by-request, and part is a statistical property it can at best screen . Formally, model executions as timed event traces; let ˆ𝑠 (𝑅 ) be a service estimate the system carries for request 𝑅 , and fix a window 𝑊 and a per-window assured budget 𝐵 . A tenant’s assured SLO bundles: (a) a safety projection —DR , “no request is dispatched when it can no longer meet its deadline” ( 𝑡 + ˆ𝑠 (𝑅 ) > 𝐷 (𝑅 )); AF , “in every window of length 𝑊 the assured class is granted ≥ 𝐵 tokens from its reserved bucket”; and SF , “in every window ≥ 𝐵 
+
+assured requests complete by deadline.” Each has a finite, irremediable bad prefix, so each is a safety property [ 2 , 11 ]; and (b) an aggregate obligation— P95 , “the 95 th-percentile assured sojourn time over the arrival/service ensemble ≤ 𝐷 ”— a statistical predicate on the trace ensemble, in the SLA class of hyperproperties [7], with no finite bad prefix. These demand different treatment. The safety projection is runtime-enforceable : not by Schneider truncation (which only halts) [ 23 ] but as an edit/suppression automaton [ 15 ]: a serving guard suppresses requests and reorders dispatch live, with controllable admission in the sense of Basin et al. [ 3]. DR and the admission floor AF are enforceable unconditionally ;the service floor SF is enforceable modulo capacity ≥ 𝐵 /𝑊 .DR implies on-time completion only under the soundness side-condition ˆ𝑠 ≥ 𝑠 . The aggregate P95, by contrast, is neither per-trace enforceable nor soundly provable by a deterministic first-moment model as 𝜌 → 1: the sojourn-time percentile grows like (1 − 𝜌 )−1 driven by service-time variance (Pollaczek– Khinchine) [ 12 , 13 ], which such a model omits. Enforce the safety projection; screen the statistical residual : the guard that enforces the first (§2) and a characterization of when a cheap static screen can—and cannot—be trusted for the second (§3). 
+
+Early evidence the stance is promising. On real 2×V100 hardware the guard holds the assured floor (miss ≈0, reps 10 )around an arbitrarily-miscalibrated learned admitter, where the unguarded stack misses 0.86 –0.94 . And against the strongest 2026 baseline, a real , deployed GAIE Flow Control (EPP v 1.5.0, flow-control enabled), we measure that Flow Control dispatches by the router’s declared priority, so a mislabelling router flips the same assured requests from miss 
+
+0.0 to 1.0; our guard reserves by the true class, immune to the label by mechanism—a cross-reference to the V100 guard runs, not a same-stack head-to-head. The learner’s damage is bounded where the leading learned-routing stack’s is not. 
+
+Contributions—a Frontiers submission. (1) The stance :a trusted floor that bounds an untrusted learner’s damage, made precise by the safety-vs-statistics epistemic split that says which part of an SLO it covers. (2) A guard realizing it, with real-hardware evidence that it holds where an unguarded stack, a well-calibrated FIFO admitter, and live GAIE Flow Control do not. (3) An honest characterization of when a cheap static screen can be trusted for the residual, including a held-out result that it is a characterization , not a certifier. We evaluate on commodity 2×V100 and a serving simulator; datacenter scale, real-model Flow Control, and a closed worst-case theorem are the aspects that are hard to evaluate, scoped as the agenda (§5). 
+
+# 2 The guard: learned proposes, veri-fied disposes 
+
+The guard’s mechanism is classical real-time/QoS schedul-ing: a CBS-style bandwidth reservation [ 1 ] the opportunistic class can never draw from, + assured-first non-preemptive fixed-priority dispatch, + a firm-deadline drop (deferred-red), wrapping the untrusted learned admitter/router. Protecting a reserved class regardless of a misbehaving lower-priority load is the defining guarantee of reservation and mixed-criticality 
+
+scheduling [ 21 , 28 ]; we borrow the stance of runtime assur-ance (Simplex: hold “regardless of the outputs of the advanced controller” [ 20 , 22 , 24 ]) but not its machinery—there is no decision module and no verified-fallback switch. Our claim is not the scheduler but its target : the reserved object is the safety projection {DR, AF, SF |capacity} of §1, and the untrusted component is an arbitrarily-wrong learned serving admitter—so the assured floor is protected by reservation 
+
+(AF) and priority (SF), while deferred-red (DR) would keep a doomed request off the server past its deadline (an unexercised limb here; see below). 
+
+What the “true class” is—the trust boundary. The reser-vation keys on the tenant’s contract class. That class, we assume, is fixed at the gateway from the request’s authenti-cated tenant identity (namespace/ServiceAccount, the way Kubernetes already binds tenancy), before any learned compo-nent runs; the untrusted router/admitter sits downstream and only proposes —route, priority hint, admit/reject—so it can misdirect or drop a request but cannot rewrite the class key its floor is drawn from. This is precisely the boundary GAIE Flow Control lacks: FC dispatches by the InferenceObjective 
+
+priority the routing layer sets , so a mislabel crosses straight into dispatch (our label-swap: the same assured requests miss 
+
+0.0 → 1.0); our floor is keyed one layer earlier. The edge is therefore conditional on that binding: absent an authenticated class, no reservation—ours or FC’s—can tell a mislabel from the truth, so binding it end-to-end is a deployment assumption we state but do not close. 
+
+It holds against an arbitrarily-wrong learned admitter. 
+
+We drive a faithful re-implementation of GAIE’s latency-SLO admitter (sheddable-only) as the untrusted controller—a least-squares latency predictor swept over a miscalibration 
+
+𝛽 —on two Tesla V100s serving a Qwen3.6-35B-A3B MoE model ( 35 B total / 3B active; AWQ 4-bit, TP 2, to fit 2 ×
+
+232 GB V100s). The engine is the 1Cat-vLLM V100/SM 70 
+
+fork (release v 0.0.3, commit 72bb24e2d , 2026-04-30; the installed package self-reports version 1.0.0)—upstream vLLM (0.20 –0.24 in mid-2026) lacks AWQ on sm_ 70 , so the fork adds TurboMind-derived 4-bit kernels and a FLASH_ATTN_-V100 backend while leaving the scheduler stock, so its priority semantics are upstream’s. 1 GAIE never sheds assured, so the unguarded stack overloads : assured miss jumps 0.82 → 0.93 
+
+then saturates, assured queue-wait rising 1.5 → 12 s. The guard holds the assured floor at miss 0.0 for every 𝛽 (Fig. 1a plots the worst, 𝛽 = 0, run: worst observed assured completion 
+
+≈ 855 ms in this run ( ≤ 924 ms over all four 𝛽 )2 ≪ 1856 ms deadline, assured queue-wait ∼ 100 ms, paired opportunistic (A10, a 10% assurance ratio) miss ≈ 0.98 (A95 = the assured class, a 95% assurance ratio). A reps-10 companion 𝛽 -sweep (at 𝐷 = 1820 ms) gives worst upper Wilson CI 0.0053 
+
+over all 𝛽 , floor 72 /72 every rep, vs. unguarded 0.86 –0.94 ). The protection is a property of the guard’s structure : in a companion fault-injection run (guard admission at offered utilisation ˆ𝜌 ≳ 1, i.e. offered load over capacity, FIFO vs. priority), dropping priority at byte-identical admission still misses 0.708 (Fig. 1b)— priority dispatch is load-bearing, not headroom. And even a well-calibrated admitter cannot protect assured under FIFO. Because the guard makes no static latency prediction, the 𝜌 → 1 knee that fools a static model (§3) has nothing to corrupt in the guard: it is exposed to load, not to mis -prediction. Two honest scopes: we bound a wrong admitter/router (arbitrary admit/reject/classify under bounded output and a monitored service envelope), not a capacity-degrading learner (placement, batching), since SF is capacity-conditional; and the node is a single commodity 
+
+2×V100; like Chronos [ 19 ], multi-node scale-out is future work. 
+
+Admitter-agnostic, honestly. The floor does not depend on the learner’s shed policy. Driving the same predictor ( 132 -sample fit, 𝑅 2 = 0.992 ; the 𝛽 multiplier stresses miscalibration 
+
+full-range, so robustness isn’t from the fit) under a class-agnostic policy (vs. GAIE’s sheddable-only), unguarded it fails at every 𝛽 : by overload ( 𝛽 = 0: admits 72 , miss 0.94 ) or, a non -GAIE case, by rejecting assured ( 𝛽 = 1: admits 29 /72 ,miss 0.94 ); the guard holds miss 0.0 throughout. We do not oversell the rejection half: a reservation trivially dominates an under-admitting learner. The load-bearing threat is overload ,held by the priority decomposition above (Fig. 1b), not by calibrating any learner.                      
+
+> 1vLLM issue #40004, https://github.com/vllm-project/vllm/ issues/40004 .
+> 2Service-number provenance (model, output-tokens, condition): 2×V100 figures are Qwen3.6-35B-A3B at ∼16 tokens— 𝑠 max ≈660 ms (ceiling), 386 →
+> 460 ms (service, light →flood), 855 –924 ms (completion incl. queueing);
+> ≈214 ms is 2×RTX 6000 Ada FP8; a batch-width probe measures 895 →
+> 1161 ms for the same Qwen at 64 tokens.
+
+The operating envelope (reps 10 , real 2×V100). A tighter sweep (reps 10 , Wilson intervals; the companion 𝛽 -sweep is above) hardens the deadline/reservation axis. We report the measured operating fraction 𝜌 eff (admitted rate × mea-sured service / 𝐶 , the 𝐶 concurrent slots), distinct from the theorem’s worst-case 𝜌 a (on 𝑠 max ), and equal to the offered utilisation ˆ𝜌 below saturation (admitted = offered); since 
+
+𝜌 eff < 𝜌 a, A4 (defined below) is sufficient , not necessary, and the empirical break sits beyond the guaranteed boundary. Sweeping the assured deadline at a sub-capacity reservation (𝜌 eff ≈ 0.45 ), the guard holds miss 0.0 down to a 600 ms deadline (0.003 at 500 )—sub-capacity by design, isolating the deadline axis—breaking only below the service (up to 0.49 
+
+at 350 ms), a feasibility limit no admitter beats. On a separate 
+
+axis, raising the reservation past capacity breaks the floor once the (unbounded) assured queue-growth × horizon exceeds the deadline slack—clear at floor = 8 (𝜌 eff = 1.19 : miss 0.70 ,
+
+∼190 ms/s), still absorbed at 𝜌 eff ≈ 1.04 —mechanistically distinct from the deadline break. The same sweep on a second 
+
+GPU ( 2×RTX 6000 Ada, FP8, service ∼214 ms) holds the floor 0.0 across every tested deadline (to 350 ms): the floor 
+
+generalizes . The base sweep held (inside both boundaries: 
+
+350 > 214 , 𝜌 eff = 1.07 ); a follow-up past each reproduces the 
+
+𝜌 > 1 break (floor = 22 /26 : miss 0.52 /0.78 ), queueing physics, not a V100 artifact. And the two stressors compound : at 
+
+𝜌 > 1 and a tightening deadline the floor breaks worse than either alone (V100 floor = 8: 0.70 → 0.99 as 𝐷 tightens 
+
+1200 → 400 ms; the Ada node likewise), so the guarantee is a 
+
+region : 𝜌 ≲ 1 and 𝐷 > service. External validity: driving the 
+
+live 2×V100 vLLM end-to-end (each request is issued to the running engine; the 𝐶 = 4 client closed-loop is the concurrency bound matching max_num_seqs = 4, not a simulator) under a 
+
+real BurstGPT trace (real bursty arrivals, interarrival CV 2.94 
+
+vs Poisson 1.0—the fully-real axis; output lengths capped at 
+
+48 tokens with the majority at the cap, input length not varied), the floor generalizes across two models , Qwen3.6-35B-A3B (MoE) and Mistral-7B (dense): the guard’s admitted floor all meet vs admit-all’s drowning (offered-basis ≈ 0.33 vs ≈ 0.9,reps 3); the 0.33 residual is burst-excess assured beyond the fixed floor 𝐵 , a reservation-vs-burst bound, not a miss of admitted assured. Across 8 non-overlapping slices of a sepa-rate bursty trace (reps 1 per slice—the replication unit is the trace slice) the guard’s miss is burstiness-driven ( 0.05 –0.35 ;the 8 slices span interarrival CV ≈0.85 –2.75 , the burstiest missing most—though the rank correlation is weak (Spear-man 𝜌 ≈ 0.31 , 𝑛 = 8), so a range not a law; admit-all a flat 
+
+≈0.9), consistent with the 0.33 above (CV 2.94 ). Assumption A1’s demote (the theorem’s regulator, which our experiments approximate by the conservative reject ) recovers burst-excess at a loose deadline (deadline factor 2.5): offered-basis miss 
+
+falls 0.35 → 0.05 , so the reject bound is conservative. But it is a genuine trade-off: at a tight deadline (factor 1.5, 1230 ms) the demote’s admitted excess contends for the 𝐶 slots, so the reserved floor’s met-fraction (met / floor-assured requests) is 310 3 10 4  
+
+> assured completion time (ms)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> CDF over admitted assured
+> deadline
+> (a) guard holds every assured request (worst β)
+> guard (miss 0.00)
+> unguarded (miss 0.93)
+> 10 310 4
+> assured completion time (ms)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> CDF over admitted assured
+> deadline
+> (b) priority dispatch is load-bearing
+> A95 deadline-miss
+> unguarded (0.93)
+> guard, FIFO dispatch (0.71)
+> guard, priority dispatch (0.00)
+
+Figure 1: The guard holds the assured floor as a property of its structure , not the learner’s calibration. (a) CDF of assured completion, worst miscalibration ( 𝛽 = 0), real 2×V100: every guard-admitted request completes ≤ 855 ms here ( ≤ 924 across the 𝛽 sweep), far inside the 1856 ms deadline (miss 0.0 ); unguarded spreads past 20 s (miss 0.93 ). (b) Same CDF, a tighter fault-injection run (deadline 1544 ms), byte-identical admission: the unguarded arm again floods (both ≈0.93 coincidentally, each saturated under heavy overload), FIFO still misses 0.71 , only assured-first priority pulls every request under it ( 0.0): priority, not headroom, is load-bearing. Log axis. lower under demote ( 0.69 vs 0.77 , both outside the guaran-teed region). For deployment: default to the reject regulator (it protects the reserved floor at tight deadlines); switch to demote only when the deadline is loose (deadline factor ≳2), where it recovers burst-excess without endangering the floor. (Scope: the run exercises admission ; 𝜌 < 1 leaves priority and deferred-red inert.) 
+
+Versus vLLM’s own priority scheduler. A practitioner’s first alternative to an admission guard is vLLM’s server-side priority ( –scheduling-policy priority , admit-all, per-request priority; reps 3, 2×V100). It also holds the assured floor at the calibrated operating point ( 𝐷 = 1284 ms; miss 
+
+0.0), but in our slot-bound ( max_num_seqs = 4) regime that priority does not preempt a running request (vLLM preempts only under KV/resource pressure; issue # 40004 ), so nearer the service time the priority-jumped assured still wait for a running slot and slip (miss 0.15 /0.26 /0.46 as 𝐷 tightens 
+
+1100 → 900 ms; per-rep consistent) where the admission floor holds 0.0. Admit-all also self-congests (unbounded server backlog; lower on-time opportunistic goodput under a hard opportunistic deadline). The guard’s edge over server priority (or GAIE Flow Control’s priority +saturation detector) is thus the per-class reservation , not a dispatch rule or an aggregate shed. A static rate limit (another native baseline) splits the same way (reps 8): a per-class cap matches the guard (assured miss 0.0), a flat cap lets the opportunistic flood crowd assured out at admission (miss 0.75 ), so the load-bearing ingredient is the per-class reservation , not rate-limiting per se. 
+
+Versus live GAIE Flow Control. The strongest 2026 base-line is GAIE’s Flow Control layer: a central priority queue with a saturation detector and within-priority fairness. We deployed it for real (Istio gateway, EPP v 1.5.0 with flow-Control enabled, over vLLM-simulator backends; the EPP’s FlowController confirmed running) and drove a saturating burst. Flow Control dispatches strictly by the declared prior-ity (high band miss ≈0.31 vs low band ≈0.92 , reps 3), so it protects whatever the routing layer labels high priority. In a controlled label-swap at a fixed load, the same five assured requests miss 0.0 when labelled high vs 1.0 when a misla-belling router labels them low (swapping both classes’ labels): Flow Control trusts the label that our untrusted component sets, and reserves no per-class floor (even correctly-labelled assured has none under enough high-priority load). The guard’s reservation, keyed to the true contract class, holds regardless—the fault-injection’s opportunistic-first adversary is the direct analog (guard miss 0.0; a no-priority variant 
+
+0.708 ). Backends are the official simulator, isolating the queueing mechanism; a head-to-head on one stack is future work (§5). 
+
+A guard-floor bound. The fault injection gestures at a structural bound—what a by-construction guarantee means here: not a machine-checked 0.0 (that number is empirical) but that {DR, AF, SF} hold by construction . Assume (A1) a4reservation regulates admitted assured to 𝐵 tokens per window 
+
+𝑊 —a 𝜎 = 𝐵 arrival envelope, both a floor and a cap, so at most 𝐵 co-arrive (burst-excess handling is a policy choice— demote preserves it at opportunistic priority, reject protects the reserved floor; the ≥ 𝐵 floor holds under both) (AF); (A2) non-preemptive assured-first priority with arrival-order tie-break 
+
+inside the class (SF); (A3) per-request service (assured and 
+
+opportunistic) is bounded by 𝑠 max —the batch-width cap 𝐶 =
+
+max_num_seqs and a bounded output make this a plausible 
+
+ceiling, though continuous batching still couples service to load within it, which §5 shows strains the assumption; and (A4) the reservation is stable, 𝜌 a = 𝐵 𝑠 max /( 𝐶𝑊 ) ≤ 1.While 𝑅 is queued, assured-first refill dispatches no new opportunistic, so 𝑅 waits only for one of the 𝐶 busy slots to free, an in-progress opportunistic job ( ≤ 𝑠 opp max ≤ 𝑠 max ); then 
+
+𝑅 and the ≤ 𝐵 co-arriving assured are served 𝐶 -at-a-time by priority—the max_num_seqs = 𝐶 batch is a genuine 𝐶 -server, so serialization onto one slot is not assumed—in ⌈𝐵 /𝐶 ⌉ waves. Worst-case assured sojourn is thus 
+
+𝑇 assured ≤ 𝑠 max 
+
+ 1 + ⌈ 𝐵 /𝐶 ⌉
+
+—the discrete makespan (an earlier 𝐵 𝑠 assured max sum was loose; a 
+
+fluid network-calculus form was unsound , crediting an indi-visible request only 𝐵 /𝐶 of a slot). The floor is guaranteed (miss exactly 0) if both (A4) 𝜌 a = 𝐵 𝑠 max /( 𝐶𝑊 ) ≤ 1 (stability) 
+
+and 𝐷 ≥ 𝑠 max (1+ ⌈ 𝐵 /𝐶 ⌉) (deadline) , two separate conditions. 
+
+In cell terms at our operating point ( 𝐶 = 4, 𝑠 max ≈ 660 ms—the marquee’s bounded ∼16 -token-output ceiling): only the loose-deadline floor = 4 = 𝐶 cells ( ⌈𝐵 /𝐶 ⌉ = 1; 𝐷 ≥ 1320 ms, met at our 𝐷 = 1856 ) are worst-case guaranteed; the reservation sweep’s floor ∈ { 5, 6, 7, 8} (𝐵 > 𝐶 ) and every tight-deadline cell ( 𝐷 < 1320 ) give a typical -case 0.0: realistic spread ar-rivals never sample the co-arrival worst case (the reps-10 
+
+V100 sweep above confirms this). The floor rests on AF +SF, not DR. We wire deferred-red (a dispatch-time drop when 
+
+start + ˆ𝑠 > 𝐷 ) with a sound ˆ𝑠 ≤ 𝑠 , a single-request lower bound (a different soundness from §1’s ˆ𝑠 ≥ 𝑠 completion side-condition, which the floor does not need, and from the screen’s 
+
+≥), so it sheds only the doomed, never a feasible request; it is near-inert, firing in 1 of 15 guard-DR cells under overload. So reservation +priority carry the floor independent of ˆ𝑠 ; DR is a marginal safety-net for the tight-deadline/overload regime, where §3’s screen also turns unsound. Where the tail is. A3’s load-independence is strained on our vLLM backend: contin-uous batching couples service to batch width, so opportunistic admission inflates the assured service too ( 386 → 460 ms under flood, same ∼16 -token regime), yet this stays below 
+
+𝑠 max ≈ 660 ms, so the ceiling the bound actually needs still holds. What the coupling breaks is the clean “learner enters through 𝑠 opp max alone” separation , not the by-construction bound. A true co-execution cap (not a token cap, which bounds tokens, not service) would restore the separation and tighten 𝑠 max ;that batch-coupled tail (not the 924 ms worst-observed ) is the open problem (§5), and the CPS-Simplex lineage has no such service channel, so the transplant is not free. 
+
+# 3 When can a cheap static screen be trusted? 
+
+The guard (§2) protects a live request; the ecosystem will nonetheless want to catch cross-layer misconfigurations before 
+
+they ship, with a cheap static check. This section asks a subor-dinate question— where can such a check be trusted —and an-swers it empirically. We provide a conservative offline screen: each layer modeled as a transfer function pinned to the shipped component by trace-equivalence conformance, composed in a discrete-event simulator that returns a counterexample trace or declines. It is not a prover but a conservative check (abstract interpretation [ 8]) with characterized unsoundness [ 18 ]. Two honest facts scope it. First, it is two disjoint analyses : a timing simulator (below) and a separate quota-conservation arithmetic (the double-count/silent-skip hazards); the timing screen catches no config hazards, and the quota screen is not hardware-validated. Second, its timing verdict is fed a 
+
+measured service estimate, so its accuracy figures are post-dictive. A deployable use needs a pre-deployment ˆ𝑠 with the side-condition ˆ𝑠 ≥ 𝑠 , obtainable from a short batch-1-to-𝐶 
+
+calibration probe (batch-1 ≈236 ms; batch-𝐶 ≈590 ms me-dian, 2×V100) run once before the workload. Feeding a high batch-𝐶 percentile (padded to the ceiling 𝑠 max ≈ 660 ms) gives the conservative ˆ𝑠 ≥ 𝑠 the screen needs, at some completeness cost (over-estimating the typical service). The residual is the batch-coupled under-load service (§2), which the probe 
+
+bounds but does not predict .
+
+The characterization. Across 40 configurations and 33 
+
+deadlines ( 1320 cells, all in overload ˆ𝜌 ∈ [ 1.08 , 4.06 ]; Fig. 2), the timing screen’s accept verdict tracks the measured assured-SLO outcome at precision 0.969 / recall 0.975 (agreement 
+
+0.973 is base-rate-inflated, as the always-reject stub below shows; a service-only baseline scores 0.500 ). The 1320 
+
+is not 1320 hardware runs: 120 are ( 40 configs × 3 reps), the 33 deadlines swept post-hoc by re-thresholding mea-sured completion times (real, not simulated); the verdict is conformance-pinned to the shipped admission/dispatch. The conservative 𝑝 99 service percentile is the ˆ𝑠 ≥ 𝑠 knob made operational. But the 𝑝 50 accept verdict is near-worthless 
+
+on contested near-capacity cells (accept-precision 0.167 ; an always-reject stub wins there, 0.983 vs 0.948 ); 𝑝 99 makes the whole grid sound (precision 1.000 ) only by over-flagging (recall 0.975 → 0.814 ): it rejects the contested cells outright, vacuously sound at near-zero coverage. The 𝑝 50 verdict’s 
+
+20 over-optimistic errors are variance-driven ( 8 gated-FIFO at the ˆ𝜌 ≈ 1.18 knee, 12 priority at tight deadlines): the finding is the boundary —across this overload grid the accept verdict is empirically sound except there. Below saturation we now measure it: the 𝑝 50 screen is optimistically unsound 50.45          
+
+> 0.59
+> 1.08
+> 1.17
+> 1.35
+> 1.57
+> 2.19
+> 2.80
+> 3.42
+> offered utilisation  ̂ ρ(offered / capacity)
+> 400
+> 900
+> 1400
+> 1900
+> 2400
+> 2900
+> 3400
+> deadline (ms)
+> (a) where the static screen is unsound (both sides of the knee)
+> unsound: screen certi fi ed, HW missed
+> sound: screen certi fi ed, HW held
+> n/a: screen rejected all ̂
+> ρ=1  knee
+> sub-saturation
+> (both pathways)
+> p50 p75 p90 p95 p99
+> fed service percentile
+> 0.80
+> 0.85
+> 0.90
+> 0.95
+> 1.00
+> 1.05
+> 20
+> 4110
+
+(b) the conservative knob 
+
+> accept precision
+> recall
+
+Figure 2: Where the cheap static screen is unsound: the hardware grids, aggregated. (a) Each ( ˆ𝜌 × deadline ) bin is orange 
+
+where the screen proved a config the hardware missed (unsound), white where proved held, grey where it rejected all (n/a). The ˆ𝜌 
+
+axis now spans both grids ( 0.45 –4.06 , reps-10 sub-saturation + reps-3 overload, unmixed); unsound cells sit on both sides of the 
+
+ˆ𝜌 = 1 knee (dashed)—the overload knee and deep sub-saturation—and along the tightest deadlines. (b) A conservative percentile makes the 1320 -grid accepts sound (precision 0.969 → 1.000 , recall 0.975 → 0.814 ); near ˆ𝜌 → 1 only the runtime guard holds. there too—precision 0.83 at ˆ𝜌 < 1 (mean-aggregation; gated, opp ∈ { 1, 2, 3}× slots ∈ { 4, 6, 8} × { FIFO, priority }, 18 configs 
+
+× 33 deadlines, reps 10) 3 vs 0.94 in the same sweep’s over-load cells (near the knee, ˆ𝜌 to 1.36 ; not comparable to the deep-overload 1320 -cell grid’s 0.969 ), false positives down to 
+
+ˆ𝜌 ≈ 0.45 (stable across the 10 reps— 39 /42 miss in ≥ 3, none transient)—by two pathways of the same service dispersion a first-moment model omits: the service tail entering the sojourn directly in deep sub-saturation where the queue is empty (the same below-service-time infeasibility §2’s fea-sibility limit names), and the (1 − 𝜌 )−1-amplified service variance of §1 in the wait nearer the knee. Which dominates is sensitive to the service estimate, so we claim only that both contribute. A conservative 𝑝 99 service percentile closes them: fed 𝑝 99 , the sub-saturation false positives fall to zero (precision 1.000 ) while the screen still proves 64% of cells— the same soundness/completeness dial that closes the overload accepts ( 0.969 → 1.000 ; 𝑝 99 the aggregation-robust choice)— but this is a post-hoc patch—held-out on the sub-saturation reps ( ˆ𝑠 from 10% , tested on the unseen 90% ) the 𝑝 99 clo-sure weakens (precision 1.000 → 0.90 at 10% calibration, recovering to 0.99 near 50% —a calibration-data requirement, not irreducible): a characterization , not a pre-deployment                           
+
+> 3Precision by regime ×aggregation, with accept counts: sub-saturation (𝑁 =248 accepts) 0.79 /0.83 /0.93 and same-sweep overload ( 𝑁 =189 )
+> 0.89 /0.94 /0.99 under max/mean/median aggregation. A cell’s ˆ𝜌 is classified by the reps-10 median service; the 64% coverage below is 168 /264 cells over the 8sub-saturation configs (of the 18 )×33 deadlines; the 42 false positives span all 8configs.
+
+certificate, at a ∼36% coverage cost (§5), so the aggregate obligation defers to the runtime guard. 
+
+# 4 Related work 
+
+Emergence-as-Code [14 ] is closest in spirit: it compiles a typed journey expression into optimistic/pessimistic availabil-ity and tail-latency bounds and gates a rollout on the pes-simistic bound. We share its meta-pattern and claim no novelty there; we differ on object (it composes per-service availability along a journey and explicitly excludes queueing/contention, which are our subject) and on guarantee (its bounds gate a 
+
+pre-deployment rollout; we add a by-construction runtime 
+
+guard that protects a live request under an online learner’s mistakes). Scheduling lineage (owned). The guard’s mech-anism is classical: CBS-style reservation [ 1], GPS/fixed priority [ 21 ], and mixed criticality’s guaranteed floor under a misbehaving low-criticality load [ 28 ]; §1’s deterministic-vs-statistical split is the classical guaranteed-vs-statistical-QoS distinction (network calculus [ 9 ]). We take only runtime assurance’s stance [20 , 22 , 24 ], not its machinery; the delta is the target (an arbitrarily-wrong learned admitter) and real hardware, not a new scheduler. The enforcement framing (edit automata [ 15 ], Basin et al.’s controllable partition [ 3 ]) and the aggregate-tail hyperproperty [ 7] are cited for scope ,not novelty. Bensalem et al. [4] independently argue LLM-
+
+agent safety needs probabilistic assume-guarantee, but for semantic/operational predicates (they scope out latency), via 60 2 4 6
+
+Total goodput (met requests / s)  
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Assured-SLO attainment 1 − miss
+> backend
+> ≈ 6.8/s
+> guard: 0.0 miss at the most
+> goodput (all 6 deadlines here)
+> WCRT admitter: ties at loose D,
+> collapses at the tight knee
+> Guard (ours)
+> Chronos WCRT admitter
+> Unguarded (admit-all)
+
+Figure 3: The guard is the only evaluated arm at both max-imum assured-SLO attainment and maximum goodput under this grid , at every deadline ( 2×V100; 24 req/s offered, backend ≈6.8/s, so the guard’s 6/s is near-ceiling). The WCRT admitter (re-implemented Chronos Alg. 1) matches attainment at loose deadlines but at lower goodput and collapses at the tight knee; admit-all loses goodput to self-congestion. Its reject-∼everything calibrations ( ≈0 goodput) are the WCRT admitter’s over-rejection regime, off this plane. an information-availability seam, with no deterministic floor; we complement it with the stochastic seam and an adversary-
+
+robust floor (robust within a characterized envelope, §2). 
+
+Chronos [19 ] is the nearest neighbor: it proves a sound WCRT admission test for single-GPU LLM serving ( 0 misses at 10 × load) and names multi-node as its own open problem— but its schedulability model—a worst-case service-time model (iteration-time coefficients 𝛼, 𝛽, 𝛾 , Chronos’s own, unrelated to our miscalibration 𝛽 ; + worst-case output length, not alearned length predictor)—sits in the trusted path, and (like its 0 misses) its guarantee is by-construction; our floor holds when that model is instead arbitrarily wrong , on real 2×V100 (vs. its single-GPU simulation). The gap runs both ways: Chronos proves a fuller token-level (TTFT +TBT) WCRT theorem where we give a request-level sojourn bound (§2); but adopting its WCRT test as an admitter (a conservative-admitter stress test : a faithful re-implementation of its Alg. 1, 
+
+𝐶 -slot-adapted, not Chronos itself) over-rejects the reserved floor—calibration-bound: a naive admission threshold 𝜏 over-rejects at the knee (miss 0.91 at 600 ms) while a sound 𝜏 
+
+admits 0 for 𝐷 ≤ 1200 ms (its 1/( 1 − 𝜌 ) busy-period bound blows up near 𝜌 = 1), so no single 𝜏 both admits the floor and stays sound—where our reservation admits uncondi-tionally . The contrast is goodput + calibration-robustness around an untrusted admitter, not a protection horse-race; the goodput–attainment contrast is Fig. 3. A wrong learned 
+
+router (dispatch-class misclassifier) reduces to the same story: with 𝜌 < 1, even dispatching by the mislabeled class holds the floor ( 0.0 to a 0.5 mislabel rate)—dispatch order bites only under overload. SCORPIO [ 27 ] and token pools [ 6, 10 ]keep the predictor in the trusted path; ours holds when it is arbitrarily wrong. Kivi [17 ]/ Anvil [ 25 ] verify controller code, not a composed config; gate-and-route [ 16 ] proves fluid-limit admission (predictor trusted), zero Kubernetes; the Semantic Router DSL [ 5 ] verifies routing well-formedness, not SLO. (We say “floor,” not “envelope,” to avoid collision with [ 26 ].) 
+
+# 5 An agenda: from a by-construction floor to a proved one 
+
+Scope: what we can and cannot evaluate. As a Frontiers submission we are explicit about the evaluation’s reach. We do 
+
+evaluate, on real commodity hardware: the guard’s floor under adversarially-miscalibrated learners (reps 10 , 2×V100); live 
+
+GAIE Flow Control’s label-trust and floorlessness (a real EPP v1.5.0 deployment); and the static screen’s soundness over 
+
+1320 hardware cells plus a held-out calibration. Three things are hard to evaluate and we do not claim them. (i) Datacenter scale : our testbed is a single commodity 2×V100 node, so multi-node scale-out and datacenter accelerators are untested. 
+
+(ii) Real-model Flow Control end-to-end : we exercise FC’s queueing mechanism on the official vLLM simulator (which isolates exactly the priority-vs-reservation contrast at issue) rather than a production model server, and a head-to-head with the guard on one stack is future work. (iii) A closed worst-case theorem : continuous batching couples service time to load (§2, A3), so the load-independence a clean bound needs does not hold in general; only the 𝐵 =𝐶 corner is worst-case certified. The demonstrated result is thus a structure ; the four problems below turn it into a guarantee. 
+
+Discharge the capacity precondition. SF holds only for backend capacity ≥ 𝐵 /𝑊 (A4), and no guard conjures service. That precondition is itself a composed-config fact (DRA placement, batch width, MoE expert availability), the cross-layer property the static screen (§3) should monitor. Apreliminary run bears this out: a batch cap cutting throughput 
+
+62% leaves the naive fixed floor at 3/120 on time vs a lowered guard floor’s all-it-serves (full-class miss 0.833 vs 0.975 ); the screen proved the degraded floor before the run, and the open mechanism makes it a guard that watches its assumption online. 
+
+Close the worst-case guard theorem. The §2 sketch bounds assured sojourn by a reserved-ahead term plus a non-preemptible tail 𝑠 opp max ; bounding it worst-case (not worst-observed) needs a stochastic service model (continuous batch-ing makes service load-dependent). This theorem converts the 7empirical 0.0 into a proof; it is serving-specific and the paper’s sharpest open problem. It is also output-length-parametrized: the measured batch-𝐶 service grows ≈183 + 14 .9 ℓ ms with output ℓ (the clean same-batch median at ℓ ∈ { 64 , 128 , 256 };§3’s ≈590 ms is the batch-𝐶 probe under sustained load, 
+
+∼170 ms higher as batching couples service to load), so a 
+
+256 -token workload needs 𝐷 ≳ 8 s: the cap bounds 𝑠 max at every length, but the floor’s deadline grows with the output. 
+
+Make the screen sound near 𝜌 → 1. The 𝑝 99 knob is an empirical patch, not a proof: a sound near-saturation screen needs a probabilistic model checker or a proven headroom margin 𝜌 ≤ 1 − 𝜖 trading admitted load for soundness. 
+
+Survive a moving upstream. Whether trace-equivalence conformance holds as the ecosystem absorbs a mechanism every one–two releases is an empirical question about the upstream, not the theory. Extending the guard to verified in-flight mode transitions under DRA capacity loss is ongoing: a preliminary real-DeviceTaintRule run load-shed gracefully, safety resting on a conservative degrade action .
+
+# 6 Conclusion 
+
+An assured SLO is not one obligation but two: a controllable safety projection a trusted guard enforces around a wrong learned admitter, and a statistical residual a conservative screen can only approach . Separating them lets a small trusted floor bound an untrusted learner’s damage: on real hardware the guard holds the assured class ( admitted-basis miss 0.0 ) where an unguarded stack, a well-calibrated FIFO admitter, and 
+
+live GAIE Flow Control (which dispatches by the router’s label) do not; and the cheap screen is honest about where only the guard survives (the queueing knee, and for a 𝑝 50 
+
+screen sub-saturation too). This is a Frontiers contribution: the stance and its early evidence are here; datacenter scale, real-model Flow Control, and a proved worst-case floor are the agenda we invite the community to close. 
+
+# A The eight cross-layer hazards 
+
+Each row is a real incident (GitHub issue / KEP) where every artifact is valid in isolation but the composed QoS semantics surprise the operator, so kubectl --dry-run and single-object OPA (both single-object) catch none of them. Our cross-layer quota checker mechanically detects C4/C5 (re-derived from the running quota.py , not hand-asserted); C1–C3 and C6–C8 are catalogued incidents the transfer-function approach targets but does not yet mechanise—the honest split. 
+
+# References 
+
+[1] Luca Abeni and Giorgio Buttazzo. Integrating multimedia applications in hard real-time systems. In IEEE Real-Time Systems Symposium (RTSS) , 1998. Constant Bandwidth Server. [2] Bowen Alpern and Fred B. Schneider. Defining liveness. 
+
+Information Processing Letters , 21(4):181–185, 1985. [3] David Basin, Vincent Jugé, Felix Klaedtke, and Eugen Zăli-nescu. Enforceable security policies revisited. ACM Trans. Inf. Syst. Secur. , 16(1), 2013. controllable vs. only-observable actions; POST 2012. [4] Saddek Bensalem, Yi Dong, Martin Fränzle, Xiaowei Huang, Janis Kröger, Dejan Nickovic, Ayoub Nouri, Rajarshi Roy, and Changshun Wu. Position: A three-layer probabilistic assume– guarantee architecture is structurally required for safe LLM agent deployment. arXiv preprint arXiv:2605.18672 , 2026. [5] Huamin Chen, Xunzhuo Liu, Bowei He, and Xue Liu. From inference routing to agent orchestration: Declarative pol-icy compilation with cross-layer verification. arXiv preprint arXiv:2603.27299 , 2026. [6] Siyuan Chen, Zhipeng Jia, Samira Khan, Arvind Krishna-murthy, and Phillip B. Gibbons. SLOs-Serve: Optimized serving of multi-SLO LLMs. arXiv preprint arXiv:2504.08784 ,2025. [7] Michael R. Clarkson and Fred B. Schneider. Hyperproperties. 
+
+Journal of Computer Security , 18(6):1157–1210, 2010. Also CSF 2008. [8] Patrick Cousot and Radhia Cousot. Abstract interpretation: A unified lattice model for static analysis of programs by construction or approximation of fixpoints. In POPL , 1977. [9] Rene L. Cruz. A calculus for network delay, part I: Network elements in isolation. IEEE Transactions on Information Theory , 37(1):114–131, 1991. [10] William J. Cunningham. Token management in multi-tenant AI inference platforms. arXiv preprint arXiv:2603.00356 , 2026. [11] Thomas A. Henzinger. Sooner is safer than later. Information Processing Letters , 43(3):135–141, 1992. [12] J. F. C. Kingman. The single server queue in heavy traffic. 
+
+Proc. Cambridge Phil. Soc. , 57(4):902–904, 1961. [13] Leonard Kleinrock. Queueing Systems, Volume 1: Theory .Wiley, 1975. Pollaczek–Khinchine; M/M/1 sojourn. [14] Anatoly A. Krasnovsky. Emergence-as-code as a founda-tion for self-governing reliable systems. arXiv preprint arXiv:2602.05458 , 2026. [15] Jay Ligatti, Lujo Bauer, and David Walker. Edit automata: Enforcement mechanisms for run-time security policies. Inter-national Journal of Information Security , 4(1–2):2–16, 2005. [16] Ruihan Lin, Zean Han, Zezhen Ding, and Jiheng Zhang. Large-scale LLM inference with heterogeneous workloads: Prefill-decode contention and asymptotically optimal control. arXiv preprint arXiv:2602.02987 , 2026. [17] Bingzhe Liu, Gangmuk Lim, Ryan Beckett, and P. Brighten Godfrey. Kivi: Verification for cluster management. In USENIX ATC , 2024. arXiv:2311.02800; verifies controllers AND their configurations. 
+
+8Hazard Layer pair Composed cross-layer surprise (each artifact valid alone) Checker C1 Kueue cohort ↔ kube PriorityClass a core-kube PriorityClass preempts across ClusterQueues despite reclaimWithinCohort:Never —two priority systems, one silently overrides cat. C2 Kueue quota ↔ preemption borrowWithinCohort:LowerPriority lets a borrower preempt jobs running inside their own nominal quota cat. C3 Kueue quota ↔ GPU capacity quota bookkeeping and actual multi-node nvidia.com/gpu availability diverge (“insufficient unused quota” with capacity free) cat. C4 Kueue quota-config ↔ declared res. quotaCheckStrategy silently skips a requested-but-undeclared resource ⇒ a controller flag alone flips admission mech.   
+
+> C5 DRA
+
+↔ Kueue quota a device is charged twice (the requests alias and its auto-created DRA claim) ⇒ a job that physically fits is rejected   
+
+> mech.
+> C6 runtime timeout
+
+↔ service a 10 s default_timeout fires at ∼90 s (wall-clock timeout ≠ dispatch-time feasibility; raw-𝜇 s knob) cat. C7 Kueue admission ↔ DRA binding Kueue admits a workload before the DRA device is bound (documented timing gap; WaitForPodsReady the only net) cat. C8 runtime batching ↔ admission sizing continuous batching makes service load-dependent ( ∼386 ms low-load vs ∼460 ms under load, §2) ⇒ a low-load-sized budget over-admits cat. 
+
+Table 1: The eight cross-layer QoS hazards (§1). “ mech. ” = mechanically detected by the quota checker (verified vs the running 
+
+quota.py ); “cat.” = a catalogued incident not yet mechanised. kubectl --dry-run and single-object OPA miss all eight. 
+
+[18] Benjamin Livshits et al. In defense of soundiness: A manifesto. 
+
+Communications of the ACM , 58(2):44–46, 2015. [19] Amine Marref, Khaled Tarmissi, and Hassene Chaibi. Formal schedulability analysis for LLM inference: TTFT and TBT deadline guarantees via response-time theory. Frontiers in Computer Science , 8, 2026. 10.3389/fcomp.2026.1873627. [20] Usama Mehmood, Sanaz Sheikhi, Stanley Bak, Scott A. Smolka, and Scott D. Stoller. The black-box simplex archi-tecture for runtime assurance of autonomous CPS. In NASA Formal Methods (NFM) , 2022. arXiv:2102.12981. [21] Abhay K. Parekh and Robert G. Gallager. A generalized processor sharing approach to flow control in integrated services networks: The single-node case. IEEE/ACM Transactions on Networking , 1(3):344–357, 1993. [22] Dung Phan, Radu Grosu, Nils Jansen, Nicola Paoletti, Scott A. Smolka, and Scott D. Stoller. Neural simplex architecture. In 
+
+NASA Formal Methods (NFM) , 2020. arXiv:1908.00528. [23] Fred B. Schneider. Enforceable security policies. ACM Trans. Inf. Syst. Secur. , 3(1):30–50, 2000. [24] Lui Sha. Using simplicity to control complexity. IEEE Software ,18(4):20–28, 2001. [25] Xudong Sun, Wenjie Ma, Jiawei Tyler Gu, Zicheng Ma, Tej Chajed, Jon Howell, Andrea Lattuada, Oded Padon, Lalith Suresh, Adriana Szekeres, and Tianyin Xu. Anvil: Verifying liveness of cluster management controllers. In OSDI , 2024. [26] Krti Tallam. Execution envelopes: A shared admission contract for backend AI execution requests. arXiv:2605.08267, 2026. [27] Yinghao Tang, Tingfeng Lan, Xiuqi Huang, Hui Lu, and Wei Chen. SCORPIO: Serving the right requests at the right time for heterogeneous SLOs in LLM inference. arXiv preprint arXiv:2505.23022 , 2025. [28] Steve Vestal. Preemptive scheduling of multi-criticality systems with varying degrees of execution time assurance. In IEEE Real-Time Systems Symposium (RTSS) , 2007. 
+
+9

@@ -1,0 +1,432 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-19T21:09:19.224311+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 4,
+    "deep_cap": 6,
+    "deep_selected": 4,
+    "quick_candidates": 7,
+    "quick_skim_target": 11,
+    "quick_selected": 7
+  },
+  "deep_dive": [
+    {
+      "id": "2607.13276v2",
+      "source": "arxiv",
+      "title": "Aurora DSQL: Scalable, Multi-Region OLTP",
+      "abstract": "Aurora DSQL is a serverless SQL database designed for cloud-scale transaction processing with multi-region active-active capabilities. Built on a disaggregated architecture, DSQL separates compute, storage, and transaction coordination into independent, horizontally scalable services. Query processors run in Firecracker MicroVMs executing PostgreSQL-compatible SQL without local state. The system uses multiversion concurrency control with precision timestamps for coordination-free reads and optimistic concurrency control for writes, deferring coordination to commit time through distributed adjudicators and the Journal replication system. This minimizes cross-region latency by requiring coordination only during commits, not individual statements. DSQL enables elastic scaling from zero to millions of transactions per second while providing strong consistency, ACID transactions, and continuous availability during availability zone or region failures.",
+      "authors": [
+        "Marc Brooker",
+        "Marc Bowes",
+        "Mike Hershey",
+        "Zak van der Merwe",
+        "James Morle",
+        "Matthys Strydom"
+      ],
+      "primary_category": "cs.DB",
+      "categories": [
+        "cs.DB"
+      ],
+      "published": "2026-07-14T21:24:21+00:00",
+      "link": "https://arxiv.org/pdf/2607.13276v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Multi-region cloud database architecture",
+      "llm_evidence_cn": "多区域云数据库架构",
+      "llm_evidence": "多区域云数据库架构",
+      "canonical_evidence": "多区域云数据库架构",
+      "llm_tldr_en": "Aurora DSQL is a serverless SQL database with multi-region active-active capabilities, built on disaggregated architecture separating compute, storage, and coordination, using MVCC and OCC to minimize cross-region latency.",
+      "llm_tldr_cn": "本文提出Aurora DSQL，一种无服务器SQL数据库，具有多区域主动-主动能力。它基于解耦架构，将计算、存储和事务协调分离为独立的可水平扩展服务。系统使用多版本并发控制和乐观并发控制，通过分布式仲裁器和日志复制在提交时协调，最小化跨区域延迟。该设计实现了从零开始的弹性扩展，适用于云规模的事务处理。",
+      "llm_tldr": "本文提出Aurora DSQL，一种无服务器SQL数据库，具有多区域主动-主动能力。它基于解耦架构，将计算、存储和事务协调分离为独立的可水平扩展服务。系统使用多版本并发控制和乐观并发控制，通过分布式仲裁器和日志复制在提交时协调，最小化跨区域延迟。该设计实现了从零开始的弹性扩展，适用于云规模的事务处理。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.13987v1",
+      "source": "arxiv",
+      "title": "Agent Skill Security: Threat Models, Attacks, Defenses, and Evaluation",
+      "abstract": "Reusable skills are becoming a fundamental building block of Large Language Model (LLM) agents, enabling capabilities to be packaged, shared, and reused across diverse applications. However, existing security research primarily focuses on prompt injection and runtime execution, leaving security risks throughout the broader skill lifecycle largely unexplored. In this paper, we present SkillSec-Eval, a lifecycle-aware framework for systematically evaluating the security of reusable agent skills. We first characterize the skill lifecycle and develop a threat taxonomy spanning repository admission, semantic retrieval, planner selection, execution, and skill evolution. We then instantiate this taxonomy in SkillSec-Eval and conduct a comprehensive empirical evaluation using a repository of 327 real-world skills. Our study demonstrates that vulnerabilities arise at multiple lifecycle stages beyond execution, highlighting the need for lifecycle-aware security analysis of reusable agent skills.",
+      "authors": [
+        "Sanket Badhe",
+        "Priyanka Tiwari"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-15T16:15:46+00:00",
+      "link": "https://arxiv.org/pdf/2607.13987v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "AI security threats: lifecycle security of LLM agent skills",
+      "llm_evidence_cn": "人工智能安全威胁：LLM代理技能的生命周期安全",
+      "llm_evidence": "人工智能安全威胁：LLM代理技能的生命周期安全",
+      "canonical_evidence": "人工智能安全威胁：LLM代理技能的生命周期安全",
+      "llm_tldr_en": "SkillSec-Eval proposes a lifecycle-aware framework for evaluating LLM agent skill security, covering repository admission, retrieval, selection, execution, evolution, and revealing new attack surfaces.",
+      "llm_tldr_cn": "该论文关注LLM代理中可复用技能的安全问题，指出现有研究主要聚焦即时注入和运行时安全，忽视了技能生命周期其他阶段的风险。提出了SkillSec-Eval生命周期感知评估框架，建立了包括仓库准入、语义检索、规划器选择、执行和技能演化的威胁分类。在多个模型上进行实证研究，揭示了技能生命周期中的新攻击面。",
+      "llm_tldr": "该论文关注LLM代理中可复用技能的安全问题，指出现有研究主要聚焦即时注入和运行时安全，忽视了技能生命周期其他阶段的风险。提出了SkillSec-Eval生命周期感知评估框架，建立了包括仓库准入、语义检索、规划器选择、执行和技能演化的威胁分类。在多个模型上进行实证研究，揭示了技能生命周期中的新攻击面。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.14489v1",
+      "source": "arxiv",
+      "title": "EdgeFaaS: A Function-based Framework for Edge Computing",
+      "abstract": "Edge computing brings unique challenges as the resources on the edge are highly diverse in capabilities and capacities, and highly distributed across many users and the physical world. Existing distributed computing frameworks cannot adequately handle this level of heterogeneity and distribution. This paper proposes EdgeFaaS, a novel function-based edge computing framework to enable edge applications to effectively utilize heterogeneous resources distributed across the Internet of Things (IoT), edge, and cloud for computing. It proposes function virtualization and storage virtualization to abstract distributed and heterogeneous physical resources and provides consistent virtual interfaces for deploying and executing functions and storing and accessing data. EdgeFaaS provides comprehensive support to diverse edge computing workflows, and at the same time allows users to flexibly adjust the configurations and explore various important tradeoffs. To demonstrate its usability, the paper also presents the implementation and evaluation of three representative workflows on EdgeFaaS for video analytics, federated learning, and audio classification, on a real testbed of 100+ geographically distributed IoT devices, edge servers, and cloud services. EdgeFaaS allows users to flexibly explore the deployment configurations of these workflows over distributed and heterogeneous resources. For example, users can easily vary the function placement of the video processing pipeline across IoT, edge, and cloud resources and study the tradeoff between computation and communication costs; users can also flexibly adjust the cluster count and size in the hierarchical federated learning system and explore the tradeoff between training accuracy and speed.",
+      "authors": [
+        "Neha Vadnere",
+        "Yu-Ting Wang",
+        "Yitao Chen",
+        "Sreehari Sadesh",
+        "Ming Zhao"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC",
+        "cs.AI"
+      ],
+      "published": "2026-07-16T02:05:46+00:00",
+      "link": "https://arxiv.org/pdf/2607.14489v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "function-based framework for edge-cloud computing",
+      "llm_evidence_cn": "面向边缘云计算的函数式框架",
+      "llm_evidence": "面向边缘云计算的函数式框架",
+      "canonical_evidence": "面向边缘云计算的函数式框架",
+      "llm_tldr_en": "Proposes EdgeFaaS, a function-based edge computing framework that abstracts heterogeneous resources across IoT, edge, and cloud using function and storage virtualization.",
+      "llm_tldr_cn": "针对边缘计算资源异构分散的问题，提出EdgeFaaS函数式框架，通过函数虚拟化和存储虚拟化统一管理物联网、边缘和云端的异构资源，提供一致的部署和访问接口。该框架能有效利用分布式异构资源，提升了边缘应用的灵活性和效率。",
+      "llm_tldr": "针对边缘计算资源异构分散的问题，提出EdgeFaaS函数式框架，通过函数虚拟化和存储虚拟化统一管理物联网、边缘和云端的异构资源，提供一致的部署和访问接口。该框架能有效利用分布式异构资源，提升了边缘应用的灵活性和效率。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.14566v1",
+      "source": "arxiv",
+      "title": "Fully Automated End-to-End Adversary Emulation from MITRE ATT\\&CK Based Cyber Threat Intelligence Using LLMs",
+      "abstract": "This paper presents a fully automated end-to-end framework for adversary emulation from MITRE ATT&CK-aligned CTI reports using LLMs. Unlike prior work, which either executes prewritten playbooks or partially automates playbook generation, our framework unifies playbook generation, execution, and failure recovery in a single workflow. In particular, although AURORA, the most recent prior study, generates playbooks from CTI reports, it still requires partial manual intervention and does not revise playbooks based on execution failures. Our framework generates Caldera playbooks from CTI reports, executes them automatically, and revises failed Abilities through a failure-type-aware recovery mechanism. Evaluated on 11 CTI reports with Claude Sonnet 4.5, GPT-4o, Gemini 2.5 Pro, and Grok 4 Fast, the framework achieved its best results with Claude Sonnet 4.5: 27.3 Abilities per playbook, 84.22% execution success after revision, and CTI Precision, Recall, and F1 of 73.95%, 52.48%, and 60.50%, respectively. The failure recovery mechanism consistently improved execution success across all evaluated LLM models by 14.59%p to 17.23%p. On the 10 CTI reports selected from AURORA's dataset, this mechanism further increased the final execution success rate, surpassing that of AURORA, which represents the state-of-the-art adversary emulation system.",
+      "authors": [
+        "Jueon Choi",
+        "Seojun Lee",
+        "Sanggwon Yun",
+        "Kwanghoon Choi",
+        "Gunjin Cha"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-16T04:48:11+00:00",
+      "link": "https://arxiv.org/pdf/2607.14566v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "automated adversary emulation using LLMs from CTI",
+      "llm_evidence_cn": "利用大模型从威胁情报自动生成对手模拟",
+      "llm_evidence": "利用大模型从威胁情报自动生成对手模拟",
+      "canonical_evidence": "利用大模型从威胁情报自动生成对手模拟",
+      "llm_tldr_en": "Presents a fully automated framework using LLMs to generate, execute, and recover from Caldera playbooks for adversary emulation based on MITRE ATT&CK CTI reports.",
+      "llm_tldr_cn": "针对现有对手模拟需要人工干预的问题，提出全自动化框架，利用大语言模型从MITRE ATT&CK威胁情报报告生成Caldera剧本，自动执行并根据失败类型进行恢复。在11个场景上的评估表明，该方法能有效模拟复杂攻击行为，减少人工工作量，提升安全测试效率。",
+      "llm_tldr": "针对现有对手模拟需要人工干预的问题，提出全自动化框架，利用大语言模型从MITRE ATT&CK威胁情报报告生成Caldera剧本，自动执行并根据失败类型进行恢复。在11个场景上的评估表明，该方法能有效模拟复杂攻击行为，减少人工工作量，提升安全测试效率。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.12341v1",
+      "source": "arxiv",
+      "title": "Policy-Conditioned Constrained Decoding for Column-Level Access Control in Text-to-SQL",
+      "abstract": "Text-to-SQL is increasingly deployed across trust boundaries between data providers and users. Such deployment must balance three competing requirements: policy compliance, answer coverage, and bounded cost. Existing approaches typically decide refusal based on which columns a query mentions and enforce it stochastically. Whether a query is compliant, however, depends not only on which columns appear but on how they are used, and stochastic enforcement cannot deterministically rule out violations. We formalize this requirement as a column-use policy over semantic use: output, filter condition, and aggregation argument. We integrate the policy by aligning each role with grammar productions tracked by the decoder. The resulting system, PCC-SQL, applies a per-token logits mask that deterministically eliminates single-query column-use violations on the supported SQL fragment in a single decoding pass. Across three benchmarks and three open-source models, PCC-SQL achieves 0% Leakage Rate and Coverage up to 88.7% on Spider-CU, while staying within +10% tokens of direct prompting. We additionally assess semantic alignment with execution accuracy.",
+      "authors": [
+        "Ryoto Miyamoto",
+        "Xin Fan",
+        "Hayato Yamana"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.CR",
+        "cs.DB"
+      ],
+      "published": "2026-07-14T04:41:09+00:00",
+      "link": "https://arxiv.org/pdf/2607.12341v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "access control for cloud data querying",
+      "llm_evidence_cn": "云数据查询的访问控制",
+      "llm_evidence": "云数据查询的访问控制",
+      "canonical_evidence": "云数据查询的访问控制",
+      "llm_tldr_en": "Proposes policy-conditioned constrained decoding for column-level access control in text-to-SQL, addressing policy compliance across trust boundaries.",
+      "llm_tldr_cn": "文本到SQL系统在跨信任边界部署时需要平衡策略合规、答案覆盖和成本。现有方法只基于列名随机拒绝，无法处理列的使用方式。本文提出策略条件约束解码，将列使用策略对齐到语法生成过程，实现确定性合规。实验表明该方法能有效保证访问控制且不影响回答质量。",
+      "llm_tldr": "文本到SQL系统在跨信任边界部署时需要平衡策略合规、答案覆盖和成本。现有方法只基于列名随机拒绝，无法处理列的使用方式。本文提出策略条件约束解码，将列使用策略对齐到语法生成过程，实现确定性合规。实验表明该方法能有效保证访问控制且不影响回答质量。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.09992v1",
+      "source": "arxiv",
+      "title": "Trusted Floors Under Untrusted Learners: A Runtime Assured-SLO Guard for ML Serving",
+      "abstract": "Modern ML serving increasingly lets learned, unbounded components (routers, latency-SLO admitters, admit ladders) decide a tenant's quality of service; when one is wrong, the assured SLO can silently break, and the Kubernetes layers beneath (Kueue, DRA, the Gateway-API Inference Extension) only add cross-layer surprises. Rather than trust the learner to be right, we bound the damage a wrong one can do: a small trusted guard wraps the untrusted learner -- learned proposes, the guard disposes. A tenant's assured-SLO obligation splits into two parts with different epistemics. Its safety projection (per-request dispatch feasibility and a per-class, per-window service floor) is a controllable obligation the guard enforces at runtime, regardless of an arbitrarily-wrong learned admitter, by reservation and priority dispatch. Its aggregate obligation (a tail-latency percentile) is a statistical residual with no per-request enforcement point; a cheap deterministic screen for it is optimistically unsound not only near saturation but well below it. On real 2xV100 the guard holds assured-class miss 0.0 (reps 10, worst upper Wilson CI 0.0053) across every miscalibration of a learned admitter under two shed policies that fail in opposite directions. Against a real, deployed GAIE Flow Control on a serving simulator, a mislabelling router flips the same assured requests from miss 0.0 to 1.0; our guard reserves by the true class, so the label cannot break its floor. We characterize when a cheap static screen can be trusted and when it cannot. As a Frontiers-style submission we evaluate the stance on commodity 2xV100 and a serving simulator, and scope datacenter scale, real-model Flow Control, and a closed worst-case theorem as the agenda.",
+      "authors": [
+        "Hsiu-Chi Tsai"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC"
+      ],
+      "published": "2026-07-10T21:35:48+00:00",
+      "link": "https://arxiv.org/pdf/2607.09992v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "runtime guard for ML serving to enforce assured SLO, relevant to cloud security",
+      "llm_evidence_cn": "ML服务的运行时守卫以强制执行SLO，与云安全相关",
+      "llm_evidence": "ML服务的运行时守卫以强制执行SLO，与云安全相关",
+      "canonical_evidence": "ML服务的运行时守卫以强制执行SLO，与云安全相关",
+      "llm_tldr_en": "Proposes a small trusted runtime guard for ML serving that bounds damage from untrained learned components, enforcing assured SLO regardless of learner errors.",
+      "llm_tldr_cn": "针对ML服务中不可信学习组件可能破坏SLO的问题，提出小型可信守卫来分离安全投影与控制义务，在运行时强制执行SLO，不受学习组件错误影响。",
+      "llm_tldr": "针对ML服务中不可信学习组件可能破坏SLO的问题，提出小型可信守卫来分离安全投影与控制义务，在运行时强制执行SLO，不受学习组件错误影响。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.13459v1",
+      "source": "arxiv",
+      "title": "Elton: Urn Resources for Reasoning about Adversarial Probabilistic Programs",
+      "abstract": "Probabilistic programs are important for many applications. For security applications in particular, one is interested in establishing properties that hold in the presence of arbitrary adversaries, i.e., unknown pieces of code. We present Elton, a higher-order separation logic for reasoning about higher-order probabilistic programs utilizing unknown adversarial code. Elton incorporates novel logical facilities for specifying invariants over distributional properties using delayed samplings at the language level, and a new kind of separation-logic predicate called urn resources at the logic level. We show that these extensions are sound and can be erased back to a standard call-by-value semantics. Combined with other features, e.g. invariants and ghost resources, Elton is expressive enough to prove error bounds on a wide range of security examples, some of which are beyond the scope of previous techniques. All proofs are mechanized with the Rocq proof assistant and the Iris separation logic framework.",
+      "authors": [
+        "Kwing Hei Li",
+        "Alejandro Aguirre",
+        "Philipp G. Haselwarter",
+        "Joseph Tassarotti",
+        "Lars Birkedal"
+      ],
+      "primary_category": "cs.LO",
+      "categories": [
+        "cs.LO",
+        "cs.PL"
+      ],
+      "published": "2026-07-15T05:40:08+00:00",
+      "link": "https://arxiv.org/pdf/2607.13459v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "reasoning about adversarial AI programs",
+      "llm_evidence_cn": "推理对抗性AI程序",
+      "llm_evidence": "推理对抗性AI程序",
+      "canonical_evidence": "推理对抗性AI程序",
+      "llm_tldr_en": "Elton is a higher-order separation logic for reasoning about probabilistic programs with adversarial code, using urn resources to specify invariants over distributional properties.",
+      "llm_tldr_cn": "概率程序在安全应用中常面临未知对抗代码的威胁。本文提出Elton，一种高阶分离逻辑，通过引入延迟采样和瓮资源谓词，能够为分布属性指定不变量，以便在存在对手时验证安全性。证明了扩展的可靠性和消去性质。该方法为AI安全推理提供了基础工具。",
+      "llm_tldr": "概率程序在安全应用中常面临未知对抗代码的威胁。本文提出Elton，一种高阶分离逻辑，通过引入延迟采样和瓮资源谓词，能够为分布属性指定不变量，以便在存在对手时验证安全性。证明了扩展的可靠性和消去性质。该方法为AI安全推理提供了基础工具。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.12316v1",
+      "source": "arxiv",
+      "title": "Antiproof: Synthesizing Vulnerability Detectors and Proofs of Exploitability",
+      "abstract": "Discovering vulnerabilities before attackers exploit them requires high recall and reliable automatic validation, but existing approaches struggle to achieve both without prohibitive cost. We present Antiproof, an end-to-end vulnerability discovery system that combines neuro-symbolic detector synthesis for high-recall discovery with proof-of-exploitability oracles for automatic validation. Antiproof learns and iteratively refines static detectors from vulnerability datasets, then validates candidates by verifying whether executable proofs demonstrate concrete attacker capabilities. Evaluated on BountyBench and our curated KEVBench dataset, Antiproof detects 64 of 66 vulnerabilities, improving recall by more than 60 percentage points over static-analysis and neuro-symbolic baselines. In a scan of 50 widely deployed systems, Antiproof uncovered several hundred previously unknown vulnerabilities. We are responsibly disclosing all confirmed zero-days and have received 12 CVE assignments to date, including remote code execution vulnerabilities in Ray, SGLang, vLLM, and LiteLLM that could allow attackers to take over LLM training and inference systems.",
+      "authors": [
+        "Alon Shakevsky",
+        "Corban Villa",
+        "Ion Stoica",
+        "Raluca Ada Popa"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-14T03:45:18+00:00",
+      "link": "https://arxiv.org/pdf/2607.12316v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Neuro-symbolic vulnerability detection with exploit proofs",
+      "llm_evidence_cn": "结合神经符号的漏洞检测与利用证明",
+      "llm_evidence": "结合神经符号的漏洞检测与利用证明",
+      "canonical_evidence": "结合神经符号的漏洞检测与利用证明",
+      "llm_tldr_en": "Antiproof combines neuro-symbolic detector synthesis with proof-of-exploitability oracles to automatically discover and validate vulnerabilities, achieving high recall on real datasets.",
+      "llm_tldr_cn": "本文针对漏洞发现高召回率和可靠自动验证的难题，提出了Antiproof系统，结合神经符号检测器合成和利用性证明预言。系统从漏洞数据集学习并迭代优化静态检测器，然后通过验证可执行利用证明来确认漏洞。在BountyBench和KEVBench上检测出64/66个漏洞，召回率比静态分析提高60个百分点以上。该方法显著提升了自动化漏洞发现的可信度。",
+      "llm_tldr": "本文针对漏洞发现高召回率和可靠自动验证的难题，提出了Antiproof系统，结合神经符号检测器合成和利用性证明预言。系统从漏洞数据集学习并迭代优化静态检测器，然后通过验证可执行利用证明来确认漏洞。在BountyBench和KEVBench上检测出64/66个漏洞，召回率比静态分析提高60个百分点以上。该方法显著提升了自动化漏洞发现的可信度。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.14432v1",
+      "source": "arxiv",
+      "title": "The Adversarial Robustness of Sketching and Streaming Algorithms",
+      "abstract": "Sketching and streaming algorithms are vital for handling massive datasets. While classical methods guarantee correctness on fixed inputs, they often fail with adaptive inputs, where future data depends on past algorithm outputs. This is common in settings such as optimization, databases, finance, and network monitoring. This monograph surveys recent advances in adversarial robustness, including techniques for insertion-only streams, connections to differential privacy, and cryptographic methods that achieve adversarial robustness. We also discuss fundamental limitations, especially for linear sketches and streams with insertions and deletions, where robustness often requires polynomial space or sketching dimension. Throughout, we explore core problems like adaptively answering queries for optimization problems, norm estimation, frequency moments, and heavy hitters, and highlight emerging tools and open challenges at the intersection of streaming, sketching, privacy, and adversarial robustness.",
+      "authors": [
+        "David P. Woodruff",
+        "Samson Zhou"
+      ],
+      "primary_category": "cs.DS",
+      "categories": [
+        "cs.DS"
+      ],
+      "published": "2026-07-15T23:55:51+00:00",
+      "link": "https://arxiv.org/pdf/2607.14432v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "adversarial robustness in sketching and streaming with privacy techniques",
+      "llm_evidence_cn": "草图与流算法中的对抗鲁棒性和隐私技术",
+      "llm_evidence": "草图与流算法中的对抗鲁棒性和隐私技术",
+      "canonical_evidence": "草图与流算法中的对抗鲁棒性和隐私技术",
+      "llm_tldr_en": "Monograph surveying adversarial robustness for sketching and streaming algorithms, covering connections to differential privacy and cryptographic methods.",
+      "llm_tldr_cn": "草图与流算法在大数据处理中易受自适应输入攻击。本文综述了对抗鲁棒性最新进展，包括插入流技术、与差分隐私的联系以及密码学方法。讨论了线性草图的根本局限性，指出鲁棒性需要多项式空间。该工作对AI系统中的数据隐私和安全性有指导意义。",
+      "llm_tldr": "草图与流算法在大数据处理中易受自适应输入攻击。本文综述了对抗鲁棒性最新进展，包括插入流技术、与差分隐私的联系以及密码学方法。讨论了线性草图的根本局限性，指出鲁棒性需要多项式空间。该工作对AI系统中的数据隐私和安全性有指导意义。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.14309v1",
+      "source": "arxiv",
+      "title": "Traccia: An OpenTelemetry-Based Governance Platform for AI Systems",
+      "abstract": "The rapid development of Large Language Models (LLMs) and Artificial Intelligent (AI) powered autonomous agents has fundamentally changed the existing forms of software governance. In spite of the rigorous standards of transparency and account ability required according to the international frameworks such as the European Union's AI Act, there is a considerable gap between theory and reality. The present study discusses the inherent drawbacks of currently utilized platforms for LLM evaluation, machine learning workflow, and application performance monitoring in general. It has been shown that current disjointed solutions fail to protect unbound state space agentic architecture from serious threats such as alignment drift, SaaS security concerns, and unauthorized deployment of shadow AI systems. Moreover, a solution is proposed for overcoming the discussed challenges in form of a coherent multi-level AI governance stack Traccia built on the top of OpenTelemetry infrastructure platform. Traccia resolves the last mile for AI Alignment by adding the telemetry data, passive semantic guardrail assessment, and execution lineage into a hashed trace ledger. Traccia automatically creates compliance evidence packages by appending tamper-resistant fingerprints and SHA-256 content hash, that map to regulatory requirements (Articles 12, 14, 19, 26(6), and 50 of the EU AI Act) without invading any data privacy. By performing this evaluation in a methodical manner, a solid machine-readable base has been created for enterprise-wide management of autonomous AI systems.",
+      "authors": [
+        "Nutan Kumar Naik",
+        "Aditya Kumar Saroj",
+        "Vijay Prasad Poudel",
+        "Saurav Samantray",
+        "Abhishek Patel"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CY"
+      ],
+      "published": "2026-07-15T19:14:21+00:00",
+      "link": "https://arxiv.org/pdf/2607.14309v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "OpenTelemetry-based governance platform for AI systems addressing security threats",
+      "llm_evidence_cn": "基于OpenTelemetry的AI系统治理平台应对安全威胁",
+      "llm_evidence": "基于OpenTelemetry的AI系统治理平台应对安全威胁",
+      "canonical_evidence": "基于OpenTelemetry的AI系统治理平台应对安全威胁",
+      "llm_tldr_en": "Traccia is an OpenTelemetry-based governance platform for AI systems that monitors alignment drift, SaaS security, and unauthorized access in agentic architectures.",
+      "llm_tldr_cn": "大模型和AI代理的快速发展带来治理挑战，现有平台在可观测性和安全性上存在不足。本文提出Traccia，基于OpenTelemetry的AI系统治理平台，统一收集LLM评估、ML工作流和应用性能数据，实时检测对齐漂移、SaaS安全问题和未授权访问。通过集中治理，满足了AI法案等监管要求，增强了AI系统的透明度和安全性。",
+      "llm_tldr": "大模型和AI代理的快速发展带来治理挑战，现有平台在可观测性和安全性上存在不足。本文提出Traccia，基于OpenTelemetry的AI系统治理平台，统一收集LLM评估、ML工作流和应用性能数据，实时检测对齐漂移、SaaS安全问题和未授权访问。通过集中治理，满足了AI法案等监管要求，增强了AI系统的透明度和安全性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.14798v1",
+      "source": "arxiv",
+      "title": "Ground-Side Mission Plan Compilation with Policy-as-Code Guardrails for Cloud-Native Satellite Platforms",
+      "abstract": "Onboard cloud-native runtimes for satellites are emerging on multiple tracks (ORCHIDE, Axiom Space's AxDCU-1, Kepler's Jetson nodes), but each assumes that the workflow artifacts it executes arrive from the ground. ORCHIDE's architecture document D3.1 states explicitly that \"only the Deferred Phase is part of the ORCHIDE scope,\" and no open-source ground-side toolchain has been released by the consortium. We present Satellite Mission Compiler, a four-stage pipeline that addresses this gap: it takes a human-authored mission plan, checks it against machine-checkable structural and policy rules, and compiles it into the container-workflow artifacts that cloud-native satellite runtimes consume. The pipeline parses the plan against a Pydantic schema derived from public ORCHIDE materials, evaluates it against an OPA/Rego policy package of ten deny rules with documented provenance, compiles it into a typed WorkflowIntent intermediate representation, and renders it as Argo Workflow DAGs and Kueue Job manifests with Dynamic Resource Allocation (DRA) support. We classify pre-uplink loss events into four severity tiers tied to specific schema and policy checks, and anchor the layered-validation design in the safety reading of defense-in-depth (NASA-STD-8739.8B) rather than the security reading (NIST SP 800-53). The implementation is validated by golden translation evaluations, argo lint, an in-process baseline that reproduces OPA's decisions, and live single-node cluster submission, including a DRA-backed GPU admission cascade on Kueue v0.17.3 (re-validated on v0.18.3) and, on v0.18.3, a unified GPU+CPU device-class quota with a scheduler-level accelerator fallback. Six Model Context Protocol (MCP) tools expose the pipeline to AI agents. The compiler is released under EUPL-1.2 (DOI 10.5281/zenodo.21228150).",
+      "authors": [
+        "Hsiu-Chi Tsai",
+        "Chia-Tung Chung"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC"
+      ],
+      "published": "2026-07-16T10:17:15+00:00",
+      "link": "https://arxiv.org/pdf/2607.14798v1",
+      "tags": [
+        "keyword:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Cloud-native satellite platform mission compilation with policy guardrails",
+      "llm_evidence_cn": "基于云原生卫星平台的任务编译与策略护栏",
+      "llm_evidence": "基于云原生卫星平台的任务编译与策略护栏",
+      "canonical_evidence": "基于云原生卫星平台的任务编译与策略护栏",
+      "llm_tldr_en": "Presents Satellite Mission Compiler, a pipeline that compiles human-authored mission plans into container-workflow artifacts for cloud-native satellite runtimes, enforcing policy-as-code guardrails.",
+      "llm_tldr_cn": "本文提出卫星任务编译器，这是一条四阶段流水线，将人类编写的任务计划编译为云原生卫星运行时所需的容器工作流制品，并通过策略即代码护栏进行安全检查。该编译器填补了地面工具链的空白，支持ORCHIDE等星载云原生平台，实现了任务编译的结构化和策略合规性。",
+      "llm_tldr": "本文提出卫星任务编译器，这是一条四阶段流水线，将人类编写的任务计划编译为云原生卫星运行时所需的容器工作流制品，并通过策略即代码护栏进行安全检查。该编译器填补了地面工具链的空白，支持ORCHIDE等星载云原生平台，实现了任务编译的结构化和策略合规性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

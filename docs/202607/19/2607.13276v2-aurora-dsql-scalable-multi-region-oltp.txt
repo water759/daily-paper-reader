@@ -1,0 +1,427 @@
+Title: Aurora DSQL: Scalable, Multi-Region OLTP
+
+URL Source: https://arxiv.org/pdf/2607.13276v2
+
+Published Time: Fri, 17 Jul 2026 00:21:57 GMT
+
+Number of Pages: 13
+
+Markdown Content:
+# Aurora DSQL: Scalable, Multi-Region OLTP 
+
+# Marc Brooker 
+
+Amazon Web Services mbrooker@amazon.com 
+
+# Marc Bowes 
+
+Amazon Web Services bowes@amazon.com 
+
+# Mike Hershey 
+
+Amazon Web Services hersheys@amazon.com 
+
+# Zak van der Merwe 
+
+Amazon Web Services zakv@amazon.com 
+
+# James Morle 
+
+Amazon Web Services morlej@amazon.com 
+
+# Matthys Strydom 
+
+Amazon Web Services strydom@amazon.com 
+
+## ABSTRACT 
+
+Aurora DSQL is a serverless SQL database designed for cloud-scale transaction processing with multi-region active-active capabilities. Built on a disaggregated architecture, DSQL separates compute, stor-age, and transaction coordination into independent, horizontally scalable services. Query processors run in Firecracker MicroVMs ex-ecuting PostgreSQL-compatible SQL without local state. The system uses multiversion concurrency control with precision timestamps for coordination-free reads and optimistic concurrency control for writes, deferring coordination to commit time through distributed adjudicators and the Journal replication system. This minimizes cross-region latency by requiring coordination only during com-mits, not individual statements. DSQL enables elastic scaling from zero to millions of transactions per second while providing strong consistency, ACID transactions, and continuous availability during availability zone or region failures. 
+
+## 1 INTRODUCTION 
+
+Amazon has a long history of building scalable database systems, including Dynamo [ 12 ] in the 2000s; DynamoDB [ 13 ], Aurora [ 34 ]1,and Redshift [ 3, 16 ] in the early 2010s; and Aurora Serverless [ 5] and MemoryDB [ 31 ] in the 2020s. Despite this history, our significant internal adoption of relational databases, and our and our customers scale needs, we did not have a horizontally scalable, scale-out, OLTP-optimized SQL database. Our product goals for DSQL were based on lessons from more than a decade of learning from AWS database customers. The prop-erties we believed were most important to them were: 
+
+Serverless A fully-managed fully-serverless experience (like AWS DynamoDB or Amazon S3), with no infrastructure to manage, monitor, or keep up to date. 
+
+Familiar An interface that developers already know, allow-ing them to use the clients, tools, and SQL dialect they’re familiar with. Familiarity extends beyond API, to include isolation and transaction semantics, data types, and other SQL concepts. 
+
+Scalable A database that scales up to millions of transactions per second, and down to zero, reflecting the needs of our customers’ dynamic and growing businesses. 
+
+Multi-region active-active Allowing customers to build active-active architectures than span multiple AWS regions, across 
+
+> 1In this paper, when we say Aurora DSQL or DSQL we are referring to the system described in the paper, and when we say Aurora we are referring to Aurora MySQL and Aurora PostgreSQL, a significantly different system
+
+continents, with strong consistency, fast failover, and no data loss. 
+
+Strongly consistent Applications shouldn’t need to reason about eventual consistency, and should be able to read and write at any scale with strong consistency. Our overall goal was to build a relational database system that simplifies the work of application building and operations, freeing builders from worrying about scale, reliability, durability, and even multi-region fault tolerance. A database of first resort , which is sim-ple and easy to adopt at low scale, and grows with the application, without adding complexity. Given that our goal is to simplify customers architectures, we’ll start by talking about some patterns of scalable, fault-tolerant, cloud-hosted applications that customers build on DSQL. Figure 1 shows a single-region architecture, close to what we’d consider the default application architecture for services at Amazon. This architecture, with the application deployed on stateless, auto-scaling compute infrastructure across three datacenters (availability zones, or AZs, in the AWS terminology), backed by a regional DSQL endpoint, allows applications to tolerate the failure of an entire datacenter with no downtime, and has been proven to scale to millions of requests per second and beyond. Responsibility for handling concurrency and durability is handed to the database, and the application fleet is constructed of the required number of stateless, independent, service hosts. Host failures are handled with load balancer (LB) health checks, and datacenter-scale failures are handled with DNS-level health checks. Regional DNS   
+
+> LB LB LB
+> Application
+> Stack
+> Regional DSQL Endpoint
+> Application
+> Stack
+> Application
+> Stack
+
+Figure 1: Single-region application architecture 
+
+Figure 2 extends this architecture to multiple regions (for exam-ple us-east-1 in Virginia and us-east-2 in Ohio). In this variant, the application can tolerate the unavailability of an entire region with-out downtime, and without operator intervention or data loss. From arXiv:2607.13276v2 [cs.DB] 16 Jul 2026 Marc Brooker, Marc Bowes, Mike Hershey, Zak van der Merwe, James Morle, and Matthys Strydom 
+
+the application programmer’s perspective, they continue to write their business logic the same way, and talk to the regional database endpoint. If the application is hosted on serverless compute, they may not even need to manage application infrastructure, while still getting enterprise-ready scale and fault tolerance properties, along with the ability to scale to zero and incur no costs when there is no customer traffic. Region A (active) Region B (active)     
+
+> Regional DNS
+> LB LB LB
+> Application
+> Stack
+> Regional DSQL Endpoint
+> Application
+> Stack
+> Application
+> Stack
+> Regional DNS
+> LB LB LB
+> Application
+> Stack
+> Regional DSQL Endpoint
+> Application
+> Stack
+> Application
+> Stack
+> Global DNS
+
+Figure 2: Multi-region application architecture 
+
+Many applications are more complex than this, but we have seen customers and ourselves at Amazon, build global-scale critical busi-nesses on top of such simple architectures. A scalable, active-active, fault-tolerant database is at the core of making such simplicity possible. In the remainder of this paper, we describe the design and im-plementation of DSQL, stepping through key decisions. It is not possible to describe a system like this completely in the space provided, so our focus will be on SQL execution, replication, and transactions, leaving details like on-disk storage, encryption, and query optimization to later publications. 
+
+## 2 ARCHITECTURE OVERVIEW 
+
+DSQL’s architecture is disaggregated. Multiple independent ser-vices, each focused on a small number of well-defined concerns. These components communicate through carefully specified APIs with clear contracts. This approach delivers three crucial properties: we can make independent changes and improvements to each com-ponent, we can scale components individually based on workload demands, and we can make different security isolation decisions for each component. Figure 3 shows how these components fit together in DSQL’s overall architecture. Each component plays a specific role in the sys-tem, and crucially, no component exists as a singleton—everything can scale horizontally to meet demand. Query Processors handle the customer-facing side of the data-base—they execute SQL queries, return data for reads, buffer writes locally, and coordinate the transaction protocol. When you connect to DSQL and run a query, you’re talking to a Query Processor run-ning in a Firecracker MicroVM. As described in section 3, Query Processors dynamically scale to meet the customer workload, both vertically (using similar techniques to Aurora Serverless [ 5 ]) and horizontally by adding new Query Processors per active connection. Reads are handled by the query processor and the storage nodes. Storage nodes provide the foundation for data access, handling both table data and indexes. When Query Processors need data, they read it from storage nodes. Each storage node stores a range Query  
+
+> Processor
+> Adjudicator
+> [a..m]
+> Adjudicator
+> [n..z]
+> Journal
+> Query
+> Processor
+> Crossbar Crossbar
+> Storage
+> [a..f]
+> Storage
+> [g..s]
+> Storage
+> [t..z]
+> Clock
+> Storage
+> [a..f]
+> Storage
+> [g..s]
+> Storage
+> [t..z]
+> Journal
+> Read Path Commit Path
+
+Figure 3: Aurora DSQL Architecture Overview 
+
+of data based on a shard key. Query Processors ask for data as of a specific timestamp, enabling a coordination-free read path. Storage nodes scale in two dimensions: enough shards to handle all writes to that table, and within each shard, as many read replicas as needed to handle read traffic. The details of how this multiversion concurrency control works and enables fast, consistent reads are covered in section 4. Writes ( UPDATE s, INSERT s, etc) are handled locally inside each Query Processor, expanding out to the rest of the write path on transaction commit. Adjudicators decide whether transactions can commit while maintaining isolation guarantees, and control transaction order and commit time. Adjudicators scale by sharding. Each key in the database belongs to at most one adjudicator at any given time, dis-tributing the conflict detection workload. Adjudicator sharding and storage sharding are unrelated, allowing sharding based on read and write heat to be done independently (for example, a database with low write traffic and high read traffic could have one adjudi-cator shard, and many storage shards). We explore the transaction protocol and how adjudicators handle write conflicts in detail in section 5. Journal is an internal replication component we use in many sys-tems at AWS, including S3, DynamoDB, and MemoryDB. Each Jour-nal is a durable, ordered, atomic data stream. In the single-region setting, a Journal commit means that data is durable to storage in two or more AZs, while in the cross-region configuration data is durable in two or more AWS regions. These ordered data streams make transactions durable and replicate data between availability zones and regions. When a transaction commits, it gets written to a Journal, making it permanent and ensuring it propagates to all the places it needs to be visible. Journals scale per transaction. Each transaction’s writes go atomically to a single journal, but we can have as many journals as we need. Crossbars take data from Journals, totally ordered on each Jour-nal, and merge-sort them into a total order for each subscriber shard. Aurora DSQL: Scalable, Multi-Region OLTP 
+
+Then they divide this ordered stream into shards that align with how the storage layer is partitioned. This component scales with the number of storage nodes and handles the complexity of turn-ing the transaction stream into something storage can efficiently consume. DSQL’s disaggregated approach was not only chosen for scalabil-ity. It provides significant advantages in durability, fault tolerance, and availability. There’s no single point of failure in the system. No single machine, network link, or even entire datacenter failure can bring down a DSQL cluster. Data isn’t stored in just one place, and processing isn’t tied to specific hardware. The result is a database that can scale from zero to millions of transactions per second, maintain strong consistency and isola-tion guarantees, and remain available even when entire regions go offline. Each component focuses on what it does best, and the clean interfaces between them let us optimize each piece inde-pendently while maintaining the overall system’s correctness and performance guarantees. Concretely, each component exposes a narrow interface: query processors accept SQL and produce reads against storage and write sets for adjudicators; adjudicators accept write sets and return commit decisions; Journals accept committed transactions and produce ordered streams; and crossbars consume Journal streams and produce per-shard change feeds for storage. 
+
+## 2.1 Multi-tenancy and Security 
+
+DSQL is a multi-tenant system. Each physical machine in the system is typically handling traffic for thousands of customer workloads. Where we use the word server in this paper (for example when referring to storage servers ) we mean a logical construct, of which there are many on any given physical machine. Multi-tenancy (the ability to run many uncorrelated workloads on the same hardware) and soft allocation (the ability to allocate CPU and memory to workloads on demand) are key to DSQL’s economics, as they are to AWS Lambda [ 2] and Aurora Serverless [ 5]. Packing multiple work-loads reduces the peak-to-average ratio of load on each physical machine (approximately at the rate of √loads ). Given that resource cost typically scales with peak, and revenue scales with average, the economic benefit is obvious. There is also a customer benefit. In section 7 we talk about how DSQL handles long-term changes in heat through sharding and replication, but soft allocation gives us a powerful tool to handle short-term changes by allocating more or less resources locally as workloads change shape. Having multiple tenants on a physical machine does raise the question of how we isolate customers from each other from a secu-rity and performance perspective. This is a deep topic that requires its own paper, but at a high level we use process isolation in cases where we control the code and the implementation is in a memory safe language, and VM isolation using Firecracker where the code is open source or written in an unsafe language (such as with the PostgreSQL engine, see section 3). 
+
+## 2.2 Optimizing for Coordination 
+
+A guiding principle of DSQL’s architecture is to minimize coordina-tion between components, and strongly avoiding coordination that is not constant time with regards to scale. Minimizing coordination helps with scalability and availability, but the primary concern is optimizing for latency. Reads, as described in further detail in sec-tion 4, happen between the client, a query processor, and one or more storage replicas, typically within the same availability zone and always within the same region. High quality clocks and physi-cal time avoid the need to coordinate with other readers or writers. Writes, and the read-modify-writes ubiquitous in OLTP SQL, also happen within the same availability zone and region, and involve the same components. Coordination is required for concurrency control, consistency, and durability at transaction commit time. In the multi-region set-ting, the two tasks requiring cross-region communication (coor-dination for consistency and isolation, and replication for dura-bility) can be performed in a single round of communication. In the single-region setting, the same is true of in-region cross-AZ communication. To achieve this minimal communication, DSQL uses a Optimistic Concurrency Control (OCC), following a variant of Kung and Robin-son’s classic scheme [ 22 ]. We avoid the commonly-cited downsides of OCC in two ways: using MVCC to ensure that all reads happen from a consistent snapshot, never requiring that transactions are aborted because they have read old data; and by picking snapshot isolation rather than serializability (we revisit our reasoning for this decision in subsection 2.4), removing the need to abort on read-write conflicts. By contrast, a pessimistic approach, such as that taken by Spanner [ 8 ] and CockroachDB [ 30 ], requires continuous coordination during transaction execution (typically per statement) to maintain distributed lock state. Another practical advantage of OCC is preventing clients from ever being able to block other clients. At scale, we have found that performance cross talk between clients is a significant contributor to tail latency in apps backed by pessimistic relational databases (for example clients which pause for garbage collection while holding a write lock). Operational experience at Amazon has shown that contention on locks, and retries on failure to acquire locks, are frequent contributors to system outages, and metastable failures which drive long recovery times (and similar results have been reported in the literature [ 18 , 20 ]). Another frequent contributor to instability, and tail latency, is clients which get stuck while holding locks, and we’ve even seen multiple post mortems for cases where operators went out to lunch while holding locks! 
+
+## 2.3 Multi-Region Architecture 
+
+DSQL’s multi-region architecture, shown in Figure 4, extends the single-region design to provide cross-region durability and avail-ability while minimizing coordination overhead. The fundamental components remain the same, but their behavior and interactions change in important ways. The read path is nearly unchanged from single-region opera-tion. Read-only transactions and the read portions of read-write transactions are served from storage in the region where the Query Processor runs. The only difference is that storage nodes must wait to see that journals from all regions have advanced past the trans-action’s read timestamp before serving data, ensuring consistent reads even after region failures. Marc Brooker, Marc Bowes, Mike Hershey, Zak van der Merwe, James Morle, and Matthys Strydom Query       
+
+> Processor
+> Adjudicator
+> [a..m]
+> Adjudicator
+> [n..z]
+> Journal
+> Query
+> Processor
+> Crossbar Crossbar
+> Storage Storage
+> Frontend
+> Query
+> Processor
+> Query
+> Processor
+> Frontend
+> head tail
+> Journal tail head
+> Storage Storage
+> Region A Region B Region C
+
+Figure 4: Aurora DSQL Architecture Overview 
+
+The write path sees the most significant changes. While writes still buffer locally in Query Processors and commit through Adjudi-cators, the Journal now replicates transaction data across multiple regions. In the multi-region configuration, Journal commits ensure data durability in two or more AWS regions rather than just two or more availability zones. This cross-region replication happens as part of the commit protocol, requiring only a single round of cross-region communication to achieve both consistency and durability. Adjudicator placement becomes a control plane optimization problem in multi-region deployments. Each adjudicator shard is placed in a specific region to minimize cross-region traffic based on workload patterns. For failover architectures with one active region, this optimization is straightforward. For active-active workloads with keys spread across regions, optimal placement may not always be possible. In keeping with our desire to offer customers strong consis-tency, DSQL chooses consistency over availability when necessary (choosing PCEC in Abadi’s PACELC taxonomy [ 1]). However, DSQL remains both strongly consistent and available to clients on the majority side of a network partition. For example, if Region C in Figure 4 were to fail, DSQL would remain consistent and available to clients in Region A, and keep data durable in Region B. 
+
+## 2.4 Snapshot Isolation and Strong Consistency 
+
+In DSQL, we picked strong snapshot isolation (i.e. snapshot iso-lation plus linearizability [ 9, 11 ]) as our default (and currently only) supported isolation level. This choice has several advantages. First, it is familiar to developers, being equivalent to PostgreSQL’s 
+
+REPEATABLE READ isolation level. Second, it means that transactions in DSQL only abort on write-write conflicts (i.e. only when other concurrent transactions have written the same set of keys), rather than on read-write conflicts as would be required for serializability (i.e. when other transactions have written the keys the committing transaction has read). In OLTP SQL, reads are significantly more common than writes, for the simple reason that most writes (all 
+
+UPDATES , INSERTS with unique indexes, etc) are also reads. This lower level of isolation means significantly lower abort rates for common transaction patterns. The downside of snapshot isolation is the introduction of write skew anomalies [ 6]. Practically, the most important effect of write skew is limiting which business constraints can be enforced by transactions. Working with customers, we have found that giving them tools (such as schema designs that force write-write con-flicts for business logic violations, and FOR UPDATE ) to avoid the downsides of write skew has enabled the development of correct applications at the snapshot isolation level. We also know from talk-ing to Aurora customers that few choose SERIALIZABLE for their production applications, with most opting for REPEATABLE READ 
+
+or even READ COMMITTED . DSQL does not currently support READ COMMITTED . This is a simplification enabled by snapshot isolation: because all reads within a transaction see a fixed snapshot at 𝜏 𝑠𝑡𝑎𝑟𝑡 ,there is no need for mechanisms like PostgreSQL’s EvalPlanQual, which re-evaluates row visibility mid-statement when concurrent transactions commit. Avoiding this complexity reduces the sur-face area for subtle concurrency bugs in both the database and in applications. 
+
+## 2.5 Impact of Architectural Properties on Quantitative Performance 
+
+The reduction of round-trip times described in subsection 2.2 is significant for continent-scale systems. In one week in 2022, the net-work round-trip-time (RTT) between us-east-1 (in Virginia, USA) and us-west-2 (in Oregon, USA) had a mean of 62 .17 𝑚𝑠 , p50 of 
+
+62 .4𝑚𝑠 , p99 of 63 .30 𝑚𝑠 and p99.99 of 64 .99 𝑚𝑠 . In a DSQL cluster spanning these two regions, this latency would only be incurred once per transaction. The reality is even better. Journal only needs to commit to two regions of three. So, in a typical multi-region setup spanning us-east-1, us-west-2, and us-east-2 (in Ohio, USA), the commit time that transactions experience would be the time between their client region and the closest second region (for exam-ple, the RTT between us-east-1 and us-east-2 has a p50 of 11 .5𝑚𝑠 
+
+and p99 of 14 .4𝑚𝑠 ). 020 40 60        
+
+> 010 20 30 40
+> Statements Per Txn
+> avg Latency (norm)
+> A−r1 A−r2 dsql−r1 dsql−r2
+
+Figure 5: Normalized transaction latency comparison be-tween DSQL and Competitor A. 
+
+Figure 5 shows the effect of this reduction of round-trip times, comparing DSQL to competitor A, for a multi-region setup with clients in two regions ( r1 and r2 ) across transactions with increas-ing numbers of UPDATE statements. For competitor A’s pessimistic locking-based design, this shows the linear effect of the additional round-trips required to maintain lock state. For DSQL, it shows that latency is the same in both regions. Aurora DSQL: Scalable, Multi-Region OLTP 2.1 3.4 29.2 1.8 2.9 30.1 1.4 2.3 7.4      
+
+> 010 20 30
+> COMMIT SELECT UPDATE
+> Latency (ms)
+> Region us−east−1 us−east−2 us−east−2 (SR)
+
+Figure 6: DSQL 99th percentile latency for COMMIT , SELECT ,and UPDATE operations for a two-region DSQL setup, and a single-region setup. 
+
+Figure 6 zooms in on DSQL’s 99th percentile (p99) latency re-sults on a similar microbenchmark, for a cluster spanning us-east-1 
+
+and us-east-2 , with a witness in us-west-2 . Clients in each region experience in-AZ read latency ( ≈ 2𝑚𝑠 p99) for primary key SELECT 
+
+statements, and for UPDATE statements ( ≈ 3𝑚𝑠 p99). Notably, both of these latencies are significantly lower than one network round trip ( 14 .4𝑚𝑠 p99) between the pair primary regions, despite offering strong consistency. COMMIT latency is ≈ 30 𝑚𝑠 for the multi-region setup and 7.4𝑚𝑠 for the single-region setup (note that ≈ 30 𝑚𝑠 is faster than the round-trip to us-west-2 of 63 𝑚𝑠 p99, showing the ef-fect of quorum commit). In the two-regions setup, once the COMMIT 
+
+is complete, data is durable and available for strongly consistent readers in two regions. 1.8 1.4 1.3 1.1 1.4 1.1     
+
+> 0.0 0.5 1.0 1.5 2.0
+> COMMIT SELECT
+> Latency (ms)
+> Region us−east−1 us−east−2 us−east−2 (SR)
+
+Figure 7: DSQL 99th percentile latency for COMMIT , and SELECT 
+
+operations for a two-region DSQL setup, and a single-region setup for a read-only transaction. 
+
+Figure 7 shows the latency of COMMIT and primary key SELECT 
+
+for a read-only transaction, for the same setup as Figure 6. Here we see that reads remain fast and local (in-region, and even in-AZ) even for the multi-region setups. For these read-only transactions, 
+
+COMMIT is a no-op (discussed in section 4), and is handled locally by the QP. In this benchmark we use an explicit COMMIT , with latency 
+
+< 1.5𝑚𝑠 p99. Applications don’t need to worry about whether they are single-or multi-region at all for read-only workloads, and experience iden-tical performance. For read-write workloads, the only change is that the COMMIT will take additional time based on the region setup (approximately 2x the round-trip time between the nearest pair of regions). These microbenchmarks use simple primary-key transactions to illustrate the low-level performance characteristics of multi-region DSQL 2.
+
+## 2.6 Comparisons To Other Systems, Briefly 
+
+DSQL’s architecture is probably most similar to FoundationDB [ 38 ], although with a significantly different approach to logging, atomic commitment, and replication. DSQL also has a scalable SQL en-gine (see section 3), predicate pushdown to storage, multi-region, and supports interactive transactions. Aurora[ 34 , 35 ], Neon, Al-loyDB and similar systems use distributed storage, but have a sin-gle writable leader. Layers like Vitess [ 29 ] and Citus [ 10 ] scale out these single-leader systems by partitioning the key space over leaders, typically sacrificing transaction atomicity and isolation. CockroachDB [ 30 ] and Spanner [ 8] take a similar distributed SQL approach, but use pessimistic concurrency control, have a single leader per write shard with an associated lock table , and replicate using Paxos groups rather than a disaggregated Journal. DSQL and Spanner are alike in their use of physical clocks, which Cock-roachDB uses Hybrid Logical Clocks [ 21 ]. Once a transaction’s 
+
+COMMIT starts, DSQL’s approach has a lot of similarities to the deterministic order-based approach of Calvin [ 33 ] and Slog [ 26 ]. DynamoDB [ 13 ] is a transactional [ 19 ] NoSQL system, with similar serverless properties, and support for multi-region applications. Architecturally, DynamoDB has more in common with Spanner with its use of sharding over Paxos groups, but uses an approach to transactions based on timestamp ordering, not unlike Founda-tionDB’s. Like DSQL, MemoryDB [ 31 ] uses a disaggregated Journal service for replication, but has a single writable leader and eventu-ally consistent scale-out reads. 
+
+## 3 HOSTING THE SQL ENGINE 
+
+To make it easier to achieve our familiarity goal, and to take ad-vantage of decades of high-quality implementation work, DSQL uses the PostgreSQL engine for SQL parsing, execution, and opti-mization, as well as for the core implementation of the PostgreSQL protocol. We also wanted to offer strong security isolation between customers and between sessions, and the ability to scale SQL pro-cessing, compute, and connections out without the bounds of a single machine. Each transaction in DSQL runs within a customized PostgreSQL engine hosted inside a dedicated Firecracker [ 2 ] MicroVM. This is similar to PostgreSQL’s process-per-session model, with the addi-tional security protection of wrapping each process in a hardware-secured virtual machine. These MicroVMs are provisioned dynami-cally based on workload demands, with the system automatically scaling up by adding MicroVMs in the availability zones and regions where client connections originate. This approach ensures that SQL 
+
+> 2A full description of the benchmark, along with the benchmark code, are available at https://github.com/mbrooker/... Marc Brooker, Marc Bowes, Mike Hershey, Zak van der Merwe, James Morle, and Matthys Strydom
+
+query processors remain geographically close to clients, optimiz-ing for latency in the inherently chatty client-database interaction pattern typical of SQL workloads. Creating a new MicroVM for a cluster doesn’t require booting a virtual machine and starting PostgreSQL. Instead, the OS and database engine are started once, and a snapshot of the memory, register, and device state are taken. This snapshot is then cloned and restored when needed. This approach reduces restore time substantially, and also allows unmodified memory pages (such as those containing the kernel and engine code) to be shared across QPs for the same cluster with copy-on-write (much as they would be shared between processes in PostgreSQL’s default fork() -based model). The choice of PostgreSQL as the SQL engine foundation was driven by its proven pedigree, modularity, extensibility, and perfor-mance characteristics. However, DSQL uses only specific compo-nents of PostgreSQL—the SQL engine, an adapted version of the query planner and optimizer, and the client protocol implementa-tion. We don’t use PostgreSQL’s storage or transaction processing components, instead using the distributed transaction and storage layers we describe in the next sections. DSQL bypasses the tradi-tional buffer pool by plugging in at PostgreSQL’s Access Method (AM) layer. Our storage plugin implements the AM interface di-rectly, fetching data from DSQL’s distributed storage without going through shared buffers or the lock manager. This eliminates buffer pool contention and lock manager overhead while maintaining compatibility with the query executor above the AM interface. Each DSQL query processor operates as an independent unit that never communicates directly with other query processors. This shared-nothing architecture eliminates the coordination over-head typically associated with distributed SQL systems while still maintaining ACID transaction guarantees through the underly-ing storage and transaction management layers. Each QP executes one transaction at a time, with statements executing sequentially. Within a statement, reads fan out to multiple storage shards in parallel, and at commit time the prepare phase is broadcast to all involved adjudicators concurrently. When clients connect to DSQL, the system ensures sufficient MicroVM capacity exists to serve the load, dynamically provisioning additional compute resources as needed. Because query processors hold no durable state (writes are buffered locally only until commit), a QP failure simply aborts the in-flight transaction, which the client can retry on a freshly provisioned MicroVM. In front of the MicroVMs we run a proxy (conceptually simi-lar to the popular pgbouncer ), dedicated to each database, which terminates the PostgreSQL wire protocol, and performs basic au-thentication and authorization. As sessions start a transaction (e.g. with BEGIN ), they are either matched to an existing MicroVM, or a new one is created for the transactions. When transactions end, their MicroVMs are returned to the (dedicated per-database) pool for re-use by later transactions, or destroyed if the system detects excess capacity. 
+
+## 4 HANDLING READS 
+
+Aurora DSQL’s read path is designed around providing strongly consistent, snapshot-isolated access to data without requiring coor-dination between query processors or storage replicas. The system achieves this through a combination of precision timing and multi-version concurrency control (MVCC). Every transaction in DSQL begins by selecting a transaction start time, 𝜏 𝑠𝑡𝑎𝑟𝑡 , using EC2’s precision time infrastructure, which provides microsecond-accurate clocks with strong error bounds across all AWS regions. This timestamp serves as the foundation for snapshot isolation. All reads within the transaction request data as of 𝜏 𝑠𝑡𝑎𝑟𝑡 , ensuring a point-in-time consistent view of the database regardless of concurrent writes or the specific storage shards and replicas accessed. The storage layer implements these temporal reads using mul-tiversion concurrency control, maintaining multiple versions of each row to support access to historical states without blocking concurrent operations. When a query processor requests data as of 
+
+𝜏 𝑠𝑡𝑎𝑟𝑡 , the storage system returns the most recent version of each row that was committed before that timestamp. This approach en-sures that transactions see all data committed before 𝜏 𝑠𝑡𝑎𝑟𝑡 , no data committed after 𝜏 𝑠𝑡𝑎𝑟𝑡 , and no in-flight transactions. If the storage node is not current up to 𝜏 𝑠𝑡𝑎𝑟𝑡 , the reader is made to wait until replication catches up. Read operations never require communication with a primary replica or lock server for sequencing, as they maintain no lock state. Reads can be served from the nearest replica within the same region and availability zone, minimizing both latency and cross-AZ data transfer costs. The system supports unlimited read replicas without coordination overhead, and readers never block writers or other readers. The read path optimization extends to both read-only and read-write transactions, and does not require clients to declare transac-tions as read-only to get the full latency and scalability benefit. DSQL storage nodes contain a logical copy of the data, with knowledge of the data schema: they store rows and index entries rather than opaque physical pages (in contrast with Aurora, which stores physical pages in its distributed storage layer [ 34 ]). Each storage node stores only its shard of the data, not the entire dataset. This logical storage interface enables query pushdown capabilities that further optimize read performance. Rather than requesting pages, query processors request rows and delegate operations like filtering, aggregation, and projection to storage replicas. The stor-age system can perform index-only scans and complex filtering operations directly on the data, leveraging the principle that moving computation to data is more efficient than moving data to compu-tation. The absence of large coherent caches in the compute layer rep-resents another architectural choice that enhances scalability. By avoiding cache coherence protocols and the associated coordination overhead, DSQL can scale compute resources independently. Some slowly-changing but frequently-read data, such as the catalog, is cached inside every query processor, avoiding round trips. Coher-ence of this smaller cache is provided by the transaction commit protocol. By comparison, Aurora PostgreSQL relies heavily on a large local cache on the single writer for performance, a trait shared Aurora DSQL: Scalable, Multi-Region OLTP 
+
+by most similar single-writer database designs (both those with disaggregated storage and with local storage). The lack of cache coherence in these designs is exposed to clients as eventual consis-tency in exchange for read scale (because read replicas have their own cache, not coherent with the writers). Coherent cache designs like ScaleStore [ 39 , 40 ] its precursors (including Rdb/VMS [ 24 ] in the early 1990s) require tightly coupled clusters which limit scala-bility, and fault tolerance beyond single datacenters. For read-only transactions a COMMIT is a no-op. The Query Pro-cessor simply forgets about the transaction. No releasing of locks, or further communication with storage servers is needed. Read-only transactions never abort. If a storage node fails, in-flight reads to that node are retried against another replica of the same shard. A replacement node is recreated from S3 and the Journal (as described in section 5), and can begin serving reads once it has caught up to the current Journal position. 
+
+## 4.1 Shard Scheme 
+
+In a sharded database, there are broadly two ways to spread data over multiple shards: ranges, or hashing. Hash partitioning, as used in DynamoDB, Dynamo [ 12 ] and many others, intentionally de-stroys spatial locality in the data, effectively spreading heat out over the key space, but losing optimizations based on locality (notably making in-order scans much chattier). Range-based partitioning, on the other hand, preserves spatial locality and offers superior performance on access patterns that take advantage of that, at the cost of a higher chance of hot-spotting. In DSQL, our partitioning scheme is range based, based on the observation that many OLTP SQL workloads have significant spatial locality. 
+
+## 5 HANDLING WRITES AND COMMITS 
+
+In addition to using a consistent snapshot, read-write transactions need to check for conflicts to ensure snapshot isolation. This re-quires coordination. They also need to replicate changes for dura-bility, and ensure correct transaction ordering. Let’s walk through what happens when you execute a write transaction. Consider this example: 
+
+> START TRANSACTION; SELECT name, id FROM dogs; UPDATE dogs SET latest_treat = now(), treats = treats + 1 WHERE id = 5; COMMIT;
+
+As described in section 4, we pick a transaction start time 𝜏 𝑠𝑡𝑎𝑟𝑡 
+
+and perform all reads at that timestamp against our MVCC storage system. When the UPDATE statement executes, it doesn’t write any-thing to storage yet. Instead, it records the planned change locally inside the Query Processor running this transaction. This keeps the UPDATE fast, in-region, and in the same availability zone as the application. On COMMIT , three critical things need to happen: first, check whether the isolation rules allow the transaction to commit (or if it conflicts with other concurrent transactions and must abort); second, make the transaction results durable and atomic; and third, replicate the transaction to all AZs and regions where it needs to be visible. The commit protocol starts by picking a set of adjudicators in-volved in the transaction (in our example only a single adjudicator will be involved, given that only one row is written). A protocol across these adjudicators picks a commit time 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 for the trans-action. To achieve snapshot isolation, we need to detect write-write conflicts, whether any other transaction wrote the same keys be-tween 𝜏 𝑠𝑡𝑎𝑟𝑡 and 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 . We don’t worry about transactions that committed before 𝜏 𝑠𝑡𝑎𝑟𝑡 because we’ve already seen their effects, and we don’t worry about transactions committing after 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 
+
+because we don’t see their effects (though they might not be able to commit due to our changes). If no write-write conflicts are detected, one of the involved ad-judictors will write the transaction to its Journal, in the form of a logical post image. Journal ensures that this write is atomic, and that no prior transactions have been committed to this Journal with a time stamp later than 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 (ensuring a per-Journal total transaction order). This post-image is then read from the Journal by the crossbar, and distributed to storage nodes which own a relevant portion of the key space. The Journal is a commit log, with a payload of ordered, com-mitted transactions that can be applied deterministically (and even without local read-modify-write on the storage node). This means storage replicas don’t need any coordination when consuming the journal. In this sense, the post-commit portion of DSQL is somewhat similar to deterministic databases like Calvin [ 33 ] or SLOG [ 26 ]. Un-like these systems, however, DSQL can execute arbitrary interactive SQL transactions. DSQL’s approach to replication is significantly different to DynamoDB [ 13 ], Spanner [ 8 ], or CockroachDB [ 30 ], all of which use Paxos variants for replication within a fixed group of replicas of each shard. DSQL’s approach adds another layer, but allows for any number of read replicas of a shard, overlapping shard key spaces, and other flexibility. The Journal is also continuously consumed to create a snapshot of the database state in S3. The combination of the durable copy of recent changes in the Journal, and this complete copy of older data in S3, means that DSQL storage is not involved in durability. This allows for the significant optimization that storage nodes don’t need to sync to disk. They can use local SSDs to spill data that is too large for memory, but don’t need to ensure that data is durable. If a storage node fails, or a new one is needed for a new read replica or shard, it is recreated from S3 and the Journal. The consistency story has one more crucial piece: storage sys-tems need to know they’ve seen all transactions with 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 ≤
+
+𝜏 𝑠𝑡𝑎𝑟𝑡 before they can serve reads at 𝜏 𝑠𝑡𝑎𝑟𝑡 . The adjudicator handles this by promising never to commit transactions at earlier times-tamps once it’s committed at 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 . We use a heartbeat protocol where adjudicators move their commit points forward in lockstep with the physical clock, ensuring storage knows when it has com-plete data. 
+
+## 5.1 Detecting Conflicts, More Formally 
+
+Starting with a commit that goes to a single adjudicator, let’s for-malize what the adjudicator does: Committing transaction 𝐴 , with start time 𝜏 𝐴 𝑠𝑡𝑎𝑟𝑡 and commit time 𝜏 𝐴 𝑐𝑜𝑚𝑚𝑖𝑡 :(1) Calculate 𝑊 𝐴 , the set of keys written by 𝐴 .Marc Brooker, Marc Bowes, Mike Hershey, Zak van der Merwe, James Morle, and Matthys Strydom 
+
+(2) Calculate 𝑊 𝐶 , the set of potentially conflicting keys, where 
+
+𝑊 𝐶 is the union of 𝑊 𝑡 for all committed transactions 𝑡 with 
+
+𝜏 𝐴 𝑠𝑡𝑎𝑟𝑡 < 𝜏 𝑡 𝑐𝑜𝑚𝑚𝑖𝑡 < 𝜏 𝐴 𝑐𝑜𝑚𝑚𝑖𝑡 
+
+(3) If 𝑊 𝐴 ∩ 𝑊 𝐶 = ∅ then 𝐴 can commit. (4) Promise to commit no additional transactions B with 𝑊 𝐴 ∩
+
+𝑊 𝐵 ≠ ∅ and 𝜏 𝐵 𝑐𝑜𝑚𝑚𝑖𝑡 ≤ 𝜏 𝐴 𝑐𝑜𝑚𝑚𝑖𝑡 .In the case of commits where 𝑊 𝐴 ’s keys span multiple adjudica-tors, step 3 becomes a yes vote in the multi-adjudicator protocol. If all 𝑊 𝐴 ’s keys belong to a single adjudicator, then that adjudicator can go ahead and commit the transaction to its Journal (by writing post-images of all the modified rows). 
+
+5.1.1 Committing Across Multiple Adjudicators. At scale, transac-tions will perform writes which span multiple adjudicators. Our cross-adjudicator commit protocol is a two-phase commit (2PC) variant with some inspiration from Warp [ 14 ]. It proceeds as fol-lows, given the set of Adjudicators 𝐴 involved in the transaction: (1) one adjudicator 𝑎 𝑙 is chosen from 𝐴 ,(2) the prepare phase is broadcasted by the query processor to all 𝑎 ∈ 𝐴 , each of which forwards their votes and current times 𝜏 𝑎 to 𝑎 𝑙 along with a promise not to commit any conflicting transactions with 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 < 𝜏 𝑚𝑎𝑥 (where 𝜏 𝑚𝑎𝑥 =
+
+𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 plus a system-chosen timeout), (3) once 𝑎 𝑙 has received all positive votes, it calculates 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 
+
+as the max of all 𝜏 𝑎 ,(4) if 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 exceeds min (𝜏 max ) the transaction is abandoned, (5) otherwise it is written to 𝑎 𝑙 ’s Journal atomically at time 
+
+𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 , a go ahead message is broadcasted to 𝐴 , and the query processor and client told the good news. If the voting phase takes too long, an adjudicator fails, or the 
+
+go ahead broadcast is not delivered, the other involved adjudica-tors will continue to process other conflicting transactions after the timeout 𝑇 . Notably, this protocol is not an atomic commitment at all, but rather just an atomic voting on candidacy for commit-ment. 𝑎 𝑙 can abandon the commit at any time before writing to the Journal without affecting correctness. The actual atomicity of the commitment is handled by the Journal, which accepts the entire transaction as a single atomic write. Because only 𝑎 𝑙 ’s Journal is written to, there is no need for cross-Journal coordination or a fault-tolerant coordinator, avoiding the pitfalls of fault-tolerant atomic commitment generally [ 15 ]. The other adjudicators in 𝐴 do not write to their own Journals for this transaction; their role is limited to voting on conflicts and temporarily holding promises. The cross-bar then distributes the committed transaction from 𝑎 𝑙 ’s Journal to all relevant storage shards, regardless of which adjudicators were involved. Failed adjudicators are replaced by standby adjudicators via a leader election protocol. This can happen quickly due to the small amount of critical state that adjudicators require. In-flight transactions that involve a failed adjudicator are aborted: if the failed adjudicator is 𝑎 𝑙 , it has either already written to the Journal (in which case the transaction is committed and durable) or it has not (in which case the transaction is safely abandoned). If a non-leader adjudicator fails, 𝑎 𝑙 will not receive its vote and will abandon the commit. In both cases, the promises held by surviving adjudicators expire after 𝜏 𝑚𝑎𝑥 , and the query processor can transparently retry the aborted transaction. The protocol is correct for any arbitrary choice of 𝑎 𝑙 , but judi-cious choice of 𝑎 𝑙 reduces the probability of deadlock. Nevertheless, deadlock can occur during the execution of this algorithm. In this case the later transaction is aborted, but its commit can be transpar-ently retried. Due to the very short execution time of the commit algorithm (it only runs during commit, not during the transaction itself) this case of deadlock is extremely rare in the real-world workloads we have evaluated. There is no hard limit on the number of adjudicator shards a transaction may span, but commit latency grows with the number of involved adjudicators due to the fan-out of the prepare phase and the increased probability that 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 will exceed min (𝜏 𝑚𝑎𝑥 ). In practice, OLTP transactions rarely span more than a handful of adjudicator shards. 
+
+## 5.2 Index Maintenance 
+
+The change written to the Journal isn’t only a copy of the modified rows. It is also a post-image of any changes needed to maintain indexes on the modified data. Going back to our example, if there were an index on latest_treat , the change written to the Journal would contain an additional update which removed id = 5 from the previous value, and added it to the new value. These index changes are committed atomically alongside the modified data at the same 
+
+𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 , ensuring correct transactional and consistent behavior of indexes. The calculation of index changes is performed, using the current catalog, by the Query Processor before submitting the candidate transaction to the adjudicator. The adjudicator treats these index changes the same way it treats regular updates, including for de-tecting conflicts. Two transactions which attempt to insert the same key into the same unique index would conflict, with the latter one being rejected. While index updates are writes, we can optimize away the ad-judicator check for conflicts on those written rows in many cases. This blind write optimization is based on the common structure of secondary indexes, which are essentially inserting or removing a row’s primary key from a set. Given that we’re already checking for write-write conflicts on the primary key, conflicting set oper-ations are prevented and the remaining operations are logically monotonic and can be safely issued in parallel [ 17 ]. Depending on the table schema, some INSERT s can be optimized the same way. This optimization applies to all non-unique secondary indexes, in-cluding partial indexes and indexes with included columns, because their entries are keyed in part by the primary key and therefore cannot conflict independently of the base row. Unique indexes are excluded from the optimization: their conflict detection is handled through the normal adjudicator path, since distinct primary keys can produce duplicate unique index keys. 
+
+## 5.3 Garbage Collection 
+
+A common challenge in MVCC databases is garbage collection, removing old versions of rows that are no longer needed in the system. If these rows are removed too late, additional storage is needed, and caches are diluted, leading to lower performance. If garbage is collected too early, transactions that depend on the Aurora DSQL: Scalable, Multi-Region OLTP 
+
+removed data need to abort. This problem is particularly acute in the DSQL architecture, because no part of the system knows about the full list of running transactions (in contrast to, say, PostgreSQL which keeps track of in-flight transactions). To work around this issue, we chose to cap transaction run time. This allows simple, independent, time-based garbage collection to occur at each storage server. Servers can forget rows (other than the most recent) simply when they’re older than a fixed time ( 𝜏 𝑒𝑥𝑝𝑖𝑟 𝑦 ). If a read comes in with 𝜏 𝑠𝑡𝑎𝑟𝑡 < 𝜏 𝑒𝑥𝑝𝑖𝑟 𝑦 , the storage node rejects it, and the query processor fails the transaction. While we don’t believe this approach would be acceptable in analytics or OLAP systems, few OLTP workloads contain transactions that run for unbounded time. In our current deployment 𝜏 𝑒𝑥𝑝𝑖𝑟 𝑦 is set to five minutes before the current wall-clock time. To meet the needs of analytics use-cases, DSQL offers change data capture streams that allow easy ingestion into common analytics and warehousing systems (including Redshift). 
+
+## 5.4 The Journal and Erasure Coding 
+
+As mentioned above, Journal is a service we have been using in-ternally at AWS for over a decade in various forms, including in processing many millions of transactions per second for S3, Dy-namoDB, and MemoryDB. While space does not permit diving deep into the implementation of Journal, we will mention that it uses a variant of chain replication [ 27 ] for single-region replication (where chain replications simplicity and efficiency provide significant ben-efits), and a variant of Paxos for cross-region replication (where a quorum protocols ability to pick 2-of-3 latency is most important). 5.0 7.5 10.0    
+
+> 1234
+> k
+> Availability (Nines)
+> M
+> 1
+> 2
+> 3
+> 4
+
+Figure 8: Availability impact of erasure coding for various values of k and M, for base availability of 99.99% 
+
+To further reduce latency variance, we also don’t use the Journal directly, but rather erasure code data across multiple Journals. This erasure coding is a latency optimization, although it also strictly im-proves durability, and significantly improves availability. A DSQL storage replica can’t make progres on replication (and therefore can’t serve reads) unless all the Journals it consumes from are avail-able for reads. While Journal offers excellent availability, erasure coding across multiple Journals allows us to increase availability by multiple orders of magnitude at a fairly modest cost. DSQL does a 2-of-3 code (i.e. erasure codes across three Jour-nals, such that the data can be retrieved from any two). As shown in Figure 8, for a base availability of 99.99%, this 𝑘 = 2, 𝑀 = 3
+
+code increases availability to beyond 7 and a half nines. While we considered multiple values of 𝑘 and 𝑀 , this simple case met our availability goals, and has the additional benefit that the erasure code for 𝑀 = 𝑘 + 1 is a trivial XOR. Erasure coding for availability is a widely used technique, but we believe that erasure coding for latency is an approach that should be more widely used by database and systems builders. If an individual Journal becomes unavailable, the erasure coding allows storage nodes to continue consuming committed transactions from the remaining Journals without inter-ruption, and the commit path can continue writing to the available Journals while the failed one recovers. 
+
+## 5.5 Exceptions to Snapshot Isolation 
+
+While snapshot isolation is nicely defined in the academic liter-ature, these definitions don’t map cleanly to the semantics that developers expect from SQL. One notable exception is the behavior of the catalog (the definition of tables and their schemas). DSQL, like PostgreSQL, stores the catalog in the database itself. The vast majority of OLTP transactions don’t modify the catalog, and under the definitions of snapshot isolation would not be required to con-flict with transactions (such as those doing ALTER TABLE ) that do. However, this is insufficient. Consider the case of an INSERT trans-action concurrent with an ALTER TABLE : the ALTER may modify the table, between the UPDATE ’s 𝜏 𝑠𝑡𝑎𝑟𝑡 and 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 , in a way that makes the UPDATE invalid or illegal. To fix this problem, we additionally detect read-write conflicts on the catalog, making catalog table updates always serializable. A similar case is explicit locking clauses, such as FOR UPDATE .These need to be treated specially, depending on the requested lock strength. In the case of FOR UPDATE we detect read-write conflicts on these rows, aborting the transaction if they have been modified since 𝜏 𝑠𝑡𝑎𝑟𝑡 . These are not the only exceptions: SQL is full of such edge cases. In general, academic definitions of snapshot isolation do not account for DDL or explicit locking, creating the need for selectively stronger isolation on specific operations. DSQL handles these cases within the existing OCC framework by extending the conflict check to include read-write conflicts on the affected rows, without changing the default isolation level for ordinary DML. 
+
+## 5.6 Effects of Clock Skew 
+
+The transaction start time 𝜏 𝑠𝑡𝑎𝑟𝑡 is picked directly from the query processor’s local clock, and 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 is picked by combining the local clocks and highest observed sequence numbers of all the adjudicators involved in a transaction. These local clocks are very high quality, with typical skew significantly below one network round-trip time, but we still need to consider what happens when physical clocks are inaccurate. Let’s call the true physical time 𝜏 𝑝 . If 𝜏 𝑠𝑡𝑎𝑟𝑡 ≫ 𝜏 𝑝 𝑠𝑡𝑎𝑟𝑡 , the trans-actions reads will be delayed until the stream of Journal heart-beats catches up to 𝜏 𝑠𝑡𝑎𝑟𝑡 , affecting latency but not correctness. If 
+
+𝜏 𝑠𝑡𝑎𝑟𝑡 ≪ 𝜏 𝑝 𝑠𝑡𝑎𝑟𝑡 , the client may be able to observe a snapshot from before reads it knew to be committed, violating linearizability but not isolation. If 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 ≫ 𝜏 𝑝 𝑐𝑜𝑚𝑚𝑖𝑡 , then future transactions with 
+
+𝜏 𝑠𝑡𝑎𝑟𝑡 = 𝜏 𝑝 𝑠𝑡𝑎𝑟𝑡 may not observe the effects of this committed trans-action, violating linearizability. Future transactions on the same Marc Brooker, Marc Bowes, Mike Hershey, Zak van der Merwe, James Morle, and Matthys Strydom 
+
+adjudicator can’t move time backwards, and so will need to block until 𝜏 𝑝 catches up with the highest committed transaction time, affecting latency. 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 ≪ 𝜏 𝑝 𝑐𝑜𝑚𝑚𝑖𝑡 will affect liveness, because storage will need to catch up to 𝜏 𝑝 before processing any reads. Our clock hardware provides us with error bounds on the true clock time, and the correct edge is chosen in each case to preserve correctness. In short, clock skew beyond the expected bounds causes the sys-tem to lose linearizability, but not isolation, durability, or atomicity. In other words, DSQL becomes merely snapshot isolated, rather than strong snapshot isolated. To avoid this condition, we closely monitor clock skew across our fleet using multiple approaches, and our clock synchronization hardware has a high level of internal redundancy. We believe that strong consistency is very important to application programmer’s ability to write correct business logic, and treat any clock skew as a failure. 
+
+## 6 TESTING AND CORRECTNESS 
+
+Correctness is, along with durability, the most important property that customers expect from database systems. While building our query processor on PostgreSQL gave us a significant head-start on correctness, replacing the storage layer, concurrency control, and other key components required an extensive approach to testing and validation. Our approach to correctness starts with formal verification of the key protocols, an approach we have used extensively at AWS [ 7, 25 ]. We specified the core protocols in TLA+ and P, and performed extensive model checking. During this phase, we also explored protocol optimizations, with model checking giving us confidence that the proposed optimizations were correct. We test the implementation extensively at build time using deter-ministic simulation testing. This approach (pioneered by Founda-tionDB [ 38 ]) requires modifying the code to be fully deterministic (notably running inside a deterministic thread scheduler), and build-ing a simulation framework that can simulate behaviors like loss, latency, and re-ordering in the network. We developed turmoil , a framework in Rust for this purpose. Deterministic simulation test-ing allows us to write build-time tests which test system behaviors, getting much better test coverage than is possible when the system is running on real infrastructure, by making tests cheaper and faster to run. While we do test the happy-case path during simulation testing, the focus is on the system’s ability to remain correct while handling errors and failures. Our experience, and data from Yuan et al [ 37 ], show that the majority of bugs in complex distributed systems are in error handling logic. Once deployed, we test the system using fault injection testing while under load, validating that the failure handling results from simulation are correct. A subset of our in-production fault injection tests are available to DSQL customers via the AWS Fault Injection Service. To validate that our SQL results match those returned by Post-greSQL, we deployed extensive fuzz testing alongside a static set of hundreds of fixed-function tests. The fuzz-testing approach, build-ing on the approach of SQLancer [ 4 ], generates millions of exam-ple SQL statements and runs them both on DSQL and on Aurora PostgreSQL. In cases where our feature set fully overlaps with Post-greSQL, we expect DSQL to generate identical results to PostgreSQL. Some differences in behavior are tolerated where allowed by the SQL specification. For example in a SELECT without an explicit 
+
+ORDER BY results may be returned in a different order, although the set of results must be identical. This approach has helped us find bugs in edge cases around floating point, collations, and NULL handling. Another pre-design validation was to build a event-based numer-ical simulation, which allowed us to explore the expected perfor-mance of the system under various workloads and design variations. As an example, Figure 9 shows the results of one such simulation, comparing the expected goodput (throughput of committed trans-actions) for a TPC-C like benchmark run in three different region configurations (single region, multi-region between Virginia and Ohio, and multi-region between Virginia and Oregon). The limited concurrency nature of TPC-C-like benchmarks shows that the addi-tional latency of cross-region commits can reduce workloads when client concurrency is limited, but that the overall system scales well. usw2_w100 use1_use2_w100 use1_usw2_w100 usw2_w1 use1_use2_w1 use1_usw2_w1     
+
+> 0.00 0.25 0.50 0.75 1.00
+> Goodput (normalized)
+
+Figure 9: Simulation results for a TPC-C-style benchmark. 
+
+Simulation results validated well against in-production testing. Numerical simulation allowed us to explore optimizations and de-sign options quickly and confidently, without needing to build the whole system first. 
+
+## 7 CONTROL PLANE AND HEAT MANAGEMENT 
+
+In Sections 4 and 5, we described reads and writes being sent to the sharded storage servers and adjudicators, but not how these servers are found. When each query processor starts up, it is bootstrapped with a small per-database data set maintained by the control plane, which allows it to discover the storage servers and adjudicators for that database. The query processor then loads the catalog, which contains (much like PostgreSQL’s catalog) the definition of tables and their schemas, statistics used for query optimization, and the au-thoritative partition map which maps the key space to adjudicators and storage servers. The partition map must be kept up-to-date for liveness and availability, but using an incorrect partition map does not affect safety or correctness. An adjudicator knows for sure whether it’s the leader of a given partition at a given 𝜏 𝑐𝑜𝑚𝑚𝑖𝑡 , and a storage server knows for sure whether it’s complete for a key or key range at a given 𝜏 𝑠𝑡𝑎𝑟𝑡 . Attempts to send requests to the wrong place are rejected. Aurora DSQL: Scalable, Multi-Region OLTP 
+
+Maintaining the partition map is the control plane’s most im-portant job. When a new database is created, it’ll contain a single storage partition (likely with three replicas, one per AZ), and a single adjudicator partition. As the database is used, the storage server and adjudicator send information about heat (read and write rate and throughput) and storage size across the key range to the control plane as illustrated in Figure 10. The control plane monitors this heat and size information, and uses a predictive approach to decide when and where storage servers or adjudicators need to be split. This is done significantly ahead of when resources are exhausted, to ensure availability. Adjudicator 
+
+> [a..m]
+> Adjudicator
+> [n..z]
+> Control
+> Plane
+> Storage
+> [a..f]
+> Storage
+> [g..p]
+> Storage
+> [q..z]
+> Catalog
+
+Figure 10: Heat handling in the control plane 
+
+The control plane plans and orchestrates splits. In the case of storage servers, this includes provisioning a new storage server, restoring data for the key range it owns from S3, subscribing to changes from the crossbar and adding this new server to the parti-tion map. The system keeps storage shards small enough that new servers can serve traffic in seconds. Then the control plane instructs the previous server to clean up keys it no longer needs to track (and narrow its crossbar subscription). Because storage shards may temporarily have overlapping key ranges during this process, splits do not need to be atomic, significantly simplifying the scaling path. Splitting adjudicators is made slightly more complex by the tighter correctness requirements, namely that each key must be owned by at most one adjudicator while each key must be owned by at least one storage server, but simplified by the significantly smaller state. Just like splits, the control plane can also choose to merge shards, and add replicas to any storage shard. For storage servers: 
+
+More shards allows for more read and write throughput across the key space, along with more storage space for data. 
+
+Fewer shards reduces the percentage of queries that must span multiple shards, improves spatial locality of data, with benefits for both performance and availability. 
+
+More replicas allows for more read throughput for a given key (or small range of keys), and better locality of replicas to query processors. 
+
+Fewer replicas reduces storage and write processing costs. Writes for a key range need to be applied to all replicas, making write cost scale with 𝑂 (write rate ∗ replicas ).The ability to control sharding and replication for storage in-dependently was a key lesson we took from DynamoDB, which does not have the flexibility to handle hot read ranges through increasing the replication factor. For adjudicators: 
+
+More shards allows for more write throughput across the key space. 
+
+Fewer shards reduces the percentage of commits that need to execute the multi-adjudicator protocol, with benefits for commit performance and scalability. The importance of the control plane and heat management to the overall performance of DSQL (and cloud services generally) should not be underestimated. The ability to monitor and predict heat distributions, and quickly and correctly orchestrate splits, merges, and replications is critical to the overall performance of the system. 
+
+## 8 LESSONS FROM PRODUCTION 
+
+While we tried to learn as many lessons from AWS’s existing databases as possible, getting the system into production has in-evitably come with some key lessons, both operationally and from listening to customers. 
+
+## 8.1 Commit Size Limits 
+
+Currently, DSQL only allows any single transaction to modify a maximum of 3,000 rows, and 10MiB of data. We based the need for a transaction size limit on our operational experience at AWS around the importance of bounding tail latencies for stable applications. This operational necessity is partially driven by Little’s Law [ 23 ], which tells us that concurrency in a system in linearly proportional to the mean response latency. Concurrency, in turn, is the driver of resource allocation and transaction contention. Large writes in relational databases have a large impact on mean latency (much larger than that measured by limited-concurrency benchmarks like TPC-C, due to coordination omission [ 28 , 32 ]). Transactions must consistently observe the world after or before, but never during, a transaction, causing head-of-line blocking of readers and potentially other writers. Capping transaction size to a size that can be applied in milliseconds limits this effect, leading to more stable, more predictable applications in keeping with our goal of simplifying application architectures. However, limiting transaction size is also inconvenient for some applications, most notably during large data loads. We have heard more customer feedback than we expected about the difficulties of working through transaction size limitations, and we are working on a change to give customers who aren’t interested in the benefits of consistent latency more control over transaction sizes. 
+
+## 8.2 Foreign Key Constraints 
+
+In the original production release of DSQL, we don’t support en-forcement of foreign key constraints (FKCs), although we do fully support JOIN and schemas with foreign key relationships. We chose this as a time-to-market optimization, given conversations with at-scale customers who don’t use FKCs for performance reasons, and small customers who see little value in them. We have been surprised by more demand for FKCs than we expected, and are working to implement them. As with the cases discussed in subsection 5.5, it is not possible to implement FKCs correctly under pure snapshot isolation. Our implementation of FKCs will introduce checking for read-write conflicts in the case of FK relationships, similar but not identical Marc Brooker, Marc Bowes, Mike Hershey, Zak van der Merwe, James Morle, and Matthys Strydom 
+
+to the implementation of FOR UPDATE . The performance impact of this is to increase how often transactions will need to span multiple adjudicators, and run the more complex multi-adjudicator commit protocol. It is, however, not a significant architectural change. 
+
+## 8.3 Sequences and Indexes 
+
+We still believe we chose correctly when picking range partition-ing (see subsection 4.1), there is three cases it makes significantly harder: supporting serial keys (aka sequences or AUTO_INCREMENT ), supporting secondary indexes with write locality (such as those that index on a timestamp column and always insert now() ), and sup-porting indexes with low cardinality (such as indexes on boolean ). In fact, we suspect that supporting these high locality cases at scale while preserving read locality may not be possible in general. Our plan is to extend our range-based scheme to a hybrid scheme, allowing sub-ranges to be distributed hash-style over multiple stor-age nodes. This allows scaling of per-range write throughput, while still avoiding the hash key downside of ordered scans jumping around the whole storage fleet. 
+
+## 8.4 Strong Consistency 
+
+The 2007 Amazon Dynamo paper’s embrace of eventual consis-tency [ 12 ], and Werner Vogels 2009 article Eventually Consistent [ 36 ], reflected the thinking at the time that cloud-scale systems needed to embrace eventual consistency to achieve their availability and latency goals. Since then, advancements in time distribution, data-center networks, power and cooling infrastructure, and distributed protocols have changed the trade-offs. Two decades of working with application programmers, and building thousands of cloud-scale services at Amazon, have shown us the difficulties programmers face when trying to write correct business logic in the face of even-tual consistency. In DSQL we have embraced strong consistency (namely linearizability), while still achieving nearly 10x lower read latency and 4x lower write latency than reported for 2007’s Dynamo paper. 
+
+## 9 CONCLUSION 
+
+We believe that we have achieved our most important goal with Aurora DSQL: building a relational database that simplifies our cus-tomer’s architectures, through offering strong semantics, scalability up and down, high availability and durability, and no operations. We have seen considerable success running production applications on DSQL. Overall, we believe that we have validated our hypothesis that a disaggregated SQL database built around a journal service can offer excellent features, performance, and operational properties. However, as with any project of this size, there is still work to do. We’re working to add support for foreign key constraints, stored procedures, and other popular SQL features. We’re also working actively on latency, throughput, and query planning and execution. 
+
+## ACKNOWLEDGMENTS 
+
+Like any cloud service, Aurora DSQL was the work of a talented and dedicated team, along with many partner organizations in AWS. We owe significant gratitude to all who contributed. In particular, we would like to thank Shyam Krishnamoorthy, Eric Kraemer, G2 Krishnamoorthy, Swami Sivasubramanian, Ankush Desai, Murat Demirbas, Gaurav Roy, Carlos Vara, Josh Levinson, Julien Ridoux, Rahul Pathak, and Yossi Levanoni. This work owes a significant debt to the earlier work of Al Vermeulen, and the teams at AWS that built JournalDB, QLDB, Aurora, and DynamoDB. 
+
+## REFERENCES 
+
+[1] Daniel Abadi. 2012. Consistency Tradeoffs in Modern Distributed Database System Design: CAP is Only Part of the Story. Computer 45, 2 (2012), 37–42. https://doi.org/10.1109/MC.2012.33 [2] Alexandru Agache, Marc Brooker, Alexandra Iordache, Anthony Liguori, Rolf Neugebauer, Phil Piwonka, and Diana-Maria Popa. 2020. Firecracker: Lightweight Virtualization for Serverless Applications. In 17th {USENIX } Symposium on Networked Systems Design and Implementation ( {NSDI } 20) . 419–434. [3] Nikos Armenatzoglou, Sanuj Basu, Naga Bhanoori, Mengchu Cai, Naresh Chainani, Kiran Chinta, Venkatraman Govindaraju, Todd J. Green, Monish Gupta, Sebastian Hillig, Eric Hotinger, Yan Leshinksy, Jintian Liang, Michael McCreedy, Fabian Nagel, Ippokratis Pandis, Panos Parchas, Rahul Pathak, Orestis Poly-chroniou, Foyzur Rahman, Gaurav Saxena, Gokul Soundararajan, Sriram Subra-manian, and Doug Terry. 2022. Amazon Redshift Re-Invented. In Proceedings of the 2022 International Conference on Management of Data (Philadelphia, PA, USA) (SIGMOD ’22) . Association for Computing Machinery, New York, NY, USA, 2205–2217. https://doi.org/10.1145/3514221.3526045 [4] Jinsheng Ba and Manuel Rigger. 2023. Testing database engines via query plan guidance. In 2023 IEEE/ACM 45th International Conference on Software Engineering (ICSE) . IEEE, 2060–2071. [5] Bradley Barnhart, Marc Brooker, Daniil Chinenkov, Tony Hooper, Jihoun Im, Prakash Chandra Jha, Tim Kraska, Ashok Kurakula, Alexey Kuznetsov, Grant McAlister, et al . 2024. Resource Management in Aurora Serverless. Proceedings of the VLDB Endowment 17, 12 (2024), 4038–4050. [6] Hal Berenson, Phil Bernstein, Jim Gray, Jim Melton, Elizabeth O’Neil, and Patrick O’Neil. 1995. A Critique of ANSI SQL Isolation Levels. In Proceedings of the 1995 ACM SIGMOD International Conference on Management of Data (San Jose, California, USA) (SIGMOD ’95) . Association for Computing Machinery, New York, NY, USA, 1–10. https://doi.org/10.1145/223784.223785 [7] Marc Brooker and Ankush Desai. 2025. Systems Correctness Practices at Amazon Web Services. Commun. ACM 68, 6 (2025), 38–42. [8] James C. Corbett, Jeffrey Dean, Michael Epstein, Andrew Fikes, Christopher Frost, JJ Furman, Sanjay Ghemawat, Andrey Gubarev, Christopher Heiser, Pe-ter Hochschild, Wilson Hsieh, Sebastian Kanthak, Eugene Kogan, Hongyi Li, Alexander Lloyd, Sergey Melnik, David Mwaura, David Nagle, Sean Quinlan, Rajesh Rao, Lindsay Rolig, Yasushi Saito, Michal Szymaniak, Christopher Taylor, Ruth Wang, and Dale Woodford. 2012. Spanner: Google’s Globally-Distributed Database. In 10th USENIX Symposium on Operating Systems Design and Imple-mentation (OSDI 12) . USENIX Association, Hollywood, CA, 261–264. https: //www.usenix.org/conference/osdi12/technical-sessions/presentation/corbett [9] Natacha Crooks, Youer Pu, Lorenzo Alvisi, and Allen Clement. 2017. Seeing is Believing: A Client-Centric Specification of Database Isolation. In Proceedings of the ACM Symposium on Principles of Distributed Computing (Washington, DC, USA) (PODC ’17) . Association for Computing Machinery, New York, NY, USA, 73–82. https://doi.org/10.1145/3087801.3087802 [10] Umur Cubukcu, Ozgun Erdogan, Sumedh Pathak, Sudhakar Sannakkayala, and Marco Slot. 2021. Citus: Distributed PostgreSQL for Data-Intensive Applications. In Proceedings of the 2021 International Conference on Management of Data (Virtual Event, China) (SIGMOD ’21) . Association for Computing Machinery, New York, NY, USA, 2490–2502. https://doi.org/10.1145/3448016.3457551 [11] Khuzaima Daudjee and Kenneth Salem. 2006. Lazy Database Replication with Snapshot Isolation. In Proceedings of the 32nd International Conference on Very Large Data Bases (Seoul, Korea) (VLDB ’06) . VLDB Endowment, 715–726. [12] Giuseppe DeCandia, Deniz Hastorun, Madan Jampani, Gunavardhan Kakulapati, Avinash Lakshman, Alex Pilchin, Swaminathan Sivasubramanian, Peter Vosshall, and Werner Vogels. 2007. Dynamo: Amazon’s highly available key-value store. 
+
+ACM SIGOPS operating systems review 41, 6 (2007), 205–220. [13] Mostafa Elhemali, Niall Gallagher, Nick Gordon, Joseph Idziorek, Richard Krog, Colin Lazier, Erben Mo, Akhilesh Mritunjai, Somasundaram Perianayagam, Tim Rath, Swami Sivasubramanian, James Christopher Sorenson III, Sroaj Sosothikul, Doug Terry, and Akshat Vig. 2022. Amazon DynamoDB: A Scalable, Predictably Performant, and Fully Managed NoSQL Database Service. In 2022 USENIX Annual Technical Conference (USENIX ATC 22) . USENIX Association, Carlsbad, CA, 1037– 1048. https://www.usenix.org/conference/atc22/presentation/elhemali [14] Robert Escriva, Bernard Wong, and Emin Gün Sirer. 2015. Warp: Lightweight Multi-Key Transactions for Key-Value Stores. https://doi.org/10.48550/ARXIV. 1509.07815 [15] Jim Gray and Leslie Lamport. 2006. Consensus on transaction commit. ACM Transactions on Database Systems (TODS) 31, 1 (2006), 133–160. Aurora DSQL: Scalable, Multi-Region OLTP 
+
+[16] Anurag Gupta, Deepak Agarwal, Derek Tan, Jakub Kulesza, Rahul Pathak, Ste-fano Stefani, and Vidhya Srinivasan. 2015. Amazon Redshift and the Case for Simpler Data Warehouses. In Proceedings of the 2015 ACM SIGMOD International Conference on Management of Data (Melbourne, Victoria, Australia) (SIGMOD ’15) . Association for Computing Machinery, New York, NY, USA, 1917–1923. https://doi.org/10.1145/2723372.2742795 [17] Joseph M. Hellerstein and Peter Alvaro. 2020. Keeping CALM: When Distributed Consistency is Easy. Commun. ACM 63, 9 (aug 2020), 72–81. https://doi.org/10. 1145/3369736 [18] Lexiang Huang, Matthew Magnusson, Abishek Bangalore Muralikrishna, Salman Estyak, Rebecca Isaacs, Abutalib Aghayev, Timothy Zhu, and Aleksey Charapko. 2022. Metastable Failures in the Wild. In 16th USENIX Symposium on Operating Systems Design and Implementation (OSDI 22) . USENIX Association, Carlsbad, CA, 73–90. https://www.usenix.org/conference/osdi22/presentation/huang-lexiang [19] Joseph Idziorek, Alex Keyes, Colin Lazier, Somu Perianayagam, Prithvi Ra-manathan, James Christopher Sorenson III, Doug Terry, and Akshat Vig. 2023. Distributed Transactions at Scale in Amazon DynamoDB. In 2023 USENIX An-nual Technical Conference (USENIX ATC 23) . USENIX Association, Boston, MA, 705–717. https://www.usenix.org/conference/atc23/presentation/idziorek [20] Rebecca Isaacs, Peter Alvaro, Rupak Majumdar, Kiran-Kumar Muniswamy-Reddy, Mahmoud Salamati, and Sadegh Soudjani. 2025. Analyzing Metastable Failures. In Proceedings of the 2025 Workshop on Hot Topics in Operating Systems (Banff, AB, Canada) (HotOS ’25) . Association for Computing Machinery, New York, NY, USA, 172–178. https://doi.org/10.1145/3713082.3730380 [21] Spencer Kimball and Irfan Sharif. 2022. Living without atomic clocks: Where CockroachDB and Spanner diverge. https://www.cockroachlabs.com/blog/ living-without-atomic-clocks/ [22] H. T. Kung and John T. Robinson. 1981. On Optimistic Methods for Concurrency Control. ACM Trans. Database Syst. 6, 2 (jun 1981), 213–226. https://doi.org/10. 1145/319566.319567 [23] John DC Little. 1961. A proof for the queuing formula: L= 𝜆 W. Operations research 9, 3 (1961), 383–387. [24] David Lomet, Rick Anderson, TK Rengarajan, and Peter Spiro. 1992. How the Rdb/VMS data sharing system became fast. DEC Cambridge Research Lab Techni-cal Report CRL 92, 4 (1992). [25] Chris Newcombe, Tim Rath, Fan Zhang, Bogdan Munteanu, Marc Brooker, and Michael Deardeuff. 2015. How Amazon web services uses formal methods. 
+
+Commun. ACM 58, 4 (2015), 66–73. [26] Kun Ren, Dennis Li, and Daniel J. Abadi. 2019. SLOG: Serializable, Low-Latency, Geo-Replicated Transactions. Proc. VLDB Endow. 12, 11 (jul 2019), 1747–1761. https://doi.org/10.14778/3342263.3342647 [27] Robbert Van Renesse and Fred B. Schneider. 2004. Chain Replication for Sup-porting High Throughput and Availability. In 6th Symposium on Operating Sys-tems Design and Implementation (OSDI 04) . USENIX Association, San Francisco, CA. https://www.usenix.org/conference/osdi-04/chain-replication-supporting-high-throughput-and-availability [28] Bianca Schroeder, Adam Wierman, and Mor Harchol-Balter. 2006. Open versus closed: A cautionary tale. USENIX. [29] Sugu Sougoumarane and Mike Solomon. 2012. Vitess: Scaling MySQL at YouTube Using Go. USENIX Association, San Diego, CA. [30] Rebecca Taft, Irfan Sharif, Andrei Matei, Nathan VanBenschoten, Jordan Lewis, Tobias Grieger, Kai Niemi, Andy Woods, Anne Birzin, Raphael Poss, Paul Bardea, Amruta Ranade, Ben Darnell, Bram Gruneir, Justin Jaffray, Lucy Zhang, and Peter Mattis. 2020. CockroachDB: The Resilient Geo-Distributed SQL Database. In 
+
+Proceedings of the 2020 ACM SIGMOD International Conference on Management of Data (Portland, OR, USA) (SIGMOD ’20) . Association for Computing Machinery, New York, NY, USA, 1493–1509. https://doi.org/10.1145/3318464.3386134 [31] Yacine Taleb, Kevin McGehee, Nan Yan, Shawn Wang, Stefan C. Müller, and Allen Samuels. 2024. Amazon MemoryDB: A Fast and Durable Memory-First Cloud Database. In Companion of the 2024 International Conference on Management of Data (Santiago AA, Chile) (SIGMOD ’24) . Association for Computing Machinery, New York, NY, USA, 309–320. https://doi.org/10.1145/3626246.3653380 [32] Gil Tene. 2012. How Not to Measure Latency. https://qconsf.com/sf2012/dl/qcon-sanfran-2012/slides/GilTene_HowNotToMeasureLatency.pdf [33] Alexander Thomson, Thaddeus Diamond, Shu-Chun Weng, Kun Ren, Philip Shao, and Daniel J Abadi. 2012. Calvin: fast distributed transactions for parti-tioned database systems. In Proceedings of the 2012 ACM SIGMOD International Conference on Management of Data . 1–12. [34] Alexandre Verbitski, Anurag Gupta, Debanjan Saha, Murali Brahmadesam, Kamal Gupta, Raman Mittal, Sailesh Krishnamurthy, Sandor Maurice, Tengiz Kharatishvili, and Xiaofeng Bao. 2017. Amazon aurora: Design considerations for high throughput cloud-native relational databases. In Proceedings of the 2017 ACM International Conference on Management of Data . 1041–1052. [35] Alexandre Verbitski, Anurag Gupta, Debanjan Saha, James Corey, Kamal Gupta, Murali Brahmadesam, Raman Mittal, Sailesh Krishnamurthy, Sandor Maurice, Tengiz Kharatishvilli, et al . 2018. Amazon aurora: On avoiding distributed consensus for i/os, commits, and membership changes. In Proceedings of the 2018 International Conference on Management of Data . 789–796. [36] Werner Vogels. 2009. Eventually Consistent. Commun. ACM 52, 1 (jan 2009), 40–44. https://doi.org/10.1145/1435417.1435432 [37] Ding Yuan, Yu Luo, Xin Zhuang, Guilherme Renna Rodrigues, Xu Zhao, Yongle Zhang, Pranay U Jain, and Michael Stumm. 2014. Simple testing can prevent most critical failures: An analysis of production failures in distributed {Data-Intensive } systems. In 11th USENIX Symposium on Operating Systems Design and Implementation (OSDI 14) . 249–265. [38] Jingyu Zhou, Meng Xu, Alexander Shraer, Bala Namasivayam, Alex Miller, Evan Tschannen, Steve Atherton, Andrew J Beamon, Rusty Sears, John Leach, et al .2021. Foundationdb: A distributed unbundled transactional key value store. In 
+
+Proceedings of the 2021 International Conference on Management of Data . 2653– 2666. [39] Tobias Ziegler, Philip A Bernstein, Viktor Leis, and Carsten Binnig. 2023. Is Scalable OLTP in the Cloud a Solved Problem? (2023). [40] Tobias Ziegler, Carsten Binnig, and Viktor Leis. 2022. ScaleStore: A Fast and Cost-Efficient Storage Engine using DRAM, NVMe, and RDMA. In Proceedings of the 2022 International Conference on Management of Data (Philadelphia, PA, USA) (SIGMOD ’22) . Association for Computing Machinery, New York, NY, USA, 685–699. https://doi.org/10.1145/3514221.3526187
