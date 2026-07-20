@@ -1,0 +1,526 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-20T21:36:33.330871+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 4,
+    "deep_cap": 6,
+    "deep_selected": 4,
+    "quick_candidates": 8,
+    "quick_skim_target": 11,
+    "quick_selected": 8
+  },
+  "deep_dive": [
+    {
+      "id": "2607.15596v1",
+      "source": "arxiv",
+      "title": "From Neural Intent to Cryptographic Authorization: Governing Agentic Workflows",
+      "abstract": "The rapid adoption of artificial intelligence (AI)-driven and agentic workflows is transforming traditional government and enterprise systems into language-based, tool-using and increasingly autonomous infrastructures. Conventional key management services authenticate who may invoke a cryptographic primitive, but remain agnostic to which workflow steps are authorized at runtime: an authenticated agent can still be hijacked by direct or indirect prompt injection into executing malicious actions that satisfy identity checks yet violate user intent. We present \\emph{Neural Cryptographic Services} (NCS), an active security governance plane grounded in a neural-symbolic design and interposed between LLM agents and privileged tools. Under NCS, an untrusted neural planner compiles natural-language instructions into structured plan drafts but holds no execution authority. Execution is instead gated by a deterministic symbolic controller operating over an offline-signed, hash-chained instruction stream. NCS verifies the signature, incrementally validates the hash chain, releases exactly one instruction payload at a time, and enforces strict binding between the agent's proposed tool parameters and the verified payload. Mismatched or out-of-order tool calls are rejected fail-closed, while previously verified states are retained for post-hoc auditing. We evaluate NCS on AgentDojo and a custom argument-hijacking benchmark. NCS drives attack success rates to near zero while preserving acceptable utility on benign workflows. NCS thus reframes agent security from asking whether a model's intent complied to asking whether a proposed dispatch matches a cryptographically authorized step.",
+      "authors": [
+        "Jiasi Weng",
+        "Jian Weng",
+        "Minrong Chen",
+        "Ming Li",
+        "Jia-Nan Liu",
+        "Zhi Li",
+        "Yue Zhang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-17T03:44:05+00:00",
+      "link": "https://arxiv.org/pdf/2607.15596v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "AI security and cryptographic authorization for agentic workflows",
+      "llm_evidence_cn": "人工智能安全与智能体工作流的密码授权",
+      "llm_evidence": "人工智能安全与智能体工作流的密码授权",
+      "canonical_evidence": "人工智能安全与智能体工作流的密码授权",
+      "llm_tldr_en": "Proposes Neural Cryptographic Services (NCS) to govern agentic workflows by intercepting and authorizing actions based on neural-symbolic intent verification.",
+      "llm_tldr_cn": "AI驱动的智能体工作流面临意图劫持风险：即使身份认证通过，智能体可能被提示注入操控执行恶意操作。本文提出神经密码服务（NCS），作为主动安全治理平面，介于LLM智能体和特权工具之间。NCS基于神经符号设计，验证工作流步骤是否符合用户意图，并执行密码级授权。该方案弥合了身份认证与意图授权之间的鸿沟，为自主系统提供了细粒度安全控制。",
+      "llm_tldr": "AI驱动的智能体工作流面临意图劫持风险：即使身份认证通过，智能体可能被提示注入操控执行恶意操作。本文提出神经密码服务（NCS），作为主动安全治理平面，介于LLM智能体和特权工具之间。NCS基于神经符号设计，验证工作流步骤是否符合用户意图，并执行密码级授权。该方案弥合了身份认证与意图授权之间的鸿沟，为自主系统提供了细粒度安全控制。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security and password authentication",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.15681v1",
+      "source": "arxiv",
+      "title": "ADASCALE: An Adaptive Scaling and Placement Framework for Microservices Under Dynamics",
+      "abstract": "Microservice applications are increasingly deployed across cloud--edge environments, where heterogeneous nodes and time-varying inter-node delays amplify the impact of placement decisions. At the same time, these applications face non-stationary traffic, shifts in the mix of root request operations that exercise different call graphs, and heterogeneous communication modes that determine how network latency and queuing propagate to end-to-end (E2E) performance. Existing autoscalers and network-aware schedulers typically handle only a subset of these dynamics, leading to either compute bottlenecks or inflated cross-node latency and thus SLO violations.   We propose ADASCALE, an adaptive framework that jointly scales and places microservice replicas under such multi-dimensional dynamics. ADASCALE implements a Monitor--Analyzer--Planner--Executor (MAPE) loop that extracts per-edge and per-service demand from distributed traces and service-mesh metrics, identifies the most critical root operation under a mixed workload, computes SLO-aware replica targets, and then places replicas to minimize a demand-weighted latency objective given the current inter-node latency matrix. To react quickly to networking perturbations, ADASCALE triggers a reactive placement loop, while a steady-state autoscaling loop handles demand shifts.   We evaluate ADASCALE on a cloud--edge Kubernetes cluster using the DeathStarBench Social Network application with three root operations under varying load and workload mixes. Across scenarios, ADASCALE consistently meets SLO targets and improves both latency and throughput: compared with NetMARKS_Scale, it achieves up to 1.56x, 1.93x, and 1.34x lower average response time (for compose-post, read-home-timeline, and read-user-timeline) and up to 2.16x, 1.32x, and 1.36x higher throughput, respectively.",
+      "authors": [
+        "Ming Chen",
+        "Muhammed Tawfiqul Islam",
+        "Maria Rodriguez Read",
+        "Rajkumar Buyya"
+      ],
+      "primary_category": "cs.NI",
+      "categories": [
+        "cs.NI",
+        "cs.DC"
+      ],
+      "published": "2026-07-17T06:50:15+00:00",
+      "link": "https://arxiv.org/pdf/2607.15681v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Adaptive scaling and placement for cloud-edge microservices",
+      "llm_evidence_cn": "云边环境下的微服务自适应扩展与放置",
+      "llm_evidence": "云边环境下的微服务自适应扩展与放置",
+      "canonical_evidence": "云边环境下的微服务自适应扩展与放置",
+      "llm_tldr_en": "ADASCALE jointly scales and places microservices in cloud-edge to handle dynamics and SLO violations.",
+      "llm_tldr_cn": "微服务应用部署在云边环境，面临异构节点和时变延迟的挑战。现有方法只处理部分动态。ADASCALE提出自适应框架，联合扩展和放置微服务，考虑非平稳流量、请求混合变化和通信模式，减少SLO违例。",
+      "llm_tldr": "微服务应用部署在云边环境，面临异构节点和时变延迟的挑战。现有方法只处理部分动态。ADASCALE提出自适应框架，联合扩展和放置微服务，考虑非平稳流量、请求混合变化和通信模式，减少SLO违例。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.13093v2",
+      "source": "arxiv",
+      "title": "Efficient and Privacy Aware Edge Cloud Collaborative Inference for Large Language Models",
+      "abstract": "On-device LLM inference faces a trilemma of response latency, limited hardware resources and user privacy. Full cloud inference delivers strong computing power but exposes user prompts and dialogue data, while standalone on-device inference is unfeasible for most consumer and embedded edge devices. This paper presents a privacy-centric edge-cloud collaborative LLM inference framework built on endpoint-authenticated KV cache. Local endpoints handle input preprocessing, embedding computation, adaptive feature optimization, KV cache authentication, speculative decoding and low-dimensional model head calculation, while the cloud conducts authenticated decoder inference, KV cache management, token verification and high-dimensional vocabulary projection. Endpoints fuse partial outputs, apply language-adaptive masking and sample target tokens. All transmitted data and truncated logits are quantized and AES-GCM encrypted for privacy, with core lightweight modules, draft parameters and cache access policies kept local to avoid leakage. The framework supports heterogeneous devices including CPU-only, GPU-equipped and embedded devices via optimized streaming, batching and quantized ONNX deployment. Evaluations demonstrate that the framework reduces per-token latency by up to 46.1\\% and downlink payloads by up to 67.4\\% over baseline split inference, retaining comparable performance to full cloud inference.",
+      "authors": [
+        "Chen Li",
+        "Jiexiong Liu",
+        "Yi Li"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-14T01:17:17+00:00",
+      "link": "https://arxiv.org/pdf/2607.13093v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "privacy-preserving edge-cloud collaborative LLM inference",
+      "llm_evidence_cn": "隐私保护的边缘云协同LLM推理",
+      "llm_evidence": "隐私保护的边缘云协同LLM推理",
+      "canonical_evidence": "隐私保护的边缘云协同LLM推理",
+      "llm_tldr_en": "Proposes a privacy-centric edge-cloud collaborative LLM inference framework with endpoint-authenticated KV cache, balancing latency, resources, and privacy.",
+      "llm_tldr_cn": "该论文提出了隐私优先的边缘云协同LLM推理框架，利用经过身份验证的KV缓存。本地承担预处理和推测解码，云端进行验证推理，有效保护用户隐私。",
+      "llm_tldr": "该论文提出了隐私优先的边缘云协同LLM推理框架，利用经过身份验证的KV缓存。本地承担预处理和推测解码，云端进行验证推理，有效保护用户隐私。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.15469v1",
+      "source": "arxiv",
+      "title": "FLINT: Fingerprinting Federated Learning Architectures from 5G PHY-Layer Side Channels",
+      "abstract": "Federated Learning (FL) over 5G cellular networks protects raw data but remains vulnerable to side-channel leakage. Prior fingerprinting attacks assume packet-level network visibility, an assumption that does not hold at the 5G Physical (PHY) layer, where user payloads are encrypted and Radio Network Temporary Identifiers (RNTIs) may change over time. However, we demonstrate that PHY-layer scheduling metadata broadcast over the Physical Downlink Control Channel (PDCCH) preserves architecture-associated temporal patterns. We introduce FLINT, a novel black-box fingerprinting framework that infers FL model architecture families, including CNNs, RNNs, and Transformers, using only coarse PHY-layer observations. FLINT overcomes the lack of network-layer visibility by decoding PDCCH scheduling information, mapping changing RNTIs to physical user devices, and applying multi-view temporal modeling to distinguish architecture-specific training behavior. This leakage is security-critical because knowledge of a client's model architecture can transform passive reconnaissance into targeted downstream exploitation. Extensive experiments on an over-the-air srsRAN-based 5G testbed demonstrate that FLINT achieves a macro F1-score of 0.930 for architecture-family classification. To our knowledge, FLINT is the first work to fingerprint AI/ML model architectures using lower-layer 5G side-channel information obtainable by any protocol-aware adversary.",
+      "authors": [
+        "Md Nahid Hasan Shuvo",
+        "Mahmudul Hassan Ashik",
+        "Moinul Hossain"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-07-16T21:38:32+00:00",
+      "link": "https://arxiv.org/pdf/2607.15469v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "AI security: side-channel attack on federated learning architectures",
+      "llm_evidence_cn": "人工智能安全：对联邦学习架构的侧信道攻击",
+      "llm_evidence": "人工智能安全：对联邦学习架构的侧信道攻击",
+      "canonical_evidence": "人工智能安全：对联邦学习架构的侧信道攻击",
+      "llm_tldr_en": "Presents FLINT, a black-box fingerprinting attack that infers FL model architecture families from 5G PHY-layer side channels, exposing security vulnerabilities.",
+      "llm_tldr_cn": "联邦学习在5G网络中的侧信道泄露是一个安全问题。本文提出FLINT框架，利用5G物理层调度元数据的时间模式，在无数据包可见性的条件下，黑盒推断联邦学习模型架构类型（CNN、RNN、Transformer等），揭露了架构隐私泄露风险，为联邦学习安全防御提供了新视角。",
+      "llm_tldr": "联邦学习在5G网络中的侧信道泄露是一个安全问题。本文提出FLINT框架，利用5G物理层调度元数据的时间模式，在无数据包可见性的条件下，黑盒推断联邦学习模型架构类型（CNN、RNN、Transformer等），揭露了架构隐私泄露风险，为联邦学习安全防御提供了新视角。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.10490v1",
+      "source": "arxiv",
+      "title": "NetInjectBench: Benchmarking Indirect Prompt Injection in Tool-Using Large Language Model Agents for Network Operations",
+      "abstract": "Tool-using large language model (LLM) agents are attractive for network operations, but tickets, alerts, logs, runbooks, and ChatOps messages can carry indirect prompt injections. We present NetInjectBench, a 130-scenario benchmark that separates untrusted artifact text, trusted policy metadata, and evaluation labels for network-operation tool use. The sample contains 40 benign, 40 weak-attack, 40 strong-attack, and 10 approved high-impact change scenarios; each is evaluated with Qwen2.5-7B, Llama3.1-8B, and Mistral-7B. Across 240 attack instances, naive execution reached an 82.50% unsafe tool-action rate. Prompt-only safety, Self-Reminder, Spotlighting, and a Two-Pass LLM Judge reduced this rate to 25.63%, 21.67%, 18.33%, and 10.00%, respectively. Static allowlisting reached 5.00% but blocked all approved changes, yielding 0.00% usefulness and 100.00% overblocking on approved cases. Under the stated metadata-integrity assumption, the metadata-aware policy gate produced 0/240 unsafe attack actions, with a 95% Wilson upper bound of 1.58%, while preserving 99.17% attack-scenario usefulness and 100.00% approved-change usefulness. The findings show that network-operation agents need execution-time authorization boundaries alongside prompt-level instruction hygiene.",
+      "authors": [
+        "Ruksat Khan Shayoni",
+        "Muhammad Faraz Shoaib",
+        "S M Asif Hossain",
+        "M. F. Mridha"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-07-11T21:54:20+00:00",
+      "link": "https://arxiv.org/pdf/2607.10490v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "indirect prompt injection in tool-using LLM agents for network ops",
+      "llm_evidence_cn": "网络操作中LLM代理的间接提示注入",
+      "llm_evidence": "网络操作中LLM代理的间接提示注入",
+      "canonical_evidence": "网络操作中LLM代理的间接提示注入",
+      "llm_tldr_en": "NetInjectBench benchmarks indirect prompt injection in LLM agents for network operations, showing 82.5% unsafe actions without defenses.",
+      "llm_tldr_cn": "该论文针对网络运维中LLM工具代理面临的间接提示注入威胁，构建了包含130个场景的基准测试。实验表明，在无防御情况下，攻击导致82.5%的不安全工具调用。多种防御手段可将不安全率降至25.6%。",
+      "llm_tldr": "该论文针对网络运维中LLM工具代理面临的间接提示注入威胁，构建了包含130个场景的基准测试。实验表明，在无防御情况下，攻击导致82.5%的不安全工具调用。多种防御手段可将不安全率降至25.6%。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.15511v1",
+      "source": "arxiv",
+      "title": "An Auto-Scaling Approach for Serverless Environments Based on a Multi-Expert Consensus Mechanism",
+      "abstract": "Serverless computing provides automatic resource management and pay-per-use execution, but effective autoscaling remains challenging because of dynamic workloads, cold-start latency, and dependencies among functions. We present a dependency-aware autoscaling framework that integrates graph-based bottleneck identification, short-term workload forecasting, multi-model consensus, and cost-aware scaling control. Serverless applications are represented as directed dependency graphs, and structurally important functions are identified using weighted degree centrality. Resource demand is predicted using lightweight MLP, LSTM, and CNN models. Their outputs are combined through a performance-weighted probabilistic ensemble inspired by Bayesian model averaging. The controller further incorporates cold-start awareness and cost comparison to select among scale-up, scale-down, and hold actions. Experiments using real workload traces show that supervised forecasting substantially outperforms unsupervised clustering for autoscaling decision generation. The proposed ensemble achieves 99.88 percent prediction accuracy and reduces prediction error compared with representative hybrid forecasting methods. Evaluations across multiple cloud pricing models also demonstrate consistent infrastructure cost reductions while maintaining performance targets. The results show that combining dependency analysis, multi-expert forecasting, and cost-aware control provides a robust and practical solution for serverless autoscaling.",
+      "authors": [
+        "Mobina Kashaniyan",
+        "Mehrdad Ashtiani",
+        "Amirhossein Ghassemi"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.DC",
+        "cs.PF"
+      ],
+      "published": "2026-07-16T23:48:37+00:00",
+      "link": "https://arxiv.org/pdf/2607.15511v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "auto-scaling for serverless environments",
+      "llm_evidence_cn": "无服务器环境的自动扩缩",
+      "llm_evidence": "无服务器环境的自动扩缩",
+      "canonical_evidence": "无服务器环境的自动扩缩",
+      "llm_tldr_en": "Proposes a dependency-aware autoscaling framework for serverless computing using multi-expert consensus and graph bottleneck identification.",
+      "llm_tldr_cn": "该论文提出了一种依赖感知的无服务器自动扩缩框架，通过图瓶颈识别、短期负载预测和多模型共识来实现成本感知的缩放。适用于分布式云计算架构。",
+      "llm_tldr": "该论文提出了一种依赖感知的无服务器自动扩缩框架，通过图瓶颈识别、短期负载预测和多模型共识来实现成本感知的缩放。适用于分布式云计算架构。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.14434v1",
+      "source": "arxiv",
+      "title": "A Measurement Study of AI-Environment Realism Gaps in Malware-Analysis Sandboxes",
+      "abstract": "Sandboxing remains a core technique for observing suspicious program behavior, yet environment-aware malware increasingly suppresses execution when analysis is suspected. Prior generations of sandbox evasion focused on virtualization artifacts, timing discrepancies, and wear-and-tear realism. In this paper, we present the first systematic measurement study of AI-environment artifacts as a new sandbox-evasion surface. We operationalize this realism gap through AIprint, a probe framework that captures persistent artifacts left behind by AI-capable software ecosystems, including AI-assistant configuration directories, model caches, environment variables, local inference services, and package dependencies.   We systematically extract 450 unique artifacts from 284 open-source AI projects on GitHub, compile them into unprivileged Windows probes, and evaluate them across seven commercial and open-source sandbox backends together with three AI-capable reference hosts. Our results show that traditional VM-detection baselines fail to reliably distinguish real AI-capable systems from modern sandboxes, whereas twelve AI-environment artifacts appear on the reference hosts and on none of the evaluated backends. A controlled 214-step installation experiment establishes a causal relationship between AI tool and package installation and measurable AI-environment artifact accumulation, while adaptive spoofing experiments reveal a fundamental operational asymmetry: reproducing convincing AI software environments is substantially more expensive than detecting shallow spoofing.",
+      "authors": [
+        "Zhiyong Sui",
+        "Lamine Noureddine",
+        "Mst Eshita Khatun",
+        "Sideeq Bello",
+        "Babangida Bappah",
+        "Justin Woodring",
+        "Aisha Ali-Gombe"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.SE"
+      ],
+      "published": "2026-07-16T00:02:59+00:00",
+      "link": "https://arxiv.org/pdf/2607.14434v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "measurement study of AI-environment artifacts as sandbox evasion surface",
+      "llm_evidence_cn": "首次系统测量AI环境工件作为沙箱逃避新表面",
+      "llm_evidence": "首次系统测量AI环境工件作为沙箱逃避新表面",
+      "canonical_evidence": "首次系统测量AI环境工件作为沙箱逃避新表面",
+      "llm_tldr_en": "First systematic measurement of AI-environment artifacts used for sandbox evasion, introducing AIprint framework with 450+ unique artifacts.",
+      "llm_tldr_cn": "恶意软件常通过检测沙箱环境逃避分析。本文首次系统研究AI环境工件（如AI助手配置、模型缓存）作为新的逃避表面。提出AIprint框架，从450多个工件中提取特征。实验表明，这些工件可被恶意软件利用，且现有沙箱难以模拟AI环境的真实痕迹，为AI安全防御提供了新的检测维度。",
+      "llm_tldr": "恶意软件常通过检测沙箱环境逃避分析。本文首次系统研究AI环境工件（如AI助手配置、模型缓存）作为新的逃避表面。提出AIprint框架，从450多个工件中提取特征。实验表明，这些工件可被恶意软件利用，且现有沙箱难以模拟AI环境的真实痕迹，为AI安全防御提供了新的检测维度。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.16175v1",
+      "source": "arxiv",
+      "title": "Evaluating Open-Weight LLMs for Generating Structured Threat Information for Autonomous Vehicle Vulnerabilities",
+      "abstract": "Connected and Autonomous Vehicles (CAVs) rely on interconnected software and hardware components, including sensors, Electronic Control Units, in-vehicle infotainment systems, and telematics units, where vulnerabilities can compromise assets, users, and vehicle operations. These vulnerabilities are commonly documented as plain text in the Common Vulnerabilities and Exposures (CVE) database; however, security practitioners require structured information about affected assets, types of weaknesses, and attack behaviors to effectively mitigate the risks from these vulnerabilities. To this end, we evaluate open-weight Large Language Models (LLMs) for generating Structured Threat Information Expression (STIX), a well-known structured format for representing threat information, for CAV-related CVEs. We construct a dataset called CAV-STIXGen that maps CAV vulnerability descriptions to STIX domain objects (SDO), STIX relationship objects (SRO), Common Weakness Enumeration (CWE), and MITRE ATT&CK techniques mappings. Using this dataset, we evaluated 11 open-weight LLMs (4B to 120B parameters) across various prompting strategies and temperatures. Single-model configurations achieve F1 scores of 0.94 for SDO, 0.63 for SRO, and 0.99 for CWE mapping, while complete MITRE ATT&CK mapping remains challenging. In a multi-agent setup, Gemma-4-31B and Codestral-22B achieve F1 scores of 0.91 for SDOs and 0.43 for SROs, respectively. Lastly, we analyze CWE and MITRE ATT&CK co-occurrences to identify recurring threat patterns in the CAV domain, demonstrating how AI-assisted vulnerability-to-STIX translation can automate threat intelligence and prioritize defense in transportation security.",
+      "authors": [
+        "Md Erfan",
+        "Ahmed Ryan",
+        "Md Kamal Hossain Chowdhury",
+        "Md Rayhanur Rahman"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-17T17:55:19+00:00",
+      "link": "https://arxiv.org/pdf/2607.16175v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "LLM-based generation of structured threat intelligence for vehicle vulnerabilities",
+      "llm_evidence_cn": "基于LLM的自动驾驶汽车漏洞结构化威胁信息生成",
+      "llm_evidence": "基于LLM的自动驾驶汽车漏洞结构化威胁信息生成",
+      "canonical_evidence": "基于LLM的自动驾驶汽车漏洞结构化威胁信息生成",
+      "llm_tldr_en": "Evaluates open-weight LLMs for generating STIX threat intelligence from CAV vulnerabilities, supporting automated threat mitigation.",
+      "llm_tldr_cn": "自动驾驶汽车漏洞信息多为非结构化文本。本文评估开源LLM生成结构化威胁信息（STIX）的能力，旨在自动化漏洞分析和风险缓解。实验表明LLM可有效提取关键威胁要素，提升安全运营效率。",
+      "llm_tldr": "自动驾驶汽车漏洞信息多为非结构化文本。本文评估开源LLM生成结构化威胁信息（STIX）的能力，旨在自动化漏洞分析和风险缓解。实验表明LLM可有效提取关键威胁要素，提升安全运营效率。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.14661v1",
+      "source": "arxiv",
+      "title": "SmartRAG: Native Graph-Based RAG for Mobile Device",
+      "abstract": "Deploying large language models (LLMs) as personal assistants on mobile devices demands privacy, low latency, and offline availability, yet the computational cost of giant models clashes with strict edge-hardware budgets. We argue that this tension cannot be resolved by model compression alone; it requires decomposing on-device intelligence into complementary functional roles. We present SmartRAG, a fully on-device framework that organizes an intelligent assistant around four coordinated modules -- Perception, Memory, Focus, and Thinking. At the core of SmartRAG is EvoNER, a continually learnable named-entity recognizer that incrementally expands its label inventory through teacher-distilled updates, enabling the system to absorb previously unseen entity types without retraining the backbone LLM. Extracted knowledge is stored in MRGraph, a three-layer provenance-preserving knowledge graph, and retrieved at query time through a hybrid pipeline combining graph traversal, lexical matching, and dense semantic search. The on-device LLM is invoked only for high-value semantic operations -- labeling, planning, and answer synthesis -- keeping inference costs bounded. Experiments on four QA benchmarks (TriviaQA, Natural Questions, HotpotQA, MultiHopQA) show that SmartRAG with a quantized 1.7B-parameter backbone achieves multi-hop reasoning performance competitive with models up to 18$\\times$ larger, while running entirely on commodity smartphones within practical memory and latency envelopes.",
+      "authors": [
+        "Zhihan Jiang",
+        "Meng Li",
+        "Shenghao Liu",
+        "Keran Li",
+        "Ruiben Zhou",
+        "Xianjun Deng",
+        "Shuai Wang",
+        "Haipeng Dai"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-16T07:28:31+00:00",
+      "link": "https://arxiv.org/pdf/2607.14661v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Privacy-preserving on-device AI assistant",
+      "llm_evidence_cn": "隐私保护的本地AI助手",
+      "llm_evidence": "隐私保护的本地AI助手",
+      "canonical_evidence": "隐私保护的本地AI助手",
+      "llm_tldr_en": "SmartRAG is a fully on-device RAG framework for mobile, prioritizing privacy by keeping data local.",
+      "llm_tldr_cn": "部署大型语言模型作为个人助手在移动设备上需要隐私、低延迟和离线可用性。SmartRAG提出一个完全离线的框架，通过四个协调模块（感知、记忆、聚焦、思考）组织智能助手，核心是EvoNER持续学习命名实体识别器。该方法在保护隐私的同时实现了高效的本地推理。",
+      "llm_tldr": "部署大型语言模型作为个人助手在移动设备上需要隐私、低延迟和离线可用性。SmartRAG提出一个完全离线的框架，通过四个协调模块（感知、记忆、聚焦、思考）组织智能助手，核心是EvoNER持续学习命名实体识别器。该方法在保护隐私的同时实现了高效的本地推理。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.15593v1",
+      "source": "arxiv",
+      "title": "Scalable LLM Agent Tool Access in the Cloud",
+      "abstract": "LLM agents increasingly rely on tool calling to act on external systems, and the Model Context Protocol (MCP) has quickly become its de facto interface. Operating MCP at cloud scale, however, becomes difficult. On the tool provider side, legacy services are not directly callable through MCP; the rapid protocol development also creates ongoing compatibility cost. On the agent side, the number of accessible tool is limited by the LLM context window and inference overhead; mounting a large tool set increases token usage and inference latency and can reduce task success rate. Moreover, for stateful MCP backends with multiple replicas, preserving session affinity increases client-side complexity.   We present a cloud-scale gateway system for MCP service. It breaks the direct-connect model on the data plane and offloads legacy service integration, consolidating incompatible MCP variants, access control, tool recommendation, and session-aware routing to the gateway. Hybrid retrieval sustains 98% Top-15 recall; it scales agent tool access to 3,000+ with high tool selection accuracy, and reduces tool selection time by $8.9\\times$ and token usage by $23.8\\times$, with low per-call overhead, stable under scale-out. Finally, we share the lessons learned from deploying the gateway system in production.",
+      "authors": [
+        "Mingxin Li",
+        "Enge Song",
+        "Yueshang Zuo",
+        "Xiaodong Liu",
+        "Rong Wen",
+        "Qiang Fu",
+        "Gianni Antichi",
+        "Jian He",
+        "Jing Tie",
+        "Zhou Shao",
+        "Xiaobo Xue",
+        "Xiong Xiao",
+        "Luyao Zhong",
+        "Shaokai Zhang",
+        "Jiangu Zhao",
+        "Jianyuan Lu",
+        "Shize Zhang",
+        "Xiaoqing Sun",
+        "Changgang Zheng",
+        "Zihao Fan",
+        "Haonan Li",
+        "Tian Pan",
+        "Xiaomin Wu",
+        "Yang Song",
+        "Xing Li",
+        "Biao Lyu",
+        "Meng Li",
+        "Haipeng Dai",
+        "Guihai Chen",
+        "Shunmin Zhu"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC",
+        "cs.AI",
+        "cs.NI"
+      ],
+      "published": "2026-07-17T03:40:49+00:00",
+      "link": "https://arxiv.org/pdf/2607.15593v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "cloud-scale gateway for LLM agents enabling distributed tool access",
+      "llm_evidence_cn": "面向LLM智能体的云规模网关实现分布式工具访问",
+      "llm_evidence": "面向LLM智能体的云规模网关实现分布式工具访问",
+      "canonical_evidence": "面向LLM智能体的云规模网关实现分布式工具访问",
+      "llm_tldr_en": "Presents a cloud-scale gateway system for MCP service to enable scalable LLM agent tool access in the cloud, addressing compatibility and session affinity issues.",
+      "llm_tldr_cn": "LLM智能体依赖工具调用，但云规模部署面临协议兼容性和会话亲和性等挑战。本文提出云规模网关系统，解除直接连接限制，提供可扩展的工具访问。该系统有助于分布式云环境中智能体的部署和性能提升。",
+      "llm_tldr": "LLM智能体依赖工具调用，但云规模部署面临协议兼容性和会话亲和性等挑战。本文提出云规模网关系统，解除直接连接限制，提供可扩展的工具访问。该系统有助于分布式云环境中智能体的部署和性能提升。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.15750v1",
+      "source": "arxiv",
+      "title": "Ciphertext- and Polynomial-Level Optimization for Fully Homomorphic Encryption",
+      "abstract": "Fully homomorphic encryption (FHE) schemes such as RNS-CKKS enable privacy-preserving services by allowing direct computation on encrypted data. While recent FHE compilers optimize FHE programs, they operate at the coarse-grained ciphertext level, where each ciphertext operation comprises a sequence of polynomial operations. At this granularity, the compilers miss optimization opportunities across ciphertext operations. This work presents Recifhe, a new multi-level compiler that supports not only ciphertext-level but also polynomial-level optimization. At the ciphertext level, Recifhe transforms a non-FHE input program into an FHE program by inserting ciphertext management operations and applies global optimizations. At the polynomial level, Recifhe eliminates redundant polynomial computations across ciphertext operations. Recifhe achieves a 1.25x speedup over ciphertext-level-only optimization.",
+      "authors": [
+        "Seongho Kim",
+        "Heelim Choi",
+        "Jaemin Kim",
+        "Seonyoung Cheon",
+        "Dongkwan Kim",
+        "Jaeho Lee",
+        "Hoyun Youm",
+        "Dongyoon Lee",
+        "Hanjun Kim",
+        "Yongwoo Lee"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.SE"
+      ],
+      "published": "2026-07-17T08:39:12+00:00",
+      "link": "https://arxiv.org/pdf/2607.15750v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "FHE optimization for confidential computing",
+      "llm_evidence_cn": "全同态加密优化以支持机密计算",
+      "llm_evidence": "全同态加密优化以支持机密计算",
+      "canonical_evidence": "全同态加密优化以支持机密计算",
+      "llm_tldr_en": "Recifhe is a multi-level FHE compiler that optimizes both ciphertext and polynomial levels for efficiency.",
+      "llm_tldr_cn": "全同态加密如RNS-CKKS支持隐私保护服务，但现有编译器只在粗粒度密文级优化。Recifhe提出多级编译器，同时进行密文级和多项式级优化，在密文级插入管理操作并全局优化，在多项式级进一步挖掘优化机会，显著提升FHE程序性能。",
+      "llm_tldr": "全同态加密如RNS-CKKS支持隐私保护服务，但现有编译器只在粗粒度密文级优化。Recifhe提出多级编译器，同时进行密文级和多项式级优化，在密文级插入管理操作并全局优化，在多项式级进一步挖掘优化机会，显著提升FHE程序性能。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.15937v1",
+      "source": "arxiv",
+      "title": "The Language of Security: How Prompt Syntax Shapes Secure Code Generation in Open LLMs",
+      "abstract": "Large Language Models (LLMs) are increasingly used for source code generation despite their outputs often exhibiting security vulnerabilities. Prior work shows that prompt engineering can mitigate such risks, yet (1) they focused on high-level prompting strategies, neglecting recent evidence that fine-grained syntactic variations can substantially alter model behavior; and (2) predominantly evaluate proprietary LLMs, limiting the applicability of their findings in industrial settings where self-hosted, open models are preferred for privacy, compliance, and deployment control. In this paper, we study how fine-grained syntactic constituents of prompts influence the security of open LLM-generated code. Using a parser-driven approach, we systematically generate syntactic variants of security-relevant code generation prompts and evaluate their impact on code security across multiple open LLMs and programming languages. Our results show that specific syntactic elements, such as constraints, guards, conditions, and concept bindings, and their position within the prompt consistently affect the likelihood of generating insecure code. These findings identify prompt syntax as a concrete security control surface and provide actionable guidance for reducing vulnerability risk in LLM-assisted development.",
+      "authors": [
+        "Matteo Cicalese",
+        "Antonio Della Porta",
+        "Stefano Lambiase",
+        "Emanuele Iannone",
+        "Torge Hinrichs",
+        "Riccardo Scandariato",
+        "Fabio Palomba"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.SE"
+      ],
+      "published": "2026-07-17T13:20:21+00:00",
+      "link": "https://arxiv.org/pdf/2607.15937v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "study of how prompt syntax influences security of code generated by open LLMs",
+      "llm_evidence_cn": "研究提示语法如何影响开放LLM生成代码的安全性",
+      "llm_evidence": "研究提示语法如何影响开放LLM生成代码的安全性",
+      "canonical_evidence": "研究提示语法如何影响开放LLM生成代码的安全性",
+      "llm_tldr_en": "Investigates fine-grained syntactic variations in prompts and their impact on security of open LLM-generated code, using a parser-driven approach.",
+      "llm_tldr_cn": "LLM生成的代码常含安全漏洞，提示工程可缓解风险。本文聚焦于细粒度语法变化对开放LLM安全性的影响，采用解析驱动方法系统生成变体。实验表明，语法成分的微小改变可显著影响代码安全，且效果因模型而异。研究为安全代码生成的提示设计提供了具体指导，尤其适用于自托管模型场景。",
+      "llm_tldr": "LLM生成的代码常含安全漏洞，提示工程可缓解风险。本文聚焦于细粒度语法变化对开放LLM安全性的影响，采用解析驱动方法系统生成变体。实验表明，语法成分的微小改变可显著影响代码安全，且效果因模型而异。研究为安全代码生成的提示设计提供了具体指导，尤其适用于自托管模型场景。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}
