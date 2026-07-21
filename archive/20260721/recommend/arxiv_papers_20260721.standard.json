@@ -1,0 +1,673 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-21T20:31:00.547035+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 13,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 23,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2607.16414v1",
+      "source": "arxiv",
+      "title": "Signal-based Model Access Risk Analysis for AI System Operations Security",
+      "abstract": "Artificial intelligence (AI) systems are now ubiquitous across domains such as security, finance, healthcare, consumer technology, and large-scale cloud services, where they process massive volumes of data and make consequential decisions daily. This widespread adoption has created a broad attack surface through which adversaries can manipulate, evade, extract information from, or otherwise subvert deployed models. Depending on system design and exposure, attackers may have very different forms of access: some observe only final decisions, while others receive confidence scores, intermediate representations, or even full model parameters. While previous surveys typically organize evasion attacks into white-box, gray-box, and black-box categories based on the attacker's knowledge of model internals (architecture, parameters, gradients), this taxonomy often conflates different deployment scenarios that provide vastly different output signals, all labeled as ``black-box'' despite enabling fundamentally different attack strategies. Understanding how evasion attack strategies adapt to the specific information signals returned by deployed systems is critical for organizations making procurement and deployment decisions. To address this gap, we introduce the Signal-based Model Access Risk Taxonomy (SMART), a deployment-oriented framework that classifies attacker access according to the nature and richness of the information signals available from deployed AI systems. Using this taxonomy, we provide a structured overview of evasion attacks across progressively richer levels of information exposure, highlighting how deployment interfaces influence attack capabilities and informing more secure AI deployment and procurement decisions.",
+      "authors": [
+        "Maria Mahbub",
+        "Steven Young",
+        "Amir Sadovnik",
+        "Edmon Begoli",
+        "Chris Rugenstein",
+        "Donald Coulter",
+        "Anthony Ayodele"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-17T18:05:47+00:00",
+      "link": "https://arxiv.org/pdf/2607.16414v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "signal-based model access risk analysis for AI system operations security",
+      "llm_evidence_cn": "基于信号的模型访问风险分析用于AI系统运维安全",
+      "llm_evidence": "基于信号的模型访问风险分析用于AI系统运维安全",
+      "canonical_evidence": "基于信号的模型访问风险分析用于AI系统运维安全",
+      "llm_tldr_en": "Analyzes risk from different model access levels in AI systems, covering evasion attack surfaces and defense strategies, directly addressing AI security.",
+      "llm_tldr_cn": "该论文分析了人工智能系统在运维中的模型访问风险。AI系统广泛部署在安全、金融、医疗和云服务中，面临模型操纵、逃避、信息提取等攻击。根据攻击者能访问的信息（决策、置信度、中间表示、参数等）分类风险。虽为综述性质，但系统梳理了不同访问级别下的攻击面与防御，对理解AI安全威胁与防御至关重要。",
+      "llm_tldr": "该论文分析了人工智能系统在运维中的模型访问风险。AI系统广泛部署在安全、金融、医疗和云服务中，面临模型操纵、逃避、信息提取等攻击。根据攻击者能访问的信息（决策、置信度、中间表示、参数等）分类风险。虽为综述性质，但系统梳理了不同访问级别下的攻击面与防御，对理解AI安全威胁与防御至关重要。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.16771v1",
+      "source": "arxiv",
+      "title": "SABLE: Minimalist Instruction-Level Authenticated Encryption for Constrained Confidential Computing",
+      "abstract": "Conventional processor designs expose code and data as plaintext throughout execution, rendering them inherently vulnerable to attacks that recover intellectual property or modify security/safety checks. Instruction-level encryption (ILE) enables CPU-level decryption, execution, and optionally authentication of individual encrypted program instructions at runtime. However, existing proposals depend on specific micro-architectures, detect corrupted instructions after they have executed, rely on non-standard ciphers, or require complex analyses of program state. In this work, we introduce and present a design exploration of a RISC-V processor architecture (SABLE) that enables minimally invasive instruction-level authenticated encryption of programs. SABLE is agnostic to the underlying micro-architecture, remaining compatible with the standard RISC-V toolchain with minor changes to post-process compiled ELF binaries. We integrate a decrypt-and-verify stage at two points (the instruction-memory wrapper and the CPU frontend) and explore seven ILE micro-architectures from a single-cycle (combinational) design to six multi-cycle (sequential) variants. We implement and evaluate the designs using ASCON-128a on a Xilinx Artix-7 FPGA with the open-source NEORV32 system on chip. Relative to baseline performance, the configurations span LUT, performance, power, and energy-per-instruction overheads of 1.6-9.3$\\times$, 4.1-10.0$\\times$, 1.5-8.0$\\times$, and 10.4-80.0$\\times$, respectively, using the Dhrystone benchmarking suite. Finally, we discuss design trade-offs, highlighting area-, performance-, and energy-aware design points.",
+      "authors": [
+        "Hamid Noori",
+        "Carlton Shepherd"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AR",
+        "cs.ET"
+      ],
+      "published": "2026-07-18T11:12:28+00:00",
+      "link": "https://arxiv.org/pdf/2607.16771v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "proposes SABLE, a RISC-V architecture for instruction-level authenticated encryption in confidential computing",
+      "llm_evidence_cn": "提出了SABLE，一种面向机密计算的指令级认证加密RISC-V架构",
+      "llm_evidence": "提出了SABLE，一种面向机密计算的指令级认证加密RISC-V架构",
+      "canonical_evidence": "提出了SABLE，一种面向机密计算的指令级认证加密RISC-V架构",
+      "llm_tldr_en": "SABLE enables minimal instruction-level authenticated encryption on RISC-V for constrained confidential computing, avoiding micro-architecture dependency.",
+      "llm_tldr_cn": "传统处理器在执行过程中暴露明文代码和数据，易受攻击。指令级加密（ILE）可在CPU级别对加密指令进行解密和执行，但现有方案依赖特定微架构或复杂分析。本文提出SABLE，一种基于RISC-V的处理器架构，实现最小侵入式的指令级认证加密。该设计探索了多种配置，在不依赖自定义密码算法的情况下提供运行时机密性和完整性保护。适用于资源受限的机密计算场景。",
+      "llm_tldr": "传统处理器在执行过程中暴露明文代码和数据，易受攻击。指令级加密（ILE）可在CPU级别对加密指令进行解密和执行，但现有方案依赖特定微架构或复杂分析。本文提出SABLE，一种基于RISC-V的处理器架构，实现最小侵入式的指令级认证加密。该设计探索了多种配置，在不依赖自定义密码算法的情况下提供运行时机密性和完整性保护。适用于资源受限的机密计算场景。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.17518v1",
+      "source": "arxiv",
+      "title": "Isolation Failure From Shared Storage: Characterizing and Exploiting Page-Cache SCA Leakage Across Containers and VMs",
+      "abstract": "Modern cloud platforms increasingly combine strong software isolation mechanisms with shared hardware resources to improve performance and resource efficiency. Conventional containers do this by sharing the host kernel directly, whereas sandboxed runtimes (e.g., gVisor) and VM-based runtimes (e.g., Kata, QEMU/KVM) provide progressively stronger isolation. In all cases, when tenants access host-backed filesystem state, the host page cache can remain shared and observable. Although OS-managed, this page-cache channel forms an OS-mediated microarchitectural timing side channel whose signal is shaped by the processor microarchitecture, memory and storage hierarchies, and virtualization mechanisms. We thus investigate whether unprivileged timing measurements can reveal page-cache residency across these isolation boundaries. Our evaluation covers Docker; gVisor with systrap and KVM; Kata Containers using QEMU and Cloud Hypervisor with shared host filesystems; Kata using QEMU, Cloud Hypervisor, and Firecracker with block-device-backed storage; and QEMU/KVM virtual machines under multiple host cache policies. Our results show that the timing signal persists whenever the I/O path exposes shared, host-cacheable file-backed objects, including under OverlayFS layers, virtio-fs exports, and loop-backed block devices. However, direct I/O and dedicated block devices substantially attenuate or eliminate the signal. Virtualization therefore reshapes leakage through added latency and algorithmic noise but does not remove the underlying dependence on shared hardware and cache state. We showcase this through a case study in which we recover coarse-grained activity from a WordPress deployment backed by MySQL. These results place page-cache attacks within the broader class of OS-mediated microarchitectural timing channels and motivate coordinated hardware, virtualization, and OS support for timing isolation.",
+      "authors": [
+        "Alon Abudraham",
+        "Xingyu Chen",
+        "Itamar Levi",
+        "Ari Trachtenberg"
+      ],
+      "primary_category": "cs.AR",
+      "categories": [
+        "cs.AR",
+        "cs.CR",
+        "cs.OS"
+      ],
+      "published": "2026-07-20T03:47:34+00:00",
+      "link": "https://arxiv.org/pdf/2607.17518v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "page-cache side-channel leakage across containers and VMs",
+      "llm_evidence_cn": "跨容器和虚拟机的页缓存侧信道泄漏",
+      "llm_evidence": "跨容器和虚拟机的页缓存侧信道泄漏",
+      "canonical_evidence": "跨容器和虚拟机的页缓存侧信道泄漏",
+      "llm_tldr_en": "Characterizes and exploits page-cache microarchitectural timing side channels across containers, sandboxed runtimes, and VMs due to shared host-backed filesystem state.",
+      "llm_tldr_cn": "现代云平台通过共享硬件提升性能，但导致隔离失效。本文系统地研究了跨容器、沙箱运行时和虚拟机的页缓存微架构侧信道泄漏。发现即使内核隔离增强，主机页缓存仍可被共享观测。通过实验表征了信号特征，并展示了实际攻击的可行性。该研究对机密计算和云安全隔离有重要警示。",
+      "llm_tldr": "现代云平台通过共享硬件提升性能，但导致隔离失效。本文系统地研究了跨容器、沙箱运行时和虚拟机的页缓存微架构侧信道泄漏。发现即使内核隔离增强，主机页缓存仍可被共享观测。通过实验表征了信号特征，并展示了实际攻击的可行性。该研究对机密计算和云安全隔离有重要警示。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.17550v1",
+      "source": "arxiv",
+      "title": "(A)iSpy: Parasitic Trojans for Machine Learning Infrastructure",
+      "abstract": "Modern machine learning (ML) pipelines depend heavily on third party libraries for graph compilation and hardware acceleration. While current practices audit data and model artifacts or rely on file integrity checks, the execution environment remains implicitly trusted. This blind spot enables active threats where a malicious runtime module interacts directly with live training and inference dynamics: exploiting this interaction allows the Trojan to support complex objectives that are challenging for static code or binary modifications, achieving manipulations impossible for standard data and model level attacks. We expose this vulnerability by presenting (A)iSpy, a parasitic infrastructure Trojan that subverts ML systems through an active observe and execute paradigm. Operating within the computation graph, (A)iSpy monitors transient tensor states to perform targeted, stealthy manipulations with negligible overhead. To violate confidentiality, the Trojan identifies all critical training hyperparameters and covertly exfiltrates them via model weights or output logits. To break integrity, it acts as a gradient amplifier: by observing steganographic triggers, it transforms otherwise weak data poisoning into effective backdoor attacks, increasing success rates from near zero to 100%. We further demonstrate broad extensibility across the machine learning lifecycle by validating auxiliary attacks in the appendix, including subpopulation label flipping, availability disruptions, and inference stage manipulations. Importantly, the (A)iSpy module easily evades standard malware scanners, while the associated poisoned inputs and resulting compromised models bypass typical inspection tools. We demonstrate the practicality of this threat with an implementation in the ONNX Runtime training and inference engines.",
+      "authors": [
+        "Habibur Rahaman",
+        "Qipan Xu",
+        "Zafaryab Haider",
+        "Prabuddha Chakraborty",
+        "Swarup Bhunia",
+        "Fnu Suya"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-20T04:51:20+00:00",
+      "link": "https://arxiv.org/pdf/2607.17550v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "introduces (A)iSpy Trojan that subverts ML infrastructure, a direct AI security threat",
+      "llm_evidence_cn": "提出了(A)iSpy木马，能够颠覆机器学习基础设施，属于直接的人工智能安全威胁",
+      "llm_evidence": "提出了(A)iSpy木马，能够颠覆机器学习基础设施，属于直接的人工智能安全威胁",
+      "canonical_evidence": "提出了(A)iSpy木马，能够颠覆机器学习基础设施，属于直接的人工智能安全威胁",
+      "llm_tldr_en": "(A)iSpy is a parasitic Trojan for ML infrastructure that exploits runtime modules to manipulate training/inference, bypassing data and model audits.",
+      "llm_tldr_cn": "现代机器学习管线依赖第三方库，但执行环境常被信任，存在安全盲点。本文提出(A)iSpy，一种寄生性基础设施木马，通过恶意运行时模块直接干扰训练和推理过程，实现数据层和模型层攻击无法达成的复杂目标。该工作暴露了当前ML框架中的严重漏洞，并展示了积极观测与执行攻击的威力。强调了对执行环境进行安全审计的紧迫性。",
+      "llm_tldr": "现代机器学习管线依赖第三方库，但执行环境常被信任，存在安全盲点。本文提出(A)iSpy，一种寄生性基础设施木马，通过恶意运行时模块直接干扰训练和推理过程，实现数据层和模型层攻击无法达成的复杂目标。该工作暴露了当前ML框架中的严重漏洞，并展示了积极观测与执行攻击的威力。强调了对执行环境进行安全审计的紧迫性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.13718v2",
+      "source": "arxiv",
+      "title": "How Agents Ask for Permission: User Permissions for AI Agents, from Interfaces to Enforcement",
+      "abstract": "As AI agents gain prevalence, users are increasingly exposed to the risks such systems entail. Prompt injection attacks, as well as hallucination, can cause agents to leak private information to third parties. As autonomous systems, agents also present the more active danger of performing sensitive tasks, such as bank transactions, without the user's intent or authorization.   Recognizing this challenge, the agentic security community has developed numerous proposals for secure agentic systems. Much of this work has focused on product-level approaches, where agentic system developers determine and apply the same security policies and permissions to all users. Yet different users have different needs and preferences, necessitating support for user-level permissions policies in agentic AI systems.   To understand how user-level permissions are handled in AI agent systems, we survey 21 proposals for agent permissions systems. From this review, we construct a taxonomy of how different systems specify user-level permissions policies, both at the user interface and internally; derive internal policies from user input; and enforce those policies at run-time. We then analyze five prominent commercial agents and compare their permissions handling to agentic permissions systems in the literature. We identify several high-level themes across the literature and commercial agents, as well as multiple gaps where future work is needed.",
+      "authors": [
+        "Alexandra E. Michael",
+        "Franziska Roesner"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-15T11:36:22+00:00",
+      "link": "https://arxiv.org/pdf/2607.13718v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "AI agent security with user permissions against prompt injection and privacy leaks",
+      "llm_evidence_cn": "AI智能体安全，通过用户权限防范提示注入和隐私泄露",
+      "llm_evidence": "AI智能体安全，通过用户权限防范提示注入和隐私泄露",
+      "canonical_evidence": "AI智能体安全，通过用户权限防范提示注入和隐私泄露",
+      "llm_tldr_en": "Examines user permissions for AI agents, from interfaces to enforcement, addressing security risks like prompt injection and unauthorized actions.",
+      "llm_tldr_cn": "本文关注AI智能体的用户权限问题，从接口设计到执行机制全面分析安全风险。针对提示注入、幻觉和自主执行敏感操作等威胁，提出可定制的权限方案。研究表明，灵活的权限管理能有效降低智能体系统带来的隐私泄露和未授权操作风险，为构建更安全的AI代理系统提供了设计指南。",
+      "llm_tldr": "本文关注AI智能体的用户权限问题，从接口设计到执行机制全面分析安全风险。针对提示注入、幻觉和自主执行敏感操作等威胁，提出可定制的权限方案。研究表明，灵活的权限管理能有效降低智能体系统带来的隐私泄露和未授权操作风险，为构建更安全的AI代理系统提供了设计指南。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.15750v2",
+      "source": "arxiv",
+      "title": "Ciphertext- and Polynomial-Level Optimization for Fully Homomorphic Encryption",
+      "abstract": "Fully homomorphic encryption (FHE) schemes such as RNS-CKKS enable privacy-preserving services through direct computation on encrypted data. While recent FHE compilers optimize FHE programs, they operate at the coarse-grained ciphertext level, where each ciphertext operation comprises a sequence of polynomial operations. At this granularity, the compilers miss polynomial-level optimization opportunities across ciphertext operations. This work presents Recifhe, a new multi-level compiler that supports both ciphertext-level and polynomial-level optimization. At the ciphertext level, Recifhe transforms a non-FHE input program into an FHE program by inserting ciphertext management operations and applies global optimizations. At the polynomial level, Recifhe eliminates redundant polynomial computations across ciphertext operations. Recifhe achieves a 1.25x speedup over ciphertext-level-only optimization.",
+      "authors": [
+        "Seongho Kim",
+        "Heelim Choi",
+        "Jaemin Kim",
+        "Seonyoung Cheon",
+        "Dongkwan Kim",
+        "Jaeho Lee",
+        "Hoyun Youm",
+        "Dongyoon Lee",
+        "Hanjun Kim",
+        "Yongwoo Lee"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.SE"
+      ],
+      "published": "2026-07-17T08:39:12+00:00",
+      "link": "https://arxiv.org/pdf/2607.15750v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "multi-level compiler for FHE optimization; confidential computing techniques",
+      "llm_evidence_cn": "面向FHE的多级编译器优化；机密计算技术",
+      "llm_evidence": "面向FHE的多级编译器优化；机密计算技术",
+      "canonical_evidence": "面向FHE的多级编译器优化；机密计算技术",
+      "llm_tldr_en": "Presents Recifhe, a multi-level compiler that optimizes fully homomorphic encryption programs at both ciphertext and polynomial levels.",
+      "llm_tldr_cn": "本文提出Recifhe，一种多级编译器，支持在全同态加密（FHE）程序的密文级和多项式级优化。现有FHE编译器仅在粗粒度的密文级操作，忽视了多项式级优化机会。Recifhe在密文级插入密文管理操作并进行全局优化，同时在多项式级进行细粒度优化，从而显著提升FHE程序性能。该工作推动FHE在机密计算等隐私保护场景中的实用性。",
+      "llm_tldr": "本文提出Recifhe，一种多级编译器，支持在全同态加密（FHE）程序的密文级和多项式级优化。现有FHE编译器仅在粗粒度的密文级操作，忽视了多项式级优化机会。Recifhe在密文级插入密文管理操作并进行全局优化，同时在多项式级进行细粒度优化，从而显著提升FHE程序性能。该工作推动FHE在机密计算等隐私保护场景中的实用性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.17035v1",
+      "source": "arxiv",
+      "title": "Federated Learning and LLM-Driven Threat Intelligence for Zero Trust IoT Architecture",
+      "abstract": "While the Internet of Things (IoT) has become essential, they introduced serious security and privacy challenges, especially for mission-critical environments. Legacy devices are vulnerable to viruses, data breaches, and unauthorized access, and updating these devices would be infeasibly costly. As a solution, this paper presents a Federated Learning and LLM-Driven Threat Intelligence for Zero Trust IoT Architecture, with FL for anomaly detection integrating privacy-preserving distributed learning, continuous identity verification, and LLM-driven autonomous threat response into a unified pipeline. Unlike existing solutions, our framework enforces Zero Trust at every communication layer via mutual TLS (mTLS) over MQTT, ensuring no device or message is implicitly trusted. Our experiments with Raspberry Pis and various sensors achieve an F1 score of 0.9091 and an ROC-AUC of 1.0, highlighting the effectiveness of the proposed framework in enabling privacy-preserving anomaly detection for resource-constrained IoT devices.",
+      "authors": [
+        "Amal Alshehri",
+        "Cihan Tunc"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-19T02:35:24+00:00",
+      "link": "https://arxiv.org/pdf/2607.17035v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "federated learning and LLM for zero trust IoT security",
+      "llm_evidence_cn": "联邦学习与LLM驱动的零信任物联网安全",
+      "llm_evidence": "联邦学习与LLM驱动的零信任物联网安全",
+      "canonical_evidence": "联邦学习与LLM驱动的零信任物联网安全",
+      "llm_tldr_en": "Integrates FL for anomaly detection, LLM for threat intelligence, and zero trust principles to secure IoT architectures against cyber threats.",
+      "llm_tldr_cn": "针对物联网设备安全防护不足的问题，本文提出一个统一架构，将联邦学习用于隐私保护的分布式异常检测，大语言模型用于自动化威胁情报分析，并实施零信任原则通过mTLS保证每一层通信的身份验证。该框架在检测精度的同时保持了模型隐私，并实现了自主威胁响应。",
+      "llm_tldr": "针对物联网设备安全防护不足的问题，本文提出一个统一架构，将联邦学习用于隐私保护的分布式异常检测，大语言模型用于自动化威胁情报分析，并实施零信任原则通过mTLS保证每一层通信的身份验证。该框架在检测精度的同时保持了模型隐私，并实现了自主威胁响应。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.12428v2",
+      "source": "arxiv",
+      "title": "Trust but Verify? Uncovering the Security Debt of Autonomous Coding Agents",
+      "abstract": "The increasing adoption of autonomous coding agents accelerates software development but also introduces scoped security risks within high-impact file paths that can outpace traditional human review capacity. While prior research has primarily evaluated these systems in terms of functional correctness and productivity, this paper presents a large-scale empirical study using the AIDev dataset to systematically characterize security code smells in agent-generated pull requests (PRs). Through a combination of a validated LLM-as-a-judge framework and manual qualitative analysis, we identify and classify security misconfigurations across 16,112 file changes spanning 4,022 pull requests. Our results reveal that 38.9% of agent-generated PRs contain at least one security smell, with supply chain integrity issues accounting for 82.3% of all detected security smells. Furthermore, hard-coded credentials constitute 99.6% of all critical-severity security smells. Crucially, we find that human collaborators are responsible for introducing 67.6% of genuine leaked secrets within these agent-assisted workflows, while existing automated and human review processes fail to detect 81.1% of these credentials prior to integration. These findings highlight substantial security risks in agent-assisted software development workflows and suggest a potential reduction in developer vigilance. They also underscore the urgent need for context-aware security guardrails implemented directly at the point of human-AI collaboration.",
+      "authors": [
+        "A H M Nazmus Sakib",
+        "Dipayan Banik",
+        "Murtuza Jadliwala"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-14T06:59:41+00:00",
+      "link": "https://arxiv.org/pdf/2607.12428v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "empirically studies security code smells in agent-generated code, revealing AI security threats",
+      "llm_evidence_cn": "实证研究了自主编码代理生成代码中的安全代码异味，揭示人工智能安全威胁",
+      "llm_evidence": "实证研究了自主编码代理生成代码中的安全代码异味，揭示人工智能安全威胁",
+      "canonical_evidence": "实证研究了自主编码代理生成代码中的安全代码异味，揭示人工智能安全威胁",
+      "llm_tldr_en": "Large-scale study using AIDev dataset reveals 38.9% of agent-generated PRs contain security misconfigurations, highlighting AI security risks.",
+      "llm_tldr_cn": "自主编码代理加速开发但引入安全风险。本文基于AIDev数据集对4,022个拉取请求（PR）中的16,112个文件变更进行大规模实证研究，使用LLM-as-a-judge框架和人工分析识别安全代码异味。结果显示38.9%的代理生成PR存在安全配置错误。该工作揭示了AI编码代理中普遍存在的安全债务，呼吁加强审查机制。",
+      "llm_tldr": "自主编码代理加速开发但引入安全风险。本文基于AIDev数据集对4,022个拉取请求（PR）中的16,112个文件变更进行大规模实证研究，使用LLM-as-a-judge框架和人工分析识别安全代码异味。结果显示38.9%的代理生成PR存在安全配置错误。该工作揭示了AI编码代理中普遍存在的安全债务，呼吁加强审查机制。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.16715v1",
+      "source": "arxiv",
+      "title": "Tractable Query Answering under Epistemic Confidentiality Policies in DL Ontologies (extended version)",
+      "abstract": "We study Controlled Query Evaluation (CQE), a declarative approach to confidentiality-preserving data access, in the context of Description Logic (DL) ontologies, and for confidentiality policies expressed through Epistemic Dependencies (EDs). We first address the problem of answering queries (specifically, Boolean unions of conjunctive queries) under known semantics for CQE (GA- and IGA-entailment). Our results show that if the TBox is expressed in $\\text{DL-Lite}_{\\mathcal{R}}$, CQE is computationally intractable in general. Moreover, in the presence of EDs, the IGA semantics has recently been proven not to satisfy an important confidentiality preservation property known as indistinguishability. With the goal of defining computationally easier and confidentiality-preserving forms of CQE, we introduce a new semantics for CQE, based on the notion of minimal policy violation (MPV). We show that the new semantics provides a sound approximation of the previous ones, while satisfying the indistinguishability property. We also prove that, in the case of $\\text{DL-Lite}_{\\mathcal{R}}$ ontologies, query entailment under the MPV semantics can be decided in polynomial time in data complexity. Finally, we present a software implementation of our framework that we used to evaluate the feasibility of this new approach using an existing benchmark for OWL 2 QL.",
+      "authors": [
+        "Lorenzo Marconi",
+        "Daniela Rieti",
+        "Riccardo ROsati"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-18T09:07:57+00:00",
+      "link": "https://arxiv.org/pdf/2607.16715v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "control query evaluation for confidentiality-preserving data access",
+      "llm_evidence_cn": "用于保护机密性的受控查询评估",
+      "llm_evidence": "用于保护机密性的受控查询评估",
+      "canonical_evidence": "用于保护机密性的受控查询评估",
+      "llm_tldr_en": "Studies tractable query answering under epistemic confidentiality policies in DL ontologies for controlled data access.",
+      "llm_tldr_cn": "针对本体知识库中的机密性保护，研究基于认识依赖的受控查询评估，分析GA和IGA语义下的计算复杂度，并提出满足不可区分性的新语义。推动了机密计算在知识查询中的理论基础，为云环境下的敏感数据访问控制提供思路。",
+      "llm_tldr": "针对本体知识库中的机密性保护，研究基于认识依赖的受控查询评估，分析GA和IGA语义下的计算复杂度，并提出满足不可区分性的新语义。推动了机密计算在知识查询中的理论基础，为云环境下的敏感数据访问控制提供思路。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.17107v1",
+      "source": "arxiv",
+      "title": "DSA Nonce Vulnerabilities: An Interactive Analysis",
+      "abstract": "Digital signatures are fundamental to identity authentication and data integrity in cybersecurity, and the NIST-standardized Digital Signature Algorithm (DSA) frequently appears in the cryptography track of CTF competitions. However, DSA relies on number theory, modular arithmetic, and large-integer computation, making both the algorithm and its associated attacks difficult for beginners to follow. Conventional tools often expose only inputs and outputs, leaving the intermediate computations of signing, verification, and key-recovery attacks opaque. This paper presents a DSA signature analysis and visualisation platform tailored to CTF competitions. The platform provides three main capabilities: basic signature generation and verification, reproduction of common CTF attack methods, and dynamic visualisation of attack workflows. It covers three representative nonce vulnerabilities: nonce reuse, linear nonce leakage, and HNP-based lattice attacks. Stepwise displays and highlighted intermediate values make the underlying computations directly inspectable. Experiments show that the platform correctly reproduces the standard DSA workflow and all three attack scenarios.",
+      "authors": [
+        "Rundong Wei",
+        "Xiaomei Tian",
+        "Xiaoqi Li"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-19T07:21:13+00:00",
+      "link": "https://arxiv.org/pdf/2607.17107v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "DSA nonce vulnerabilities analysis for key recovery and authentication",
+      "llm_evidence_cn": "DSA随机数漏洞分析，用于密钥恢复和认证",
+      "llm_evidence": "DSA随机数漏洞分析，用于密钥恢复和认证",
+      "canonical_evidence": "DSA随机数漏洞分析，用于密钥恢复和认证",
+      "llm_tldr_en": "Interactive DSA nonce vulnerability analysis platform for CTF contests, enabling key recovery attack reproduction and visualization.",
+      "llm_tldr_cn": "为CTF竞赛设计DSA签名分析和可视化平台，支持签名生成、验证以及常见密钥恢复攻击的重现。通过交互式展示中间计算过程，帮助理解非随机数漏洞对数字签名安全的影响，强化了身份认证中的密钥保护意识。",
+      "llm_tldr": "为CTF竞赛设计DSA签名分析和可视化平台，支持签名生成、验证以及常见密钥恢复攻击的重现。通过交互式展示中间计算过程，帮助理解非随机数漏洞对数字签名安全的影响，强化了身份认证中的密钥保护意识。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cryptographic techniques for key recovery and user authentication",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.16089v1",
+      "source": "arxiv",
+      "title": "SQUIRO: A Framework for Security-Aware Quantum-Classical Scheduling on Kubernetes",
+      "abstract": "Distributed infrastructure schedulers traditionally optimise capacity, locality, and cost, but provide limited support for security posture and emerging quantum-classical workloads. As hybrid quantum-classical computing becomes increasingly practical and post-quantum security requirements begin to affect infrastructure deployment, schedulers must jointly reason about heterogeneous compute resources, security constraints, and quantum backend characteristics. We present SQUIRO, a framework for security-aware quantum-classical scheduling based on a platform-independent Unified Scheduling Model (USM) and a six-step Scheduler Design Methodology (SDM) that together enable the derivation of concrete schedulers for Kubernetes, high-performance computing (HPC), and federated environments. The framework combines multidimensional security posture enforcement through hard feasibility constraints with residual-risk optimisation, and introduces a circuit-aware quantum backend selector that accounts for coherence margin, calibration freshness, queue pressure, and hardware capabilities through a forward-compatible colocation hierarchy. Evaluation on synthetic Kubernetes clusters shows that the security model enforces complete compliance for regulated workloads by construction, while global optimisation reduces infrastructure cost by up to 51% and energy consumption by up to 63% compared with greedy placement in underloaded scenarios, without compromising admission priorities. Additional experiments characterise the solve-time growth of the current CP-SAT formulation and show that circuit-aware backend selection systematically diverges from naive error-rate ranking under coherence- and queue-limited conditions.",
+      "authors": [
+        "Ignazio Pedone",
+        "Edoardo Giusto"
+      ],
+      "primary_category": "cs.ET",
+      "categories": [
+        "cs.ET",
+        "cs.DC"
+      ],
+      "published": "2026-07-17T16:19:13+00:00",
+      "link": "https://arxiv.org/pdf/2607.16089v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "security-aware quantum-classical scheduling on Kubernetes for distributed infrastructure",
+      "llm_evidence_cn": "Kubernetes上安全感知的量子经典调度框架",
+      "llm_evidence": "Kubernetes上安全感知的量子经典调度框架",
+      "canonical_evidence": "Kubernetes上安全感知的量子经典调度框架",
+      "llm_tldr_en": "SQUIRO framework enables security-aware scheduling on Kubernetes for hybrid quantum-classical workloads, addressing distributed cloud security.",
+      "llm_tldr_cn": "该论文提出SQUIRO，一个安全感知的量子经典计算调度框架，基于统一调度模型和六步设计方法论，支持在Kubernetes上推导具体调度策略。传统调度器仅优化容量、位置和成本，而SQUIRO同时考虑安全态势和量子后端特性。对分布式云计算架构及安全具有参考价值。",
+      "llm_tldr": "该论文提出SQUIRO，一个安全感知的量子经典计算调度框架，基于统一调度模型和六步设计方法论，支持在Kubernetes上推导具体调度策略。传统调度器仅优化容量、位置和成本，而SQUIRO同时考虑安全态势和量子后端特性。对分布式云计算架构及安全具有参考价值。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.17075v1",
+      "source": "arxiv",
+      "title": "A Systematic Evaluation of Traditional Privacy Policy Analysis Tools Against LLMs",
+      "abstract": "The advent of LLMs has significantly changed the research on privacy policy and data compliance analysis by enabling tasks that previously required specialized, domain-specific tools. However, it remains unclear to what extent LLMs can truly replicate the diverse functionalities, and the wide range of methodologies and analysis offered by prior work. In this paper, we conduct the first systematic evaluation of whether off-the-shelf LLMs can replace specialized privacy analysis tools. We study six representative tools spanning three major functionalities: contradiction detection, regulatory compliance analysis, and privacy policy summarization and aggregation, and across three intermediate tasks: structured data extraction using tuples, Semantic Role Labeling (SRL) and manual privacy policy labeling. We compare the performance of two state-of-the-art LLMs (GPT-5.2 and Gemini-2.5 in various configurations) against the tools by directly prompting the models to perform corresponding functionalities and tasks on a custom dataset of 10 privacy policies, allowing us to assess whether off-the-shelf models can produce tool-specific functionalities without further engineering or domain-specific training, major limitations in prior work. Our results show that LLMs consistently match or exceed the capabilities of existing tools across the functionalities. In manual labeling of first-party collection entities, LLMs achieved an average precision of 81.8% and recall of 70.9%, while for labeling of third-party sharing entities, they achieved an average precision of 91.4% and recall of 70.8% compared to the OPP-115 dataset. Overall, our findings indicate that LLMs can effectively perform a broad range of functionalities and tasks in privacy policy and regulation analysis that previously required specialized tools.",
+      "authors": [
+        "Madhav Aryal",
+        "Sudipa Saha",
+        "Kaushal Kafle",
+        "Anshuman Chhabra",
+        "Sunil Manandhar"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.CL"
+      ],
+      "published": "2026-07-19T04:50:05+00:00",
+      "link": "https://arxiv.org/pdf/2607.17075v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "evaluates LLMs for privacy policy analysis, relevant to privacy preservation in AI",
+      "llm_evidence_cn": "评估LLM在隐私政策分析中的能力，与人工智能隐私保护相关",
+      "llm_evidence": "评估LLM在隐私政策分析中的能力，与人工智能隐私保护相关",
+      "canonical_evidence": "评估LLM在隐私政策分析中的能力，与人工智能隐私保护相关",
+      "llm_tldr_en": "Systematic evaluation of LLMs vs. specialized tools for privacy policy analysis across contradiction detection, compliance, and summarization.",
+      "llm_tldr_cn": "随着大语言模型（LLM）的兴起，其能否替代传统的专用隐私政策分析工具尚不清楚。本文首次系统评估了LLM在三个主要功能（矛盾检测、合规性分析、隐私政策摘要与聚合）上的表现。研究覆盖六个代表性工具及三个中间任务。结果表明LLM在某些任务上具有潜力，但传统工具在特定领域仍具优势。该工作为隐私分析工具的选型提供了参考。",
+      "llm_tldr": "随着大语言模型（LLM）的兴起，其能否替代传统的专用隐私政策分析工具尚不清楚。本文首次系统评估了LLM在三个主要功能（矛盾检测、合规性分析、隐私政策摘要与聚合）上的表现。研究覆盖六个代表性工具及三个中间任务。结果表明LLM在某些任务上具有潜力，但传统工具在特定领域仍具优势。该工作为隐私分析工具的选型提供了参考。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.17175v1",
+      "source": "arxiv",
+      "title": "LMEdge: QoS-Aware LLM Inference Orchestration on Edge Clusters",
+      "abstract": "Large language model (LLM) services increasingly operate on edge infrastructure, enabling low-latency and privacy-preserving AI services. However, efficiently serving LLM requests across heterogeneous and resource-constrained edge devices require orchestration mechanisms that jointly determine model configuration (family, size, and quantization level) and execution placement while satisfying user- and system-level quality of service (QoS) requirements. This paper introduces LMEdge, a QoS-aware orchestration service that dynamically makes these decisions across heterogeneous edge devices. We formulate the problem as a binary integer linear programming (BILP) optimization that minimizes response time under accuracy, network, and resource constraints. To enable scalable online scheduling, we employ five lightweight machine learning (ML) models to predict query-specific latency, accuracy, resource usage, and response size for each model-size-quantization-device combination, and design a lightweight heuristic that approximates the BILP solution. We collect a comprehensive benchmarking dataset of over 59000 rows to train models and support reproducibility. Evaluation on a Kubernetes-based edge testbed with 57 instances and diverse query categories shows that LMEdge reduces latency, preserves accuracy, improves resource utilization, and increases serving ratio compared to two baselines.",
+      "authors": [
+        "Reza Farahani",
+        "Zoha Azimi",
+        "Mario Colosi",
+        "Schahram Dustdar"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC"
+      ],
+      "published": "2026-07-19T10:21:30+00:00",
+      "link": "https://arxiv.org/pdf/2607.17175v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "QoS-aware LLM inference orchestration on heterogeneous edge clusters",
+      "llm_evidence_cn": "异构边缘集群上QoS感知的LLM推理编排",
+      "llm_evidence": "异构边缘集群上QoS感知的LLM推理编排",
+      "canonical_evidence": "异构边缘集群上QoS感知的LLM推理编排",
+      "llm_tldr_en": "Introduces LMEdge, a QoS-aware orchestration service for LLM inference on heterogeneous edge devices, optimizing response time under resource constraints.",
+      "llm_tldr_cn": "本文提出LMEdge，一种QoS感知的LLM推理编排服务，面向异构边缘集群。将模型配置和放置决策建模为二元整数线性规划，以最小化响应时间同时满足精度、网络和资源约束。实验表明，LMEdge在多种场景下显著优于基准方法，为边缘AI的隐私保护和低延迟服务提供了高效的编排方案。",
+      "llm_tldr": "本文提出LMEdge，一种QoS感知的LLM推理编排服务，面向异构边缘集群。将模型配置和放置决策建模为二元整数线性规划，以最小化响应时间同时满足精度、网络和资源约束。实验表明，LMEdge在多种场景下显著优于基准方法，为边缘AI的隐私保护和低延迟服务提供了高效的编排方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.16559v1",
+      "source": "arxiv",
+      "title": "Auditable Session Admission for Cross-Silo Federated Learning",
+      "abstract": "Cross-silo federated learning keeps raw data local, but deployments frequently stall on a practical bottleneck when deciding who may invoke which session-scoped operations across organizational boundaries, under constraints that remain auditable after execution. In practice, admission is implemented via centralized policy services, platform configuration, or ad hoc checks, which drift over time and are hard to audit from boundary-visible evidence. We present a session admission gateway that enforces pre-approved session capabilities at the boundary and emits verifiable decision records. During session setup, participating organizations approve roles and constraints and mint signed session capability tokens that enumerate permitted session operations for a given session_id. At runtime, each request carries the token and a request-bound proof-of-possession, making replay and impersonation with stolen tokens detectable at the gateway via request binding. Admission reduces to stateless per-request cryptographic verification and capability matching at an admission gateway, while setup and orchestration remain out of scope and organization-specific. We validate the approach end-to-end on a cross-silo FL workflow using MNIST as a surrogate workload. The proof-of-concept is open-source, containerized, provisioned as code, and includes reproducible tests and evidence logs.",
+      "authors": [
+        "Enzo Fenoglio",
+        "Philip Treleaven"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-18T00:06:25+00:00",
+      "link": "https://arxiv.org/pdf/2607.16559v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "session admission with authentication for cross-silo federated learning",
+      "llm_evidence_cn": "跨孤岛联邦学习的会话准入与身份认证",
+      "llm_evidence": "跨孤岛联邦学习的会话准入与身份认证",
+      "canonical_evidence": "跨孤岛联邦学习的会话准入与身份认证",
+      "llm_tldr_en": "Presents an auditable session admission gateway for cross-silo FL, using signed capability tokens to enforce per-session authentication and authorization.",
+      "llm_tldr_cn": "跨孤岛联邦学习部署中，决定谁可以调用哪些会话操作是一个实际瓶颈。本文提出一个会话准入网关，在会话建立时由参与组织签发签名能力令牌，枚举允许的操作。网关在边界强制执行这些令牌并产生可审计的决策记录，从而实现了细粒度的身份认证和授权管理，同时保持了可审计性。",
+      "llm_tldr": "跨孤岛联邦学习部署中，决定谁可以调用哪些会话操作是一个实际瓶颈。本文提出一个会话准入网关，在会话建立时由参与组织签发签名能力令牌，枚举允许的操作。网关在边界强制执行这些令牌并产生可审计的决策记录，从而实现了细粒度的身份认证和授权管理，同时保持了可审计性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.17305v1",
+      "source": "arxiv",
+      "title": "Learning-Driven Adaptive Audit Scheduling: A Sequential Decision Approach to Off-Chain Data Integrity",
+      "abstract": "We model cryptographic auditing of off-chain data as a Constrained MDP (CMDP) under partial observability: the storage node's hidden type and corruption state make the problem a POMDP, while a miss-rate ceiling rho imposes an explicit security constraint. We propose DRQN-CMDP, a Deep Recurrent Q-Network whose GRU layer maintains a belief over the latent node type, paired with Lagrangian dual ascent that adapts the miss-rate penalty lambda automatically. A pairing-free homomorphic-MAC primitive supplies O(1) on-chain verification cost. Across 13 methods--four DQN variants, PPO, A2C, PPO-Lagrangian, a stateful Bayesian heuristic, three fixed-rule baselines, and an oracle-informed heuristic--DRQN-CMDP achieves a favourable balance: 83% lower gas than fixed high-frequency auditing, single-digit miss rate (7.5%), and moderate detection latency--a combination no other method matches across all three objectives simultaneously.",
+      "authors": [
+        "Changting Lin",
+        "Fan Li",
+        "Weihang Yu",
+        "Keyang He",
+        "Mingyuan Yan",
+        "Yourong Chen",
+        "Meng Han"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CR"
+      ],
+      "published": "2026-07-19T15:42:03+00:00",
+      "link": "https://arxiv.org/pdf/2607.17305v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "cryptographic auditing for off-chain data integrity in cloud storage",
+      "llm_evidence_cn": "云存储中离链数据完整性的密码审计",
+      "llm_evidence": "云存储中离链数据完整性的密码审计",
+      "canonical_evidence": "云存储中离链数据完整性的密码审计",
+      "llm_tldr_en": "This paper proposes DRQN-CMDP for adaptive audit scheduling in off-chain storage, using homomorphic MAC and constrained MDP to ensure data integrity with low verification cost.",
+      "llm_tldr_cn": "本文针对云存储中离链数据审计问题，提出DRQN-CMDP方法。该方法将审计调度建模为受约束的部分可观测马尔可夫决策过程，使用深度循环Q网络和同态MAC原语，实现了O(1)的链上验证成本。实验表明该方法在13种基准方法中达到最优性能，为分布式云存储安全提供了有效方案。",
+      "llm_tldr": "本文针对云存储中离链数据审计问题，提出DRQN-CMDP方法。该方法将审计调度建模为受约束的部分可观测马尔可夫决策过程，使用深度循环Q网络和同态MAC原语，实现了O(1)的链上验证成本。实验表明该方法在13种基准方法中达到最优性能，为分布式云存储安全提供了有效方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.17535v1",
+      "source": "arxiv",
+      "title": "Salience Induction against Multi-Hop RAG Agents: Threat and Defense",
+      "abstract": "Agentic retrieval-augmented generation (RAG) systems increasingly retrieve external evidence and orchestrate tools for knowledge-intensive applications. In Multi-Hop question answering, agents chain facts across documents. Existing defenses focus on content poisoning, which injects false facts, and prompt injection, which embeds directives. We identify a third attack surface: the salience channel, through which fact position, emphasis, framing, and semantic proximity can redirect reasoning even when all retrieved claims are true and no instructions are present. We formalize Salience Induction as truth-preserving edits that redirect Multi-Hop attribute binding while leaving the retrieval trace semantically intact. We define six Salience-Editing operator classes and build an iterative proposer-verifier pipeline under factual and stealth constraints. We also introduce SalientWiki-MH, a decoy-annotated Multi-Hop benchmark. Evaluations across five frontier model families (GPT, Claude, Gemini, DeepSeek, and Qwen) and three agent architectures (ReAct, Reflexion, and tool-calling) show broad generalization. Under a 30% edit budget, Salience Induction achieves an 83.3% attack success rate; the strongest evaluated baseline defense leaves 75.7% post-defense ASR. Untargeted rewriting further reduces attacks only by degrading neutral task success. Our lightweight input-side defense, Salience Normalization, reduces attack success to 15.3% under standard attacks and 23.6% under an adaptive attack. These results show that truthfulness and instruction filtering alone are insufficient: robust agentic RAG also requires defenses against salience-relevance decoupling.",
+      "authors": [
+        "Xingfu Zhou",
+        "Pengfei Wang",
+        "Yuan Zhou",
+        "Wei Xie",
+        "Xu Zhou"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.CL"
+      ],
+      "published": "2026-07-20T04:27:50+00:00",
+      "link": "https://arxiv.org/pdf/2607.17535v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "salience induction attack on multi-hop RAG agents; AI security threat and defense",
+      "llm_evidence_cn": "多跳RAG代理的显著性诱导攻击及防御",
+      "llm_evidence": "多跳RAG代理的显著性诱导攻击及防御",
+      "canonical_evidence": "多跳RAG代理的显著性诱导攻击及防御",
+      "llm_tldr_en": "Identifies salience induction as a new attack surface for multi-hop RAG agents, where truth-preserving edits redirect reasoning without false facts.",
+      "llm_tldr_cn": "本文发现多跳检索增强生成（RAG）代理面临一种新型攻击面——显著性诱导。与内容中毒和提示注入不同，该攻击通过调整事实的位置、强调、框架和语义邻近性来重定向推理，即使所有检索到的声明为真且无恶意指令。论文形式化了显著性诱导为保持真实性的编辑操作，定义了六种显著性编辑算子，并展示了攻击的有效性和防御挑战。",
+      "llm_tldr": "本文发现多跳检索增强生成（RAG）代理面临一种新型攻击面——显著性诱导。与内容中毒和提示注入不同，该攻击通过调整事实的位置、强调、框架和语义邻近性来重定向推理，即使所有检索到的声明为真且无恶意指令。论文形式化了显著性诱导为保持真实性的编辑操作，定义了六种显著性编辑算子，并展示了攻击的有效性和防御挑战。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.16578v1",
+      "source": "arxiv",
+      "title": "Hardware-Transparent I/O Governance in Disaggregated Heterogeneous Storage",
+      "abstract": "Shared-nothing disaggregated storage clusters that serve both latency-sensitive databases and opaque block-volume workloads face two governance problems unsolved by existing schedulers: maintaining consistent performance across heterogeneous hardware generations, and enforcing global I/O limits when access patterns skew to a subset of storage nodes. We present the I/O Resource Manager (IORM), a multi-stage distributed scheduler deployed in production within Oracle Exadata Exascale. IORM combines three mechanisms: a hardware-aware cost modeler that normalizes I/O accounting using datasheet-derived fixed costs to make limits invariant across hardware generations; a quantum-based rate limiter with bounded carry-forward credits that accommodates database micro-bursts while enforcing long-term SLOs; and a distributed adaptive feedback controller that redistributes unused entitlements across the cluster to resolve topological access skew. Beyond design, we share operational lessons from production deployment. On an 8-node test cluster running up to 100 concurrent tenant volumes, IORM converges within 5\\% of provisioned limits under extreme sequential skew, scales without inter-tenant interference, and recovers full throughput within 15 seconds of a storage-node failure.",
+      "authors": [
+        "Rajarshi Chowdhury",
+        "Akshay Shah",
+        "Sue K. Lee"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC",
+        "cs.OS",
+        "cs.PF"
+      ],
+      "published": "2026-07-18T01:31:03+00:00",
+      "link": "https://arxiv.org/pdf/2607.16578v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "distributed storage I/O governance in cloud",
+      "llm_evidence_cn": "分布式存储I/O治理在云计算中",
+      "llm_evidence": "分布式存储I/O治理在云计算中",
+      "canonical_evidence": "分布式存储I/O治理在云计算中",
+      "llm_tldr_en": "Presents IORM, a multi-stage distributed scheduler for disaggregated heterogeneous storage, providing hardware-transparent I/O governance with cost modeling and quantum-based rate limiting.",
+      "llm_tldr_cn": "共享无盘异构存储集群面临跨硬件世代性能一致性和全局I/O限制挑战。本文提出I/O资源管理器(IORM)，一种多阶段分布式调度器，结合硬件感知成本模型和量子速率限制器，实现与硬件无关的I/O治理。已在Oracle Exadata Exascale中部署，有效解决了存储节点偏斜问题。",
+      "llm_tldr": "共享无盘异构存储集群面临跨硬件世代性能一致性和全局I/O限制挑战。本文提出I/O资源管理器(IORM)，一种多阶段分布式调度器，结合硬件感知成本模型和量子速率限制器，实现与硬件无关的I/O治理。已在Oracle Exadata Exascale中部署，有效解决了存储节点偏斜问题。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

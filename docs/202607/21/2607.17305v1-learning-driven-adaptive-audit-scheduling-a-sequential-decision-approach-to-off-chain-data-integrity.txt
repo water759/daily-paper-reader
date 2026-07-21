@@ -1,0 +1,380 @@
+Title: Learning-Driven Adaptive Audit Scheduling: A Sequential Decision Approach to Off-Chain Data Integrity
+
+URL Source: https://arxiv.org/pdf/2607.17305v1
+
+Published Time: Tue, 21 Jul 2026 01:11:47 GMT
+
+Number of Pages: 15
+
+Markdown Content:
+# Learning-Driven Adaptive Audit Scheduling: A Sequential Decision Approach to Off-Chain Data Integrity 
+
+Changting Lin 1,⋆ , Fan Li 2,*, Weihang Yu 3, Keyang He 2, Mingyuan Yan 4,Yourong Chen 5, and Meng Han 2 
+
+> 1
+
+Hangzhou Yunphant Network Technology Co., Ltd., Hangzhou, China 
+
+linchangting@gmail.com  
+
+> 2
+
+Zhejiang University, Hangzhou, China 
+
+fli@zju-if.com, 22351077@zju.edu.cn, mhan@zju.edu.cn  
+
+> 3
+
+Central University of Finance and Economics, Beijing, China 
+
+ywh20071028@163.com  
+
+> 4
+
+University of North Georgia, Georgia, USA 
+
+Mingyuan.Yan@ung.edu  
+
+> 5
+
+Zhejiang Shuren University, Hangzhou, China 
+
+chenyr@zjsru.edu.cn 
+
+Abstract. We model cryptographic auditing of off-chain data as a Con-strained MDP (CMDP) under partial observability : the storage node’s hidden type and corruption state make the problem a POMDP, while a miss-rate ceiling ¯ρ imposes an explicit security constraint. We propose 
+
+DRQN-CMDP , a Deep Recurrent Q-Network whose GRU layer main-tains a belief over the latent node type, paired with Lagrangian dual ascent that adapts the miss-rate penalty λ automatically. A pairing-free homomorphic-MAC primitive supplies O(1) on-chain verification cost. Across 13 methods—four DQN variants, PPO, A2C, PPO-Lagrangian, a stateful Bayesian heuristic, three fixed-rule baselines, and an oracle-informed heuristic. DRQN-CMDP achieves a favourable balance: ∼83% 
+
+lower gas than fixed high-frequency auditing, single-digit miss rate (7.5% ), and moderate detection latency—a combination no other method matches across all three objectives simultaneously. 
+
+Keywords: Constrained MDP · Deep recurrent Q-network · Partial observabil-ity · Provable data possession · Adaptive scheduling 
+
+# 1 Introduction 
+
+Outsourcing bulk data to off-chain layers (content-addressed networks, edge caches) is standard when on-chain storage is impractical. The verifier must still obtain evidence that remote replicas remain intact without re-downloading the  
+
+> ⋆
+
+These authors contributed equally to this work. arXiv:2607.17305v1 [cs.AI] 19 Jul 2026 2 C. Lin et al. 
+
+full corpus. Provable Data Possession (PDP) and proofs of retrievability supply such evidence, yet two structural difficulties persist. First, verification must be economically viable when checks are anchored on a public ledger: pairing-heavy PDP instantiations map poorly to smart-contract gas budgets. Second, when and how thoroughly to audit is itself a control prob-lem: aggressive schedules waste budget on mostly benign intervals, while lax schedules leave data exposed to undetected tampering. These objectives form an 
+
+impossible triangle —no static policy simultaneously minimises cost, miss rate, and detection latency under drifting node behaviour. 
+
+Problem statement. We formulate adaptive audit scheduling as a Constrained Markov Decision Process (CMDP) under partial observability. The node’s true type (honest or malicious) and exact corruption count are hidden, making the problem a POMDP. At each decision epoch the controller chooses an audit in-terval ∆t and a sampling ratio p, observes noisy feedback (pass/fail, latency, reputation), and seeks to minimise expected cumulative verification cost while keeping the miss rate Rmiss ≤ ¯ρ. We enforce this constraint via Lagrangian dual ascent on a learnable penalty λ: not a hard guarantee, but stable empirical constraint tracking that removes the need for manual reward tuning. 
+
+Why fixed and heuristic rules fail. Corruption is non-stationary : malicious nodes may accelerate tampering after long quiet periods; honest nodes exhibit rare faults clustered in time. Fixed intervals ignore state entirely. Rule-based thresh-old policies react to coarse predicates but cannot optimise long-horizon trade-offs between premature audits (high cost, low information gain) and delayed audits (longer undetected exposure). Both are myopic with respect to the latent belief over hidden node type and future corruption intensity. 
+
+Contributions. (i) CMDP formulation of cryptographic audit scheduling with a learnable miss-rate constraint—the first such formulation for repeated PDP veri-fication. (ii) DRQN-CMDP : a GRU-augmented Dueling Double Q-Network with primal-dual λ updates that convert a hard-to-tune penalty into a self-regulating mechanism. A pairing-free MAC supplies O(1) on-chain verification, ground-ing the gas cost term in realistic economics. (iii) Broad evaluation against 12 baselines (DQN family, PPO, A2C, PPO-Lagrangian, Bayesian heuristic, fixed-rule, oracle-informed) with ablation, sensitivity, and constraint-sweep analyses on matched seeds. 
+
+# 2 Related Work 
+
+PDP/POR and compact proofs. PDP [1] and POR [2] established remote in-tegrity checking without full download. BLS-style constructions [3] yield short proofs but rely on pairings, ill-suited for on-chain gas budgets. Dynamic vari-ants [4] and privacy-preserving extensions [5] retain expensive primitives. Cru-cially, none addresses when to invoke audits as a learned policy. Learning-Driven Adaptive Audit Scheduling 3
+
+Blockchain-anchored auditing. Recent systems integrate auditing with smart contracts [6,7], emphasising proof correctness and contract logic but assuming exogenous schedules or one-shot challenges. Our focus is the configuration of repeated audits as the object of sequential optimisation. 
+
+Constrained and safe RL. Constrained MDPs formalise safety or budget limits as inequality constraints on expected costs [15]. Lagrangian relaxation converts con-straints into adaptive penalty terms, enabling standard policy solvers [14,16]. We adopt this primal-dual mechanism for miss-rate enforcement and demonstrate that it outperforms fixed-penalty shaping in our domain. 
+
+Recurrent RL for partial observability. When the full state is hidden, recurrent architectures such as DRQN [17] maintain a belief via LSTM or GRU layers. Our setting—where the node’s latent type and corruption count are unobservable— is a natural POMDP; the GRU in DRQN-CMDP serves precisely this belief-tracking role. 
+
+Positioning. We are the first, to our knowledge, to combine constrained and recurrent RL for cryptographic audit configuration under partial observability with explicit security–cost–delay trade-offs. 
+
+# 3 Problem Formulation 
+
+Entities. A data owner holds secret keys and initiates audits; a storage node 
+
+holds blocks {mi}ni=1 and homomorphic tags; a contract performs constant-size verification; a learning scheduler maps observations to (∆t, p ).
+
+Threat model. The node may be honest (rare random faults) or malicious (time-varying corruption intensity). The scheduler does not observe type directly. The contract and RL module are trusted; communication is assumed synchronous (see Section 9). 
+
+Optimisation objective. Let Jcost denote expected cumulative normalised verifi-cation cost over an episode, Rmiss the miss rate, and Ldet mean detection latency. We seek: 
+
+min  
+
+> π
+
+EJcost 
+
+ s.t. Rmiss ≤ ¯ρ , (1) with ¯ρ set by the operator. Detection latency Ldet is tracked as a secondary evaluation metric but not explicitly constrained. The miss-rate constraint is en-forced via primal-dual reward shaping with learnable λ (Section 6.3), providing stable empirical tracking rather than hard guarantees. 
+
+3.1 Latent State and Observation Process 
+
+At epoch t, let xt = ( zt, c t, g t) denote the latent environment state. Here, zt
+
+is a binary node type (honest or malicious), ct ∈ { 0, . . . , n } is the number of 4 C. Lin et al. 
+
+corrupted blocks, and gt summarises exogenous conditions such as network delay. The scheduler cannot inspect zt or ct directly. Instead, it receives an observation 
+
+ot = ( rt, d t−1, ℓ t, f t, h t), (2) containing normalised reputation rt, the previous interval dt−1, measured latency 
+
+ℓt, a consecutive-failure signal ft, and historical pass rate ht. The transition kernel P (xt+1 | xt, a t) combines corruption growth during the chosen interval with the audit outcome induced by its sampling ratio. Because different latent states can produce the same observation, an optimal decision depends on the history Ht = ( o1, a 1, . . . , o t) rather than on ot alone. This is the reason for using a recurrent belief representation instead of a feed-forward state encoder. The action at = ( ∆t t, p t) jointly determines exposure and evidence strength. A longer interval reduces the number of contract calls but gives corruption more time to grow. A larger sampling ratio increases detection probability and prover work. These two controls are therefore coupled: the same pt can be excessive after a short clean interval yet insufficient after a long suspicious one. 
+
+3.2 Finite-Horizon CMDP 
+
+For a policy πθ (at | Ht) and horizon T , let cop  
+
+> t
+
+be the normalised gas and computation cost, and let cmiss  
+
+> t
+
+indicate a failed detection when corruption is present. The finite-horizon constrained objective is 
+
+Jop (πθ ) = Eπθ
+
+" TX
+
+> t=1
+
+γt−1cop 
+
+> t
+
+#
+
+, (3) 
+
+Jmiss (πθ ) = Eπθ [P 
+
+> t
+
+cmiss  
+
+> t
+
+]
+
+Eπθ [P 
+
+> t
+
+⊮{ct > 0}] ≤ ¯ρ. (4) The denominator conditions the security metric on epochs in which corrup-tion is actually present. Its empirical counterpart is the pooled ratio used in evaluation. Introducing a multiplier λ ≥ 0 gives the Lagrangian L(θ, λ ) =
+
+Jop (πθ ) + λ(Jmiss (πθ ) − ¯ρ). The scheduler approximately minimises this expres-sion with respect to θ while ascending in λ, producing the update in Eq. (7). 
+
+# 4 Lightweight Audit Primitive 
+
+We use a pairing-free homomorphic MAC over Zq (prime order of a standard curve). Let K be a PRF key and α ∈ Z∗ 
+
+> q
+
+a secret scalar. 
+
+Tags. For block mi at index i: σi = PRF K (i) + α m i (mod q).
+
+Challenge and aggregation. A challenge is Q = {(i, v i)} with random vi ∈ Z∗ 
+
+> q
+
+.The prover sends aggregated tag σ = P 
+
+> Q
+
+viσi and aggregated block μ =P 
+
+> Q
+
+vimi (mod q).Learning-Driven Adaptive Audit Scheduling 5
+
+Verification. With τ = P 
+
+> Q
+
+viPRF K (i) computed off-chain, the on-chain check is σ ?
+
+= τ + αμ (mod q)—a single multiply-add in Zq , hence O(1) gas regardless of |Q|.
+
+Theorem 1 (Correctness). If tags are honestly computed, verification passes: expand σ = P vi(PRF K (i) + αm i) = τ + αμ . □
+
+Security rationale. Under standard PRF security, the aggregated proofs reveal no information about α to the node. Both forgery and replay attacks succeed with probability at most Adv PRF + 1 /q , negligible for q ≈ 2256 . Forgery requires guessing a uniformly random residue without knowledge of α. Replay fails be-cause fresh random coefficients {vi} make old linear combinations independent of the new challenge; the replayed aggregate matches the fresh one with probability 
+
+1/q . We emphasise that the audit primitive is not this paper’s core contribution but a necessary building block that supplies realistic gas cost signals to the RL reward. 
+
+4.1 Detection Probability and Resource Cost 
+
+Suppose c of n blocks are corrupted and an audit samples s = ⌈pn ⌉ distinct indices uniformly without replacement. The exact probability that the sample contains at least one corrupted block is 
+
+Pdet (c, s ) = 1 −
+
+ n−cs
+
+ ns
+
+ ≈ 1 −
+
+
+
+1 − cn
+
+s
+
+. (5) Equation (5) makes the scheduling trade-off explicit. Increasing p raises s and therefore the probability of immediate detection, but waiting can also increase 
+
+c and make a later audit more informative. The scheduler must balance this statistical gain against the additional undetected exposure caused by waiting. Tag generation is a one-time O(n) preprocessing step. For each audit, the prover performs O(s) additions and scalar multiplications, while the response contains only the two aggregates (σ, μ ). Verification uses constant many field operations once τ has been prepared. The explicit challenge contains O(s) indices and coefficients; in an implementation it can instead be derived from a fresh pseudorandom seed plus s, reducing challenge communication to O(1) while preserving deterministic reconstruction by the prover and auditor. Thus the sampling ratio mainly affects off-chain computation, whereas audit frequency primarily determines the number of ledger transactions. 
+
+# 5 Industrial Architecture and Workflow 
+
+The proposed scheduler is intended for a control plane surrounding an existing storage and smart-contract system; it does not place neural network inference on chain. This separation keeps the trusted contract small and makes policy updates possible without migrating stored data or redeploying verification logic. 6 C. Lin et al. 
+
+System components. The data plane comprises the storage node, its tagged block store, and the audit contract. The control plane contains four services: (i) a telemetry collector that normalises contract events, response latency, and rep-utation signals; (ii) a policy service that maintains the GRU hidden state and selects (∆t, p ); (iii) a challenge generator that expands a fresh seed into sampled indices and coefficients; and (iv) an evidence recorder that binds the chosen ac-tion, proof result, transaction identifier, and policy version into an auditable log. Only the challenge and compact proof cross the data-plane boundary. 
+
+Online audit lifecycle. One decision cycle proceeds as follows. 1. The collector forms ot from the most recent contract and network events and attaches the current policy version. 2. The DRQN-CMDP policy updates its recurrent state and selects an interval and sampling ratio. Operational bounds may clip either component before execution. 3. At the scheduled time, the challenge generator emits a fresh seed. The storage node reconstructs the sample and returns (σ, μ ) before a fixed timeout. 4. The contract verifies the aggregate and emits a pass, fail, or timeout event. A fail can trigger replication repair, quarantine, or a higher-assurance follow-up audit. 5. The event becomes the next observation and is appended to the replay and compliance logs. During training, episode-level statistics also update λ.
+
+Operational safeguards. Learning-based scheduling should be enclosed by deter-ministic safety rails. A production deployment should impose a minimum and maximum audit interval, cap p to protect the prover from overload, and re-serve a fixed high-frequency action as a fail-safe. The fail-safe should be selected when telemetry is missing, the recurrent state is unavailable, or recent observa-tions fall outside the training envelope. After a model update, a shadow period can compare new and incumbent actions without letting the new policy control transactions. These mechanisms separate availability risk from model quality and make rollback an operational action rather than a retraining task. 
+
+Policy versioning and accountability. Every decision should record a model hash, observation timestamp, selected action, any safety override, and the resulting contract event. Such records allow an operator to reconstruct why an audit was delayed or intensified and to compare realised miss rate with the declared ceiling 
+
+¯ρ. This is particularly important in an industrial setting, where the learned policy changes transaction frequency and therefore affects both security exposure and cost. 
+
+# 6 DRQN-CMDP 
+
+We present DRQN-CMDP as an integrated method with three tightly coupled components. Learning-Driven Adaptive Audit Scheduling 7
+
+6.1 State, Action, Reward State s ∈ [0 , 1] 5: normalised reputation, previous ∆t indicator, network latency, consecutive failure signal, and historical pass rate. The node’s true type and corruption count are hidden —hence the POMDP structure. 
+
+Action a ∈ { 0, . . . , 24 }: Cartesian product of ∆t ∈ { 1, 3, 5, 7, 14 } and p ∈{0.01 , 0.03 , 0.05 , 0.10 , 0.20 }, encoded as a = i∆t · 5 + ip.
+
+Reward: 
+
+R = α R det − β C gas − γ C comp , (6) where Rdet is +1+ c/n if corruption is detected, −λ max( c/n, 0.01) if corruption is missed, and +0 .1 if the node is clean. Cgas increases in the number of sam-pled blocks (normalised by maximum gas); Ccomp ∝ p/p max penalises off-chain prover effort. Detection rewards encode security ; gas and compute costs encode 
+
+economics ; the miss penalty λ is not fixed but learned (Section 6.3), connecting the reward to the constraint in Eq. (1). 
+
+6.2 Architecture and Training 
+
+DRQN-CMDP maps observations through a feature extractor (two 128-unit ReLU layers), a GRU recurrent layer (hidden size 64), and Dueling heads —value (scalar) and advantage ( |A| ) streams recombined as Q = V + A − A [10]. The GRU maintains a belief vector ht over successive decision steps. Because the agent never directly observes the node’s true type, ht implicitly tracks latent corruption dynamics from the observation history—an approach motivated by DRQN [17] for POMDPs, without requiring explicit Bayesian filtering. Complete episodes are stored in an episode replay buffer. At each learning step the agent samples a batch of length-T sub-sequences ( T =8 by default), ini-tialises the GRU hidden state to zero, and back-propagates through the unrolled network. Double Q-learning [9] provides the TD targets; a masked MSE loss ignores zero-padded positions in shorter episodes. 
+
+6.3 Primal-Dual Constraint Update 
+
+Rather than hand-tuning λ, we adapt it via dual gradient ascent on the empirical miss-rate constraint. After each training episode: 
+
+λ ← clip  λ + η( ˆRmiss − ¯ρ), 0, λ max 
+
+, (7) where ˆRmiss = Nmiss /(Ndet + Nmiss ) and η is a dual step size. When miss rate exceeds ¯ρ, λ grows, steering the policy toward safer (more frequent, higher-
+
+p) audits; when the constraint is satisfied, λ relaxes, freeing gas budget. This converts a sensitive hyper-parameter into a self-regulating mechanism controlled by a single operator-facing knob ( ¯ρ). 8 C. Lin et al.                   
+
+> Table 1. DRQN-CMDP training and execution procedure. Step Operation 1Initialise replay memory, online and target networks, recurrent state h0,and multiplier λ.2Select atwith an ε-greedy policy, execute the scheduled audit, and store
+> (ot, a t, R t, o t+1 )in its episode sequence. 3Sample length-Tsubsequences, unroll the GRU, and minimise the masked Double-Q temporal-difference loss. 4At episode end, compute the pooled miss rate, update λusing Eq. (7), and periodically synchronise the target network. 5For deployment, freeze network weights and λ, carry htacross decisions, select the greedy action, and apply operational safety overrides before issuing a challenge.
+
+Design rationale. Why value-based over policy-gradient? Actions are discrete and low-dimensional ( |A| =25 ); rewards are sparse and heavy-tailed (large negative spikes on misses). Off-policy replay is sample-efficient under these conditions; Section 8 confirms that DRQN-CMDP outperforms PPO and A2C baselines. 
+
+Why recurrence? The hidden node type induces partial observability; without a belief mechanism the agent cannot distinguish a quiet malicious node from an honest one. 
+
+6.4 Training and Online Execution 
+
+Training separates fast per-transition value updates from the slower episode-level constraint update. Within an episode, sequence replay preserves the temporal information needed by the GRU. At the episode boundary, the pooled miss statistic updates λ once, avoiding high-variance dual changes after individual audits. Table 1 summarises the procedure. The separation between training and execution is operationally useful. On-line inference requires only one GRU forward pass and no gradient computation. Retraining can therefore run asynchronously on logged episodes, while the ac-tive version continues serving decisions. A new checkpoint should be promoted only after offline constraint evaluation and a shadow comparison against the incumbent policy. 
+
+# 7 Experimental Setup 
+
+Simulator. We implement a Gymnasium environment with 365 time-units per episode, n=1000 blocks, malicious prior 0.3, and non-stationary corruption dy-namics (malicious nodes corrupt at rate 0.05 per time-step with binomial com-pounding). 
+
+Value-based RL agents (128-unit hidden layers, Adam lr=10 −3, replay 
+
+5×10 4): DQN, DoubleDQN, DuelingDQN, D3QN. Learning-Driven Adaptive Audit Scheduling 9                 
+
+> Table 2. Key hyper-parameters. DRQN-CMDP feature / GRU 128 →128 / 64 lr (DQN family / PPO,A2C) 10 −3/3×10 −4
+> γ, batch, replay 0.99, 64 (32 DRQN), 5×10 4
+> λinit /¯ρ/η10 / 0.05 / 5.0
+> (α, β, γ rw )(10, 1, 0.5) Target sync / ε-decay every 10 ep. / 0.995
+
+Policy-gradient RL agents. We use a 128-unit trunk, Adam with lr=3 ×10 −4,and GAE with λgae =0 .95 . The agents are PPO (4 clipped epochs), A2C (single epoch), and PPO-Lagrangian (PPO + adaptive λ, ¯ρ=0 .05 ). 
+
+Our method: DRQN-CMDP (GRU hidden 64, Dueling Double, adaptive λ,
+
+¯ρ=0 .05 , η=5 .0, episode replay, T =8 ). 
+
+Rule baselines: FixedHigh (∆t =1 , p =0 .10) ; FixedLow (∆t =7 , p =0 .01) ; Heuris-tic (aggressive if reputation < 0.8 or failures > 0, else (5 , 0.03) ); Bayesian (state-ful posterior P (mal ) with 5-level graded response and latency damping); Oracle-informed (reads true corrupted_blocks —when > 0 audits at (∆t =1 , p =0 .20) ,else idles at (∆t =14 , p =0 .01) ; not a true upper bound due to sampling cap, but shows the value of perfect state knowledge). All RL agents are trained for 600 episodes; evaluation uses 100 test episodes on matched random seeds. Table 2 lists key hyper-parameters. 
+
+Metrics. We report mean cumulative normalised gas, mean detection latency (time from corruption onset to detection event), and miss rate: 
+
+Rmiss = Nmiss 
+
+Ndet + Nmiss 
+
+.
+
+Training curves use per-episode undiscounted return. 
+
+# 8 Results and Analysis 
+
+8.1 Main Comparison 
+
+Table 3 aggregates test metrics over 100 episodes with identical seeds for all 13 methods. Figure 1 overlays smoothed training curves for the eight RL agents; Figure 2 projects every method onto the gas–miss plane. 
+
+Metric note. Miss rate Rmiss ≜ Nmiss /(Ndet + Nmiss ) counts only audits where corruption was present. A policy that audits very frequently generates many low-severity encounters that are individually hard to detect, inflating the denomina-tor. This explains FixedHigh’s counter-intuitive 50% miss rate: with p=0 .10 and small per-step corruption ( ∼5 of 1000 blocks), each audit’s detection probability is only 1 − (1 − 5/1000) 100 ≈ 39% , so many attempts become misses. Learned policies exploit strategic spacing : letting corruption accumulate to ∼25 blocks raises per-audit detectability to >90% , achieving lower miss rate with far fewer audits. 10 C. Lin et al.                                                     
+
+> Table 3. Test-set comparison (100 episodes, matched seeds). Gas and latency are episode means; miss rate is pooled Nmiss /(Ndet +Nmiss ).Method Gas ↓Lat. ↓Miss ↓Det
+> Value-based RL
+> DQN 17.0 4.9 13.0% 7 517 DoubleDQN 10.7 6.4 27.6% 5 674 DuelingDQN 16.3 4.2 10.4% 8 658 D3QN 20.8 3.2 8.1% 11 565
+> Policy-gradient RL
+> PPO 12.3 8.4 17.3% 4 381 A2C 6.3 14.7 5.1% 2 562 PPO-Lagrangian 49.7 2.0 50.4% 16 387
+> Our method
+> DRQN-CMDP 8.4 9.1 7.5% 4 111
+> Rule baselines
+> FixedHigh 49.7 2.0 50.4% 16 387 FixedLow 2.6 16.1 58.0% 2 224 Heuristic 49.3 2.0 50.4% 16 272 Bayesian 45.1 3.9 56.9% 8 397 Oracle 5.0 14.7 40.1% 2 498
+
+Three-objective trade-off. On the two-dimensional gas–miss plane, A2C (Gas 6.3, Miss 5.1%) nominally dominates DRQN-CMDP (8.4, 7.5%). However, A2C’s detection latency is 14.7—62% higher than DRQN-CMDP’s 9.1— because its conservative policy uses long intervals. When all three objectives (gas, miss, latency) are considered jointly, no single method dominates DRQN-CMDP: it uniquely combines moderate gas, single-digit miss rate, and sub-10 latency. 
+
+PPO-Lagrangian collapse. PPO-Lagrangian matches FixedHigh exactly (all four metrics identical). Inspection of the learned policy confirms that λ hits λmax =200 
+
+by episode 200 under on-policy gradients, collapsing the policy to the determin-istic (∆t =1 , p =0 .10) action on every step. The degenerate loss landscape under rapidly growing λ has only one stable fixed point: maximal audit frequency. This highlights that primal-dual constraint enforcement is sensitive to the base optimiser: off-policy replay (DRQN-CMDP) provides the stability for λ to self-regulate rather than diverge. 
+
+DRQN-CMDP vs. other RL agents. Compared to the best value-based baseline D3QN (Gas 20.8, Miss 8.1%), DRQN-CMDP reduces gas by 60% with compa-rable miss rate. Compared to the best policy-gradient baseline PPO (Gas 12.3, Miss 17.3%), DRQN-CMDP halves the miss rate at 32% lower gas. A2C achieves the lowest miss rate (5.1%) but at latency 14.7, making it unsuitable when timely detection matters. Learning-Driven Adaptive Audit Scheduling 11      
+
+> Fig. 1. Training convergence (30-episode moving average) for all RL agents. DRQN-CMDP starts slower due to GRU warm-up and λadaptation but reaches competitive return. PPO-Lagrangian diverges after λsaturates.
+
+8.2 Ablation and Component Decomposition 
+
+Figure 3 shows ablations on reward components and state signals. Removing λ
+
+(λ=0 ) doubles the miss rate and destabilises gas variance, confirming that the penalty—and its adaptive tuning—is essential for security–cost balance. Mask-ing individual state signals (reputation or consecutive failures) causes graceful degradation of ∼1–2 percentage points in miss rate, indicating that the features carry complementary information. 
+
+Component decomposition. Table 4 uses a 2×2 factorial design to isolate recur-rence (GRU) and adaptive λ (CMDP). Adding GRU alone (DRQN with fixed 
+
+λ=50 ) halves the miss rate from 8.1% to 4.3%, confirming that belief tracking helps under partial observability. Adding adaptive λ alone (D3QN-CMDP) also reduces the miss rate from 8.1% to 4.7% by letting the penalty self-calibrate. The full DRQN-CMDP combines the lowest gas (6.4) with moderate miss rate (6.7%); neither component alone achieves this balance, validating their comple-mentarity. 
+
+8.3 Sensitivity and Constraint Frontier 
+
+Malicious prior sweep. Figure 4 sweeps the malicious node prior across 0.1, 0.3, and 0.5. DRQN-CMDP gas stays largely constant ( 6–9) because the agent adapts audit intensity to observed risk rather than to the prior itself. Miss rate remains below 10% even at the 0.3 prior, while FixedHigh exceeds 60% at 0.1. 12 C. Lin et al.             
+
+> Fig. 2. Gas vs. miss rate (all 13 methods). Lower-left is better. DRQN-CMDP sits in the low-gas, low-miss region; A2C achieves lower miss rate but at 1.6×the latency (Table 3).
+> Table 4. 2×2decomposition: Gas / Miss%. (500-episode ablation retraining; values differ from Table 3 due to shorter training and independent seeds.) Fixed λ=50 Adaptive λ
+> Feed-forward (D3QN) 6.9 / 8.1% 6.9 / 4.7% Recurrent (DRQN) 7.3 / 4.3% 6.4 / 6.7%
+
+Distribution-shift generalisation. We trained DRQN-CMDP on the default prior (0.3) and tested on unseen priors (0.1 and 0.5) without retraining. The zero-shot-transferred policy degrades by fewer than 5 percentage points in miss rate, con-firming that the learned policy captures structural audit-timing patterns rather than over-fitting to the training prior. 
+
+Constraint frontier. Figure 5 sweeps six miss-rate ceilings at ¯ρ = 0 .01 , 0.03 ,
+
+0.05 , 0.08 , 0.10 , and 0.15 . As ¯ρ tightens, the Lagrangian multiplier λ converges to higher final values and gas cost rises; relaxing ¯ρ lowers both. The achieved miss rate tracks the target, confirming that the CMDP mechanism provides a single operator-facing knob (¯ρ) for navigating the cost–security frontier without retuning any reward weight. 
+
+# 9 Discussion and Limitations 
+
+The simulator assumes synchronous rounds and a scalar latency proxy; real de-ployments involve forks, gas-price volatility, and contract-state contention not Learning-Driven Adaptive Audit Scheduling 13    
+
+> Fig. 3. Ablation: (a) cumulative gas and (b) miss rate under component removal. Removing λ(λ=0 ) destabilises the policy.
+
+fully modelled. The MAC layer trusts the off-chain τ computation, standard for owner-side or committee-based auditors. The current formulation monitors a single node; multi-node scheduling introduces combinatorial action spaces where hierarchical or multi-agent RL would be needed. DRQN-CMDP’s primal-dual mechanism provides stable empirical constraint tracking but not formal guaran-tees; safe-RL techniques such as CPO [14] could strengthen this at higher sample complexity. 
+
+# 10 Conclusion 
+
+We formulated off-chain audit scheduling as a constrained POMDP and proposed DRQN-CMDP: a recurrent value-based agent whose GRU maintains a belief over the hidden node type, with a Lagrangian dual-ascent loop that converts the miss-rate ceiling ¯ρ into a self-regulating penalty λ. A pairing-free MAC supplies O(1) 
+
+on-chain verification, grounding the cost signal in realistic economics. Across 13 methods, DRQN-CMDP uniquely combines low gas (8.4), single-digit miss rate (7.5%), and moderate latency (9.1)— a three-way balance no other method matches. Ablation confirms that recurrence and adaptive λ are complementary; constraint sweeps show ¯ρ as a single operator knob for navigating the security– cost frontier. 
+
+# References   
+
+> 1. G. Ateniese et al. Provable data possession at untrusted stores. In ACM CCS ,2007. 2. A. Juels and B. S. Kaliski, Jr. PORs: proofs of retrievability for large files. In ACM CCS , 2007.
+
+14 C. Lin et al. 
+
+Fig. 4. Sensitivity to malicious prior: (a) gas cost and (b) miss rate. 
+
+Fig. 5. Constraint sweep: achieved miss rate, gas cost, and final λ versus ¯ρ; the dashed line in (a) marks y=¯ ρ.3. H. Shacham and B. Waters. Compact proofs of retrievability. In ASIACRYPT ,2008. 4. C. C. Erway et al. Dynamic provable data possession. In ACM CCS , 2009. 5. C. Wang et al. Privacy-preserving public auditing for secure cloud storage. IEEE Trans. Comput. , 62(2):362–375, 2013. 6. Y. Zhang et al. Trustworthy keyword search over encrypted data via blockchain. 
+
+IEEE Access , 8:31826–31840, 2020. 7. J. Li, J. Wu, and L. Chen. Blockchain-based public auditing for big data in cloud storage. Inf. Process. Manage. , 57(6):102382, 2021. 8. V. Mnih et al. Human-level control through deep reinforcement learning. Nature ,518(7540):529–533, 2015. 9. H. van Hasselt, A. Guez, and D. Silver. Deep reinforcement learning with double Q-learning. In AAAI , 2016. 10. Z. Wang et al. Dueling network architectures for deep reinforcement learning. In 
+
+ICML , 2016. 11. L.-J. Lin. Self-improving reactive agents based on reinforcement learning. Mach. Learn. , 8(3):293–321, 1992. Learning-Driven Adaptive Audit Scheduling 15 12. T. Chen et al. Deep reinforcement learning for network slicing. Future Gener. Comput. Syst. , 117:135–145, 2021. 13. Y. Liu et al. Deep reinforcement learning for offloading in vehicle edge computing. 
+
+IEEE Trans. Veh. Technol. , 68(11):11158–11168, 2020. 14. J. Achiam et al. Constrained policy optimization. In ICML , 2017. 15. E. Altman. Constrained Markov Decision Processes . Chapman & Hall/CRC, 1999. 16. C. Tessler, D. J. Mankowitz, and S. Mannor. Reward constrained policy optimiza-tion. In ICLR , 2019. 17. M. Hausknecht and P. Stone. Deep recurrent Q-learning for partially observable MDPs. In AAAI Fall Symp. , 2015.

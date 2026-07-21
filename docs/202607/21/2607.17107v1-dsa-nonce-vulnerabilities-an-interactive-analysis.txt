@@ -1,0 +1,232 @@
+Title: DSA Nonce Vulnerabilities: An Interactive Analysis
+
+URL Source: https://arxiv.org/pdf/2607.17107v1
+
+Published Time: Tue, 21 Jul 2026 00:59:02 GMT
+
+Number of Pages: 12
+
+Markdown Content:
+# DSA N ONCE VULNERABILITIES : A N INTERACTIVE ANALYSIS 
+
+Rundong Wei 
+
+Hainan University Haikou, China 
+
+weirundong2026@hainanu.edu.cn 
+
+Xiaomei Tian 
+
+Hengyang Normal University Hengyang, China 
+
+tianxm@hynu.edu.cn 
+
+Xiaoqi Li 
+
+Hainan University Haikou, China 
+
+csxqli@ieee.org 
+
+# ABSTRACT 
+
+Digital signatures are fundamental to identity authentication and data integrity in cybersecurity, and the NIST-standardized Digital Signature Algorithm (DSA) frequently appears in the cryptography track of CTF competitions. However, DSA relies on number theory, modular arithmetic, and large-integer computation, making both the algorithm and its associated attacks difficult for beginners to follow. Conventional tools often expose only inputs and outputs, leaving the intermediate computations of signing, verification, and key-recovery attacks opaque. This paper presents a DSA signature analysis and visualisation platform tailored to CTF competitions. The platform provides three main capabilities: basic signature generation and verification, reproduction of common CTF attack methods, and dynamic visualisation of attack workflows. It covers three representative nonce vulnerabilities: nonce reuse, linear nonce leakage, and HNP-based lattice attacks. Stepwise displays and highlighted intermediate values make the underlying computations directly inspectable. Experiments show that the platform correctly reproduces the standard DSA workflow and all three attack scenarios. 
+
+Keywords DSA · CTF · cryptographic attacks 
+
+# 1 Introduction 
+
+As Internet technologies continue to advance and digital transformation deepens, challenges in cyberspace security are becoming increasingly prominent. Against this background, CTF competitions have become an important means of cultivating cybersecurity talent. By presenting participants with diverse security problems, CTF evaluates both technical competence and teamwork across areas such as cryptography, Web security, reverse engineering, binary exploitation, and mobile device security. Recent cybersecurity research has also investigated exploit and vulnerability analysis in DeFi protocols, smart-contract bytecode, and blockchain platforms through cross-contract, semantic, and structural methods [1,2,3,4]. Cryptography is a foundational component of cybersecurity and plays a central role in CTF competitions. Among related techniques, the Digital Signature Algorithm (DSA), proposed by the National Institute of Standards and Technology (NIST) in 1991, is a widely used public-key digital signature scheme for identity authentication and data integrity verification. DSA-related CTF challenges assess whether participants understand the algorithm’s internal mechanisms and can identify weaknesses in practical implementations. However, DSA involves substantial number-theoretic knowledge, and both signature generation and verification require extensive modular arithmetic and large-integer computation. For beginners, these mechanisms are difficult enough on their own, while the attack techniques that frequently appear in CTF competitions make the topic even harder to understand. Common attack patterns include nonce reuse, linear nonce leakage, and lattice attacks based on the Hidden Number Problem (HNP) and Lenstra–Lenstra–Lovasz (LLL) lattice basis reduction. Understanding and applying these techniques requires a solid mathematical foundation and familiarity with the relevant attack methodology. Most available DSA analysis tools provide basic signature generation and verification without intuitive visualisation support. Consequently, users cannot directly observe the internal execution process of DSA or its associated attacks. These tools also provide limited support for nonce-related vulnerabilities, so competitors often need to write substantial amounts of code themselves. Therefore, developing a DSA signature analysis and visualisation platform specifically for CTF competitions is both necessary and timely. The platform has three practical objectives: to expose the intermediate mathematics of DSA, to reproduce three nonce-related attack workflows from user-supplied parameters, and to provide an instructional environment for cryptography and CTF training. arXiv:2607.17107v1 [cs.CR] 19 Jul 2026 DSA Nonce Vulnerability Analysis for CTF This paper makes the following contributions: (1) We analyse DSA key generation, signing, verification, and three nonce-related attack models used in CTF challenges. (2) We present a requirements-driven architecture that integrates standard DSA operations, attack analysis, visualisation, and auxiliary tools. (3) We implement the platform using Tkinter, PyCryptodome, and SageMath, and evaluate it through functional and performance tests. 
+
+# 2 Related Work 
+
+Classical DSA research covers standard implementations, multi-party signature generation, proactive deployment, and broad assessments of performance and security [5,6,7,8]. Application-oriented implementations combine DSA with encryption, hashing, steganography, and digital-certificate authentication [9,10,11,12,13]. Other studies optimise verification or investigate hybrid, comparative, lightweight, and educational implementations of digital signatures [14,15,16,17,18,19,20]. Beyond conventional DSA, public-key and signature mechanisms have also been examined in blockchain, public Wi-Fi, and key-derivation settings [21,22,23,24]. Research on quantum-resistant signatures includes alternative constructions, quantum-signature models, migration analyses, and post-quantum blockchain security [25,26,27,28,29]. For ML-DSA, recent work studies threshold signing, application deployment, public-key management, and authentication systems [30,31,32,33,34]. Hardware-oriented work develops unified architectures, NTT accelerators, area-efficient execution, and arithmetic optimisations [35,36,37,38,39]. Performance and implementation studies also consider GPU acceleration, masking countermeasures, and customised processor support [40,41,42]. Implementation-security studies further evaluate side-channel leakage, resource-constrained deployment, Rowhammer exploitation, software-induced fault attacks, and standards-compliant signature splitting [43,44,45,46,47]. Shparlinski showed that partial knowledge of DSA nonces can compromise the private key, providing the theoretical basis for lattice-assisted key recovery [48]. Dedicated DSA attack tools can reproduce individual vulnerabilities, but they generally provide limited support for inspecting the intermediate computations used during nonce and private-key recovery. SageMath provides large-integer arithmetic, matrix operations, and lattice basis reduction, making it suitable for cryptographic analysis involving HNP and LLL [49,50,51]. These capabilities are widely used in scripts for nonce-leakage attacks. However, command-line implementations typically expose the constructed lattice and reduced vectors only through raw output, which can make errors in parameter preparation difficult to identify. CryptoHack and related online platforms combine cryptographic challenges with instructional material covering algorithms such as DSA, RSA, and ECC. Existing cryptographic teaching platforms also use dynamic demonstrations to explain standard encryption and signature procedures. CTF training platforms provide practical challenge environments, but visualisation of DSA nonce attacks and their intermediate mathematical steps remains limited. The platform presented in this paper addresses this gap by integrating standard DSA operations, three representative nonce attacks, and stepwise visualisation in one environment. 
+
+# 3 Background and Attack Models 
+
+3.1 DSA Signing and Verification 
+
+DSA is primarily used for digital signatures. Its security relies on the computational hardness of the discrete logarithm problem in finite fields, and it therefore provides signing and verification rather than encryption or decryption [52,53,54]. DSA uses a public-private key pair. The private key is kept secret by the signer and is used only for signature generation, whereas the public key is openly available and is used to verify the authenticity and validity of a signature. Both signature generation and signature verification in DSA involve extensive modular arithmetic and large-integer computation. 
+
+(1) Key generation. DSA key generation proceeds as follows: 1. Choose a large prime p whose bit length L satisfies L = 64 k within the required range. NIST FIPS 186-4 also permits approved parameter lengths outside this basic expression. 2. Select a large prime q such that q divides (p − 1) .3. Choose an integer h with 1 < h < p − 1, and compute g = h(p−1) /q mod p subject to g̸ = 1 .4. Select the private key x uniformly from 1 ≤ x < q .5. Compute the public key y = gx mod p.2DSA Nonce Vulnerability Analysis for CTF The resulting key pair comprises the public parameters (p, q, g, y ) and the private key x.
+
+(2) Signature generation. For a message m, DSA generates a signature as follows: 1. Compute the message digest h = H(m).2. Select a nonce k such that 1 < k < q and gcd( k, q ) = 1 .3. Compute r = ( gk mod p) mod q.4. Compute s = k−1(h + xr ) mod q, where k−1 is the multiplicative inverse of k modulo q.5. If r = 0 or s = 0 , select a new nonce and repeat Steps 3 and 4. The signature on m is the pair (r, s ).
+
+(3) Signature verification. Given a message m, a signature (r, s ), and the public key (p, q, g, y ), verification proceeds as follows: 1. Check that 0 < r < q and 0 < s < q . Otherwise, reject the signature. 2. Compute the message digest h = H(m).3. Compute w = s−1 mod q.4. Compute u1 = hw mod q and u2 = rw mod q.5. Compute v = (( gu1 yu2 ) mod p) mod q.6. Accept the signature if and only if v = r.
+
+3.2 Nonce Reuse Attack 
+
+If a signer accidentally reuses the same nonce k when signing two different messages, an attacker can use the two signatures to recover the private key x. Assume there are two messages with hash values h1 and h2 and corresponding signatures (r1, s 1) and (r2, s 2). If the same nonce k is used for both signatures, then r1 = r2 = r.The signing equations for the two signatures are 
+
+s1 = k−1(h1 + xr ) mod q (1) 
+
+s2 = k−1(h2 + xr ) mod q (2) Subtracting Equation (2) from Equation (1) yields: 
+
+s1 − s2 = k−1(h1 − h2) mod q (3) Multiplying both sides of Equation (3) by k yields: 
+
+k(s1 − s2) = h1 − h2 mod q (4) From Equation (4), the nonce k can be solved as: 
+
+k = ( h1 − h2)( s1 − s2)−1 mod q (5) Once k has been obtained, substituting it into Equation (1) yields the private key x:
+
+x = ( s1k − h1)r−1 mod q (6) 3DSA Nonce Vulnerability Analysis for CTF 
+
+3.3 Linear Nonce Attack 
+
+If the nonce values satisfy the linear relation ki = ak i−1 + b mod q, where a and b are known constants and i denotes the signature index, then an attacker can recover the private key x from two signatures. Consider two signatures whose nonces satisfy k2 = ak 1 + b mod q. Assume they are generated for the same message with hash value h, and let the corresponding signatures be (r1, s 1) and (r2, s 2).The corresponding signing equations are 
+
+s1k1 = h + xr 1 mod q (7) 
+
+s2k2 = h + xr 2 mod q (8) Substituting the corresponding nonce expressions into Equations (7) and (8) yields: 
+
+s1k1 = h + xr 1 mod q (9) 
+
+s2(ak 1 + b) = h + xr 2 mod q (10) Solving Equations (9) and (10) simultaneously gives the required intermediate quantity and then the private key x.
+
+k1 = [ h(r1 − r2) − br 1s2]( ar 1s2 − s1r2)−1 mod q (11) 
+
+x = ( s1k1 − h)r−11 mod q (12) 
+
+3.4 HNP-Based Lattice Attack 
+
+HNP-based lattice attacks represent one of the central difficulties in DSA challenges within CTF competitions. In recent years, many researchers have proposed and refined dedicated countermeasures and solving strategies, which have significantly accelerated the analysis of such problems [48]. The Hidden Number Problem (HNP) considers a prime q
+
+and a collection of signature pairs of the form (ai, b i) satisfying bi = ( aix + ei) mod q, where x is the hidden value to be recovered and ei is a relatively small error term. The central goal is to infer x from these constrained data points together with their modular arithmetic relations. In DSA, if the high-order bits of the nonce k are known, the recovery problem can be transformed into an HNP instance, and the private key x can then be recovered by applying LLL lattice basis reduction. Rearranging the DSA signing equation gives 
+
+sk = h + xr mod q (13) Multiplying both sides of Equation (13) by the required factor yields: 
+
+k = s−1h + s−1rx mod q (14) Define Ai = s−1 
+
+> i
+
+ri mod q and Bi = s−1 
+
+> i
+
+hi mod q. Equation (14) can then be written as 
+
+ki = Aix + Bi mod q (15) Here, x is the hidden quantity. An HNP instance can be solved by constructing a lattice basis and applying LLL reduction to obtain a short vector from which x can be recovered. The resulting lattice basis is 
+
+G =
+
+
+
+q 0 · · · 0 0 00 q · · · 0 0 0
+
+... ... . . . ... ... ...
+
+0 0 · · · q 0 0
+
+A1 A2 · · · An 1 0
+
+B1 B2 · · · Bn 0 K
+
+
+
+(16) In this setting, let n denote the number of signatures and treat K = 2 m as a fixed constant. Applying LLL reduction to matrix G yields a relatively short vector whose second-to-last element is exactly the private key x.4DSA Nonce Vulnerability Analysis for CTF 
+
+# 4 Design and Implementation 
+
+4.1 Design Goals and Architecture 
+
+The platform is intended for CTF participants and cybersecurity learners. Its design goals are to expose the internal operations of DSA, demonstrate nonce-related vulnerabilities, and support repeatable analysis through an interactive interface. The platform adopts the three-layer architecture shown in Figure 1. We separate presentation, task processing, and data computation to simplify module maintenance and later extension. A requirement survey based on questionnaires and user interviews revealed the following priorities: (1) Support DSA key generation, signing, verification, and representative CTF attack scenarios. (2) Present signing, verification, and key-recovery computations step by step, with security-critical parameters highlighted. (3) Provide a clear GUI that minimises configuration overhead. (4) Ensure responsive large-integer and lattice computations. (5) Provide editing utilities, one-click data clearing, and unified flag generation. 
+
+Figure 1: Overall platform architecture. Performance evaluation focuses on modular exponentiation and modular inversion for 1024-bit to 4096-bit integers, together with LLL reduction for HNP instances. The target latency is below 10 seconds for an HNP instance containing 10 signatures, while routine interface actions such as page transitions should complete within 0.5 seconds. Usability requirements emphasise a consistent layout, clear input guidance, and informative validation messages. The application should remain extensible to additional hash functions, nonce-attack models, and digital-signature algorithms. Python and Tkinter provide the application and GUI layers, PyCryptodome supplies the DSA primitives, and SageMath performs large-integer and lattice computations. This stack supports the required functionality without introducing a separate database or service layer. Tkinter is a built-in Python library for GUI development that supports basic interface components such as windows, buttons, labels, and input fields. Its simple and intuitive design makes it suitable for beginners, and its cross-platform support allows applications to run on Windows, Linux, and macOS. The platform is implemented in Python and uses the Tkinter GUI framework to build an interface that is both accessible and visually clear. PyCryptodome is dedicated to cryptographic applications and can be regarded as an improved successor to PyCrypto. It provides extensive implementations of symmetric and asymmetric encryption algorithms, hash functions, digital signature algorithms, and other core primitives. In this platform, PyCryptodome is used for DSA signature generation and related computations. Its DSA implementation follows NIST standards and provides a secure and stable basis for the required cryptographic operations. SageMath is an open-source mathematical computing platform that 5DSA Nonce Vulnerability Analysis for CTF integrates tools such as NumPy, SciPy, SymPy, and GAP into a unified and efficient toolkit. It provides strong support for number-theoretic analysis, linear algebra, and more complex tasks such as lattice basis reduction. In this study, SageMath is used for large-integer computation, modular inverse calculation, and LLL-based lattice reduction, making it well suited to cryptographic and number-theoretic analysis [49,50,51]. SageMath provides a stable implementation of the LLL algorithm that can solve lattice basis reduction problems efficiently and accurately, making it a suitable choice for this class of mathematical tasks. 
+
+Presentation layer. The Tkinter presentation layer handles user input, page navigation, and result display. It provides dedicated workspaces for standard DSA operations, nonce reuse, linear-nonce analysis, and HNP solving, together with a shared context menu for copy, cut, paste, and undo operations. 
+
+Business logic layer. The business logic layer dispatches requests to the DSA core, three attack modules, visualisation engine, and auxiliary functions. It coordinates key generation, signing, verification, nonce recovery, lattice construction, result formatting, and flag generation before returning the computed values to the active interface page. 
+
+Data layer. The data layer stores keys, signatures, and intermediate results in memory. PyCryptodome performs the cryptographic operations, while SageMath provides modular arithmetic and LLL lattice reduction. No persistent database is required for the current workflows. 
+
+Interface design. The interface follows four principles: visual consistency, low interaction overhead, clear separation between input and output, and support for later module expansion. A top toolbar provides direct access to standard DSA operations, nonce reuse analysis, linear-nonce analysis, HNP solving, and data-clearing functions. The content area below the toolbar is divided into parameter-input and result-display regions so that users can inspect the current operation without changing context. The DSA page contains regions for key generation, signature generation, signature display, verification, and results. The nonce reuse page separates the two signatures from the shared parameters and recovered values. The linear-nonce and HNP pages place parameters and controls on the left, signature sets on the right, and analysis results below. Scrollable regions accommodate larger signature collections without changing the overall layout. 
+
+4.2 DSA Module 
+
+The basic DSA module implements key generation, signature generation, and signature verification. It can either generate NIST-compliant parameters (p, q, g ) and the key pair (x, y ) or validate parameters supplied manually. For signing, the module hashes an input message with SHA-1 or SHA-256, supports normal, reused, and linearly related nonce modes, and displays both the nonce k and the resulting signature (r, s ). For verification, it validates the signature range, reproduces the intermediate computations, and reports both successful and failed outcomes with the relevant reason. Internally, the key-generation submodule calls DSA.generate() for automatic generation and applies the expected mathematical checks to manually entered values. The signature-generation submodule hashes the message, derives k according to the selected nonce mode, computes (r, s ), and sends each intermediate value to the visualisation module. The verification submodule hashes the message, checks the range of (r, s ), computes the verification value v,and accepts the signature when v = r.The implementation follows the standard DSA workflow and uses PyCryptodome for NIST-compliant key generation, signing, and verification [8,49]. It first checks whether the user supplied domain and key parameters. If the parameter fields are empty, DSA.generate() creates a 1024-bit parameter set (p, q, g ), after which the program obtains the private key x and public key y. For signature generation, the program hashes the input message with SHA-1 or SHA-256 and derives the nonce according to the selected mode: random generation, reuse of a specified value, or a linear relation. It then computes (r, s ) and validates the result. For verification, the program reads the message and signature, computes the selected message digest, derives the intermediate verification values, and reports whether the signature is valid. Each stage forwards its formulas and numerical values to the visualisation module. 
+
+4.3 Attack Module 
+
+The nonce reuse attack module analyses two signatures produced with the same nonce k. It accepts (p, q, g, y ), two message-signature pairs, and a choice of SHA-1 or SHA-256. It checks whether the signatures satisfy the nonce-reuse condition, recovers k and x, and presents the derivation step by step. The result view reports the recovered values, compares x with a known key when available, and can convert the recovered key into a flag-compatible byte sequence. The linear-nonce attack module analyses signatures whose nonces satisfy a linear relation. It accepts q, the coefficients 
+
+a and b, and a user-managed set of message-signature entries. After hashing the messages with the selected algorithm, 6DSA Nonce Vulnerability Analysis for CTF the module uses the first two signatures to derive the associated nonces and recover x. The interface exposes the main algebraic steps, displays the recovered values, and supports flag generation from the private key. The HNP module recovers the private key x from multiple signatures by applying LLL lattice reduction. It accepts q and a collection of message-signature entries, with SHA-1 and SHA-256 available for message hashing. It constructs the lattice basis, invokes SageMath’s LLL implementation, extracts a candidate key, and verifies that candidate against every supplied signature. The matrix construction, reduction, and validation stages are displayed in sequence, and a validated key can be converted into the flag format. Together, the three modules connect each nonce vulnerability to the corresponding DSA signing equations and forward their intermediate values to the visualisation module. 
+
+Nonce reuse implementation. The nonce reuse implementation follows the derivation in Section 3.2. It reads q, two messages, and their signatures, computes both message digests, and then recovers k and x from the shared-r equations. 
+
+Linear nonce implementation. The linear-nonce implementation reads q, the coefficients a and b, and the message-signature set. It hashes the messages, selects two signatures, and evaluates the required numerators, denominators, and modular inverses to recover k1, k2, and finally x.
+
+HNP implementation. The HNP implementation reads q, the selected hash algorithm, and multiple message-signature pairs. After computing the message digests, it derives the arrays A and B, constructs the lattice basis, applies LLL reduction, and validates the recovered private key x.
+
+4.4 Visualisation and Auxiliary Functions 
+
+The visualisation module presents each signing, verification, and attack computation in execution order, pairing the relevant formula with its numerical result. Colour-coded styles distinguish headings, intermediate steps, successful operations, warnings, formulas, and security-critical values such as k and x. The result areas also support standard copy, cut, and paste operations. The auxiliary module provides a shared context menu, per-field undo history of up to 100 states, one-click clearing of the current page, and unified flag generation from recovered private keys. These functions are available throughout the Windows, Linux, and macOS interfaces rather than being tied to a single analysis page. The implementation organises each computation as an ordered stream of formulas and values written to predefined result regions. Tkinter text tags control colour, font family, and font size for each output category, while mouse-wheel scrolling keeps long traces accessible. In CTF workflows, the visual emphasis is placed on the nonce, recovered private key, attack condition, and key algebraic transformations rather than on decorative interface elements. The auxiliary module provides a range of supporting functions that make the platform more user-friendly and improve the overall user experience. Its structure is shown in Figure 2. These auxiliary functions are available across the functional pages rather than being isolated on a separate page. 
+
+Figure 2: Structure of the auxiliary function module. The context-menu submodule binds copy, cut, paste, undo, and field-clearing commands to every input and text widget. Each input field maintains its own stack of previous states, allowing an undo command to restore the most recent value. One-click clearing removes the current page’s inputs and outputs and resets the associated state variables. The flag-generation submodule stores the latest recovered private key, converts it to bytes, formats it according to the configured CTF convention, and writes the result to the active output panel. The append_result method inserts content into the selected result panel, applies the requested style (for example, a heading, computation step, formula, success message, or error message), and moves the cursor to the latest output. All computation functions call append_result 
+
+to display formulas and numerical values in execution order. During signature generation, the trace contains the input message, message digest, nonce k, and signature values (r, s ). Security-critical values are assigned dedicated tags so 7DSA Nonce Vulnerability Analysis for CTF that they remain visually distinct from explanatory text. The flag-generation function identifies the active result panel and converts the private key stored in current_x into the required byte representation. 
+
+# 5 Evaluation 
+
+The evaluation verifies whether the platform satisfies its functional requirements and performance targets. All ex-periments were carried out in a unified hardware and software environment to ensure reproducibility, with detailed configurations provided in Table 1. Table 1: Experimental environment          
+
+> Item Specification Processor 11th Gen Intel(R) Core(TM) i5-1155G7 @ 2.50 GHz Memory 16 GB Storage 2 TB Graphics Intel(R) Iris(R) Xe Graphics 128 MB Operating system Windows 11 Home Python 3.13 PyCryptodome 25.0.1 SageMath 10.5
+
+DSA functions. Basic DSA function testing is divided into three parts: key generation, signature generation, and signature verification. The corresponding results are shown in Table 2. Table 2: Basic DSA function test results                                                 
+
+> No. Test case Test procedure Expected result Actual result 1Automatic key generation Click Generate Keys Generate p,q,g,x, and y✓
+> 2Input a valid key Click Generate Keys Validate the parameters ✓
+> 3Input an invalid key Click Generate Keys Display an error prompt ✓
+> 4Generate a signature normally Click Generate Signature
+> Generate k,r, and s✓
+> 5Generate a signature with reused k
+> Select reused-kmode Generate a signature using the specified kvalue ✓
+> 6Generate a signature with linear k
+> Select linear-kmode Generate a signature from linearly computed k✓
+> 7Verify a valid signature Verify with the same message Display a successful verification process ✓
+> 8Verify an invalid signature Verify with a different message Fail verification and report the reason ✓
+
+Visualisation testing examined the stepwise computation display and key-value highlighting. The platform reproduced the complete signing, verification, and attack workflows, paired each step with its formula and numerical result, highlighted the nonce k and private key x in red, and used distinct styles for different output categories. The resulting traces remained readable throughout the tested workflows. Attack-module testing focused on nonce reuse, linear-nonce attacks, and HNP solving. Standardised test datasets were used for evaluation, and the detailed results are listed in Table 3. The performance evaluation focused mainly on two aspects: large-integer computation speed and LLL lattice basis reduction, both of which are key bottlenecks in the platform’s computational workflow. Each test case was executed ten times, and the results were averaged before reporting. During DSA signature generation, large-integer modular exponentiation is the main performance bottleneck. In the present evaluation, each test case was executed ten times in the specified hardware and software environment, and the arithmetic mean was reported in milliseconds (ms). The corresponding results are shown in Table 4. The LLL algorithm is central to solving HNP instances, and its computational speed directly affects the performance of the platform’s attack module. In this experiment, the runtime of the platform on HNP instances with different numbers of signatures was measured. Each group was repeated 100 times, and the results were averaged, with runtimes reported in milliseconds. 8DSA Nonce Vulnerability Analysis for CTF Table 3: Attack function test results                                      
+
+> No. Test case Input data Expected result Actual result 1Successful reused-kattack Two signatures generated with the same kvalue Recover private key x✓
+> 2Failed reused-kattack Two signatures with different r
+> values Fail because r1̸=r2✓
+> 3Successful linear-kattack Input two signatures Recover private key x✓
+> 4Successful HNP solving Input five signatures Recover private key x✓
+> 5Insufficient number of signatures Input one signature At least two signatures are required ✓
+> 6Unified flag generation Click the generate button Output the flag ✓
+
+Table 4: Large-integer computation performance results     
+
+> Big integer length (bits) Average modular exponentiation time (ms) Average modular inverse time (ms) 1024 3.1 0.1 2048 4096 20.4 146.4 0.4 1.1
+
+# 6 Discussion and Limitations 
+
+The functional tests show that all evaluated modules satisfy the specified workflows. The visualisation traces expose the signing, verification, and key-recovery computations, while the auxiliary functions support routine editing and analysis tasks. Performance measurements indicate that the platform handles the 1024-bit and 2048-bit large-integer operations used in the test cases efficiently. For an HNP instance containing 10 signatures, the average solving time was approximately 2.0 ms. Testing also identified two interface-level issues: some error messages lacked detail, and layout consistency varied slightly across screen resolutions. The implementation was adjusted to improve error reporting, layout consistency, and interaction stability. The evaluation is limited to the attack models, parameter ranges, and test data implemented in the current platform. In particular, the HNP experiments use a specific leakage model and do not cover every form of biased or partially exposed nonce. Functional correctness was assessed through black-box test cases rather than a formal verification of the implementation. In addition, no controlled user study was conducted. Therefore, the platform’s educational usefulness should be interpreted as a design objective rather than a quantitatively validated learning outcome. Penetration testing similarly treats offensive techniques as controlled evaluations aimed at improving system security [55]. The attack functions are intended for CTF competitions, authorised security testing, and cryptography education. They should not be applied to signatures or systems without explicit permission. 
+
+# 7 Conclusion 
+
+This paper presents an interactive platform for analysing and visualising DSA nonce vulnerabilities in CTF competitions. The Python implementation combines a Tkinter GUI, PyCryptodome, and SageMath to support key generation, signing, verification, nonce reuse attacks, linear-nonce attacks, and HNP-based key recovery with LLL reduction. Stepwise traces connect each recovered value to the corresponding DSA equation, while the shared editing and flag-generation functions support practical challenge workflows. Functional tests covered the basic DSA operations, all three attack modules, visualisation, and auxiliary functions. Performance tests measured large-integer arithmetic and LLL reduction without changing the attack models or parameter sets described in this paper. Within this scope, the platform achieves the expected results and provides readable intermediate computations. 
+
+# Acknowledgments 
+
+AI-based tools are used for language polishing during manuscript preparation. 9DSA Nonce Vulnerability Analysis for CTF 
+
+# References 
+
+[1] Xiaoqi Li, Wenkai Li, Zhiquan Liu, Yuqing Zhang, and Yingjie Mao. Penetrating the hostile: Detecting DeFi protocol exploits through cross-contract analysis. IEEE Transactions on Information Forensics and Security , 20:11759–11774, 2025. [2] Jiuyang Bu, Wenkai Li, Zongwei Li, Zeng Zhang, and Xiaoqi Li. SmartBugBert: BERT-enhanced vulnerability detection for smart contract bytecode. arXiv preprint arXiv:2504.05002 , 2025. [3] Xiangfan Wu, Ju Xing, and Xiaoqi Li. Exploring vulnerabilities and concerns in Solana smart contracts. arXiv preprint arXiv:2504.07419 , 2025. [4] Wenkai Li, Xiaoqi Li, Yingjie Mao, and Yuqing Zhang. Interaction-aware vulnerability detection in smart contract bytecodes. 
+
+IEEE Transactions on Dependable and Secure Computing , 23(1):298–315, 2026. [5] Umi Zulfah and Mareta Ardyani. On the modifications of a digital signature algorithm with secret sharing. 2021 9th International Conference on Information and Communication Technology (ICoICT) , 37:417–422, 2021. [6] Philip MacKenzie and Michael Reiter. Two-party generation of DSA signatures. Int. J. Inf. Sec. , 2(3-4):218–239, 2004. [7] Timothy Draelos, Victoria Hamilton, and Istrail. Proactive DSA application and implementation. Laboratories for the 21st century, San Francisco, CA (United States), 5-7 May 1998 , 1998. [8] Shuhan Lyu. Advances in digital signature algorithms: Performance, security and future prospects. ITM Web of Conferences ,73:03010–03010, 2025. [9] Farah Aufa and Achmad Affandi. Security system analysis in combination method: RSA encryption and digital signature algorithm. 2018 4th International Conference on Science and Technology (ICST) , 2018. [10] Muhammad Nazal, Reza Pulungan, and Mardhani Riasetiawan. Data integrity and security using keccak and digital signature algorithm (dsa). IJCCS (Indonesian Journal of Computing and Cybernetics Systems) , 13(3):273–273, 2019. [11] Natasha Taneja and Prinima Gupta. Implementation of dual security through DSA and audio steganography. 2015 International Conference on Green Computing and Internet of Things (ICGCIoT) , 3:1349–1352, 2015. [12] Bagas Yulianto, Budi Handoko, Eko Rachmawanto, and Arief Soeleman. Digital certificate authentication with three-level cryptography (SHA-256, DSA, 3DES). 2022 International Seminar on Application for Technology of Information and Communication (iSemantic) , pages 343–350, 2022. [13] Eko Rachmawanto, Lekso Handoko, Chaerul Umam, Cahaya Jatmoko, and Rabei Ali. Triple DES cryptography based on hash function and DSA for digital certificate authentication. 2022 International Seminar on Application for Technology of Information and Communication (iSemantic) , pages 71–76, 2022. [14] Hamza Al-Sewadi, Ruqa Al-Shnawa, and Mohammed Rifaat. Signature verification time reduction for GOST digital signature algorithm. 2021 International Conference on Communication & Information Technology (ICICT) , pages 279–283, 2021. [15] Arindam Sarkar and Mandal. Energy-efficient wireless communication using genetic algorithm-guided faster lightweight digital signature algorithm (GADSA). International Journal Of Advanced Smart Sensor Network Systems ( IJASSN ), Vol 2, No.3, July 2012, 9-25 , 2012. [16] Nur Fitriani, Aminudin Aminudin, and Sofyan Arifianto. Perbandingan kinerja algoritma elliptic curve digital signature algorithm (ECDSA) menggunakan fungsi hash Secure Hash Algorithm (SHA-1) dan Keccak pada tanda tangan digital. Jurnal Repositor , 3(3), 2021. [17] AB Shaff. Implementasi hybrid cryptography dan secret sharing untuk menjaga kerahasiaan data pada cloud storage. 2025 ,2021. [18] Aulia Fitri, Izza Abdullah, Tegar Ramada, Rosita Saputri, Juwita Saharani, and Frizki Gultom. Implementasi algoritma asimetris DSA (Digital Signature Algorithm) dalam aplikasi sederhana untuk tanda tangan digital. JIKUM Jurnal Ilmu Komputer , 1(1):22–26, 2025. [19] Candra Kharisma, Suprapto Suprapto, and Alhadi Saputra. Implementasi tanda tangan digital berbasis kombinasi algoritma Digital Signature Algorithm dan Rivest–Shamir–Adleman. Jurnal Informatika , 2026. [20] Seema Sirpal, Pardeep Singh, and Om Pal. Ldsegov: An efficient lightweight digital-signature algorithm based on cdlp and provable security for e-governance authentication. Journal of Cybersecurity and Privacy , 2026. [21] Islambek Saymanov, Iouliia Skliarova, Ilkhom Boykuziev, and Orif Allanov. Introduction to cryptography for blockchain. 
+
+Transactions on Computer Systems and Networks , pages 1–38, 2025. [22] Seokseong Jeon, Chansu Yu, and Young-Joo Suh. Pre-shared key agreement for secure public wi-fi. arXiv preprint arXiv:1711.02293v4 , 2017. [23] Christian Perone. Towards ECDSA key derivation from deep embeddings for novel blockchain applications. arXiv preprint arXiv:1711.04069v1 , 2017. [24] Samir Bouftass. On a new fast public key cryptosystem. arXiv preprint arXiv:1508.07756v2 , 2015. [25] Iris Anshel, Derek Atkins, Goldfeld, and Paul Gunnells. WalnutDSA: A quantum-resistant digital signature algorithm. arXiv preprint , 2017. 
+
+10 DSA Nonce Vulnerability Analysis for CTF 
+
+[26] Ryan Amiri and Erika Andersson. Unconditionally secure quantum signatures. Entropy 2015, 17(8), 5635-5659 , 2015. [27] Abel Chen. NIST post-quantum cryptography standard algorithms based on quantum random number generators. Journal of Web Engineering ( Volume: 25, Issue: 5, July 2026) , 2025. [28] Sufyan Al-Janabi. Post-quantum blockchain: Challenges and opportunities. arXiv preprint arXiv:2508.17071v1 , 2025. [29] Tiago Fernandez-Carames and Paula Fraga-Lamas. Towards post-quantum blockchain: A review on blockchain cryptography resistant to quantum computing attacks. T. M. Fernandez-Carames and P. Fraga-Lamas, "Towards Post-Quantum Blockchain: A Review on Blockchain Cryptography Resistant to Quantum Computing Attacks," in IEEE Access, vol. 8, pp. 21091-21116, 2020 , 2024. [30] Alex Bienstock, Leo de Castro, Daniel Escudero, Antigoni Polychroniadou, and Akira Takahashi. Quorus: Efficient, scalable threshold ML-DSA signatures from MPC. Zenodo (CERN European Organization for Nuclear Research) , 2026. [31] Sofia Celi, Rafael del Pino, Thomas Espitau, Guilhem Niot, and Thomas Prest. Efficient threshold ML-DSA. IACR Cryptol. ePrint Arch. , 2026:13, 2026. [32] Saee Desai, Tom Shimoni, Eddie Cameron, David Akamine, and Aniketh Chunduri. Towards post-quantum secure pharma-covigilance with ML-KEM and ML-DSA. arXiv preprint arXiv:2606.09412v1 , 2026. [33] Penghui Liu, Yi Niu, Xiaoxiong Zhong, Jiahui Wu, Weizhe Zhang, Kaiping Xue, and Bin Xiao. Efficient ML-DSA public key management method with identity for PKI and its application. arXiv (Cornell University) , abs/2603.25043, 2026. [34] Aditya Mitra and Sibi Sethuraman. The qey: Implementation and performance study of post-quantum cryptography in FIDO2. 
+
+arXiv preprint arXiv:2510.21353v1 , 2025. [35] Quang Truong, Yunseong Jang, and Hanho Lee. High-performance unified hardware architecture for ML-DSA and ML-KEM PQC standards. IEEE Access , 13:189444–189460, 2025. [36] Dur-e-Shahwar Kundi, Jose Mera, Pierre-Yves Strub, and Michael Hutter. High-performance NTT hardware accelerator to support ML-KEM and ML-DSA. ASHES@CCS , pages 100–105, 2024. [37] Jinwei Pu, Yan Xu, Yuan Zhang, and Jiliang Zhang. An area-efficient ML-DSA accelerator with interleaved and dynamic execution. IEEE Trans. Circuits Syst. I Regul. Pap. , 73(5):1–14, 2025. [38] Mamone Kurdi. Deferred reduction optimizations for post-quantum lattice cryptography: ML-KEM and ML-DSA. Zenodo (CERN European Organization for Nuclear Research) , 2025. [39] Jiansheng Chen, Bei Wang, Ziying Ni, Mengxue Li, Fei Lyu, Yijun Cui, and Weiqiang Liu. Optimized NTT architecture based on the plantard algorithm for ML-KEM and ML-DSA. IEEE Transactions on Computers , 75(6):2141–2154, 2026. [40] Shreya Khodanpur. Accelerating the post-quantum transition: A GPU-based performance comparison of ML-KEM and ML-DSA. 2026 International Conference on Current Trends in Advanced Computing (ICCTAC) , 2026. [41] Kamal Raj, Prasanna Ravi, Tee Chia, and Anupam Chattopadhyay. Improved ML-DSA hardware implementation with first-order masking countermeasure. J. Hardw. Syst. Secur. , 10(1):9, 2026. [42] Zewen Ye, Xin Li, Chuhui Wang, Ray Cheung, and Kejie Huang. RVSLH: Acceleration of postquantum standard SLH-DSA with customized RISC-V processor. IEEE Trans. Very Large Scale Integr. Syst. , 33(7):1999–2003, 2025. [43] Patrik Dobias, Aikata Aikata, Azade Rezaeezade, Lejla Batina, Lukas Malina, and Tomas Gerlich. Side-channel analysis dataset for unified ML-DSA and ML-KEM hardware implementations (ML-DSA part). Zenodo (CERN European Organization for Nuclear Research) , 2026. [44] Rojin Chhetri. Benchmarking post-quantum cryptography on resource-constrained IoT devices: ML-KEM and ML-DSA on ARM Cortex-M0+. arXiv (Cornell University) , 2026. [45] Jeremy Boy, Antoon Purnal, Anna Patschke, Luca Wilke, and Thomas Eisenbarth. SLasH-DSA: Breaking SLH-DSA using an extensible end-to-end rowhammer framework. Proceedings of the Microarchitecture Security Conference , 2026. [46] Alexis Korensky. Security evaluation of post-quantum ML-DSA implementations against software-induced fault attacks. RIT Scholar Works (Rochester Institute of Technology) , 2026. [47] Youngbeom Kim and Seog Seo. Signature split method for a PQC-DSA compliant with V2V communication standards. 
+
+SHILAP Revista de lepidopterología , 13(10):5874–5874, 2023. [48] Igor Shparlinski. The insecurity of the digital signature algorithm with partially known nonces. Birkhäuser Basel eBooks ,pages 201–206, 2003. [49] Prajwal Hegde and Veena Shastrimath. Digital signature algorithm: A hybrid approach. International Journal of Advanced Computer Science and Applications , 14(3), 2023. [50] Kritsanapong Somsuk, Sarutte Atsawaraungsuk, Chanwit Suwannapong, Suchart Khummanee, and Chalida Sanemueang. The variant of digital signature algorithm for constant message. J. Internet Serv. Inf. Secur. , 13(2):81–95, 2023. [51] Mohammed Al-Absi, Azamjon Abdullaev, Ahmed Al-Absi, Mangal Sain, and Hoon Lee. Cryptography survey of DSS and DSA. Lecture Notes in Mechanical Engineering , pages 661–669, 2020. [52] Johnson. Elliptic curve digital signature algorithm. arXiv preprint https://libres.uncg.edu/ir/asu/listing.aspx?id=36182 , 2021. 
+
+11 DSA Nonce Vulnerability Analysis for CTF 
+
+[53] Wenxin Yang. ECC, RSA, and DSA analogies in applied mathematics. International Conference on Statistics, Applied Mathematics, and Computing Science (CSAMCS 2021) , 2022. [54] Svitlana Kazmirchuk, Anna Ilyenko, Sergii Ilyenko, Olena Prokopenko, and Yana Mazur. The improvement of digital signature algorithm based on elliptic curve cryptography. Advances in Intelligent Systems and Computing , pages 327–337, 2020. [55] Wei Zhang, Ju Xing, and Xiaoqi Li. Penetration testing for system security: Methods and practical approaches. arXiv preprint arXiv:2505.19174 , 2025. 
+
+12

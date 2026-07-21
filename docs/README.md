@@ -6,58 +6,71 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-20
-- 运行时间：2026-07-20 21:43:23 UTC
+- 最新运行日期：2026-07-21
+- 运行时间：2026-07-21 20:38:12 UTC
 - 运行状态：成功
-- 本次总论文数：12
-- 精读区：4
-- 速读区：8
+- 本次总论文数：17
+- 精读区：6
+- 速读区：11
 
 ### 今日简报（AI）
-今天聚焦12篇论文，精读两篇高分研究：从神经意图到密码学授权的智能体工作流治理，以及微服务的自适应扩缩容框架ADASCALE。  
-最值得关注的方向是智能体授权机制和动态微服务管理，速读中关于提示注入基准和AI沙箱真实性差距的研究也具启发性。  
-建议优先精读两篇高分论文以理解前沿方法论，后续可追踪移动端图数据库RAG和网络安全实操热点。
-- 详情：[/202607/20/README](/202607/20/README)
+今日精读6篇、速读11篇，重点关注AI系统安全与机密计算两大方向。最值得看的是两篇9.0高分论文：信号模型访问风险分析（AI系统运营安全）和最小指令级认证加密（受限机密计算）。普通读者后续可优先阅读零信任物联网与LLM驱动的威胁情报，以及DSA随机数漏洞交互分析。
+- 详情：[/202607/21/README](/202607/21/README)
 
 ### 精读区论文标签
-1. [From Neural Intent to Cryptographic Authorization: Governing Agentic Workflows](/202607/20/2607.15596v1-from-neural-intent-to-cryptographic-authorization-governing-agentic-workflows)  
+1. [Signal-based Model Access Risk Analysis for AI System Operations Security](/202607/21/2607.16414v1-signal-based-model-access-risk-analysis-for-ai-system-operations-security)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：人工智能安全与智能体工作流的密码授权
-2. [ADASCALE: An Adaptive Scaling and Placement Framework for Microservices Under Dynamics](/202607/20/2607.15681v1-adascale-an-adaptive-scaling-and-placement-framework-for-microservices-under-dynamics)  
+   evidence：基于信号的模型访问风险分析用于AI系统运维安全
+2. [SABLE: Minimalist Instruction-Level Authenticated Encryption for Constrained Confidential Computing](/202607/21/2607.16771v1-sable-minimalist-instruction-level-authenticated-encryption-for-constrained-confidential-computing)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：云边环境下的微服务自适应扩展与放置
-3. [Efficient and Privacy Aware Edge Cloud Collaborative Inference for Large Language Models](/202607/20/2607.13093v2-efficient-and-privacy-aware-edge-cloud-collaborative-inference-for-large-language-models)  
+   evidence：提出了SABLE，一种面向机密计算的指令级认证加密RISC-V架构
+3. [Isolation Failure From Shared Storage: Characterizing and Exploiting Page-Cache SCA Leakage Across Containers and VMs](/202607/21/2607.17518v1-isolation-failure-from-shared-storage-characterizing-and-exploiting-page-cache-sca-leakage-across-containers-and-vms)  
+   标签：评分：9.0/10、query:sec-cloud-ai
+   evidence：跨容器和虚拟机的页缓存侧信道泄漏
+4. [(A)iSpy: Parasitic Trojans for Machine Learning Infrastructure](/202607/21/2607.17550v1-aispy-parasitic-trojans-for-machine-learning-infrastructure)  
+   标签：评分：9.0/10、query:sec-cloud-ai
+   evidence：提出了(A)iSpy木马，能够颠覆机器学习基础设施，属于直接的人工智能安全威胁
+5. [How Agents Ask for Permission: User Permissions for AI Agents, from Interfaces to Enforcement](/202607/21/2607.13718v2-how-agents-ask-for-permission-user-permissions-for-ai-agents-from-interfaces-to-enforcement)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：隐私保护的边缘云协同LLM推理
-4. [FLINT: Fingerprinting Federated Learning Architectures from 5G PHY-Layer Side Channels](/202607/20/2607.15469v1-flint-fingerprinting-federated-learning-architectures-from-5g-phy-layer-side-channels)  
+   evidence：AI智能体安全，通过用户权限防范提示注入和隐私泄露
+6. [Ciphertext- and Polynomial-Level Optimization for Fully Homomorphic Encryption](/202607/21/2607.15750v2-ciphertext--and-polynomial-level-optimization-for-fully-homomorphic-encryption)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：人工智能安全：对联邦学习架构的侧信道攻击
+   evidence：面向FHE的多级编译器优化；机密计算技术
 
 ### 速读区论文标签
-1. [NetInjectBench: Benchmarking Indirect Prompt Injection in Tool-Using Large Language Model Agents for Network Operations](/202607/20/2607.10490v1-netinjectbench-benchmarking-indirect-prompt-injection-in-tool-using-large-language-model-agents-for-network-operations)  
+1. [Federated Learning and LLM-Driven Threat Intelligence for Zero Trust IoT Architecture](/202607/21/2607.17035v1-federated-learning-and-llm-driven-threat-intelligence-for-zero-trust-iot-architecture)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：联邦学习与LLM驱动的零信任物联网安全
+2. [DSA Nonce Vulnerabilities: An Interactive Analysis](/202607/21/2607.17107v1-dsa-nonce-vulnerabilities-an-interactive-analysis)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：DSA随机数漏洞分析，用于密钥恢复和认证
+3. [LMEdge: QoS-Aware LLM Inference Orchestration on Edge Clusters](/202607/21/2607.17175v1-lmedge-qos-aware-llm-inference-orchestration-on-edge-clusters)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：异构边缘集群上QoS感知的LLM推理编排
+4. [Salience Induction against Multi-Hop RAG Agents: Threat and Defense](/202607/21/2607.17535v1-salience-induction-against-multi-hop-rag-agents-threat-and-defense)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：多跳RAG代理的显著性诱导攻击及防御
+5. [Trust but Verify? Uncovering the Security Debt of Autonomous Coding Agents](/202607/21/2607.12428v2-trust-but-verify-uncovering-the-security-debt-of-autonomous-coding-agents)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：网络操作中LLM代理的间接提示注入
-2. [A Measurement Study of AI-Environment Realism Gaps in Malware-Analysis Sandboxes](/202607/20/2607.14434v1-a-measurement-study-of-ai-environment-realism-gaps-in-malware-analysis-sandboxes)  
+   evidence：实证研究了自主编码代理生成代码中的安全代码异味，揭示人工智能安全威胁
+6. [SQUIRO: A Framework for Security-Aware Quantum-Classical Scheduling on Kubernetes](/202607/21/2607.16089v1-squiro-a-framework-for-security-aware-quantum-classical-scheduling-on-kubernetes)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：首次系统测量AI环境工件作为沙箱逃避新表面
-3. [SmartRAG: Native Graph-Based RAG for Mobile Device](/202607/20/2607.14661v1-smartrag-native-graph-based-rag-for-mobile-device)  
+   evidence：Kubernetes上安全感知的量子经典调度框架
+7. [Auditable Session Admission for Cross-Silo Federated Learning](/202607/21/2607.16559v1-auditable-session-admission-for-cross-silo-federated-learning)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：隐私保护的本地AI助手
-4. [Scalable LLM Agent Tool Access in the Cloud](/202607/20/2607.15593v1-scalable-llm-agent-tool-access-in-the-cloud)  
+   evidence：跨孤岛联邦学习的会话准入与身份认证
+8. [Hardware-Transparent I/O Governance in Disaggregated Heterogeneous Storage](/202607/21/2607.16578v1-hardware-transparent-io-governance-in-disaggregated-heterogeneous-storage)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：面向LLM智能体的云规模网关实现分布式工具访问
-5. [Ciphertext- and Polynomial-Level Optimization for Fully Homomorphic Encryption](/202607/20/2607.15750v1-ciphertext--and-polynomial-level-optimization-for-fully-homomorphic-encryption)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：全同态加密优化以支持机密计算
-6. [The Language of Security: How Prompt Syntax Shapes Secure Code Generation in Open LLMs](/202607/20/2607.15937v1-the-language-of-security-how-prompt-syntax-shapes-secure-code-generation-in-open-llms)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：研究提示语法如何影响开放LLM生成代码的安全性
-7. [An Auto-Scaling Approach for Serverless Environments Based on a Multi-Expert Consensus Mechanism](/202607/20/2607.15511v1-an-auto-scaling-approach-for-serverless-environments-based-on-a-multi-expert-consensus-mechanism)  
+   evidence：分布式存储I/O治理在云计算中
+9. [Tractable Query Answering under Epistemic Confidentiality Policies in DL Ontologies (extended version)](/202607/21/2607.16715v1-tractable-query-answering-under-epistemic-confidentiality-policies-in-dl-ontologies-extended-version)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：无服务器环境的自动扩缩
-8. [Evaluating Open-Weight LLMs for Generating Structured Threat Information for Autonomous Vehicle Vulnerabilities](/202607/20/2607.16175v1-evaluating-open-weight-llms-for-generating-structured-threat-information-for-autonomous-vehicle-vulnerabilities)  
+   evidence：用于保护机密性的受控查询评估
+10. [A Systematic Evaluation of Traditional Privacy Policy Analysis Tools Against LLMs](/202607/21/2607.17075v1-a-systematic-evaluation-of-traditional-privacy-policy-analysis-tools-against-llms)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：基于LLM的自动驾驶汽车漏洞结构化威胁信息生成
+   evidence：评估LLM在隐私政策分析中的能力，与人工智能隐私保护相关
+11. [Learning-Driven Adaptive Audit Scheduling: A Sequential Decision Approach to Off-Chain Data Integrity](/202607/21/2607.17305v1-learning-driven-adaptive-audit-scheduling-a-sequential-decision-approach-to-off-chain-data-integrity)  
+   标签：评分：6.0/10、query:sec-cloud-ai
+   evidence：云存储中离链数据完整性的密码审计
 
 
 <div class="dpr-home-promo-card">

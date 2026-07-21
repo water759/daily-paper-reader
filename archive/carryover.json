@@ -1,12 +1,142 @@
 {
-  "generated_at": "2026-07-20T21:36:33.331866+00:00",
-  "updated_date": "20260720",
+  "generated_at": "2026-07-21T20:31:00.548054+00:00",
+  "updated_date": "20260721",
   "carryover_days": 9,
   "tag_states": {
     "sec-cloud-ai": {
-      "updated_date": "20260720",
+      "updated_date": "20260721",
       "carryover_days": 9,
-      "items": []
+      "items": [
+        {
+          "id": "2607.17809v1",
+          "source": "arxiv",
+          "title": "Residual Observability and Attack Detectability in Encrypted OPC UA Traffic",
+          "abstract": "OPC Unified Architecture (OPC UA) encryption conceals application-layer semantics and restricts intrusion detection to residual communication structure. Although machine learning-based intrusion detection systems (IDSs) can detect attacks in encrypted OPC UA traffic, the relationship between residual structural observability and attack detectability remains insufficiently understood. This paper presents an explanatory framework combining a structural observability profile, the Structural Leakage Score (SLS), controlled within-family and cross-family comparisons, phase-specific analysis, and dimension-ablation analysis. Jensen--Shannon divergence is used to characterize transport, temporal, and protocol-lifecycle dimensions, while the SLS summarizes the residual structural magnitude. Evaluation on an industrial private 5G testbed covers four attack families with progressively reduced nominal activity. SLS generally tracks within-family recall trends but does not reproduce cross-family detectability ordering. Interpreting these mismatches also requires temporal prevalence, inter-burst persistence, predictive utility, unique contribution, and redundancy. The framework complements conventional IDS metrics by relating detection outcomes to the magnitude, temporal distribution, and predictive role of observable structural evidence.",
+          "authors": [
+            "Song Son Ha",
+            "Florian Foerster",
+            "Henry Beuster",
+            "Eduard Zeller",
+            "Dominik Merli",
+            "Gerd Scholl"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR"
+          ],
+          "published": "2026-07-20T10:56:17+00:00",
+          "link": "https://arxiv.org/pdf/2607.17809v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "ML-based IDS for encrypted OPC UA traffic",
+          "llm_evidence_cn": "基于机器学习的加密OPC UA流量入侵检测",
+          "llm_evidence": "基于机器学习的加密OPC UA流量入侵检测",
+          "canonical_evidence": "基于机器学习的加密OPC UA流量入侵检测",
+          "llm_tldr_en": "Explains relationship between residual observability and attack detectability in encrypted OPC UA traffic using structural observability profile and Structural Leakage Score (SLS).",
+          "llm_tldr_cn": "OPC UA加密隐藏了应用层语义，限制了入侵检测。本文提出一个解释性框架，结合结构可观测性画像和结构泄漏评分(SLS)，通过Jensen-Shannon散度刻画传输、时间、协议生命周期维度，系统分析了加密流量中残余可观测性与攻击可检测性之间的关系。实验验证了SLS可用于评估不同攻击的可检测性差异。",
+          "llm_tldr": "OPC UA加密隐藏了应用层语义，限制了入侵检测。本文提出一个解释性框架，结合结构可观测性画像和结构泄漏评分(SLS)，通过Jensen-Shannon散度刻画传输、时间、协议生命周期维度，系统分析了加密流量中残余可观测性与攻击可检测性之间的关系。实验验证了SLS可用于评估不同攻击的可检测性差异。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "artificial intelligence security threats and defenses",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2607.17809v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2607.18169v1",
+          "source": "arxiv",
+          "title": "RRAM-DP: Device-Calibrated Differential Privacy for In-Memory Edge Learning",
+          "abstract": "Edge Artificial Intelligence of Things (AIoT) systems often collect sensitive data in situ, raising serious privacy concerns. Resistive-switching random-access memory (RRAM) is an attractive substrate for efficient AIoT thanks to its multi-bit storage and compute-in-memory (CiM) capabilities, while its inherently stochastic write behavior provides a natural source of randomness that can be leveraged for differential privacy (DP) protection. Yet how to transform this device-level randomness-typically viewed as detrimental to accuracy-into a principled randomized mechanism while preserving model utility remains underexplored. We propose RRAM-DP, a hardware-algorithm co-design that relaxes RRAM write-verify operations to inject calibrated noise for inherently (epsilon, delta)-DP with formal DP analysis; together with pretraining techniques, it renders a novel private, high-utility CiM training paradigm. On CIFAR-10/100, STS-B, and SST-2, RRAM-DP-SGD incurs at best only a 3.8% accuracy drop at (epsilon=2, delta=O(1/n))-DP relative to non-private SGD. At the same privacy level, RRAM-DP-SGD delivers up to 57x and 3.2x energy savings and 2.7x and 1.8x speedups over A100 and DiVa-GEMM, respectively. These results point toward efficient, privacy-preserving in-memory training on RRAM at the edge.",
+          "authors": [
+            "Kwunhang Wong",
+            "Jichang Yang",
+            "Karl M. H. Lai",
+            "Hegan Chen",
+            "Songqi Wang",
+            "Wei Xuan",
+            "Ning Lin",
+            "Han Wang",
+            "Xiaojuan Qi",
+            "Zhongrui Wang"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR",
+            "cs.ET"
+          ],
+          "published": "2026-07-20T17:11:59+00:00",
+          "link": "https://arxiv.org/pdf/2607.18169v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "hardware-algorithm co-design for differential privacy in edge AI learning",
+          "llm_evidence_cn": "面向边缘AI学习的硬件算法协同差分隐私设计",
+          "llm_evidence": "面向边缘AI学习的硬件算法协同差分隐私设计",
+          "canonical_evidence": "面向边缘AI学习的硬件算法协同差分隐私设计",
+          "llm_tldr_en": "Proposes RRAM-DP, a co-design using RRAM stochasticity for differential privacy in edge AIoT learning while preserving model utility.",
+          "llm_tldr_cn": "本文提出RRAM-DP，一种硬件算法协同设计，利用RRAM的随机写入特性实现边缘AIoT学习中的差分隐私保护。通过放松写验证操作注入校准噪声，在保护隐私的同时保持模型效用。实验显示，该方法在多种学习任务上实现了可证明的差分隐私保证，而精度损失极小。为边缘设备上的隐私保护学习提供了高效且实用的硬件方案。",
+          "llm_tldr": "本文提出RRAM-DP，一种硬件算法协同设计，利用RRAM的随机写入特性实现边缘AIoT学习中的差分隐私保护。通过放松写验证操作注入校准噪声，在保护隐私的同时保持模型效用。实验显示，该方法在多种学习任务上实现了可证明的差分隐私保证，而精度损失极小。为边缘设备上的隐私保护学习提供了高效且实用的硬件方案。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "privacy preservation in artificial intelligence",
+          "matched_requirement_id": "req-6",
+          "selection_source": "carryover_cache",
+          "paper_id": "2607.18169v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2607.17986v1",
+          "source": "arxiv",
+          "title": "Self-State Attacks on Self-Hosted AI Agents: How Far Can OS Defenses Go?",
+          "abstract": "Self-hosted AI agents read and write their own memory and configuration files to function. An agent may get compromised via corruption of its own state -- a compromise realized via legitimate OS system call invocation. We refer to this class of threats as self-state attacks. In this paper, we investigate the OS resilience to this class of attacks. Formally, we characterize a four-axis attack space (Target, Mechanism, Granularity, Temporal); investigate the structural limits of prevention, detection, and recovery; and introduce a workload-conditioned view of detectability. To instantiate the framework, we collect live activity traces from a representative self-hosted agent running across distinct workload profiles, and realize the attack space as a 23-cell matrix, 43 concrete operations on real self-state files, and injected into those traces. We then evaluate both canonical and workload-conditioned defense strategies. The empirical results show that a layered defense stack (access-control prevention on the instruction and configuration layers, workload-conditioned detection on the memory layer, and periodic backup for recovery) is effective on most attack cells while a small residual attack surface remains structurally indistinguishable at the OS level. These findings suggest that against the newly established class of self-state attacks, OS-level defense needs to be reconsidered, potentially opening new research directions in the field.",
+          "authors": [
+            "Yimeng Chen",
+            "Nathanaël Denis",
+            "Roberto Di Pietro",
+            "Jürgen Schmidhuber"
+          ],
+          "primary_category": "cs.CR",
+          "categories": [
+            "cs.CR",
+            "cs.AI",
+            "cs.CL",
+            "cs.MA"
+          ],
+          "published": "2026-07-20T14:16:55+00:00",
+          "link": "https://arxiv.org/pdf/2607.17986v1",
+          "tags": [
+            "keyword:sec-cloud-ai",
+            "query:sec-cloud-ai"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "self-state attacks on self-hosted AI agents; threat and OS defense",
+          "llm_evidence_cn": "自托管AI代理的自我状态攻击及防御",
+          "llm_evidence": "自托管AI代理的自我状态攻击及防御",
+          "canonical_evidence": "自托管AI代理的自我状态攻击及防御",
+          "llm_tldr_en": "Identifies a new class of attacks on self-hosted AI agents via OS-level state corruption; characterizes attack space and OS defense limits.",
+          "llm_tldr_cn": "本文识别出自托管AI代理面临一类新型安全威胁——自我状态攻击，攻击者通过合法系统调用破坏代理自身状态。论文系统刻画了攻击空间四轴（目标、机制、粒度、时间），研究了操作系统在此类攻击下的防御极限，包括预防、检测和恢复能力，并提出工作负载依赖的可检测性视图。通过在不同工作负载下收集代表性代理的实时活动轨迹，实例化了攻击空间，揭示了现有OS防御的不足。",
+          "llm_tldr": "本文识别出自托管AI代理面临一类新型安全威胁——自我状态攻击，攻击者通过合法系统调用破坏代理自身状态。论文系统刻画了攻击空间四轴（目标、机制、粒度、时间），研究了操作系统在此类攻击下的防御极限，包括预防、检测和恢复能力，并提出工作负载依赖的可检测性视图。通过在不同工作负载下收集代表性代理的实时活动轨迹，实例化了攻击空间，揭示了现有OS防御的不足。",
+          "llm_tags": [
+            "query:sec-cloud-ai"
+          ],
+          "matched_query_tag": "query:sec-cloud-ai",
+          "matched_query_text": "artificial intelligence security threats and defenses",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2607.17986v1",
+          "carry_days": 1
+        }
+      ]
     }
   }
 }
