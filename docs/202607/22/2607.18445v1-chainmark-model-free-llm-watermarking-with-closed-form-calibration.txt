@@ -1,0 +1,1318 @@
+Title: ChainMark: Model-Free LLM Watermarking with Closed-Form Calibration
+
+URL Source: https://arxiv.org/pdf/2607.18445v1
+
+Published Time: Wed, 22 Jul 2026 00:09:48 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+# ChainMark: Model-Free LLM Watermarking with Closed-Form Calibration 
+
+Chengheng Li-Chen 1 Kyuhee Kim 1
+
+## Abstract 
+
+Regulatory regimes such as the EU AI Act man-date machine-readable marking of synthetic text, but existing watermarks are ill-suited to regulator-facing audit: entropy-gated detectors require the generating model at detection time, and no scheme maps a regulator’s targets (a false-positive rate, a text-length floor, and a watermark budget) to a deployer configuration in closed form. We introduce ChainMark , an active watermark whose detection needs no model: a keyed hash partitions the vocabulary into S states arranged in a cycle, and at a fraction ρ of positions the model is forced to emit the next state, so the text walks the cycle. A verifier replays the partition from the same key in O(n) hash operations in the text length n. We derive a closed-form map 
+
+S⋆(nmin , ρ, α ) from the regulator’s targets to the minimum state count, which a one-corpus recal-ibration pins to a 1% false-positive rate on real text; under uniform substitution the watermark survives edits up to a fraction δ⋆ = 1 − 1/√2 ≈
+
+29 .3% independent of (S, ρ, n ). Across three instruction-tuned LLMs and four domains, Chain-Mark retains a 72.8% true-positive rate after Chi-nese back-translation, where KGW and SWEET fall below 20% at matched budget. ChainMark thus maps a regulatory specification to a deploy-able configuration that a third party can audit with-out the model. 
+
+## 1. Introduction 
+
+EU AI Act Article 50 (European Parliament and Council, 2024) requires machine-readable marking of AI-generated text by August 2026, but the technical substrate is un- 
+
+> 1
+
+´Ecole Polytechnique F ´ed ´erale de Lausanne (EPFL), Lau-sanne, Switzerland. Correspondence to: Chengheng Li-Chen 
+
+<chengheng.lichen@epfl.ch >.
+
+Published at the Trustworthy AI4GOOD Workshop at the 43rd In-ternational Conference on Machine Learning (ICML 2026), Seoul, South Korea. Copyright 2026 by the author(s). 
+
+settled. Existing watermarks have three structural prob-lems for regulator-facing audit. (i) Model-bound detection. 
+
+SWEET (Lee et al., 2024) and EWD (Lu et al., 2024) select or weight tokens by entropy and so need the generating language model (LM) at detection time; and the inverse-transform distortion-free watermark (Kuditipudi et al., 2024) needs the full secret key sequence rather than a short key. 
+
+(ii) No closed-form calibration. None of these schemes converts a regulator’s targets (a target false-positive rate 
+
+α, a minimum text length nmin , and the fraction ρ of to-kens to mark) into the concrete settings a deployer must ap-ply; KGW’s (Kirchenbauer et al., 2023) watermark strength 
+
+δKGW is set by hand. (iii) Brittle robustness. At matched budget, the true-positive rate (TPR) of KGW and SWEET falls below 20% after Chinese back-translation, i.e. translat-ing to Chinese and back (Table 1). We propose ChainMark , built on one idea: a secret key hashes every vocabulary token (via SHA-256) into one of 
+
+S states, the states are arranged in a fixed cycle, and at watermarked positions we constrain the model to emit a token from the next state, so the generated text walks the cycle by construction (Figure 1). A verifier holding the key re-derives each token’s state and counts how often the walk is followed, in O(n) hash operations, needing the key and tokenizer but no model. Two properties follow. The detector’s false-positive behav-ior is known in closed form, giving a map S⋆(nmin , ρ, α )
+
+from a regulator’s targets to the minimum number of states; because real text is not uniform over the states, a one-corpus recalibration restores the target false-positive rate. Under uniform random substitution the watermark also has a ro-bustness threshold δ⋆ = 1 − 1/√2 ≈ 29 .3% independent of S, ρ, and n, keeping a 72.8% TPR after Chinese back-translation. A deployer therefore configures the watermark directly from a regulatory target, and any auditor can check the output from the key without access to the model. 
+
+Contributions. 
+
+1. We introduce ChainMark, a hard-constraint watermark with O(n), model-free detection from the key and tok-enizer (Section 4). 2. We derive an operator-facing calibration map from a 1arXiv:2607.18445v1 [cs.CR] 20 Jul 2026 ChainMark: Model-Free LLM Watermarking 
+
+## A. Clockwork chain    
+
+> σκ(t) = SHA -256( κ∥t) mod S
+> V0
+> V1
+> V2
+> V3
+> V4
+
+## B. Generation step   
+
+> LM logits
+> mask Vs+1
+> arg max
+> ti+1 ∈ V 3
+
+## C. Detection by clockwork validity 
+
+> Watermarked text:
+> 0
+> 1
+> 2
+> 3
+> 4
+> state
+
+ϕ = 1    
+
+> Random text:
+> 0
+> 1
+> 2
+> 3
+> 4
+> state
+> 1· · · n
+> token index i
+
+ϕ ≈ 1/S                                
+
+> append ti+1
+> Figure 1. ChainMark at a glance. (A) A keyed SHA-256 hash σκpartitions the vocabulary into Sdisjoint sets V0, . . . , VS−1ordered into a clockwork cycle s→s+1 mod S(here S=5 ). (B) At a watermarked position with current state s, the language-model logits are masked to keep only the next partition Vs+1 , and the next token is the masked arg max .(C) Detection re-derives every token’s state from the key κin O(n)hash operations: a watermarked sequence walks the chain by construction (top, validity rate ϕ= 1 ), whereas unwatermarked text visits states uniformly and is valid only at rate 1/S in expectation (bottom).
+
+target false-positive rate, text-length floor, and budget to the minimum admissible state count (Theorem A.2, Appendix A), with an empirical recalibration that re-stores this target FPR on natural-language text (Propo-sition A.3), and a robustness threshold under uniform substitution that is invariant to (S, ρ, n ) (Theorem A.4). 3. Both the detection law and the robustness threshold ex-tend to any k-regular doubly-stochastic transition topol-ogy (Theorem A.6). 4. We show that at matched budget, across three instruction-tuned LLMs and four domains, ChainMark retains sub-stantially more detection signal than KGW and SWEET under translation and random-substitution attacks, at roughly 2× their self-perplexity (Section 6). 
+
+## 2. Related Work 
+
+Passive detection. DetectGPT (Mitchell et al., 2023) ex-ploits log-probability curvature; GPTZero (Tian & Cui, 2023) combines perplexity and burstiness. Both read statisti-cal traces in existing text, with no controllable false-positive frontier and sharp degradation under paraphrase (Krishna et al., 2023; Sadasivan et al., 2023). They cannot serve as the technical substrate for Article 50 because neither regulator nor deployer can set the detection regime in advance. 
+
+Active watermarking. Green–red-list (KGW) watermark-ing (Kirchenbauer et al., 2023) biases next-token logits to-ward a hashed green list and detects via a z-test on green-token frequency. The scheme’s signal depends on next-token entropy and degrades under paraphrase, and offers no analytic inversion from a regulatory parameter back to a bias magnitude. ChainMark’s fingerprint ϕ is structurally a Bernoulli( 1/S ) z-test, so the calibration formula (8) is the analogue KGW lacks. 
+
+Distortion-free schemes. Aaronson (2023)’s Gumbel-max construction and Kuditipudi et al. (2024)’s inverse-transform sampling watermark are distortion-free : they pre-serve the LM marginal in expectation over the key. Christ et al. (2023) prove cryptographic indistinguishability un-der sufficient entropy. These schemes beat ChainMark on quality strictly (zero expected KL versus ChainMark’s 
+
+≥ ρ log S). The trade is calibration: none maps a regulatory target (α, n min , ρ ) to a configuration in closed form, and the inverse-transform scheme’s detector needs the full key se-quence rather than a short key. ChainMark is the distorting alternative that supplies the closed-form S⋆ map. 
+
+Entropy-adaptive schemes: gates vs. detectors. 
+
+SWEET (Lee et al., 2024) and EWD (Lu et al., 2024) both restrict watermarking signal to high-entropy positions, but at different layers: SWEET applies a binary gate at generation time, while EWD weights positions by entropy at detection time, approximating the log-likelihood ratio of Theorem A.9. Either way, detection must recompute per-token entropy and so needs the generating model, unlike ChainMark. ChainMark is gate-agnostic in its specification (high-entropy, low-entropy, and surprisal-gap gates are all admissible); for the head-to-head in Section 6 we adopt the high-entropy gate to match SWEET at the same budget, so the operational dial we vary is ρ, not the gate identity. 
+
+Technical AI governance. Article 50 of the EU AI Act (European Parliament and Council, 2024) and the EU’s draft Code of Practice on Transparency (European Com-mission AI Office, 2025) require machine-readable mark-ing of AI-generated content; the OECD Hiroshima Pro-cess (OECD, 2024) provides a parallel international frame-work. These instruments leave the detection regime (FPR, quality floor, robustness) implicit. ChainMark’s contribu-tion, beyond the watermarking scheme itself, is that it sur-2ChainMark: Model-Free LLM Watermarking 
+
+faces these parameters analytically, producing a policy-to-configuration map auditable by third parties (Section 7). 
+
+## 3. Preliminaries 
+
+Notation. Let V denote the vocabulary of an autoregressive language model, V = |V| , and write t = ( t1, . . . , t n) ∈ V n
+
+for a token sequence of length n. The deployer and the verifier share a secret key κ ∈ { 0, 1}∗ and the same to-kenizer; the verifier never sees the language model. Let 
+
+H : {0, 1}∗ → { 0, 1}256 be SHA-256, modelled as a ran-dom oracle in the security analysis (Theorem A.8). We write 
+
+[m] = {0, . . . , m − 1} and zα for the one-sided standard-normal quantile at level α.
+
+Threat model. The adversary observes watermarked text and may paraphrase, translate, edit, splice, or delete tokens before publication; we model these as a per-token modi-fication rate δ ∈ [0 , 1) . The adversary is computationally bounded and has no access to κ, to the language model, or to the deployed detector as a queryable oracle at detection time (Section 7 discusses the adaptive-oracle adversary that lies outside this model). The verifier sees only token text and runs in O(n) hash operations. 
+
+Detection problem and quality. Detection is a binary hy-pothesis test on text alone, H0 (non-watermarked) vs. H1
+
+(watermarked under key κ), at a fixed false-positive rate 
+
+α, since false positives are operationally the costly error. The watermark distribution must remain fluent under stan-dard greedy or low-temperature decoding, which we control via the per-token KL divergence to the original next-token distribution and report as perplexity inflation (Section 4). 
+
+## 4. The ChainMark Scheme 
+
+4.1. State Partition 
+
+For each token id v ∈ V define 
+
+σκ(v) = H(κ ∥ v) mod S, (1) which deterministically maps V onto S equivalence classes 
+
+Vs = {v : σκ(v) = s}, s ∈ [S]. Under the random-oracle model σκ is uniform and independent across distinct tokens, so E[|V s|] = V /S ; knowledge of σκ on queried tokens reveals nothing about unqueried ones (Theorem A.8). 
+
+4.2. Transition Topology 
+
+A successor function Σk : [ S] →  [S]
+
+> k
+
+ assigns each state a k-element set of legal next states. We require Σk to be 
+
+k-regular in both out- and in-degree; column-regularity is essential for the null-variance and robustness arguments (Theorem A.6, Lemma A.1). The default is the clockwork 
+
+chain at k = 1 , Σ1(s) = {(s+1) mod S}: deterministic, periodic of period S, uniform stationary distribution, and 
+
+Algorithm 1 ChainMark Watermark Embedding 
+
+Input: prompt p, key κ, states S, successor Σk, gate g(·),max tokens N
+
+t ← Tokenize( p); s ← σκ(t−1)
+
+for i = 1 to N do 
+
+pi ← softmax( M(t)) 
+
+V⋆ ← S  
+
+> s′∈Σk(s)
+
+Vs′
+
+if g(pi) = 1 and pi(V⋆) > 0 then 
+
+ti ← arg max t∈V ⋆ pi(t)
+
+else 
+
+ti ∼ pi // free sampling at ungated positions 
+
+end if 
+
+t ← t ∥ ti; s ← σκ(ti)
+
+if ti = EOS then break end if end for return Decode( t)
+
+the smallest random baseline 1/S among 1-regular topolo-gies. We additionally evaluate the soft-cycle variant k = 2 ,
+
+Σ2(s) = {(s+1) mod S, (s+2) mod S}, which doubles the per-state successor budget at the cost of raising the ran-dom baseline to 2/S (Section 6). 
+
+4.3. Generation 
+
+At step i with current state si = σκ(ti), ChainMark forms the legal token set V⋆si = S  
+
+> s′∈Σk(si)
+
+Vs′ and masks the LM logits outside V⋆si to −∞ . At gated positions Chain-Mark picks the argmax over the masked logits; at ungated positions it samples from the original distribution. Each step costs one LM forward pass plus an O(V ) logit mask (precomputed once per state). 
+
+4.4. Watermark Budget and Entropy Gate 
+
+The mask is applied only at a subset of positions; the 
+
+watermark budget is ρ = Ei[gi] ∈ [0 , 1] . Let Hi =
+
+− P 
+
+> t
+
+pi(t) log pi(t) be the next-token entropy and ∆i =
+
+p(1)  
+
+> i
+
+− p(2)  
+
+> i
+
+the gap between the top two probabilities. 
+
+Definition 4.1 (Gate family) . Gall : gi = 1;
+
+GHhigh (τ ): gi = ⊮[Hi > τ ]; GHlow (τ ): gi = ⊮[Hi < τ ];
+
+G∆(τ ): gi = ⊮[∆ i < τ ].Our default is GHhigh , which masks only the model’s uncer-tain positions and matches the high-entropy gating policy of SWEET (Lee et al., 2024) at the same budget; Section 6 reports the head-to-head. The threshold τ is calibrated by quantile-matching on a held-out pilot so the realised gate rate tracks ρ. GHlow is the anti-SWEET ablation, and G∆
+
+targets near-tied top-two positions where the greedy substi-tution regret is bounded pointwise by ∆i.3ChainMark: Model-Free LLM Watermarking 
+
+Algorithm 2 ChainMark Watermark Detection (model-free) 
+
+Input: text x, key κ, states S, successor Σk, level α
+
+t ← Tokenize( x); n ← | t|; c ← 0
+
+for i = 1 to n − 1 do if σκ(ti+1 ) ∈ Σk(σκ(ti)) then 
+
+c ← c + 1 
+
+end if end for 
+
+ϕ ← c/ (n − 1) ; p0 ← k/S z ← (ϕ − p0)/pp0(1 − p0)/(n − 1) 
+
+return (z > z α, ϕ, z )
+
+4.5. Detection 
+
+The verifier tokenises the candidate text, re-derives states by re-applying σκ, and computes the fraction of legal transi-tions 
+
+ϕ(t) = 1
+
+n − 1
+
+> n−1
+
+X
+
+> i=1
+
+⊮[σκ(ti+1 ) ∈ Σk(σκ(ti))] . (2) With p0 = k/S , the random-oracle null gives E[ϕ] = 
+
+p0 with pairwise-zero covariance for any k-regular Σk
+
+(Lemma A.1); the watermarked mean gap is ρ(1 − p0)
+
+(Theorem A.2, Theorem A.6). The verifier reports the stan-dardised score z = ( ϕ − p0)/pp0(1 − p0)/(n − 1) and declares H1 when z > z α. The closed-form calibration of Theorem A.2 (proved in Appendix A) selects S given target FPR α, budget ρ, and length n; the same identities yield robustness under per-token modification rate δ (Theo-rem A.4). Algorithm 2 runs in O(n) hash operations without LM ac-cess, making ChainMark deployable as a third-party audit primitive. 
+
+## 5. Theoretical Properties 
+
+This section gives an intuitive tour of three core results (detection, robustness, k-regular generalisation) plus two supporting properties (security against an oracle-blind ad-versary, and an LM-aware locally most powerful detector). Formal statements and proofs are deferred to Appendix A; we collect their pointers here so the body remains a nar-rative. Empirical anchoring of Theorem A.2 appears in Subsection 6.5. 
+
+Detection bound and calibration. Under the null hypoth-esis that the input is a uniformly random token sequence, the fingerprint score ϕ of Equation 2 is approximately Gaussian with mean 1/S and variance (1 /S )(1 −1/S )/(n−1) , while a watermarked sequence with gate density ρ shifts the mean to 1/S +ρ(S−1) /S . Standardising gives the expected value of the detection statistic under the watermarked alternative in closed form, z(ρ, S, n ) = ρp(S − 1)( n − 1) , i.e. its noncentrality parameter (distinct from the sample statistic 
+
+z evaluated on observed text). Inverting at false-positive level α under the midpoint threshold convention yields a state-count rule that practitioners can read off directly, 
+
+S⋆(n, ρ, α ) = 
+
+ 4 z2
+
+> α
+
+ρ2(n − 1) + 1 
+
+
+
+.
+
+The factor-of-4 comes from evaluating the standardised sig-nal at the midpoint between the null and alternative means. This gives the regulator a 2× safety margin relative to the one-sided zα test reported in our empirical tables; those ta-bles run at a tighter operating threshold than S⋆ requires, so empirical TPR exceeds the conservative midpoint prediction. Formal statement and proof in Theorem A.2 of Appendix A; the corresponding lookup table is Table 4. 
+
+Empirical-SD calibration recipe. The closed-form zα
+
+assumes i.i.d. uniform tokens over the SHA-256 partition; on natural-language text this drifts (empirically 1.7–2.0% 
+
+at the nominal 1% target, Table 3). The fix is a one-corpus recalibration: estimate the empirical mean and SD of z
+
+on a non-watermarked sample of the deployed LM (or a domain-matched corpus) and use z⋆ = ˆ μ + zα ˆσ as the operating threshold. Under the same Gaussian-tail null this restores the target FPR ( 1.17% at α = 1% on our 
+
+n = 3000 pooled corpus) without changing S⋆ or touching the watermarked side, so TPR is unaffected. The empirical 
+
+z-null is mildly leptokurtic, so for tighter α or large S the empirical-quantile drop-in z⋆ = ˆF −1(1 −α) is the robust alternative. Formal recipe in Proposition A.3; empirical evaluation in Subsection D.2. 
+
+Universal robustness threshold. Suppose an adversary independently replaces each token with probability δ by a fresh token whose state is uniform on [S]. Both the watermarked-pair signal and the midpoint-threshold gap scale by the same affine factor ρ(S−1) /S , so the post-attack-to-pre-attack z ratio collapses to (1 − δ)2, inde-pendently of (S, ρ, n ). The critical edit fraction at which detection fails is therefore the universal constant δ⋆ =1 − 1/√2 ≈ 0.293 . Formal statement and proof in Theo-rem A.4. 
+
+k-regular generalisation. The clockwork transition is the simplest member of a broader family: any k-regular adja-cency T (every state has exactly k allowed successors and predecessors) yields a valid ChainMark scheme. Replac-ing the random baseline 1/S by p0 = k/S gives the same calibration identities, the same midpoint critical fraction 
+
+δ⋆, and a single quality-versus-detection dial in k. Column-regularity is load-bearing: it is what makes adjacent indica-tor pairs have zero covariance under the null, so the variance formula carries through. Formal statement and proof in 4ChainMark: Model-Free LLM Watermarking 1. User prompt      
+
+> Explain photosynthesis in acomprehensive way.
+
+⇓
+
+2. Watermarked output                      
+
+> Photosynthesis is the ⇀process ⇀by ⇀which ⇀plants convert
+> sunlight ⇀into ⇀chemical ⇀energy ⇀and releases . . .
+
+⇓
+
+3. Auditor verdict              
+
+> ϕ=11 13 = 0 .85 ,z= 5 .30 > z 0.01 =2 .326 ⇒WATERMARKED
+> s0⇀ s 1⇀ s 2⇀ s 3⇀ s 4⇀ s 0
+
+Figure 2. End-to-end ChainMark trace on a wiki prompt (Llama-3.1-8B-Instruct, S=5 , ρ=0 .5, 14 -token excerpt). Every output tile inherits its colour from σκ(t) ∈ { 0, 1, 2, 3, 4} (legend at bottom). Underlined tokens are gated steps where ChainMark masked logits to enforce si+1 =( si+1) mod 5 and the ⇀ arrows trace the forced clockwork walk; un-underlined tokens are free-sampled at T =0 .7.The auditor in panel 3 re-derives the entire colour sequence from κ
+
+alone, counts 11 /13 valid transitions (green bar), and emits (ϕ, z )
+
+in O(n) hash operations, no LM forward pass. 
+
+Theorem A.6. The random baseline p0 = k/S relies on the SHA-256 partition being approximately uniform across the vocabulary, an assumption we inherit from the standard avalanche property of cryptographic hashes. 
+
+Security and an LM-aware optimal detector. The state map σκ(t) = H(κ ∥ t) mod S is modelled as a random oracle: an adversary without access to κ, the LM, or ref-erence text cannot predict σκ(t⋆) on a fresh token with non-negligible advantage in the key min-entropy, and there-fore cannot statistically distinguish ChainMark output from random text (Theorem A.8; computational, not information-theoretic, and excluding adversaries with LM access). A verifier that does have LM access can sharpen detection by replacing ϕ with an entropy-weighted log-likelihood ra-tio that is asymptotically locally most powerful under the random-oracle product-form approximation (Theorem A.9). Detector pseudocode appears as Algorithm 3. 
+
+## 6. Experiments 
+
+We run four experiments on three instruction-tuned 7–8B LLMs across four domains. Per-prompt records stream to JSONL for reproducibility. Figure 2 traces a single Chain-Mark generation end-to-end on a wiki-domain prompt: the model receives the user prompt, ChainMark masks logits at gated positions to keep only states (s + 1) mod S, and the detector re-derives every token’s state from the key alone and reports a z-score. 
+
+6.1. Setup Models. Three instruction-tuned, openly licensed checkpoints in the 7–8B parameter range: Llama-3.1-8B-Instruct (Grattafiori et al., 2024), Qwen-2.5-7B-Instruct (Qwen et al., 2025), and Mistral-7B-Instruct-v0.3 (Jiang et al., 2023). The same secret key κ is fixed across every run. 
+
+Domains. Four prompt domains stress different entropy regimes: code (HumanEval problem stems), factual (short closed-form knowledge prompts), wiki (open-ended “Ex-plain X. . . ” prompts over a curated concept list), and writ-ing (creative-completion prompts). 
+
+Generation and detection. Temperature T = 0 .7, top-p =1, token budget n = 200 at every cell, with one deterministic seed so the same indices are watermarked, attacked, and detected across methods. Detection uses the threshold zα
+
+from Theorem A.2, reused across methods for cross-method consistency; the empirically calibrated 1% -FPR head-to-head (Subsection D.3) confirms the resulting TPR ranking is not an FPR artefact. 
+
+ChainMark configuration. Unless stated otherwise, Chain-Mark runs use S = 5 states, target gate budget ρ = 0 .5, the high-entropy gate GHhigh , and clockwork ( k=1 ) topology. 
+
+Baselines. KGW (Kirchenbauer et al., 2023) at γ = 0 .5,logit bias δKGW = 2 (the canonical operating point re-ported in the original paper at this γ). SWEET (Lee et al., 2024) is reproduced as a matched-budget re-implementation: same γ = 0.5 and δKGW = 2 but the green-list bias is applied only at the top-ρ=0 .5 fraction of positions by token-level entropy, so the budget aligns with ChainMark’s 
+
+ρ. Per-domain prompt-and-generation examples (with a token-level gating walkthrough) appear in Appendix F; the end-to-end trace in Figure 2 above gives one illustration on the wiki prompt Explain photosynthesis in a comprehensive way. .
+
+6.2. Matched-Budget Head-to-Head 
+
+We compare ChainMark against KGW and SWEET on 
+
+1 200 generations per method ( 3 models, 4 domains, 100 
+
+prompts each), with 200 tokens per generation, and score each generation under three conditions: clean, random sub-stitution at rate δ=0 .20 , and NLLB-200 EN →ZH →EN back-translation. Aggregated across all 1 200 cells per method (Table 1, Figure 3a), ChainMark detects 100% of clean and 99 .9% of randomly perturbed generations and retains 72 .8% TPR after ZH back-translation, where KGW and SWEET drop from ∼75% /∼72% clean to 19 .4% /18 .0% 
+
+post-attack. The gap is consistent across every (model, do-main) cell (Figure 4); ChainMark matches or leads every clean cell and strictly leads every post-ZH cell. ChainMark pays a ≈ 2× self-perplexity gap ( 3.66 vs 1.80 /1.93 ) for this gain. SWEET is an entropy-gating ablation of KGW with the gating policy held fixed against ChainMark. 5ChainMark: Model-Free LLM Watermarking Clean Random-sub ZH back-trans  
+
+> 0
+> 25
+> 50
+> 75
+> 100
+> TPR (%) @  z > 2.326
+> 100 100
+> 73
+> 75
+> 55
+> 19
+> 72
+> 51
+> 18
+> ChainMark (ours)
+> KGW
+> SWEET
+> Llama
+> Mistral
+> Qwen
+
+(a) 0.0 0.2 0.4 0.6 0.8 1.0    
+
+> δeff (effective edit rate)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 1.2
+> zpost  / zclean
+> (1 − δeff )2
+> Llama
+> Mistral
+> Qwen
+> FR
+> DE
+> RU
+> ZH
+
+(b) 2 3 5 7 11           
+
+> State count S
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> Empirical FPR (%)
+> Empirical FPR @ zα
+> Recalibrated z⋆=̂ F−1 (1 − α)
+> Hoeffding bound
+> α= 1% target
+
+(c) Figure 3. Experimental headlines. (a) Head-to-head TPR: ChainMark vs KGW vs SWEET, aggregated over 3 LLMs × 4 domains (§6.2). 
+
+(b) Translation robustness: empirical decay under NLLB-200 EN →{ FR,DE,RU,ZH }→ EN vs the closed-form (1 − δeff )2 diagonal (Theorem A.4), with δeff the empirical token-edit fraction; m=100 generations per (model, pivot) (§6.3). (c) Calibration anchor: empirical FPR vs state count S with the closed-form Hoeffding bound (Theorem A.2) (§6.5). 
+
+Table 1. Headline aggregate at the analytic threshold zα = 2 .326 
+
+(α = 0 .01 , Gaussian-tail null), aggregated over 3 LLMs × 4
+
+domains × 100 prompts at n=200 tokens per cell. PPL is the median across the 12 cell medians on the watermarked model’s own logits (caveats in Section 7). Empirical FPR drift at this threshold appears separately in Table 3. Bold = best per column. Method TPR clean (%) TPR rnd (%) TPR ZH (%) PPL ↓
+
+ChainMark 100.0 99.9 72.8 3.66 KGW 74.8 55.1 19.4 1.93 SWEET 71.8 51.2 18.0 1.80 
+
+6.3. Translation Robustness 
+
+Each ChainMark-watermarked output has n=200 tokens; across 3 models × 4 domains × 25 prompts we obtain 300 
+
+outputs, each round-tripped through NLLB-200 (Team et al., 2022) on four pivot languages (FR, DE, RU, ZH) for 1 200 
+
+generations total, and we compute the empirical δeff per out-put via token-edit distance. Plotting the post-attack-to-clean 
+
+z ratio against δeff (Figure 3b) shows the observed ratios sit at or above the closed-form (1 − δeff )2 diagonal across pivots, models, and domains, which empirically anchors the universal half-life δ⋆ = 1 − 1/√2 from Theorem A.4 and confirms the bound is conservative rather than tight. The claim is stronger than synthetic random-substitution can support, since NLLB-200 produces semantically coherent rewrites rather than i.i.d. token noise. 
+
+6.4. k-Regular at k=2 
+
+Instantiating k = 2 (each state has two allowed succes-sors) at S = 5 predicts p0 = k/S = 0 .40 . We run 100 
+
+wiki-domain prompts on each of the three models with ZH back-translation as the only attack. Table 2 reports clean 
+
+¯ϕcl ≥ 0.88 (well above the p0 = 0 .40 prediction) and a 
+
+Table 2. k-regular ChainMark at k=2 (soft-cycle), S=5 , ρ=0 .5.
+
+Predicted random baseline p0 = 0 .40 ; wiki domain, 100 prompts. The clean ¯ϕcl values ( ≥ 0.88 ) sit well above p0 (Theorem A.6); the post-attack z ratio re-certifies Theorem A.4 at k=2 (Appendix A). Model ¯ϕcl ¯zcl TPR cl ¯zZH TPR ZH 
+
+Llama-3.1-8B 0.883 13.91 100% 3.19 54% Mistral-7B 0.965 16.23 100% 3.91 70% Qwen-2.5-7B 0.934 15.38 100% 4.12 71% 
+
+post-attack z-score that sits above the (1 − δeff )2 floor of Theorem A.4 (observed ratio 0.23 –0.27 vs. the predicted floor (1 − δeff )2 ≈ 0.07 –0.09 evaluated at the wiki-domain ZH edit fraction measured here, which is milder than the 4-domain headline δeff ≈ 0.81 ; i.e. the bound is conservative as in Subsection 6.3), jointly re-certifying Theorem A.6 and Theorem A.4 at a non-trivial k.
+
+6.5. Calibration Anchor 
+
+We sweep S ∈ { 2, 3, 5} across the three models with 4
+
+domains × 25 prompts at n=200 , recording both a water-marked generation (ChainMark at the canonical operating point, varying only S) and a non-watermarked baseline drawn from the same prompt. Non-watermarked outputs feed the empirical FPR estimate at the analytic zα; water-marked outputs feed the TPR. Table 3 shows watermarked 
+
+z overshoots the closed-form prediction ρp(S−1)( n−1) 
+
+by 50 –80% , so TPR is at 100% throughout, while empirical FPR sits above the α = 1% target by ∼1 pp (Figure 3c, 
+
+1.7–2.0% ). The closed form gives the right S⋆ ordering to within one state; for strict 1% FPR a deployer applies the per-S empirical-quantile threshold recalibration of Proposi-tion A.3 (Section 7, Subsection D.2). 6ChainMark: Model-Free LLM Watermarking ChainMark KGW SWEET                                                       
+
+> Llama-3.1-8B · code
+> Llama-3.1-8B · factual
+> Llama-3.1-8B · wiki
+> Llama-3.1-8B · writing
+> Qwen-2.5-7B · code
+> Qwen-2.5-7B · factual
+> Qwen-2.5-7B · wiki
+> Qwen-2.5-7B · writing
+> Mistral-7B · code
+> Mistral-7B · factual
+> Mistral-7B · wiki
+> Mistral-7B · writing
+> 100 59 44
+> 100 92 79
+> 100 87 72
+> 100 99 100
+> 100 39 41
+> 100 61 62
+> 100 76 73
+> 100 100 100
+> 100 49 52
+> 100 86 85
+> 100 50 55
+> 100 99 99
+> Clean
+> ChainMark KGW SWEET
+> 59 25 28
+> 73 25 25
+> 72 19 11
+> 78 21 20
+> 59 23 19
+> 78 15 11
+> 80 610
+> 83 12 12
+> 79 12 12
+> 70 37 29
+> 70 16 16
+> 73 22 23
+> ZH back-translation
+> 025 50 75 100
+> TPR (%)
+
+Figure 4. Per-(model, domain) head-to-head TPR (%) at zα =2.326 (100 prompts per cell, n=200 tokens). Each row is one (model, domain) cell; left panel is clean, right panel is ZH back-translation. ChainMark matches or leads every clean cell and strictly leads every cell post-ZH-back-translation. Each cell is annotated with its TPR (%), in white on dark (high-TPR) cells and dark on light (low-TPR) cells for contrast. 
+
+## 7. Discussion 
+
+7.1. When to Use What 
+
+The calibration S⋆(nmin , ρ, α ) of Theorem A.2 reduces op-erational deployment to three inputs: a minimum text length 
+
+nmin , a target false-positive rate α, and a watermark bud-get ρ. For long-form content the calibration anchors at small S with ρ near 1/2; Subsection 6.2 shows ChainMark substantially exceeds KGW and SWEET at the analytic 
+
+zα = 2 .326 threshold (the 1% -empirical-FPR recalibration in Subsection D.3 preserves the lead vs. KGW), at a ≈ 2×
+
+higher self-perplexity ( 3.66 vs 1.80 –1.93 ; Table 1). For short outputs S⋆ rises sharply with stricter α, so deployers tolerate a higher state count or shift to a longer floor. When cross-lingual rewrite or random substitution dominates the attack profile (Subsection 6.2, Subsection 6.3), the universal threshold δ⋆ of Theorem A.4 bounds the worst case across all gating choices. 
+
+7.2. Empirical SD Recalibration Closes the FPR Gap 
+
+Recomputing the threshold from the empirical SD of z on a non-watermarked corpus, z⋆ = ˆ μ + zα ˆσ, brings empir-ical FPR from 2.1% to 1.2% at α = 1% while preserv-ing TPR = 100% on the pooled n=3000 corpus (Subsec-tion D.2); the per-S empirical-quantile drop-in in Table 3 
+
+Table 3. Empirical anchor of the calibration map S⋆(n, ρ, α )
+
+from Theorem A.2. For each S, aggregated across 3 LLMs 
+
+× 4 domains × 25 prompts ( ≈ 300 watermarked + 300 non-watermarked). zpred wm = ρp(S−1)( n−1) . Watermarked z over-shoots theory by 50 –80% ; non-watermarked FPR nwm exceeds the α=1% target at large S due to non-i.i.d. structure in natural-language token sequences. The last two columns apply the empirical-quantile recalibration of Proposition A.3 per-S on the same NWM corpus: FPR recal . 
+
+> nwm
+
+lands uniformly below α=1% ,while TPR recal . 
+
+> wm
+
+stays at ≥ 95% on the watermarked side (the re-calibration only lifts the threshold, so detection power is essentially preserved). 
+
+S ¯zobs wm zpred wm TPR wm FPR nwm TPR recal . 
+
+> wm
+
+FPR recal .
+
+> nwm
+
+2 10.87 7.05 100% 2.00% 98.7% 0.67% 3 17.41 9.97 100% 2.00% 100.0% 0.67% 5 25.38 14.11 100% 1.67% 100.0% 0.34% 
+
+costs at most 1.3 pp of TPR (TPR recal . 
+
+> wm
+
+≥ 98 .7% across 
+
+S ∈ { 2, 3, 5}). The plug-in is calibrated at α = 1% but the empirical z-null is leptokurtic (excess kurtosis ≈ 1.4), so for tighter α ≤ 0.5% the empirical-quantile recipe 
+
+z⋆ = ˆF −1(1 −α) is the robust drop-in (and draws the re-calibrated curve in Figure 3c). The 1% -FPR head-to-head appears in Subsection D.3; ChainMark also admits an empir-ical FPR = 0% regime via threshold lifting (Subsection D.4), which KGW and SWEET cannot, since their watermarked and non-watermarked z distributions overlap. Failure modes we tried but did not adopt (Newey–West HAC, k-skip, stop-word filtering, HDD-lite) are tabulated in Subsection D.2. 
+
+7.3. Limitations Experimental scope. The headline grid fixes ρ = 0 .5,KGW/SWEET at γ=0 .5, δ KGW =2 , and decoding at T =0 .7,top-p=1 , n=200 with one deterministic prompt-order seed (no replicate-seed CIs). The fleet is three open-weight instruction-tuned 7–8B models; base, smaller, and ≥ 10 Bmodels are deferred, as is k-regular ChainMark at k ≥ 3
+
+(we validate k ∈ { 1, 2}). The robustness suite is translation-only: we do not run grammar-preserving paraphrase (e.g. DIPPER), so the strongest claim is against translation and uniform substitution, not adversarial paraphrasing. The translation evaluation covers all 12 (model, domain) cells (Table 5), but the SWEET row of the recalibrated head-to-head (Table 7) is omitted since the SWEET null z-distribution was not collected on the FPR corpus. 
+
+Quality and detector caveats. Generation quality is self-perplexity under each model’s own logits; we do not report external-LM PPL, MAUVE, or human-rater scores. The detector is “model-free” in needing no LM forward pass at detection, but requires the same tokenizer used at generation; an auditor handed plain text alone would enumerate candi-date tokenizers. Both Theorem A.8 and Theorem A.4 cover 7ChainMark: Model-Free LLM Watermarking 
+
+an oracle-blind adversary only; an attacker with adaptive detector-query access (or σκ access) can choose substitu-tion targets to hit valid transitions, and is outside our threat model (query complexity open). 
+
+FPR drift and theorem scope. The empirical FPR at the analytic threshold zα = 2 .326 drifts to 1.7–2.0% on non-watermarked LLM output (Table 3): natural-language tokens are not i.i.d. uniform over the SHA-256 partition, so the closed-form Hoeffding envelope (Figure 3c) sits be-low the empirical curve. Headline TPR numbers (Table 1– Figure 4) are at the analytic threshold for cross-method consistency, not an empirically calibrated 1% FPR per cell. Theorem A.4 assumes i.i.d. uniform substitution at rate δ;NLLB back-translation (and the deferred paraphrase exten-sion) preserves grammatical structure and correlates substi-tutions across positions. Our empirical curves (Figure 3b) sit above the (1 − δeff )2 slope, so the bound is conservative, not tight; δeff is an effective-edit-rate proxy. 
+
+## 8. Conclusion 
+
+We presented ChainMark, an active watermark with two operator-facing properties: a closed-form calibration 
+
+S⋆(nmin , ρ, α ) mapping a regulator’s specification (target FPR, text length, budget) to the minimum state count, and a detector needing the key and tokenizer but no language model. Under uniform substitution it has a robustness thresh-old δ⋆ = 1 − 1/√2 ≈ 29 .3% invariant in (S, ρ, n ), and both extend to every k-regular transition topology (The-orem A.2, Theorem A.4, Theorem A.6). Head-to-head against KGW and SWEET on three instruction-tuned LLMs across four domains at matched budget, ChainMark re-tains substantially more detection signal under translation and random-substitution attacks, at roughly 2× the base-lines’ self-perplexity. The post-attack z ratio sits above the 
+
+(1 − δeff )2 i.i.d. scaling, so the bound is conservative, not tight (Section 6). Five directions are immediate: (i) evaluate against grammar-preserving paraphrase (e.g. DIPPER), the strongest attack left untested; (ii) tighten the analytic FPR bound under non-i.i.d. statistics, where the empirical-SD recalibration of Subsection D.2 closes the deployment gap but the closed form stays loose at large S (Table 3); (iii) extend to longer-text regimes where small S⋆ operates; (iv) validate k-regular topologies at k ≥ 3; and (v) characterise base LLMs, whose entropy profile differs from the instruct-tuned fleet. 
+
+## Impact Statement 
+
+This paper develops watermarking infrastructure for LLM-generated content in service of AI governance regimes (EU AI Act Article 50, OECD Hiroshima Process). The contri-bution is dual-use, and we flag four asymmetric harms. 
+
+Authorship tracking and chilling effects. Stronger water-marking exposes writers who relied on undetectable LLM use. Marginalised users (ESL writers, students under in-equitable AI policies, whistleblowers reformulating sensi-tive content) bear asymmetric harm relative to incumbent users. 
+
+End-user perplexity cost. ChainMark imposes a ≈ 2×
+
+self-perplexity cost ( 3.66 vs the 1.80 –1.93 baseline range; Table 1). Deployers adopting ChainMark to satisfy a regu-latory mark therefore impose a measurable quality cost on 
+
+every user whose generation is gated, not just on adversaries who would try to evade detection. 
+
+False positives. Mislabelling human-written text as machine-generated has real reputational and legal cost. We instrument the detector with a closed-form, regulator-facing target false-positive rate α rather than an unspecified thresh-old; the discussed empirical-quantile recalibration (Sec-tion 7, Subsection D.2) is the recipe a deployer should run before invoking detection on any production content. 
+
+Adaptive adversaries are out of scope. Our security and robustness theorems cover an oracle-blind adversary; a regu-lator deploying ChainMark must not assume the watermark survives an attacker with detector-query access or with σκ
+
+access (Section 7). The audit primitive is honest about non-adversarial mislabelling, not about adversarial spoofing or scrubbing under realistic API-query budgets. Any deployment should publish the detection regime ( α,
+
+nmin , ρ, the recalibration recipe used) so users understand the conditions under which their outputs are, and are not, marked. 
+
+## References 
+
+Aaronson, S. Watermarking GPT outputs. Blog post, ht tps://scottaaronson.blog/?p=6823 , 2023. Accessed January 2026. Christ, M., Gunn, S., and Zamir, O. Undetectable wa-termarks for language models, 2023. URL https: //arxiv.org/abs/2306.09194 .European Commission AI Office. First draft code of practice on transparency of ai-generated content, 2025. URL 
+
+https://digital-strategy.ec.europa.eu /en/library/first-draft-code-practic e-transparency-ai-generated-content .Supporting implementation of EU AI Act Article 50. European Parliament and Council. EU AI Act (Regulation 2024/1689), 2024. URL https://eur-lex.europ a.eu/eli/reg/2024/1689 . Official Journal of the European Union. 8ChainMark: Model-Free LLM Watermarking 
+
+Grattafiori, A. et al. The Llama 3 Herd of Models, 2024. Model card: https://huggingface.co/meta-l lama/Llama-3.1-8B-Instruct .Jiang, A. Q. et al. Mistral 7B, 2023. Model card: https: //huggingface.co/mistralai/Mistral-7 B-Instruct-v0.3 .Kirchenbauer, J., Geiping, J., Wen, Y., Katz, J., Miers, I., and Goldstein, T. A watermark for large language mod-els. In International Conference on Machine Learning (ICML) , pp. 17061–17084, 2023. Krishna, K., Song, Y., Karpinska, M., Wieting, J., and Iyyer, M. Paraphrasing evades detectors of ai-generated text, but retrieval is an effective defense, 2023. URL https: //arxiv.org/abs/2303.13408 .Kuditipudi, R., Thickstun, J., Hashimoto, T., and Liang, P. Robust distortion-free watermarks for language models. 
+
+Transactions on Machine Learning Research , 2024. Lee, T., Hong, S., Ahn, J., Hong, I., Lee, H., Yun, S., Shin, J., and Kim, G. Who wrote this code? watermarking for code generation (SWEET). In Proceedings of the Annual Meeting of the Association for Computational Linguistics (ACL) , 2024. Lu, Y., Liu, A., Yu, D., Li, J., and King, I. An entropy-based text watermarking detection method, 2024. URL 
+
+https://arxiv.org/abs/2403.13485 .Mitchell, E., Lee, Y., Khazatsky, A., Manning, C. D., and Finn, C. DetectGPT: Zero-shot machine-generated text detection using probability curvature. In International Conference on Machine Learning (ICML) , pp. 24950– 24962, 2023. OECD. Hiroshima AI process: International code of con-duct for advanced AI systems, 2024. URL https: //www.oecd.org/digital/hiroshima-ai-p rocess . Organization for Economic Co-operation and Development. Qwen, :, Yang, A., Yang, B., Zhang, B., Hui, B., Zheng, B., Yu, B., Li, C., Liu, D., Huang, F., Wei, H., Lin, H., Yang, J., Tu, J., Zhang, J., Yang, J., Yang, J., Zhou, J., Lin, J., Dang, K., Lu, K., Bao, K., Yang, K., Yu, L., Li, M., Xue, M., Zhang, P., Zhu, Q., Men, R., Lin, R., Li, T., Tang, T., Xia, T., Ren, X., Ren, X., Fan, Y., Su, Y., Zhang, Y., Wan, Y., Liu, Y., Cui, Z., Zhang, Z., and Qiu, Z. Qwen2.5 technical report, 2025. URL https: //arxiv.org/abs/2412.15115 .Sadasivan, V. S., Kumar, A., Balasubramanian, S., Wang, W., and Feizi, S. Can AI-generated text be reliably de-tected? arXiv preprint arXiv:2303.11156 , 2023. Team, N., Costa-juss `a, M. R., Cross, J., C¸ elebi, O., Elbayad, M., Heafield, K., Heffernan, K., Kalbassi, E., Lam, J., Licht, D., Maillard, J., Sun, A., Wang, S., Wenzek, G., Youngblood, A., Akula, B., Barrault, L., Gonzalez, G. M., Hansanti, P., Hoffman, J., Jarrett, S., Sadagopan, K. R., Rowe, D., Spruit, S., Tran, C., Andrews, P., Ayan, N. F., Bhosale, S., Edunov, S., Fan, A., Gao, C., Goswami, V., Guzm ´an, F., Koehn, P., Mourachko, A., Ropers, C., Saleem, S., Schwenk, H., and Wang, J. No language left behind: Scaling human-centered machine translation, 2022. URL https://arxiv.org/abs/2207.0 4672 .Tian, E. and Cui, A. GPTZero: Towards detection of AI-generated text using zero-shot and supervised methods, 2023. URL https://gptzero.me .
+
+## A. Proofs and Formal Statements 
+
+This appendix collects the formal versions of the results pre-viewed in Section 5. Throughout, σκ(t) = H(κ ∥ t) mod S
+
+denotes the keyed state map and is treated as a random oracle (uniform on [S] and independent across distinct to-kens). ϕ is the fingerprint score of Equation 2, and we write 
+
+Xi = Tσκ(ti),σ κ(ti+1 ) for the validity indicator at step i,with T = Tclk in the clockwork case. 
+
+A.1. Null Variance Lemma 
+
+The null variance underpins both the detection z-score and the universal robustness threshold; we isolate it as a lemma. 
+
+Lemma A.1 (Null variance with zero pairwise covariance) .
+
+Let T ∈ { 0, 1}S×S be k-regular: every row and every column has exactly k ones, with 1 ≤ k ≤ S−1, and set p0 = k/S . Under the random oracle null (i.i.d. uni-form tokens), the indicators Xi = Tσκ(ti),σ κ(ti+1 ) satisfy 
+
+E[Xi] = p0 and Cov( Xi, X j ) = 0 for all i̸ = j, hence 
+
+Var[ ϕ(tr )] = p0(1 − p0)
+
+n − 1 . (3) 
+
+Proof. Write N +(s) = {s′ : T (s, s ′) = 1 } (equivalently 
+
+Σk(s) from Section 4) and N −(s′) = {s : T (s, s ′) = 1 };by k-regularity, |N +(s)| = |N −(s′)| = k for every s, s ′.Throughout this proof we operate under the random-oracle null with i.i.d. uniform tokens on V; the empirical FPR drift observed on natural-language text (Table 3, Section 7) is the practical price of this idealisation. 
+
+Marginal mean. Conditioning on σκ(ti) and using row-regularity, Pr[ Xi = 1] = E[|N +(σκ(ti)) |/S ] = k/S =
+
+p0.
+
+Non-adjacent pairs. For |i − j| ≥ 2, Xi and Xj depend on disjoint token pairs and thus on independent state eval-9ChainMark: Model-Free LLM Watermarking 
+
+uations of the random oracle (assuming the underlying to-kens are distinct; coincidences contribute O(1 /|V| ) and are absorbed into the random-oracle approximation). Hence 
+
+Cov( Xi, X j ) = 0 .
+
+Adjacent pairs. Xi and Xi+1 share the token ti+1 . Condi-tioning on σκ(ti+1 ) = s′, we have 
+
+Pr[ Xi = 1 | σκ(ti+1 ) = s′] = |N −(s′)|/S = p0,
+
+Pr[ Xi+1 = 1 | σκ(ti+1 ) = s′] = |N +(s′)|/S = p0,
+
+using column -regularity for the first identity. Conditional on σκ(ti+1 ), the indicators Xi and Xi+1 depend on the disjoint random-oracle evaluations σκ(ti) and σκ(ti+2 ), so they are conditionally independent whenever ti̸ = ti+2 (the coincidence event has probability 1/|V| under iid uniform tokens and is absorbed into the random-oracle approxima-tion, parallel to the non-adjacent case above). Therefore 
+
+Pr[ Xi = Xi+1 = 1] = Es′ [p0 · p0] = p20,
+
+and Cov( Xi, X i+1 ) = 0 .
+
+Variance. ϕ = ( n − 1) −1 Pn−1 
+
+> i=1
+
+Xi is the average of n − 1
+
+Bernoulli (p0) random variables with all pairwise covari-ances vanishing, giving (3). 
+
+A.2. Detection Bound and Calibration Theorem A.2 (Detection bound and calibration) . Let tw
+
+be a ChainMark-watermarked sequence of length n with watermark fraction ρ and clockwork transition over S states; let tr be an i.i.d. random sequence over V. Then 
+
+E[ϕ(tw)] = 1 
+
+> S
+
++ ρ S−1 
+
+> S
+
+, (4) 
+
+E[ϕ(tr )] = 1 
+
+> S
+
+, (5) 
+
+Var[ ϕ(tr )] = (1 /S )(1 −1/S ) 
+
+> n−1
+
+, (6) 
+
+z(ρ, S, n ) = ρp(S − 1)( n − 1) . (7) 
+
+Under the midpoint threshold τmid = 1 
+
+> S
+
++ ρ 
+
+> 2
+> S−1
+> S
+
+, split-ting the indicators into disjoint odd/even subsequences and applying Hoeffding gives 
+
+FPR ≤ 2 exp  −2⌊(n − 1) /2⌋(( ρ/ 2)( S − 1) /S )2.
+
+Using the Gaussian convention at the midpoint threshold, the minimum state count guaranteeing FPR ≤ α is 
+
+S⋆(n, ρ, α ) = 
+
+ 4z2
+
+> α
+
+ρ2(n − 1) + 1 
+
+
+
+. (8) 
+
+S⋆ is a provisioning bound: it is derived under the midpoint detector τmid to give the regulator a 2× safety margin in the standardised mean gap. The operating detector deployed in Section 6 uses the tighter one-sided test {z > z α}, so empir-ical TPR at the operating threshold exceeds the conservative midpoint prediction whenever S ≥ S⋆(n, ρ, α ).Proof. Null mean. Under the random oracle, σκ is uni-form and independent across distinct tokens, so Xi ∼
+
+Bernoulli(1 /S ) marginally and E[ϕ(tr )] = 1 /S .
+
+Watermark mean. At a gated position, Algorithm 1 sets 
+
+σκ(ti+1 ) = ( σκ(ti) + 1) mod S, so Xi = 1 deterministi-cally. At an ungated position, Xi ∼ Bernoulli(1 /S ). With gate density ρ,
+
+E[ϕ(tw)] = ρ · 1 + (1 − ρ) · 1 
+
+> S
+
+= 1 
+
+> S
+
++ ρ S−1 
+
+> S
+
+.
+
+Null variance. Clockwork is the k = 1 instance of Lemma A.1 (column-regularity is trivial since |N −(s′)| =1), giving Var[ ϕ(tr )] = (1 /S )(1 − 1/S )/(n − 1) .
+
+z-score. The signed mean gap is ρ(S − 1) /S . Dividing by the null SD, 
+
+z(ρ, S, n ) = ρ(S − 1) /S 
+
+p(1 /S )(1 − 1/S )/(n − 1) = ρp(S − 1)( n − 1) .
+
+FPR via Hoeffding. Adjacent indicators share a token and are not jointly i.i.d., so we split into X1, X 3, X 5, . . . and 
+
+X2, X 4, X 6, . . . , two disjoint subsequences of m = ⌊(n −
+
+1) /2⌋ terms, each i.i.d. Bernoulli(1 /S ). Since ϕ is a (size-weighted) convex combination of these two subsequence means, ϕ ≥ τ implies that at least one subsequence mean is 
+
+≥ τ , so by Hoeffding plus a union bound, for any τ > 1/S ,
+
+Pr[ ϕ ≥ τ ] ≤ 2 exp( −2m(τ − 1/S )2).
+
+Calibration. By the CLT for 1-dependent sequences (the 
+
+{Xi} are 1-dependent and bounded with vanishing pair-wise covariance), √n − 1 ( ϕ − 1/S ) is asymptotically 
+
+N (0 , p 0(1 − p0)) under the null, with p0 = 1 /S . At the midpoint threshold τmid = 1 /S + ( ρ/ 2)( S − 1) /S , the null 
+
+z-margin is (ρ/ 2) p(S − 1)( n − 1) . Requiring it to exceed 
+
+zα,
+
+> ρ
+> 2
+
+p(S − 1)( n − 1) ≥ zα ⇐⇒ S ≥ 4z2
+
+> α
+
+ρ2(n − 1) +1 ,
+
+and taking the ceiling yields (8). 
+
+Proposition A.3 (Empirical-SD recalibration recipe) . Let 
+
+t(1) , . . . , t(M ) be M i.i.d. non-watermarked sequences from the deployed LM, and let z1, . . . , z M be their detection z-statistics under ChainMark with (S, ρ ) fixed. Define 
+
+ˆμ = 1
+
+> MM
+
+X
+
+> i=1
+
+zi,
+
+ˆσ2 = 1 
+
+> M−1
+> M
+
+X
+
+> i=1
+
+(zi − ˆμ)2,z⋆ = ˆ μ + zα ˆσ. 
+
+10 ChainMark: Model-Free LLM Watermarking 
+
+If the zi are approximately Gaussian with mean ˆμ and SD ˆσ
+
+(a calibration-side assumption that holds far better than the i.i.d. random-oracle null assumed by Theorem A.2), then declaring H1 when z > z ⋆ has FPR → α as M → ∞ .When the z-null is measurably non-Gaussian (e.g. heavy-tailed at large S), the Gaussian plug-in z⋆ is replaced by the empirical-quantile drop-in z⋆ 
+
+> emp
+
+= ˆF −1(1 −α), where 
+
+ˆF is the empirical CDF of {zi}; this delivers the tar-get FPR at any α by Glivenko–Cantelli regardless of null shape, with the Dvoretzky–Kiefer–Wolfowitz inequality giv-ing sup x| ˆF (x) − F (x)| = Op(M −1/2) Monte-Carlo noise in the threshold. Proof. Standardise: (z − ˆμ)/ˆσ is asymptotically N (0 , 1) 
+
+as M → ∞ by the standard plug-in argument (con-sistency of ˆμ, ˆσ + Slutsky), so Pr[ z > ˆμ + zα ˆσ] →
+
+Pr[ N (0 , 1) > z α] = α. The recipe leaves the watermarked side untouched: the watermarked z-distribution still concen-trates around ρp(S − 1)( n − 1) (Theorem A.2), which on natural-language text empirically exceeds z⋆ by an order of magnitude (Table 8), so TPR remains at 100% .
+
+A.3. Universal Robustness Threshold Theorem A.4 (Universal robustness threshold) . Suppose an 
+
+oracle-blind adversary (without access to σκ or the random oracle) independently replaces each token with probability 
+
+δ by a fresh token whose state σκ is uniform on [S] (so the substitutions are i.i.d. uniform in the partition; structured paraphrase / NLLB back-translation produces correlated edits and is treated empirically in Subsection 6.3). Stan-dardise the post-attack z by the null standard deviation pp0(1 − p0)/(n − 1) (the same scaling used pre-attack). Then for clockwork ChainMark with state count S and gate density ρ,
+
+E[ϕ | attack] = 1 
+
+> S
+
++ ρ(1 − δ)2 S−1 
+
+> S
+
+. (9) 
+
+Define the pre-attack and post-attack mean-gap signals 
+
+gpre = ρ(S−1) /S and gpost = ρ(1 −δ)2(S−1) /S . Both share the same null SD, so the standardised-margin ratio is 
+
+zpost 
+
+zpre 
+
+= gpost 
+
+gpre 
+
+= (1 − δ)2, (10) 
+
+independent of (S, ρ, n ). Under the midpoint-threshold de-tection convention the critical edit fraction at which detec-tion fails is 
+
+δ⋆ = 1 − 1/√2 ≈ 0.293 , (11) 
+
+again independent of (S, ρ, n ).Proof. Let Mi ∼ Bernoulli( δ), i.i.d. across i, indicate that 
+
+ti has been replaced; modified tokens receive fresh uniform state by the random-oracle property. For each pair (ti, t i+1 ),decompose on (Mi, M i+1 ):• (0 , 0) : both tokens survive. The indicator equals the pre-attack distribution, with mean 1/S + ρ(S−1) /S . Weight 
+
+(1 − δ)2.• (0 , 1) : ti+1 fresh. By column-regularity (which is trivial for clockwork), E[Xi] = 1 /S . Weight (1 − δ)δ.• (1 , 0) : symmetric, by row-regularity. Mean 1/S , weight 
+
+δ(1 − δ).• (1 , 1) : both fresh. Mean 1/S , weight δ2.Combining, 
+
+E[ϕ | atk] = (1 − δ)2 1 
+
+> S
+
++ ρ S−1
+
+> S
+
+ + (1 − (1 − δ)2) 1
+
+> S
+
+= 1 
+
+> S
+
++ ρ(1 − δ)2 S−1 
+
+> S
+
+,
+
+proving (9). 
+
+z-ratio independence. The mean gap above the null base-line 1/S is g = ρ(S−1) /S pre-attack and g(1 − δ)2
+
+post-attack. We standardise both regimes by the null SD pp0(1 − p0)/(n − 1) (the conventional one-sample z-test scaling, used as a fixed denominator across attacks); this is a definition, not an assumption that the post-attack alternative variance is null-bounded. Hence zpost /z pre = gpost /g pre =(1 − δ)2, independent of (S, ρ, n ).
+
+Critical fraction. At the midpoint threshold τmid = 1 /S +(ρ/ 2)( S−1) /S , detection is defeated iff the post-attack mean drops below τmid , i.e. 
+
+ρ(1 − δ)2 S−1 
+
+> S
+
+< ρ 
+
+> 2
+> S−1
+> S
+
+⇐⇒ (1 − δ)2 < 12 .
+
+Solving, δ⋆ = 1 − 1/√2. The factors (S−1) /S and ρ
+
+cancel on both sides; this is the structural reason for the universal threshold. 
+
+A.4. k-Regular Generalisation 
+
+We now lift the clockwork results to any k-regular adjacency. We recall the definition for the appendix. 
+
+Definition A.5 (k-regular topology) . T ∈ { 0, 1}S×S is 
+
+k-regular (1 ≤ k ≤ S−1) if every row and every col-umn contains exactly k ones. Equivalently, T /k is doubly stochastic. The induced detection baseline is p0 = k/S .
+
+Theorem A.6 (k-regular calibration identities) . Fix any k-regular adjacency T and let p0 = k/S . Apply Algorithm 1 and Algorithm 2 with T in place of the clockwork matrix. Then for an i.i.d. random null sequence tr , a watermarked sequence tw with gate density ρ, and an oracle-blind adver-sary with per-token replacement rate δ (as in Theorem A.4), 
+
+E[ϕ(tr )] = p0, (12) 
+
+E[ϕ(tw)] = p0 + ρ(1 − p0), (13) 
+
+Var[ ϕ(tr )] = p0(1 −p0) 
+
+> n−1
+
+, (14) 
+
+z(ρ, p 0, n ) = ρ
+
+q (1 −p0)( n−1)  
+
+> p0
+
+, (15) 
+
+E[ϕ | atk] = p0 + ρ(1 − δ)2(1 − p0). (16) 11 ChainMark: Model-Free LLM Watermarking 
+
+Proof. Equation (12) and the variance (14) are immediate from Lemma A.1. 
+
+Watermark mean. At a gated position, Algorithm 1 restricts the argmax to S  
+
+> s′∈N+(s)
+
+Vs′ , so σκ(ti+1 ) ∈ N +(σκ(ti)) ,i.e., Xi = 1 . At an ungated position, Xi ∼ Bernoulli( p0).Averaging, E[ϕ(tw)] = ρ + (1 − ρ)p0 = p0 + ρ(1 − p0).
+
+z-score. Dividing the signed mean gap ρ(1 − p0) by the null SD pp0(1 − p0)/(n − 1) gives ρp(1 − p0)( n − 1) /p 0.At k = 1 , p0 = 1 /S and this reduces to ρp(S−1)( n−1) ,recovering Theorem A.2. 
+
+Post-attack mean. Repeat the four-case decomposition of Theorem A.4. The (0 , 1) case requires column-regularity to give E[Xi | ti+1 fresh ] = p0 (the conditional in-degree 
+
+|N −(s′)|/S must be p0 uniformly in s′); the (1 , 0) case symmetrically uses row-regularity. Hence 
+
+E[ϕ | atk] = (1 − δ)2(p0 + ρ(1 − p0)) + (1 − (1 − δ)2)p0
+
+= p0 + ρ(1 − δ)2(1 − p0).
+
+Corollary A.7 (Universal midpoint δ⋆). Under the midpoint-threshold detection convention, every k-regular ChainMark scheme with 1 ≤ k < S (so p0 < 1; the degen-erate case k = S has every transition valid and is trivially undetectable) has critical edit fraction 
+
+δ⋆ = 1 − 1/√2,
+
+independent of the topology parameters (k, S, ρ, n ).Proof. The midpoint threshold is τmid = p0 +( ρ/ 2)(1 −p0).By (16), the post-attack mean drops below τmid iff 
+
+ρ(1 − δ)2(1 − p0) < ρ 
+
+> 2
+
+(1 − p0) ⇐⇒ (1 − δ)2 < 12 ,
+
+which is independent of (k, S, ρ, n ) once p0 < 1 (i.e., k < S). Solving gives δ⋆ = 1 − 1/√2.
+
+A.5. Security Against an Oracle-Blind Adversary Theorem A.8 (Pseudorandomness under random oracle, oracle-blind adversary) . Assume the secret key κ has min-entropy at least λ and H is modelled as a random oracle. Consider a polynomial-time adversary A without access to the random oracle, without access to the LM (or its per-position distribution), and without access to a reference text drawn from the same prompt distribution. A has only the watermarked output tw and the public scheme parameters 
+
+(S, T ). Then A achieves: (i) key-recovery advantage at most q · 2−λ for a query budget q to any auxiliary oracle that depends on κ;(ii) state-prediction success at most 1/S + negl( λ) on each fresh token t⋆ that has not been queried with the correct key, hence advantage negl( λ) over the uniform 1/S 
+
+baseline; (iii) statistical distinguishing advantage at most negl( λ) be-tween tw and a non-watermarked LM sample tLM from the same prompt distribution, restricted to statistics that are measurable in the partition structure σκ (i.e., to tests that look at state-transition patterns rather than raw token-id statistics). Proof. Without κ, the adversary’s view of H(κ ∥ t) for any t
+
+is uniform on the oracle output space. Recovery probability 
+
+q · 2−λ follows from a standard guessing argument over a min-entropy-λ key. State prediction with advantage greater than negl( λ) would imply distinguishing the random-oracle output from uniform, contradicting (i). For (iii): a σκ-measurable statistic D(σκ(t)) that distin-guishes tw from tLM with advantage ε must, by the random-oracle property, distinguish the watermarked state sequence (which walks the chain at gated positions) from a state se-quence drawn uniformly on [S]n (the LM’s σκ-image is uniform iid by (ii)). Such a D yields a state-predictor with advantage at least ε on some fresh token, contradicting (ii) by a hybrid argument; hence ε ≤ negl( λ). Token-id-level statistics that exploit natural-language marginals (e.g., bi-gram frequencies) are explicitly outside this guarantee: they are not σκ-measurable and trivially distinguish any LM sample from i.i.d. uniform tokens. 
+
+A.6. Optimal LM-Aware Detector Theorem A.9 (Entropy-weighted detector is asymptotically locally most powerful) . Suppose the verifier has access to the LM at each position, and let gi ∈ { 0, 1} denote the gate indicator at position i. Set πi = gi + (1 − gi)/S , the marginal probability of Xi = 1 under the watermark alter-native. Approximating the joint law {Xi} by the product of its marginals (asymptotically valid under the random oracle on distinct tokens, with the product-form CLT covariance vanishing by Lemma A.1), the log-likelihood ratio under the product law is 
+
+Λ = 
+
+> n−1
+
+X
+
+> i=1
+
+h
+
+Xi log( πiS) + (1 − Xi) log 1−πi
+
+> 1−1/S
+
+i
+
+. (17) 
+
+Then the test {Λ > c α}, with cα the size-α critical value of Λ under the null, is asymptotically locally most power-ful within the product hypothesis class, i.e. it attains the Neyman–Pearson power against the product-form approx-imation of the joint law, with the 1-dependence of {Xi}
+
+contributing only o(1) corrections in the LAN regime. Proof. Under the null, Xi ∼ Bernoulli(1 /S ) marginally 12 ChainMark: Model-Free LLM Watermarking 
+
+with pairwise zero covariance (Lemma A.1). Under the watermark alternative, Xi ∼ Bernoulli( πi). The sequence 
+
+{Xi} is 1-dependent: Xi and Xi+1 share ti+1 , but for |i −
+
+j| ≥ 2, Xi ⊥ Xj under the random-oracle model on distinct tokens. The product-form likelihood ratio is 
+
+Λ = X
+
+> i
+
+log πXi 
+
+> i
+
+(1 − πi)1−Xi
+
+(1 /S )Xi (1 − 1/S )1−Xi
+
+= X
+
+> i
+
+Xi log( πiS) + (1 − Xi) log 1−πi 
+
+> 1−1/S
+
+,
+
+matching the theorem statement (with the convention 
+
+0 log 0 = 0 for terms with πi = 1 , i.e., gated positions where Xi = 1 is deterministic). The Neyman–Pearson lemma applied to the product hypothesis identifies Λ as uniformly most powerful for the product law. By the central limit theorem for 1-dependent sequences (and vanishing pairwise covariance from Lemma A.1), the product-form Λ has the same Gaussian limit as the product-form joint LLR up to o(1) corrections (LAN regime, Le Cam); we therefore claim asymptotic local most-powerful-ness among tests within the product hypothesis class, not strict Neyman–Pearson optimality against the true 1-dependent joint. Hence the test based on Λ achieves the Neyman–Pearson power asymptotically. 
+
+A.7. Detector Pseudocode 
+
+We restate the model-free detection algorithm for self-contained reading; the body version is Algorithm 2. 
+
+Algorithm 3 ChainMark Watermark Detection (model-free) 
+
+Input: text x, key κ, states S, transition T , threshold τ
+
+t ← Tokenize( x); c ← 0; n ← | t|
+
+for i = 1 to n − 1 do 
+
+si ← H (κ ∥ ti) mod S; si+1 ← H (κ ∥ ti+1 ) mod S
+
+if T [si, s i+1 ] > 0 then 
+
+c ← c + 1 
+
+end if end for 
+
+ϕ ← c/ (n − 1) ; p0 ← (P 
+
+> s,s ′
+
+T [s, s ′]) /S 2
+
+z ← (ϕ − p0)/pp0(1 − p0)/(n − 1) 
+
+return (1[ϕ > τ ], ϕ, z, 1 − Φ( z)) 
+
+The runtime is O(n) hash evaluations and a single pass over the token stream; no LM access is required. The transition 
+
+T is the same matrix used at generation time, so the random baseline p0 is computed directly from T (clockwork: p0 =1/S ; soft-cycle: p0 = 2 /S ; general k-regular: p0 = k/S ). 
+
+A.8. Supplementary Results: Quality Cost and Self-Healing 
+
+These two results were stated in earlier drafts; we retain the formal statements and proofs in the appendix for com-pleteness, since they are referenced from elsewhere in the paper. 
+
+Theorem A.10 (Quality cost identity and Jensen lower bound) . At a gated position with current state s and par-tition mass Zs = p(V(s+1) mod S ) > 0, the KL between the renormalised ChainMark distribution PChainMark (t) = 
+
+p(t)/Z s · 1[t ∈ V (s+1) mod S ] and the LM distribution p
+
+is DKL (PChainMark ∥ p) = log(1 /Z s). Under hash unifor-mity, E[Zs] = 1 /S , and Jensen’s inequality gives 
+
+E[DKL ] ≥ log S, (18) 
+
+with equality iff Zs is constant in the key. Averaged over positions with gate rate ρ, E[DKL ]tok ≥ ρ log S.Proof. Direct computation: DKL (PChainMark ∥ p) =P  
+
+> t∈V (s+1) mod S
+
+(p(t)/Z s) log(1 /Z s) = log(1 /Z s). Under hash uniformity, Pr[ t ∈ V (s+1) mod S ] = 1 /S for every fixed t, so E[Zs] = P 
+
+> t
+
+p(t)/S = 1 /S . Concavity of log 
+
+and Jensen give E[log Zs] ≤ log E[Zs] = − log S, hence 
+
+E[log(1 /Z s)] ≥ log S. The token-averaged bound follows by averaging over positions with gate rate ρ.
+
+Theorem A.11 (Self-healing against oracle-blind adver-saries) . Let Tq ⊆ V be the set of tokens the adversary has queried with the correct key. For any token t′ /∈ T q
+
+that the adversary introduces, σκ(t′) is uniform on [S] by the random-oracle property, so each modified position con-tributes an indicator distributed as Bernoulli(1 /S ) to the validity count, independently of strategy. Hence under an oracle-blind adversary (every introduced token unqueried), the expected mass contributed to ϕ by modified-pair posi-tions equals 
+
+m(δ) = 1 
+
+> S
+
+δ(2 − δ); (19) 
+
+this is a lower bound when ranging over query-aided strate-gies that may bias replacement tokens toward σκ(Tq).Proof. The fraction of token pairs (ti, t i+1 ) touching at least one modified token is 1 − (1 − δ)2 = δ(2 − δ). Each such pair contributes an indicator with conditional expec-tation 1/S by the same column- and row-regularity argu-ment as in Theorem A.4. Strategies in which the adver-sary introduces previously-queried tokens (whose state is in 
+
+σκ(Tq)) can craft pairs that hit valid transitions determinis-tically, raising ϕ above m(δ), which only helps detection. Hence the expected modified-pair contribution to ϕ satisfies 
+
+≥ m(δ) = δ(2 − δ)/S for every oracle-blind strategy, and this floor is therefore strategy-free. 13 ChainMark: Model-Free LLM Watermarking 
+
+## B. Reference Tables 
+
+B.1. Closed-Form Calibration Lookup       
+
+> Table 4. Calibration lookup S⋆(n, ρ, α )from Theorem A.2. Rows are text lengths; columns are (α, ρ )pairs. Entries are derived analytically from the closed-form detection bound and do not require empirical anchoring.
+
+α = 10 −3 α = 10 −6
+
+n ρ=0 .3 ρ=0 .5 ρ=0 .3 ρ=0 .5
+
+100 6 3 12 5200 4 2 7 3500 2 2 4 21000 2 2 3 2
+
+## C. Experimental Protocol and Reproducibility 
+
+This appendix records every setting needed to reproduce the head-to-head matched-budget study of Section 6, the per-cell tables in the main results, and every figure. 
+
+C.1. Models, Tokenizers, and Hardware Model fleet. The headline experiments use three instruction-tuned 7–8B parameter open-weight LLMs, each loaded via the Hugging Face transformers library. The exact repo id , revision pin, and torch dtype for ev-ery model are listed in the public code release alongside its prompt template; we do not enumerate them here in order to keep the discussion model-agnostic. Each model is run on a single NVIDIA GPU (H100 or H200, depending on memory pressure); CPU fallback is supported for the detector but not for generation. Every model uses its own native tokenizer, both for generation and for detection, and self-perplexity (PPL) is computed on the same model’s logits that produced the text. 
+
+Decoding. Watermarked positions use greedy argmax over the allowed-partition mask of Algorithm 1; ungated posi-tions use temperature sampling at T = 0 .7. The same tem-perature is used to draw pilot generations for gate-threshold calibration. 
+
+Gated models. A subset of the fleet is gated on the Hugging Face Hub. The released environment expects an HF TOKEN in scope at runtime; the token is read by 
+
+huggingface hub and never logged to disk. We do not name specific gated repositories in this appendix; the pub-lic code drop records each repo id alongside its license terms. 
+
+C.2. Domains and Prompts Four domains, N = 200 prompts each. Each domain runs on n = 200 prompts drawn from a fixed pool, identical across gates, models, and attacks within a cell. • Code: HumanEval Python signatures with their natural-language docstrings as the prompt; the generation is the function body. • Factual: short closed-answer prompts asking for a single attested fact (capitals, dates, named entities). • Wiki: open-ended descriptive prompts derived from a curated Wikipedia concept list, expanded via a fixed template. • Writing: open-ended creative-writing prompts request-ing a short narrative or argumentative passage. Every prompt set, with template strings, prompt in-dices, and a deterministic shuffle seed, is shipped under 
+
+data/v7 min/<domain>/records.jsonl .
+
+C.3. ChainMark Hyperparameters Default cell. S = 5 states, clockwork transition 
+
+T (s, s ′) = ⊮[s′ ≡ s+1 (mod S)] , watermark budget 
+
+ρ = 0 .5, secret key fixed across all cells, runs, and models. 
+
+State sweep. Subsection 6.5 sweeps S ∈ { 2, 3, 5} at fixed 
+
+ρ = 0 .5 to anchor the closed-form calibration of Theo-rem A.2 on data. 
+
+k-regular topology. Subsection 6.4 runs the soft-cycle (k = 2 ) topology at the default cell and compares the empir-ical robustness threshold against δ⋆ to validate Theorem A.6. 
+
+C.4. Baseline Calibration 
+
+The two baselines, KGW (Kirchenbauer et al., 2023) and SWEET (Lee et al., 2024), are matched to ChainMark’s bud-get at the cell level. SWEET is an entropy gate that activates the watermark only at high -entropy positions (the structural opposite of schemes that gate at low-entropy positions); we configure it so that the realised gate rate over the pilot pool is within ±0.02 of ρ = 0 .5, by quantile-matching τH to the (1 − ρ) quantile of the per-position entropy distribution. KGW runs at the same effective budget by construction, since it gates every position. All three schemes share the same secret key and the same generation pool. 
+
+C.5. Attack Protocol 
+
+Each watermarked generation is subjected to three inde-pendent attack streams; post-attack detection statistics are reported per cell in Section 6. 14 ChainMark: Model-Free LLM Watermarking 
+
+• Random substitution (δ = 0 .20 ): ⌈0.20 n⌉ token po-sitions chosen uniformly at random and replaced with uniform draws from the model’s tokenizer vocabulary. • Translation round-trip: EN → L → EN via the NLLB-200 distilled model (Team et al., 2022), where 
+
+L ∈ {French , German , Russian , Chinese }. Each lan-guage constitutes a separate cell. We do not include grammar-preserving paraphrase attacks in this release; their evaluation is deferred to the extended version. 
+
+C.6. Randomisation 
+
+random , numpy.random , and torch.manual seed 
+
+are all seeded to 42 at the start of each generation run. The random-substitution attack uses an independent seed (43). Bootstrap resamples in Section 6 use a per-contrast key derived deterministically from the cell descriptor. 
+
+C.7. Released Artefacts 
+
+For each generation we record the prompt, the water-marked output, the per-position gate signal, the realised gate rate ¯ρ, PPL, the detector statistic ϕ and its z-score, and every post-attack ϕ, z, and detection flag. All tables and figures in this paper derive from these records. The code drop ships under the same reposi-tory as this paper; the per-domain JSONL records under 
+
+data/v7 min/<domain>/records.jsonl are the source-of-truth for every empirical claim. 
+
+## D. Additional Run Data and Open Extensions 
+
+D.1. Translation Per-Pivot Breakdown 
+
+Table 5. Per-pivot ChainMark translation robustness. TPR @ 
+
+z > 2.326 for each NLLB-200 pivot under ChainMark S = 5 ,
+
+ρ = 0 .5. All three models now cover four domains (factual, wiki, writing, code) at 25 prompts each ( m = 100 generations per row, 300 per pivot column). ZH is the most aggressive pivot (δeff ≈ 0.81 ); FR, DE, RU are gentler ( δeff ≈ 0.69 ). Model m clean FR DE RU ZH Llama-3.1-8B 100 100% 85% 78% 81% 75% Mistral-7B 100 100% 86% 92% 92% 77% Qwen-2.5-7B 100 100% 78% 75% 78% 66% 
+
+D.2. FPR Recalibration: SD Recipe and Failure Modes D.3. Apples-to-Apples Head-to-Head at Empirical FPR = 1% 
+
+D.4. Empirical FPR = 0% Achievability Open data and deferred extensions. The following ex-periments are deferred to the extended version of this paper: 
+
+Table 6. Empirical-SD recalibration vs. failure modes, evalu-ated on n = 3000 non-watermarked samples ( 1000 per model). 
+
+Goal: bring empirical FPR close to the α = 1% target while pre-serving TPR = 100% . Only the empirical-SD recipe (Fix 1) brings FPR within ∼ 0.2 pp of the target ( 1.17% ); the other four sit at 2–
+
+5% FPR or collapse TPR. The iid-baseline row is the closed-form 
+
+zα = 2 .326 threshold without recalibration. The 2.07% baseline on this n = 3000 pooled corpus supersedes the 1.7–2.0% per-S
+
+cells in Table 3 (which use the smaller Exp. 5 sub-design with 
+
+n ≈ 300 per cell). Method FPR TPR iid baseline (no fix; z > 2.326 ) 2.07% 100.0% 
+
+Fix 1: empirical SD recal. 1.17% 100.0% 
+
+Failure modes (reported, not adopted): 
+
+Fix 2: Newey–West HAC 3.45% 100.0% Fix 3: k-skip ( k = 3 ) 2.46% 2.2% Fix 4: stopword filter (top-200 ) 5.18% 99.0% Fix 5: HDD-lite (inv.-freq. weighted) 2.35% 100.0% 
+
+Table 7. Empirically-calibrated head-to-head at FPR = 1% .
+
+Each method’s threshold is the maximum across the per-model 
+
+99% z-quantiles on a non-watermarked calibration corpus (the conservative recipe; per-model nulls in ChainMark: Llama 2.87 ,Qwen 2.87 , Mistral 2.41 , so ChainMark z⋆ = 2 .87 ; KGW per-model: Llama 2.77 , Mistral 2.34 , Qwen 2.62 , so KGW z⋆ =2.77 ). ChainMark retains its TPR advantage at matched empirical FPR, confirming the analytical-threshold comparison in Table 1 is not an FPR artefact. SWEET is omitted from this table: the SWEET null z-distribution was not collected on the FPR corpus and cannot be reproduced from the released artefacts; a SWEET-recalibrated row is deferred to the extended version. Method TPR clean TPR random TPR ZH 
+
+ChainMark (ours, S=5 ) 100.0% 99.9% 68.3% 
+
+KGW γ = 0 .5 66.8% 42.1% 13.0% 
+
+• DIPPER paraphrase attack. Grammar-preserving paraphrase via DIPPER (Krishna et al., 2023) on at least one (model, domain) cell. • k-regular validation at k ≥ 3. Theorem A.6 predicts 
+
+p0 = k/S for any k-regular topology; we validate 
+
+k ∈ { 1, 2} only. • External-LM PPL or MAUVE quality metric. Self-PPL is conservative but circular; an external judge LM or MAUVE would give a model-independent quality reading. • Base (non-instruction-tuned) and ≥ 10 B LLMs. 
+
+Our fleet covers only instruction-tuned 7–8B models. • ρ-sweep on the new fleet. The current headline runs use ρ = 0 .5 only; the previous gate-invariance ablation was on a smaller setup. • Adversary with detector-oracle access. Theorem A.8 excludes adversaries who can query the detector; char-acterising query complexity is open. 15 ChainMark: Model-Free LLM Watermarking                                   
+
+> Table 8. FPR =0% by lifting the threshold to z⋆=max iznwm ,i + 0 .5.Computed on the held-out non-watermarked corpus ( ∼1000 samples per model). Watermarked text retains TPR = 100% because clean ChainMark zat the canonical S= 5
+> (≈25 across the three models; Table 3) is several times the maximum observed null z. KGW and SWEET cannot achieve this regime because their watermarked and non-watermarked z-distributions overlap. Model max znwm lifted z⋆TPR @ z⋆
+> Llama-3.1-8B 7.83 8.33 100%
+> Qwen-2.5-7B 5.00 5.50 100%
+> Mistral-7B 4.82 5.32 100%
+
+## E. Reference Detector Implementation 
+
+The following 24-line Python listing is a self-contained, dependency-minimal reference implementation of Algo-rithm 2 for clockwork ChainMark. It takes a list of integer token IDs, a bytes key, a state count S, and a significance threshold α; it returns the fingerprint score ϕ, the z-score, the one-sided p-value, and a binary detection flag. The listing is sufficient to independently verify any ChainMark-watermarked text given only the secret key, with no language-model access and no learned com-ponents. Extensions to arbitrary k-regular topolo-gies (cf. Theorem A.6) require replacing the succes-sor check states[i+1] == (states[i]+1) % S 
+
+with a lookup T[states[i]][states[i+1]] > 0 
+
+and setting p0 = (T > 0).mean() ; no other modifica-tion is needed. 
+
+Complexity. Two SHA-256 evaluations per token ( 2n·256 
+
+bits of hash output) and n − 1 integer equality checks. At 
+
+n = 100 the entire detection pipeline runs in under 1 ms on a single CPU core; no GPU, no model weights, no tokenizer aside from what is needed to obtain token ids .
+
+Interpretation as an audit primitive. The detector’s in-puts are exactly what a third-party auditor could receive under an Article 50 disclosure regime: a public text, a detec-tor program, and a (confidentially held) key. The output is a p-value with analytically known false-positive behaviour under the null, sidestepping the calibration-by-grid-search problem that afflicts logit-bias watermark families. 
+
+Key management. The scheme’s security reduces to the confidentiality of key plus the random-oracle idealisation of SHA-256 (Theorem A.8). In practice an auditor and a deployer can share the key through any standard key-management substrate (e.g., HKDF-derived per-deployment keys, committed to an external ledger so that the commit-ment precedes generation). Rotating keys per deployment epoch preserves the p0 = k/S null baseline without chang-ing any detector behaviour. 
+
+## F. Prompt and Generation Examples 
+
+This appendix shows representative prompts from each of the four content domains used in Section 6, together with the exact ChainMark configuration and post-attack pipeline that produced the headline numbers in Table 1 and Figure 4. All three models receive the same prompt verbatim with no system prompt prepended; decoding parameters ( T =0 .7,top-p=1 , n=200 tokens, deterministic prompt-order seed) are also held fixed across models and methods. 
+
+Prompt examples per domain. 
+
+• Code (HumanEval problem stems, 164 problems avail-able; we use the first 100 ):                      
+
+> from typing import List def has close elements(numbers: List[float], threshold: float) -> bool: """Check if in given list of numbers, are any two numbers closer to each other than given threshold."""
+
+• Factual (short closed-form knowledge prompts):     
+
+> The capital of France is
+
+• Wiki (open-ended “Explain X. . . ” prompts over a curated 
+
+176 -entry concept list):      
+
+> Explain Donald Trump in acomprehensive way.
+
+• Writing (creative-completion prompts):               
+
+> Write ashort story that begins: The colony ship arrived three centuries late, and someone was already waiting.
+
+ChainMark generation configuration (used in Table 1). 
+
+At each generation step on the prompt above, the model produces a distribution over its native vocabulary; Chain-Mark then masks logits at gated positions (gate density 
+
+ρ=0 .5, high-entropy gate GHhigh ) to keep only token IDs whose state σκ(t) = SHA -256( κ ∥ t) mod S equals 
+
+(s + 1) mod S, where s is the previous token’s state. At ungated positions the model samples at T =0 .7 from the original distribution. The secret key κ is fixed for the full campaign; in deployment a regulator-side audit re-derives the same state sequence from the same key with the model’s tokenizer. 
+
+Attack-pipeline example. Given the watermarked text x
+
+(say, 200 tokens of a wiki-domain answer), the three attack conditions in Table 1 apply respectively: • Clean. Detect on x as-is. • Random substitution at δeff =0 .20 . Replace a uniformly random 20% of tokens with a uniformly sampled vocabu-lary token, then detect on the corrupted text. 16 ChainMark: Model-Free LLM Watermarking 
+
+import hashlib from math import sqrt from scipy.stats import norm def sha_state(key: bytes, token_id: int, S: int) -> int: """SHA-256-based state assignment sigma_kappa(t) = H(kappa || t) mod S.""" h = hashlib.sha256(key + token_id.to_bytes(8, "big")).digest() return int.from_bytes(h[:8], "big") % S def detect_chainmark(token_ids, key: bytes, S: int, alpha: float = 0.01) -> dict: """Clockwork ChainMark detector; O(n) in the number of tokens.""" n = len(token_ids) if n < 2: return {"phi": 0.0, "z": 0.0, "p_value": 1.0, "is_watermarked": False} states = [sha_state(key, t, S) for t in token_ids] valid = sum(1 for i in range(n - 1) if states[i + 1] == (states[i] + 1) % S) phi = valid / (n - 1) p0 = 1.0 / Sse = sqrt(p0 * (1.0 - p0) / (n - 1)) z = (phi - p0) / se p_value = 1.0 - norm.cdf(z) return {"phi": phi, "z": z, "p_value": p_value, "is_watermarked": p_value < alpha}       
+
+> Figure 5. Reference detector for clockwork ChainMark: 24 lines of dependency-minimal Python ( hashlib +scipy.stats ). Inputs are the tokenizer’s token IDs, the secret key, and the state count; outputs are the fingerprint ϕ,z-score, one-sided p-value, and a binary detection flag.
+
+• ZH back-translation. Pass x through NLLB-200 (Team et al., 2022) English → Chinese → English; record the em-pirical token-edit-distance δeff (≈ 0.81 for ZH on average, Table 5); then detect on the round-tripped text. The detector runs the same σκ and counts valid transitions; reports ϕ, the standardised z, and a binary flag at z > z α
+
+(Algorithm 3, Figure 5). 
+
+Token-level walkthrough. For the wiki prompt 
+
+Explain Donald Trump in a comprehensive way. on Llama-3.1-8B-Instruct at S=5 , ρ=0 .5, an illustrative excerpt of the first 20 generated tokens looks roughly as below. We show the (token, state) pair at each position and mark gated steps with • (the gate raised the mask; ChainMark forced si+1 = ( si+1) mod 5 ) versus ungated steps with ◦ (no mask; the model sampled freely):                        
+
+> Donald 2◦Trump 3◦(born 4•June 0•
+> 14 1•,1946 2•)is 3•a4◦former 4
+> ◦U.S. 0•president 1•and 2•
+> businessman 3•...
+
+At gated positions the next token’s state is forced to be (prev + 1) mod 5 (here S=5 , so the cycle is 
+
+0→1→2→3→4→0); the model picks the highest-prob to-ken whose state matches that requirement. At ungated po-sitions any token may follow. The gate threshold τ is cali-brated on a pilot so the realised gate rate tracks ρ=0 .5.
+
+Detection on this excerpt. A regulator run-ning the detector (Figure 5) on the same string with the same key κ re-derives the state sequence 
+
+2, 3, 4, 0, 1, 2, 3, 4, 4, 4, 0, 1, 2, 3, . . . and observes 11 /14 
+
+valid transitions, i.e. ϕ = 0.79 . With p0=0 .20 and 
+
+n=14 , z = (0 .79 − 0.20) /p0.16 /13 ≈ 5.3, well above 
+
+z0.01 = 2 .326 , so the detector flags “watermarked”. Anon-watermarked sample of the same length under the null distribution averages ϕ ≈ 0.20 and z ≈ 0.17

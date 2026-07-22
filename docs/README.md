@@ -6,71 +6,73 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-21
-- 运行时间：2026-07-21 20:38:12 UTC
+- 最新运行日期：2026-07-22
+- 运行时间：2026-07-22 21:22:08 UTC
 - 运行状态：成功
 - 本次总论文数：17
 - 精读区：6
 - 速读区：11
 
 ### 今日简报（AI）
-今日精读6篇、速读11篇，重点关注AI系统安全与机密计算两大方向。最值得看的是两篇9.0高分论文：信号模型访问风险分析（AI系统运营安全）和最小指令级认证加密（受限机密计算）。普通读者后续可优先阅读零信任物联网与LLM驱动的威胁情报，以及DSA随机数漏洞交互分析。
-- 详情：[/202607/21/README](/202607/21/README)
+1) 今日精读17篇论文，重点剖析了持续生物认证安全与机器学习模型投毒攻击两大热点。  
+2) 最值得看的是《VIGIL》提出的间歇性似然验证机制（8.0/10）和《ShadowPickle》的隐身反序列化攻击（8.0/10），速读中《Sarus》的隐私保护多厂商感知融合（8.0/10）也极具参考价值。  
+3) 建议优先通读精读列表了解最新攻防范式，再速读可信AI与隐私计算方向以拓展应用视野。
+- 详情：[/202607/22/README](/202607/22/README)
 
 ### 精读区论文标签
-1. [Signal-based Model Access Risk Analysis for AI System Operations Security](/202607/21/2607.16414v1-signal-based-model-access-risk-analysis-for-ai-system-operations-security)  
-   标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：基于信号的模型访问风险分析用于AI系统运维安全
-2. [SABLE: Minimalist Instruction-Level Authenticated Encryption for Constrained Confidential Computing](/202607/21/2607.16771v1-sable-minimalist-instruction-level-authenticated-encryption-for-constrained-confidential-computing)  
-   标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：提出了SABLE，一种面向机密计算的指令级认证加密RISC-V架构
-3. [Isolation Failure From Shared Storage: Characterizing and Exploiting Page-Cache SCA Leakage Across Containers and VMs](/202607/21/2607.17518v1-isolation-failure-from-shared-storage-characterizing-and-exploiting-page-cache-sca-leakage-across-containers-and-vms)  
-   标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：跨容器和虚拟机的页缓存侧信道泄漏
-4. [(A)iSpy: Parasitic Trojans for Machine Learning Infrastructure](/202607/21/2607.17550v1-aispy-parasitic-trojans-for-machine-learning-infrastructure)  
-   标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：提出了(A)iSpy木马，能够颠覆机器学习基础设施，属于直接的人工智能安全威胁
-5. [How Agents Ask for Permission: User Permissions for AI Agents, from Interfaces to Enforcement](/202607/21/2607.13718v2-how-agents-ask-for-permission-user-permissions-for-ai-agents-from-interfaces-to-enforcement)  
+1. [VIGIL: Verifying Identity via Gated Intermittent Likelihoods for Continuous Biometric Authentication](/202607/22/2607.16651v1-vigil-verifying-identity-via-gated-intermittent-likelihoods-for-continuous-biometric-authentication)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：AI智能体安全，通过用户权限防范提示注入和隐私泄露
-6. [Ciphertext- and Polynomial-Level Optimization for Fully Homomorphic Encryption](/202607/21/2607.15750v2-ciphertext--and-polynomial-level-optimization-for-fully-homomorphic-encryption)  
+   evidence：连续生物特征认证框架用于身份验证
+2. [ShadowPickle: Evading Machine Learning Model Scanners via Stealthy Pickle Deserialization Attacks](/202607/22/2607.17503v1-shadowpickle-evading-machine-learning-model-scanners-via-stealthy-pickle-deserialization-attacks)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：面向FHE的多级编译器优化；机密计算技术
+   evidence：针对ML模型扫描器的隐式pickle反序列化攻击
+3. [DecoyFace: Beyond Obfuscation via Controllable and Imperceptible Identity Misdirection for Privacy-Preserving Face Recognition](/202607/22/2607.17504v1-decoyface-beyond-obfuscation-via-controllable-and-imperceptible-identity-misdirection-for-privacy-preserving-face-recognition)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：通过诱饵重定向实现隐私保护人脸识别
+4. [Residual Observability and Attack Detectability in Encrypted OPC UA Traffic](/202607/22/2607.17809v1-residual-observability-and-attack-detectability-in-encrypted-opc-ua-traffic)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：基于机器学习的加密OPC UA流量入侵检测
+5. [Self-State Attacks on Self-Hosted AI Agents: How Far Can OS Defenses Go?](/202607/22/2607.17986v1-self-state-attacks-on-self-hosted-ai-agents-how-far-can-os-defenses-go)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：自托管AI代理的自我状态攻击及操作系统防御
+6. [PRISM: Sensitivity-Aware PolynoMial PRuning for EffIcient Neural Network Encryption](/202607/22/2607.18342v1-prism-sensitivity-aware-polynomial-pruning-for-efficient-neural-network-encryption)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：提出面向同态加密神经网络的可感知可靠性的剪枝方法，赋能机密计算
 
 ### 速读区论文标签
-1. [Federated Learning and LLM-Driven Threat Intelligence for Zero Trust IoT Architecture](/202607/21/2607.17035v1-federated-learning-and-llm-driven-threat-intelligence-for-zero-trust-iot-architecture)  
+1. [Engineering Trustworthy Agentic AI for Critical Systems](/202607/22/2607.18548v1-engineering-trustworthy-agentic-ai-for-critical-systems)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：联邦学习与LLM驱动的零信任物联网安全
-2. [DSA Nonce Vulnerabilities: An Interactive Analysis](/202607/21/2607.17107v1-dsa-nonce-vulnerabilities-an-interactive-analysis)  
+   evidence：可信自主AI调查涵盖安全、鲁棒性、透明度
+2. [Sarus: Privacy-Preserving Multi-Vendor Perception Fusion via Homomorphic Encryption](/202607/22/2607.19146v1-sarus-privacy-preserving-multi-vendor-perception-fusion-via-homomorphic-encryption)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：DSA随机数漏洞分析，用于密钥恢复和认证
-3. [LMEdge: QoS-Aware LLM Inference Orchestration on Edge Clusters](/202607/21/2607.17175v1-lmedge-qos-aware-llm-inference-orchestration-on-edge-clusters)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：异构边缘集群上QoS感知的LLM推理编排
-4. [Salience Induction against Multi-Hop RAG Agents: Threat and Defense](/202607/21/2607.17535v1-salience-induction-against-multi-hop-rag-agents-threat-and-defense)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：多跳RAG代理的显著性诱导攻击及防御
-5. [Trust but Verify? Uncovering the Security Debt of Autonomous Coding Agents](/202607/21/2607.12428v2-trust-but-verify-uncovering-the-security-debt-of-autonomous-coding-agents)  
+   evidence：使用同态加密的隐私保护感知融合
+3. [A Non-Intrusive Traffic Analysis Framework for Authorization Risk Detection and Coordinated Response in Web Applications](/202607/22/2607.16754v1-a-non-intrusive-traffic-analysis-framework-for-authorization-risk-detection-and-coordinated-response-in-web-applications)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：实证研究了自主编码代理生成代码中的安全代码异味，揭示人工智能安全威胁
-6. [SQUIRO: A Framework for Security-Aware Quantum-Classical Scheduling on Kubernetes](/202607/21/2607.16089v1-squiro-a-framework-for-security-aware-quantum-classical-scheduling-on-kubernetes)  
+   evidence：Web应用中授权风险检测的非侵入式流量分析
+4. [Quantum-Resilient Banking Transaction Security using DW-HKEM: A Hybrid RSA/ML-KEM Cryptographic Gateway with Real-Time](/202607/22/2607.17573v1-quantum-resilient-banking-transaction-security-using-dw-hkem-a-hybrid-rsaml-kem-cryptographic-gateway-with-real-time)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：Kubernetes上安全感知的量子经典调度框架
-7. [Auditable Session Admission for Cross-Silo Federated Learning](/202607/21/2607.16559v1-auditable-session-admission-for-cross-silo-federated-learning)  
+   evidence：混合RSA/ML-KEM密码网关用于密钥封装和认证
+5. [ClouDens: Operational Context-Aware Anomaly Detection for Large-scale Cloud System Monitoring](/202607/22/2607.18127v1-cloudens-operational-context-aware-anomaly-detection-for-large-scale-cloud-system-monitoring)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：跨孤岛联邦学习的会话准入与身份认证
-8. [Hardware-Transparent I/O Governance in Disaggregated Heterogeneous Storage](/202607/21/2607.16578v1-hardware-transparent-io-governance-in-disaggregated-heterogeneous-storage)  
+   evidence：大规模云系统上下文感知异常检测
+6. [RRAM-DP: Device-Calibrated Differential Privacy for In-Memory Edge Learning](/202607/22/2607.18169v1-rram-dp-device-calibrated-differential-privacy-for-in-memory-edge-learning)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：分布式存储I/O治理在云计算中
-9. [Tractable Query Answering under Epistemic Confidentiality Policies in DL Ontologies (extended version)](/202607/21/2607.16715v1-tractable-query-answering-under-epistemic-confidentiality-policies-in-dl-ontologies-extended-version)  
+   evidence：提出基于RRAM的差分隐私方法用于边缘人工智能，直接关注人工智能隐私保护
+7. [Trusted Credentials, Untrusted Behavior: Benchmarking LLM-Agent Security in High-Performance Computing](/202607/22/2607.18485v1-trusted-credentials-untrusted-behavior-benchmarking-llm-agent-security-in-high-performance-computing)  
+   标签：评分：7.0/10、query:sec-cloud-ai
+   evidence：LLM代理安全，凭证认证
+8. [RECEIPT: Deterministic, Reward-Hacking-Resistant Verification for White-Box Agentic XSS Discovery](/202607/22/2607.18575v1-receipt-deterministic-reward-hacking-resistant-verification-for-white-box-agentic-xss-discovery)  
+   标签：评分：7.0/10、query:sec-cloud-ai
+   evidence：基于LLM的XSS发现验证
+9. [Byzantine Fault-Tolerant Post-Quantum Distributed Quorum Signatures](/202607/22/2607.17700v1-byzantine-fault-tolerant-post-quantum-distributed-quorum-signatures)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：用于保护机密性的受控查询评估
-10. [A Systematic Evaluation of Traditional Privacy Policy Analysis Tools Against LLMs](/202607/21/2607.17075v1-a-systematic-evaluation-of-traditional-privacy-policy-analysis-tools-against-llms)  
+   evidence：拜占庭容错后量子分布式法定签名
+10. [Rate-Distortion Function for Encrypted Traffic Side-Channel Defense](/202607/22/2607.17889v1-rate-distortion-function-for-encrypted-traffic-side-channel-defense)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：评估LLM在隐私政策分析中的能力，与人工智能隐私保护相关
-11. [Learning-Driven Adaptive Audit Scheduling: A Sequential Decision Approach to Off-Chain Data Integrity](/202607/21/2607.17305v1-learning-driven-adaptive-audit-scheduling-a-sequential-decision-approach-to-off-chain-data-integrity)  
+   evidence：加密流量侧信道防御，与人工智能安全威胁相关
+11. [ChainMark: Model-Free LLM Watermarking with Closed-Form Calibration](/202607/22/2607.18445v1-chainmark-model-free-llm-watermarking-with-closed-form-calibration)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：云存储中离链数据完整性的密码审计
+   evidence：针对AI生成文本安全的LLM水印
 
 
 <div class="dpr-home-promo-card">

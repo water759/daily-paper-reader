@@ -1,0 +1,232 @@
+Title: Byzantine Fault-Tolerant Post-Quantum Distributed Quorum Signatures
+
+URL Source: https://arxiv.org/pdf/2607.17700v1
+
+Published Time: Tue, 21 Jul 2026 01:38:17 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# Byzantine Fault-Tolerant Post-Quantum Distributed Quorum Signatures 
+
+# Quentin Kniep 
+
+Anza Switzerland 
+
+# Jakub Sliwinski 
+
+Anza Switzerland 
+
+# Roger Wattenhofer 
+
+Anza & ETH Zurich Switzerland 
+
+## ABSTRACT 
+
+Threshold, aggregate, and multi-signatures—which we col-lectively call quorum signatures—certify that a quorum of nodes endorsed a statement, with a certificate as small as a single signature. No constant-size post-quantum quorum signature is known: all candidates grow with the number of signers and are slow to aggregate, making quorum signatures the hardest obstacle to migrating byzantine fault-tolerant systems to post-quantum security. In this paper, we sidestep this open cryptographic problem by changing how the protocol communicates. We introduce 
+
+Distributed Quorum Signature (DQS) , a primitive built solely from ordinary digital signatures and a Bracha-style approval broadcast. DQS turns certificates from network messages into local events. Two event types divide the roles certificates play: weak certificates capture safety, strong certificates cap-ture liveness. In DQS every message is constant size, fitting a single datagram regardless of the number of nodes. The total communication is quadratic, and no security assump-tions change. In a large distributed system, the overhead of post-quantum DQS is competitive with the canonical pre-quantum BLS scheme. 
+
+## 1 INTRODUCTION 
+
+A powerful quantum computer would pose a grave threat to internet security. Many established cryptographic primitives, such as digital signatures, could be attacked and broken by a quantum computer. Quantum computing may not be practical yet, but protocols must be ready before it is too late. Fortunately, many cryptographic primitives already have post-quantum alternatives. These alternatives, however, of-ten come with substantial performance trade-offs: Naively swapping a pre-quantum (quantum insecure) primitive for its post-quantum (quantum secure) counterpart can impose a severe cost. The situation is particularly dire for the widely used ad-vanced signature primitives, like aggregate signatures, thresh-old signatures, and multiple multi-signature variants. Each of these allow producing combined cryptographic signatures for a quorum of signers, yet remain as short as a signature from a single party. We use quorum signature as an umbrella term for such primitives. See Table 1 for a comparison. BLS aggregate signatures [ 4 , 5] allow ad hoc aggregation of signatures over the same message by simply adding up in-dividual signatures, producing an aggregate of just 48 to 192 bytes, depending on the parameterization. This compactness has made BLS aggregate signatures a popular ingredient in many pre-quantum distributed systems. As a result, when trying to migrate a distributed system to post-quantum secu-rity, quorum signatures are often the hardest piece to replace. While post-quantum quorum signatures exist, there is no post-quantum alternative with constant size aggregates. The existing proposals all grow with the number of signers and involve slow aggregation. In the most compact proposals even verification is unacceptably slow. Because of this, quo-rum signatures are a true show-stopper when it comes to making distributed protocols secure against potential quan-tum attacks. To the best of our knowledge, no roadmap exists for achiev-ing efficient post-quantum quorum signatures of any kind. In this paper, we present a radically different approach: rather than tackling this open cryptographic problem head-on, we sidestep aggregation entirely. Our approach changes the semantics. In established (non-distributed) quorum signatures, one party collects a quorum Scheme Messages Quorums Interaction Attribution Transferability Threshold sig. same thresholds only † setup required not generally succinct Aggregate sig. arbitrary arbitrary none direct from sig. succinct sig. + O( 𝑛 ) bitmap DQS arbitrary arbitrary all-to-all ‡ some correct node ∗ O( 𝑛 ) size 
+
+Table 1: Comparison of approaches to quorum certification. †Arbitrary weights must be virtualized. ‡Direct or indirect. ∗While not all nodes creating the quorum certificate can attribute the signers, we ensure that there is at least one correct node that holds the cryptographic proof to do so. 
+
+> 1arXiv:2607.17700v1 [cs.DC] 20 Jul 2026 Quentin Kniep, Jakub Sliwinski, and Roger Wattenhofer
+
+of individual signatures and locally combines them into a quorum signature that serves as a certificate that the quorum was achieved. We instead introduce a Distributed Quorum Signature (DQS) : Rather than being computed locally, the DQS is the result of a distributed communication protocol. Instead of a single concrete certificate, the protocol produces two distinct types of certificates, each carrying its own novel semantics, both useful in distributed protocol design. We define DQS in Definition 3 with the notions of weak and strong certificates. Certificates correspond to quorum signatures, but are local events resulting from messaging in the distributed system rather than self-contained proofs like quorum signatures. For a weak certificate to be created by any correct node, some correct node must have observed the necessary quorum of votes. In other words, it is as safe for a protocol to act based on a weak certificate, as it is based on a quorum signature. However, if some of these votes were cast by byzantine nodes, it might be that other correct nodes will not create the same weak certificate. A strong certificate features an additional property: If it is observed by any correct node, all other correct nodes will also observe the certificate. Moreover, if enough correct nodes cast votes to meet the quorum, the corresponding strong certificate will necessarily be created. In other words, the malicious nodes are never needed for the protocol to progress with strong certificates. Since correct nodes are enough to produce strong certificates, and strong certificates are observed by all correct nodes, liveness can rely on strong certificates. In executions of the protocol without misbehaving nodes, both weak and strong certificates will be observed by all nodes whenever the needed quorum is met. With misbe-havior, some nodes might create weak certificates without creating the same strong certificate. However, we ensure that if a strong certificate is observed, all correct nodes also observe the weak certificate. DQS is instantiated with a regular post-quantum signa-ture scheme, so can be used without requiring subtle cryp-tographic primitives. DQS adds only a small constant over-head to each message, such that for small enough signatures and small enough vote payloads all messages can fit in an MTU-sized datagram, regardless of the size of the distributed system. In summary, post-quantum security does not have to mean a slower, clunkier protocol. 
+
+## 2 MODEL 
+
+Node. We have a distributed system with 𝑛 individual com-puters, which we call nodes 𝑣 1, 𝑣 2, . . . , 𝑣 𝑛 . We assume that the set of nodes is fixed and publicly known, i.e., each node knows how to contact (IP address and port number) every other node. Each node has a public key, and all nodes know all public keys. 
+
+Weight. Nodes have different voting weights. Each node 
+
+𝑣 𝑖 has a known weight 𝜌 𝑖 > 0 to denote node 𝑣 𝑖 ’s fraction of the entire weight, i.e., Í𝑛 𝑖 =1 𝜌 𝑖 = 1. In the symmetric case, every node has the same weight, i.e., 𝜌 𝑖 = 1/𝑛 .
+
+Message. Nodes communicate by exchanging authenti-cated messages over the internet. Our protocol never uses large messages. Specifically, every message fits into a single MTU datagram [ 26 ] (depending on the signature scheme and assuming the vote payloads are small enough, roughly 
+
+< 400 B). Because of this, we can use UDP with authentica-tion, e.g., QUIC-UDP. 
+
+Broadcast. Sometimes, a node needs to broadcast the same message to all (𝑛 − 1 other) nodes. The sender node simply loops over all other nodes and sends the message to one node after the other. If available, we could also use a multicast service. 
+
+Adversary. Some nodes can be byzantine in the sense that they can misbehave in arbitrary ways. Byzantine nodes can for instance forget to send a message. They can also collude to attack the system in a coordinated way. We assume that all the byzantine nodes together own up to 𝑓 of the total weight. Additionally, nodes with weight up to 𝑐 may crash at any time. The remaining nodes with weight at least 1 − 𝑓 − 𝑐 
+
+are correct and follow the protocol. 
+
+Fault Tolerance. We assume that 3𝑓 + 2𝑐 < 1 for our con-struction to be correct. Popular parameter choices for this assumption are 𝑓 < 1/5, 𝑐 = 1/5 or 𝑓 < 1/3, 𝑐 = 0.
+
+Asynchrony. We consider the partially synchronous net-work setting of Global Stabilization Time (GST) [ 7 , 12 ]. Mes-sages sent between correct nodes will eventually arrive, but they may take arbitrarily long to arrive. 
+
+Synchrony. In the model of GST, synchrony simply corre-sponds to a global worst-case bound Δ on message delivery. The GST model captures periods of synchrony and asyn-chrony by stating that before the unknown and arbitrary time 𝐺𝑆𝑇 messages can be arbitrarily delayed, but after time GST all previous and future messages 𝑚 sent at time 𝑡 will arrive at the recipient at latest at time max (GST , 𝑡 ) + Δ.
+
+Votes and Quorum Signatures. Our construction provides an alternative for protocols making use of votes and quorum signatures defined below. In this general setup, nodes vote on a specific event. Nodes receive and remember the votes of other nodes. If some node sees enough votes for an event, they can generate a quorum signature. 
+
+> 2Byzantine Fault-Tolerant Post-Quantum Distributed Quorum Signatures
+
+Definition 1 (vote). Given a set of messages. A vote is a message signed by a single node. 
+
+Definition 2 (qorum signature). Consider a predicate 
+
+𝑃 over sets of votes, such that if 𝑃 (𝑉 ) is true for some 𝑉 , then for any 𝑉 ′ ⊇ 𝑉 , 𝑃 (𝑉 ′) is also true. Then, a quorum signature is a set of signatures (individual, aggregate, threshold or com-binatorial) proving that 𝑃 (𝑉 ) is true and votes 𝑉 were cast by nodes. 
+
+## 3 RELATED WORK 
+
+In this section, we discuss several quantum-proof crypto-graphic tools. Notably, many fundamental cryptographic primitives remain effective even in the presence of prac-tical quantum computers. In particular, symmetric encryp-tion, message authentication mechanisms, and cryptographic hash functions are considered to remain secure against quan-tum attacks. While quantum algorithms such as Grover’s algorithm can provide a quadratic speedup for brute-force search, they do not fundamentally break these primitives, and the resulting loss in security can generally be compensated by increasing key and digest sizes [ 2 , 15 , 16 ]. Moreover, many hash-based constructions and security proofs have been studied explic-itly in the quantum setting [3]. Unfortunately, the popular elliptic curve signature schemes do not carry over to the world of quantum computing. We want to specifically consider the use case where each mes-sage of a protocol should fit into a single MTU-sized network datagram. Assuming QUIC is used in datagram mode for transport, 1,160 B remain available for payload. Table 2 summarizes the state of the art of post-quantum signature schemes. The smallest to be standardized post-quantum signature is Falcon-512 [ 27 ]. All other standard-ized signatures do not fit a datagram MTU size. However, there are some interesting alternatives that are not standard-ized (yet): Hawk-512 [ 11 ] is closely related to Falcon-512; it eliminates the floating-point sampling hazard in the signing procedure, which can leak the secret key if implemented without constant-time guarantees. While XMSS-SHA2_20_192 [ 8] signatures are too large, XMSS-like [ 17 ] hash-based constructions can be parametrized. In Section 5 we discuss several parameter options and sketch how even using one-time signatures directly can be feasi-ble. In summary, while signatures incur an overhead that demands a redesign of a protocol, there are feasible solutions. What’s even more difficult to replace are BLS aggregate signatures, which are commonly used in protocols to allow aggregation of individual nodes’ votes into certificates for a quorum of signers. While BLS signatures are elegant, they usually require a bitmap indicating which individual signa-tures are included. If we want a BLS aggregate signature to fit within a single datagram, this bitmap constrains the system to roughly 𝑛 ≈ 10 ,000 nodes. In our approach, by contrast, all messages have strictly constant size and fit comfortably inside a datagram regardless of 𝑛 .Currently no construction is known for constant-size quo-rum signatures with post-quantum security. The dedicated synchronized multi-signature constructions that exist [ 13 ,14 , 21 ] are logarithmic in the number of signers with large constant factors, making them only slightly more efficient than naive concatenation at 𝑛 ≈ 1,000 nodes. Other, more general, attempts to achieve aggregation are based on zero-knowledge proofs over the verification of all the individual signatures, which are in the same order of magnitude regard-ing size, and with prover latency in the order of seconds. See Table 3 for a comparison of some of the most practically efficient aggregate signature proposals. In summary, the situation for aggregate signatures appears bleak. Accordingly, in this paper, we completely eliminate Scheme Type Sig. PK Cat. Sign. Risk Verify 
+
+Standardized or in active standardization 
+
+Falcon-512 [27] Lattice 666 B 897 B 1 High Fast XMSS-SHA2_20_192 [8] Hash 1.7 KB 52 B 3 Moderate Fast ML-DSA-44 [25] Lattice 2.4 KB 1.3 KB 2 Low Fast SLH-DSA-128 [24] Hash 7.9 KB 32 B 1 Low Slow 
+
+Non-standardized (research) 
+
+SQISign [1] Isogeny 148 B 65 B 1 High Slow Hawk-512 [11] Lattice 555 B 1.0 KB 1 Low Fast 
+
+Table 2: Candidates for post-quantum signature schemes with small signatures. Sig./PK: signature and public-key sizes. Cat.: NIST security category (1, 2, 3, 4, 5; higher is stronger). Sign. Risk: risk of a signing-side failure (secret-state reuse for XMSS, side-channel leakage for Falcon/SQISign). Verify: relative verification speed. 
+
+> 3Quentin Kniep, Jakub Sliwinski, and Roger Wattenhofer
+
+Scheme Type Messages Single Sig. Agg. Sig. Growth Aggregate Verify naive Falcon-512 Lattice arbitrary 666 B ≤ 666 KB Θ(𝑛 ) ≈ 0 ≤ 40 ms Lemur [21] Lattice same, sync. ≈ 78 KB ≈ 185 KB O( log 𝑛 ) ≈ 1 s ≈ 15 ms leanMultisig [9, 20] Hash same ≈ 1.5 KB ≈ 400 KB polylog ≈ 2–3 s ≈ 30 ms Falcon512+LaZer [22] Lattice arbitrary 666 B ≈ 70 KB polylog ≈ 500 ms ≈ 250 ms BLS [4] Pairing arbitrary 48–192 B 48–192 B Θ(1) ≈ 1 ms ≈ 0.3–0.5 ms 
+
+Table 3: Post-quantum aggregatable signature candidates at 𝑛 ≈ 1,000 signers; pre-quantum BLS for reference. Synchronized schemes (sync.) sign the same message, and only if signers signed them for the same time step. Timings as reported by the respective works, on differing hardware. All schemes additionally need ≈ 𝑛 bits to identify the signer set. Naive Falcon-512 concatenates: aggregation is free, but size and verification grow with 𝑛 .  
+
+> broadcast approval
+> and
+> create weak certificate
+> create strong certificate
+> sufficient votes
+> >𝑓 approvals
+
+or > 2𝑓 + 𝑐 approvals 
+
+Figure 4: Certificate creation and approval broadcast. 
+
+the need for signature aggregation by introducing a new communication pattern for a (consensus) protocol. 
+
+## 4 DISTRIBUTED QUORUM SIGNATURE 
+
+We are refraining from using any cryptographic primitive other than simple signatures as in Definition 1, and want to produce an interactive protocol providing functionality of quorum signatures of Definition 2. In our protocol, we introduce two different notions of local events approximat-ing propagation of quorum signatures between nodes. We call the events weak and strong certificate, or cert for short. Definition 3 states the properties we aim for. 
+
+Definition 3 (distributed qorum signatures). A dis-tributed quorum signature scheme is an interactive protocol, which starts with the nodes issuing votes at potentially different times and ensures the following properties: 
+
+• (weak cert safety) If any correct node creates a weak certificate, then enough nodes voted to meet the quo-rum. 
+
+• (strong cert liveness) If enough correct nodes vote to meet the certificate creation threshold, then all correct nodes will eventually create the strong certificate. 
+
+• (consistency) If any correct node creates a strong cer-tificate, then all correct nodes will create the strong and the corresponding weak certificate. 
+
+## 4.1 Protocol 
+
+In this section we describe our DQS protocol. DQS uses regular digital signatures and Bracha-style reliable broadcast [6] as building blocks. 
+
+Definition 4 (vote broadcast). Votes of correct nodes are broadcast to all nodes. 
+
+Definition 5 (approval). Approval is a message contain-ing a certificate payload, signed by a single node. 
+
+Definition 6 (weak cert and approval broadcast). Aweak certificate is created when one of the following conditions is met for the first time: 
+
+• Votes matching the corresponding certificate creation quorum are observed. 
+
+• The corresponding approvals from nodes with cumula-tive weight of more than 𝑓 are observed. Moreover, when a weak certificate is created the corresponding approval is broadcast. 
+
+Definition 7 (strong cert). A strong certificate is created when a node observes > 2𝑓 + 𝑐 corresponding approvals. 
+
+## 4.2 Properties 
+
+Lemma 1 (weak cert safety). Our protocol satisfies weak cert safety of Definition 3. Moreover, if some correct node creates a weak certificate, there is some (potentially different) correct node that collected enough votes for creating the certificate. 
+
+Proof. Let 𝑣 be the correct node that created this weak cert first in the execution. By Definition 6, one of the follow-ing conditions holds: 
+
+> 4Byzantine Fault-Tolerant Post-Quantum Distributed Quorum Signatures
+
+a) The node 𝑣 observed votes matching the certificate cre-ation quorum itself. Then, trivially, enough nodes voted for the certificate to exist. b) The node 𝑣 created the weak certificate after receiving the corresponding approval from nodes with > 𝑓 of weight. Since byzantine nodes hold at most 𝑓 of weight, some cor-rect node broadcast the corresponding approval before 𝑣 .However, the approval is only broadcast upon observing the weak certificate, contradicting the choice of 𝑣 . □
+
+Lemma 2 (strong cert liveness). DQS satisfies strong cert liveness of Definition 3. 
+
+Proof. As per the property condition, suppose the votes of correct nodes meet a certificate condition. By Definition 4, all correct nodes will observe these votes. By Definition 6, each correct node will cast a corresponding approval as a result. Since 1 > 3𝑓 + 2𝑐 , each node will receive approvals of correct nodes with weight 1 − 𝑓 − 𝑐 > 2𝑓 + 𝑐 , fulfilling the condition of Definition 7. Therefore each correct node will create the strong cert. □
+
+Lemma 3 (consistency). DQS satisfies consistency of Defi-nition 3. Moreover, if a correct node creates a strong certificate at time 𝑡 , all correct nodes create the same strong certificate by time max (𝑡 + 2Δ, GST + 2Δ).
+
+Proof. Suppose a correct node 𝑣 created a strong certifi-cate at time 𝑡 . By Definition 7, 𝑣 observed approval mes-sages for the certificate from nodes with > 2𝑓 + 𝑐 of weight. Since nodes with weight of at most 𝑓 + 𝑐 are faulty, correct nodes with weight > 2𝑓 + 𝑐 − ( 𝑓 + 𝑐 ) = 𝑓 broadcast ap-provals for this certificate payload by time 𝑡 . By definition of GST, these approvals will reach all correct nodes by time 
+
+max (𝑡 + Δ, GST + Δ). Since all correct nodes will receive ap-provals from correct nodes with weight > 𝑓 , by Definition 6 all correct nodes will broadcast their approvals for this cer-tificate payload by time max (𝑡 + Δ, GST + Δ). Then, by time 
+
+max (𝑡 +2Δ, GST +2Δ), all correct nodes will receive approvals from all correct nodes with weight 1 − 𝑓 − 𝑐 > 2𝑓 + 𝑐 . By Definition 7, all correct nodes will create the corresponding strong certificate by time max (𝑡 + 2Δ, GST + 2Δ). □
+
+Theorem 1. Our protocol is a distributed quorum signature scheme of Definition 3. 
+
+Proof. The properties follow from Lemmas 1 to 3. □
+
+Lemma 4 (communication complexity). Suppose the vote payloads are encodable in constant size. Then, each message of DQS has size O( 1), and it sends O( 𝑛 2) messages per weak certificate that is created. 
+
+Proof. The size of vote and approval signatures is inde-pendent of the number of nodes. By Definitions 1 and 5, all messages are then of size O( 1).
+
+𝑤 𝑇 Sig. PK Sign [ 𝜇𝑠 ] Verify [ 𝜇𝑠 ]
+
+16 360 1,168 B 24 B 6.7 6.0 
+
+32 604 952 B 24 B 11.5 9.4 
+
+64 1,008 784 B 24 B 18.8 15.0 
+
+128 1,778 688 B 24 B 33.7 26.0 
+
+256 3,060 592 B 24 B 55.7 44.3 
+
+Table 5: Comparison of various parameterizations of WOTS-TS [ 10 ]. 𝑤 : Winternitz space-time tradeoff. 𝑇 :target-sum value. Sig./PK: signature and public-key sizes. Sign: signing speed. Verify: verification speed. Measurements are from an optimized implementation of WOTS-TS on an Apple M4 Max. 
+
+Each weak cert requires votes for some constant number of different messages. Each correct node broadcasts their votes and broadcasts zero or one approval. Therefore, each correct node sends at most O( 𝑛 ) messages, and all correct nodes together send at most O( 𝑛 2). Messages from byzantine nodes exceeding the maximum number can be dropped. □
+
+Corollary 1. If the quorums are chosen such that only a constant number of weak certificates are created, the total communication cost is O( 𝑛 2) messages. Attribution. By Lemma 1, if some correct node creates a weak certificate, then there is some (potentially other) correct node 𝑣 that observed enough votes to meet the quorum. Thus, this node 𝑣 holds a cryptographic proof to attribute a set of signers to the creation of the weak certificate. 
+
+Transferability. Because all votes and approvals are signed by their creators, a correct node 𝑣 can always transfer their certificate (weak or strong) by sending all the votes and ap-provals that led 𝑣 to create the certificate locally to another correct node. However, such a proof has size O( 𝑛 ). To pre-vent incurring this cost, the protocol is designed in a way that these do not appear in any good-case execution. But this transferability can be used e.g. to recover certificate propagation after a network failure. 
+
+## 5 HASH-BASED SIGNATURES 
+
+In this section we argue why hash-based signatures fit our setting well. We show that integrating hash-based signatures correctly can compensate for their main downsides, which are signature size and difficulty of key management. In re-turn, we get the strongest post-quantum security that fits in a single MTU-sized message and has low verification cost, all while having the most conservative security assumption. For this, we assume that the nodes already exchanged enough public keys for one-time signatures ahead of time, ideally 
+
+> 5Quentin Kniep, Jakub Sliwinski, and Roger Wattenhofer
+
+Scheme 𝑛 Message Size Communication Aggregate BLS 1,000 205 B 285 KB Falcon512+LaZer 1,000 ≈70 KB ≈70 MB DQS 1,000 624 B 1,248 KB Aggregate BLS 10,000 1,330 B 14.1 MB Falcon512+LaZer 10,000 ≈70 KB ≈700 MB DQS 10,000 624 B 12.5 MB 
+
+Table 6: Maximum message sizes and communication cost per node. Our DQS construction is instantiated with WOTS-TS, 𝑤 = 256 (cf. Table 5). We compare DQS with pre-quantum BLS signatures (BLS12-381 instan-tiated for small signatures) with a bitmap and with the most compact post-quantum aggregation scheme Falcon512+LaZer. These all assume good-case execu-tion with vote and certificate payloads of size 32 bytes. With 𝑛 = 10 ,000 nodes, post-quantum DQS is arguably as efficient as pre-quantum BLS! 
+
+even mapping each of them to some in-protocol notion of time ( slots or epochs are common terms) and message type. One-time signatures (OTSs) are a fundamental building block of hash-based signature schemes. An OTS allows se-curely signing a single message under a given key, whereas reusing a key would risk signature forgery. We consider a state-of-the-art OTS scheme based on Win-ternitz signatures [ 18 , 23 ], namely WOTS-TS [ 10 ]. In Table 5 we look at the major parameter trade-off: signature size 𝑤 
+
+against signing and verification time. Another dimension for parameterization is the target-sum value 𝑇 , trading off signing time against verification time. For the security level we fix 192 bits, as this is the first level that is considered more secure than the 256-bit hash collision resistance, which is an assumption many protocols already make. A security level of 192 bits corresponds to NIST category 3 security. As an optimization, we note that some messages in dis-tributed protocols do not even need a full signature over a message hash. If the signature payload is shorter than a hash itself, e.g. only a message type and an index, this message bit-string can be more efficiently signed directly. Because for WOTS-TS the signature size is linear in the message length, hash-then-sign only makes sense once the message is longer than the hash. 
+
+## 6 PERFORMANCE 
+
+Compared to the use of aggregate signatures, our protocol messages are all constant size and do not require indicating the set of signers in any message, which is usually done with a bitmap. Table 6 shows the communication cost of one      
+
+> 020 40 60 80 100
+> 0
+> 50
+> 100
+> 150
+> 200
+> 250
+
+Nodes reached [% of weight] Latency [ms] Latency Simulation for Global Consensus Protocol 
+
+> with DQS
+> with BLS
+
+Figure 7: Simulation results comparing the Alpen-glow consensus protocol instantiated with our scheme vs BLS aggregation, on Solana’s real-world geo-distributed network distribution of about 750 nodes (in April 2026). The median node’s finalization latency increases from 130 ms to 140 ms. 
+
+instance of our scheme compared to one instance of BLS-based vote and certificate broadcast. It can be seen how the message size for the (larger) certificate message in the BLS case grows as the bitmap grows linearly in the number of nodes. As a result, at 𝑛 ≈ 10 ,000 or more our scheme becomes more efficient, in terms of communication cost. Another concern is that our scheme might increase latency in some cases, because dissemination of a strong cert to all nodes is bounded by 2Δ, as seen in Lemma 3, whereas broadcasting an aggregate signature takes at most Δ. To prove practicality of our scheme we equipped a state-of-the-art consensus protocol with DQS in place of BLS aggregate signature broadcast. After careful integration, the protocol does not exhibit an additional network hop on the good-case latency path, because we were able to map all events necessary for finalizing a proposal to weak certificates, with strong certificates only needed for liveness and during leader rotation. We simulated the Alpenglow consensus [ 19 ] with the cur-rent geographic node and stake distribution of the Solana blockchain. We assume a minimum node out-bandwidth of 1 Gbit/s, maximum node out-bandwidth of 100 Gbit/s, pro-portional to weight after assigning the maximum bandwidth to the node with maximum weight. The simulation considers real internet average link latencies, per-node congestion and transmission delays. The results of the finalization time in this simulation can be seen in Figure 7. Across the entire network nodes finalize about 10 ms later, with the median node going from 130 ms to 140 ms. As mentioned, the mapping of events to weak 
+
+> 6
+
+Byzantine Fault-Tolerant Post-Quantum Distributed Quorum Signatures 
+
+and strong certificates avoided extra network hops for final-ization, so this difference is entirely due to additional data transmissions. 
+
+## REFERENCES 
+
+[1] Marius A. Aardal, Gora Adj, Diego F. Aranha, Andrea Basso, Isaac An-drés Canales Martínez, Jorge Chávez-Saab, Maria Corte-Real Santos, Pierrick Dartois, Luca De Feo, Max Duparc, Jonathan Komada Eriksen, Tako Boris Fouotsa, Décio Luiz Gazzoni Filho, Basil Hess, David Ko-hel, Antonin Leroux, Patrick Longa, Luciano Maino, Michael Meyer, Kohei Nakagawa, Hiroshi Onuki, Lorenz Panny, Sikhar Patranabis, Christophe Petit, Giacomo Pope, Krijn Reijnders, Damien Robert, Fran-cisco Rodríguez-Henríquez, Sina Schaeffler, and Benjamin Wesolowski. 2025. SQIsign . Technical Report. National Institute of Standards and Technology. https://sqisign.org [2] Daniel J. Bernstein, Johannes Buchmann, and Erik Dahmen (Eds.). 2009. Post-Quantum Cryptography . Springer. [3] Dan Boneh, Ozgur Dagdelen, Marc Fischlin, Anja Lehmann, Christian Schaffner, and Mark Zhandry. 2011. Random Oracles in a Quantum World. In Advances in Cryptology – ASIACRYPT 2011 . Springer, 41–69. [4] Dan Boneh, Craig Gentry, Ben Lynn, and Hovav Shacham. 2003. Ag-gregate and verifiably encrypted signatures from bilinear maps. In 
+
+Advances in Cryptology (Eurocrypt), Warsaw, Poland . Springer, 416– 432. [5] Dan Boneh, Ben Lynn, and Hovav Shacham. 2004. Short Signatures from the Weil Pairing. J. Cryptology 17, 4 (2004), 297–319. [6] Gabriel Bracha. 1987. Asynchronous Byzantine Agreement Protocols. 
+
+Information and Computation 75, 2 (1987), 130–143. https://doi.org/ 10.1016/0890-5401(87)90054-X [7] Andrei Constantinescu, Diana Ghinea, Jakub Sliwinski, and Roger Wattenhofer. 2024. Brief Announcement: Unifying Partial Synchrony. In 38th International Symposium on Distributed Computing (DISC) .[8] David A Cooper, Daniel C Apon, Quynh H Dang, Michael S Davidson, Morris J Dworkin, Carl A Miller, et al . 2020. Recommendation for stateful hash-based signature schemes. NIST Special Publication 800, 208 (2020), 800–208. [9] Justin Drake, Dmitry Khovratovich, Mikhail Kudinov, and Benedikt Wagner. 2025. Hash-based multi-signatures for post-quantum Ethereum. Cryptology ePrint Archive (2025). [10] Justin Drake, Dmitry Khovratovich, Mikhail Kudinov, and Benedikt Wagner. 2025. Hash-based multi-signatures for post-quantum ethereum. Cryptology ePrint Archive (2025). [11] Léo Ducas, Eamonn W Postlethwaite, Ludo N Pulles, and Wessel van Woerden. 2022. Hawk: Module LIP makes lattice signatures fast, compact and simple. In International Conference on the Theory and Application of Cryptology and Information Security . Springer, 65–94. [12] Cynthia Dwork, Nancy A. Lynch, and Larry J. Stockmeyer. 1988. Con-sensus in the Presence of Partial Synchrony. J. ACM 35, 2 (1988), 288–323. [13] Nils Fleischhacker, Gottfried Herold, Mark Simkin, and Zhenfei Zhang. 2023. Chipmunk: better synchronized multi-signatures from lattices. In Proceedings of the 2023 acm sigsac conference on computer and com-munications security . 386–400. [14] Nils Fleischhacker, Mark Simkin, and Zhenfei Zhang. 2022. Squirrel: Efficient synchronized multi-signatures from lattices. In Proceedings of the 2022 ACM SIGSAC conference on computer and communications security . 1109–1123. [15] Markus Grassl, Brandon Langenberg, Martin Roetteler, and Rainer Steinwandt. 2016. Applying Grover’s Algorithm to AES: Quantum Resource Estimates. Post-Quantum Cryptography (2016), 29–43. [16] Lov K. Grover. 1996. A Fast Quantum Mechanical Algorithm for Database Search. In Proceedings of the 28th Annual ACM Symposium on Theory of Computing . 212–219. [17] Andreas Huelsing, Denis Butin, Stefan-Lukas Gazdag, Joost Rijneveld, and Aziz Mohaisen. 2018. XMSS: eXtended Merkle Signature Scheme. RFC 8391. https://doi.org/10.17487/RFC8391 [18] Andreas Hülsing. 2013. W-OTS+–shorter signatures for hash-based signature schemes. In International Conference on Cryptology in Africa .Springer, 173–188. [19] Quentin Kniep, Jakub Sliwinski, and Roger Wattenhofer. 2025. Solana Alpenglow Consensus: Increased Bandwidth, Reduced Latency. https: //anza.xyz/alpenglow-1-1. [20] lean Ethereum contributors. 2026. leanVM: Minimal hash-based zkVM for a Post-Quantum Ethereum. https://github.com/leanEthereum/ leanVM. Version 0.8, accessed 2026-07-16. [21] Yini Lin, Muhammed F Esgin, Amin Sakzad, Ron Steinfeld, and Markku-Juhani O Saarinen. 2026. Lemur: Scalable Post-Quantum Synchronized Multi-Signatures. Cryptology ePrint Archive (2026). [22] Vadim Lyubashevsky, Gregor Seiler, and Patrick Steuer. 2024. The LaZer library: Lattice-based zero knowledge and succinct proofs for quantum-safe privacy. In Proceedings of the 2024 on ACM SIGSAC Conference on Computer and Communications Security . 3125–3137. [23] Ralph C Merkle. 1987. A digital signature based on a conventional encryption function. In Conference on the theory and application of cryptographic techniques . Springer, 369–378. [24] National Institute of Standards, Technology (NIST), and David Cooper. 2024. Stateless Hash-Based Digital Signature Standard. https://doi. org/10.6028/NIST.FIPS.205 [25] National Institute of Standards, Technology (NIST), Thinh Dang, Jacob Lichtinger, Yi-Kai Liu, Carl Miller, Dustin Moody, Rene Peralta, Ray Perlner, and Angela Robinson. 2024. Module-Lattice-Based Digital Signature Standard. https://doi.org/10.6028/NIST.FIPS.204 [26] Jon Postel. 1984. Standard for the Interchange of Ethernet Frames. RFC 894. [27] Deepraj Soni, Kanad Basu, Mohammed Nabeel, Najwa Aaraj, Marcos Manzano, and Ramesh Karri. 2020. Falcon. In Hardware Architectures for Post-Quantum Digital Signature Schemes . Springer, 31–41. 7

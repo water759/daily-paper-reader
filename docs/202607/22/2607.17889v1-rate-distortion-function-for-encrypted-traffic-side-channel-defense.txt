@@ -1,0 +1,555 @@
+Title: Rate-Distortion Function for Encrypted Traffic Side-Channel Defense
+
+URL Source: https://arxiv.org/pdf/2607.17889v1
+
+Published Time: Tue, 21 Jul 2026 01:51:57 GMT
+
+Number of Pages: 12
+
+Markdown Content:
+# Rate-Distortion Function for Encrypted Traffic Side-Channel Defense 
+
+Guangjie Liu 1, Guang Cheng 2, Weiwei Liu 3, and Yutong Wang 1 
+
+> 1
+
+School of Electronics and Information Engineering, Nanjing University of Information Science and Technology, Nanjing 210044, China 
+
+gjieliu@gmail.com  
+
+> 2
+
+School of Cyber Science and Engineering, Southeast University, Nanjing 211189, China 
+
+chengguang@seu.edu.cn  
+
+> 3
+
+School of Automation, Nanjing University of Science and Technology, Nanjing 210094, China 
+
+lwwnjust@njust.edu.cn 
+
+Abstract. Parameter selection for encrypted traffic defense has long relied on empirical tuning, yet the fundamental question— given a QoS cost budget D, how low can the leakage rate go under sustained observa-tion? —lacks a provable, computable baseline. Taking the semantic label sequence Xn as the source, the defended feature sequence Y n as the observation, and Wasserstein-1 distance as the defense cost, we define the side-channel rate-distortion function Rsc (D) within the stationary memoryless defense class Θiid and provide its complete characterization. We prove that Rsc (D) is monotone decreasing, convex, and continu-ous, with exact endpoints; the optimal defense has an exponential-tilting (Boltzmann) structure governed by KKT conditions; and the curve con-stitutes the exact Pareto frontier within Θiid . For binary equal-prior tasks, Dmax = 12 W1(P0, P 1) via Kantorovich–Rubinstein duality. On real-world website-fingerprinting defenses, the framework locates Front (∆gap =0 .028 bits), WTF-PAD ( 0.034 bits), and TrafficSliver ( 0.124 bits) above the theoretical curve, quantifying their suboptimality gaps. 
+
+Keywords: Encrypted traffic side channel · Rate-distortion theory · Op-timal transport · Wasserstein distance · Website fingerprinting 
+
+## 1 Introduction 
+
+Encrypted network traffic carries rich metadata—packet lengths, inter-packet timings, and flow directions—that leaks application semantics even when pay-load is hidden. Website fingerprinting (WF) attacks exploit this channel with alarming accuracy: closed-world recognition of Tor-browsed sites reaches 91– 96% [28, 26], application identification exceeds 90% [24], and real-gateway accu-racy remains above 93% at very low base rates [18]. Modern defenses (Tamaraw, WTF-PAD [14], Front [12], TrafficSliver [3], NetShaper [20]) trade bandwidth arXiv:2607.17889v1 [cs.CR] 20 Jul 2026 2 G. Liu et al. 
+
+and latency for privacy, but parameter selection is empirical and protection strength is measured by adversarial accuracy. 
+
+The missing baseline. A systematic re-evaluation of nine prominent de-fenses [17] concluded that the absence of formal, provable guarantees is the root cause of defenses being repeatedly broken. Liu et al. [16] gave an information-theoretic diagnosis: side-channel leakage is inevitable —for any first-order distin-guishable application pair, I(X; Z) > 0 is a structural consequence regardless of the defense. Yet inevitability only answers whether leakage is zero. The central quantitative question remains open: 
+
+Given QoS cost budget D, how low can the leakage rate go under sus-tained observation? 
+
+No existing tool—differential privacy [9], application-specific bandwidth bounds [4], or information-theoretic leakage metrics [21, 6]—provides a computable answer to this general question. 
+
+Our approach. This paper answers the question by casting it as a dual of Shannon rate-distortion : instead of minimizing description rate subject to a dis-tortion constraint, we minimize leakage rate subject to a defense cost constraint. The mathematical skeleton is identical; only the roles of rate and distortion are swapped. We use Wasserstein-1 ( W1) distance as the defense cost measure be-cause (i) it respects the geometry of the feature space, (ii) the W1 ball is convex, enabling convex optimization, and (iii) the Kantorovich–Rubinstein duality cou-ples W1 naturally to L-Lipschitz statistics, providing a common language for attacker and defender. 
+
+Contributions. We define the side-channel rate-distortion function 
+
+Rsc (D) = min     
+
+> {Qx}:P
+> xpX(x)W1(Qx,P x)≤D
+
+I(X; Y ), (1) and establish the following results. (1) Properties (Theorem 1): Rsc (D) is monotone decreasing, convex, and con-tinuous with exact endpoints Rsc (0) = I(X; Z) and Rsc (Dmax ) = 0 .(2) Optimal defense structure (Theorem 2): The optimal defense has an exponential-tilting form Q∗
+
+> x
+
+(y) ∝ ¯Q∗(y) exp( −λ∗ϕ∗
+
+> x
+
+(y)) ; the KKT multiplier 
+
+λ∗ quantifies the marginal value of defense resources. (3) Pareto frontier (Theorem 3): (D, R sc (D)) is the exact achievable boundary within Θiid .(4) Critical cost formula (Proposition 1): For binary equal-prior tasks, Dmax = 
+
+> 12
+
+W1(P0, P 1), bridging the zero-leakage threshold directly to the statistical separability of the two application distributions. 
+
+## 2 Related Work 
+
+Traffic analysis attacks. Website fingerprinting exploits packet meta-data (lengths, timings, directions) to identify encrypted communication. Rate-Distortion Function for Encrypted Traffic Defense 3
+
+Wang et al. [28] demonstrated 85% TPR at 0.6% FPR in a large open-world set-ting; k-fingerprinting [13] pushed this to 0.02% FPR across 100,000 pages. Deep Fingerprinting [26] achieves 98% closed-world accuracy on Tor; ET-BERT [15] shows cross-protocol distinguishability via pre-trained representations. Graph-DApp [24] exceeds 90% accuracy in application identification; real-gateway eval-uations confirm accuracy above 93% at very low base rates [18]. Siby et al. [25] show that even 10%-sampled QUIC traffic yields recognition far above chance. The consistent cross-scenario finding is that different applications produce sta-tistically distinguishable feature distributions {Px}, making I(X; Z) > 0 a struc-tural fact and the fundamental threat model well-founded. 
+
+Traffic defenses and the formal-guarantee gap. Early defenses estab-lished baseline tradeoffs: BuFLO [10] eliminates distinguishing features at over 100% bandwidth overhead; Tamaraw [4] derives the first scenario-specific band-width lower bound for ε-secure defenses; Walkie-Talkie [29] reduces overhead to 
+
+≈31% via a half-duplex schedule. WTF-PAD [14] applies adaptive inter-burst padding at under 60% overhead, but was subsequently broken by Deep Finger-printing [26]. Front [12] achieves zero latency via Rayleigh-distributed dummy injection; TrafficSliver [3] splits flows across guard nodes to reduce the per-node observable; NetShaper [20] frames side-channel mitigation as (ε, δ )-differential privacy and provides a quantified privacy-overhead curve—but DP parameters accumulate linearly under repeated composition, and the framework does not ad-dress the rate-distortion question of how low leakage can go for a given budget 
+
+D. Palette [23] clusters traffic patterns and normalizes to a common template, reducing attack accuracy by ≈74% on average, yet its guarantees depend on cluster radius rather than a universal bound. Mathews et al. [17] re-evaluated nine defenses and found that most fail under adaptive attacks; they explicitly attribute this to the lack of formal, provable guarantees—the precise gap our work addresses. 
+
+Information-theoretic leakage metrics. Serjantov and Danezis [21] in-troduced mutual information as an anonymity metric; Chatzikokolakis et al. ex-tended this to a unified g-leakage framework [5]. Cherubin [6] connected Bayes error to mutual information via Fano-type inequalities, placing attack accuracy and information leakage in a common framework. Liu et al. [16] proved the in-evitability of side-channel leakage: for any first-order distinguishable application pair, I(X; Y ) > 0 holds for every defense—a structural result that motivates asking not whether leakage is zero, but how small it can be made. 
+
+Rate-distortion theory and optimal transport. Shannon [22] and Berger [1] established rate-distortion theory; the classical problem minimizes description rate subject to a distortion bound. Yamamoto [30] and Merhav– Shamai [19] studied rate-distortion under secrecy constraints (state masking), closest in spirit to our work. The Blahut–Arimoto algorithm [2] provides a convergent iterative solver for classical rate-distortion; our SLSQP-based ap-proach extends this to the composite W1 distortion. Villani [27] established the Kantorovich–Rubinstein duality underlying our cost definition; Wasserstein dis-tance has been applied to differential privacy [31] but not to the rate-distortion 4 G. Liu et al. 
+
+characterization of traffic defense. The present work bridges Shannon rate-distortion [22, 1] with optimal transport [27] and instantiates the combined framework on encrypted traffic for the first time. 
+
+Positioning. Three specific gaps motivate this work. (1) No cost-leakage tradeoff curve exists : attack literature confirms I(X; Z) > 0; defense literature accumulates empirical tradeoff curves; but neither provides the theoretical lower bound on leakage as a function of D. (2) Optimal defense structure is unknown :existing defenses are heuristic and do not align perturbations with any optimality criterion. (3) No quantitative bridge to the theoretical limit : Mathews et al. [17] identify the gap but provide no metric for measuring distance from the optimum. We fill all three gaps. 
+
+## 3 Problem Formulation 
+
+3.1 Model Definition 1 (Semantic source). {Xi}i≥1 is i.i.d. with Xi ∈ X = {1, . . . , K }
+
+and prior pX , where min x pX (x) > 0.
+
+Definition 2 (Feature space and original distributions). The packet fea-ture space Z is finite with metric d : Z × Z → [0 , 1] . The original conditional distribution Px = PZ|X=x is the feature distribution of application x in the ab-sence of any defense. 
+
+A defense strategy θ = {Qx}x∈X specifies a target defended distribution: 
+
+Y |X = x ∼ Qx. We study the stationary memoryless defense class 
+
+Θiid ≜ θ = {Qx} : Qx ∈ P (Z), Y i|Xi = x iid 
+
+∼ Qx across i .
+
+This class covers deterministic traffic shaping and random padding; defenses with flow-level shared randomness or cross-packet memory are discussed in Sect. 6. 
+
+3.2 Defense Cost and Leakage Rate Definition 3 (Defense cost). 
+
+D(θ) ≜ X
+
+> x∈X
+
+pX (x) W1(Qx, P x),
+
+where W1(Qx, P x) = min γ∈Π(Qx,P x)
+
+P 
+
+> y,z
+
+d(y, z )γ(y, z ) is the Wasserstein-1 dis-tance. D(θ) is the average cost of “transporting” each application’s feature dis-tribution from Px to Qx.
+
+We choose W1 over KL divergence for three reasons: (i) W1 respects the geometry of Z; (ii) the W1 ball {Q : W1(Q, P x) ≤ r} is convex, so the feasible set of (1) is convex; and (iii) the Kantorovich–Rubinstein duality W1(Q, P ) = sup h∈H 1 |EQh − EP h| couples the defense cost directly to L-Lipschitz statistics used by the attacker. Rate-Distortion Function for Encrypted Traffic Defense 5
+
+Definition 4 (Leakage rate). R(θ) ≜ lim n→∞ 1 
+
+> n
+
+I(Xn; Y n).
+
+Using a single-sample X as the semantic variable leads to the trivial bound  
+
+> 1
+> n
+
+I(X; Y n) ≤ log Kn → 0; using the source sequence Xn yields a meaningful per-step limit. 
+
+Lemma 1 (Single-letterization). For θ ∈ Θiid , the limit exists and equals 
+
+R(θ) = I(X; Y ), where (X, Y ) ∼ pX (x)Qx(y).Proof. Under Θiid , (Xi, Y i) are i.i.d., so I(Xn; Y n) = Pni=1 I(Xi; Yi) = n I (X; Y ).Dividing by n gives the result. 
+
+3.3 Side-Channel Rate-Distortion Function Definition 5. For D ≥ 0:
+
+Rsc (D) ≜ min     
+
+> {Qx}:P
+> xpX(x)W1(Qx,P x)≤D
+
+I(X; Y ). (2) Since Z is finite, this is a finite-dimensional convex program: I(X; Y ) is con-vex in {Qx} (for fixed pX ), and the constraint function is convex. The minimum is attained (compact feasible set, continuous objective). 
+
+## 4 Main Results 
+
+4.1 Properties of Rsc (D)
+
+Theorem 1 (Basic properties). Rsc (D) satisfies: (i) (Monotone) D1 < D 2 ⇒ Rsc (D1) ≥ Rsc (D2).(ii) (Convex) Rsc (λD 1 + (1 − λ)D2) ≤ λR sc (D1) + (1 − λ)Rsc (D2).(iii) (Continuous) Rsc is continuous on [0 , D max ] and zero for D > D max .(iv) (Endpoints) Rsc (0) = I(X; Z) and Rsc (D) = 0 ⇔ D ≥ Dmax , where 
+
+Dmax ≜ inf 
+
+> Q∈P (Z)
+
+X
+
+> x
+
+pX (x) W1(Q, P x).
+
+Proof. (i) Monotonicity. If D1 < D 2, the feasible set F(D1) ⊆ F (D2), so mini-mizing over a larger set cannot increase the value. 
+
+(ii) Convexity. Let {Q(j) 
+
+> x
+
+} be optimal at level Dj for j = 1 , 2, and set 
+
+Q(λ) 
+
+> x
+
+= λQ (1)  
+
+> x
+
++ (1 −λ)Q(2)  
+
+> x
+
+. By convexity of W1(·, P x) (linear program value in first argument): P 
+
+> x
+
+pxW1(Q(λ) 
+
+> x
+
+, P x) ≤ λD 1 + (1 −λ)D2. By convexity of I(X; Y )
+
+in the channel {Qx} at fixed pX [7]: Iλ(X; Y ) ≤ λR sc (D1) + (1 −λ)Rsc (D2).Hence Rsc (λD 1 + (1 −λ)D2) ≤ λR sc (D1) + (1 −λ)Rsc (D2).
+
+(iii) Continuity. A finite-valued convex function on an open interval is con-tinuous there, so continuity holds on (0 , D max ). At D = 0 : monotonicity gives 
+
+lim D↓0 Rsc (D) ≤ Rsc (0) . For the reverse, any optimal {QDx } satisfies W1(QDx , P x) ≤
+
+D/ (min x px) → 0, and since Z is finite, W1 → 0 implies QDx → Px, so ID (X; Y ) →6 G. Liu et al. 
+
+I(X; Z) = Rsc (0) . At Dmax : if the left limit L− > 0, convexity applied to 
+
+D1 < D max and D2 = Dmax gives Rsc ( D1+Dmax  
+
+> 2
+
+) ≤ 12 Rsc (D1); letting D1 ↑ Dmax 
+
+yields L− ≤ 12 L−, a contradiction. 
+
+(iv) Left endpoint. D = 0 forces W1(Qx, P x) = 0 for every x. On finite Z,this means Qx = Px, so Y |X = x ∼ Px and I(X; Y ) = I(X; Z).
+
+(v) Zero-leakage condition. (⇐) P(Z) is compact and Q 7 → P 
+
+> x
+
+pxW1(Q, P x)
+
+is continuous, so Dmax is attained at some Q†. Setting Qx ≡ Q† for all x gives cost Dmax ≤ D and I(X; Y ) = 0 (since Y ⊥ X). ( ⇒) I(X; Y ) = 0 implies 
+
+DKL (Q∗
+
+> x
+
+∥pY ) = 0 for all x with px > 0, so Q∗ 
+
+> x
+
+= pY for all such x. Thus 
+
+D ≥ P 
+
+> x
+
+pxW1(pY , P x) ≥ Dmax .Properties (i)–(ii) encode diminishing returns: early budget buys substantial leakage reduction, while zero leakage requires disproportionate cost. 
+
+Corollary 1 (Marginal value of defense). For D ∈ (0 , D max ), let λ∗(D) be the optimal dual multiplier. Then −λ∗(D) ∈ ∂R sc (D): λ∗ is the marginal leakage reduction per unit of defense cost. Wherever Rsc is differentiable, ddD Rsc (D) = 
+
+−λ∗(D) < 0.
+
+4.2 Optimal Defense: Exponential-Tilting Structure Theorem 2 (KKT conditions and exponential tilting). Let D ∈ (0 , D max )
+
+and let {Q∗
+
+> x
+
+} be optimal for (1) with ¯Q∗ = P 
+
+> x
+
+pX (x)Q∗
+
+> x
+
+. Then there exists a dual multiplier λ∗ > 0 and, for each x, a subgradient ϕ∗ 
+
+> x
+
+∈ ∂W 1(·, P x)|Q∗ 
+
+> x
+
+(the Kantorovich potential) such that on the support Sx ≜ {y : Q∗
+
+> x
+
+(y) > 0}:
+
+log Q∗
+
+> x
+
+(y) − log ¯Q∗(y) + λ∗ϕ∗
+
+> x
+
+(y) + cx = 0 , (3) 
+
+equivalently, 
+
+Q∗
+
+> x
+
+(y) ∝ ¯Q∗(y) exp  −λ∗ϕ∗
+
+> x
+
+(y), y ∈ S x. (4) 
+
+The constraint is active: P 
+
+> x
+
+pX (x)W1(Q∗
+
+> x
+
+, P x) = D.Proof. Existence. Q 
+
+> x
+
+P(Z) is compact in the finite-dimensional topology, I(X; Y )
+
+and W1 are continuous, so the minimum is attained (Weierstrass theorem). 
+
+Strong duality. Taking Qx = Px gives D(θ) = 0 < D , so Slater’s condition holds. For a finite-dimensional convex program with a Slater point, strong duality holds and the KKT conditions are necessary and sufficient for optimality. 
+
+Lagrangian and stationarity. Introduce multiplier λ ≥ 0 (inequality con-straint), νx ∈ R (normalization P 
+
+> y
+
+Qx(y) = 1 ), and ηx(y) ≥ 0 (non-negativity 
+
+Qx(y) ≥ 0). Write I(X; Y ) = P 
+
+> x
+
+px
+
+P 
+
+> y
+
+Qx(y) log Qx(y) − P 
+
+> y
+
+¯Q(y) log ¯Q(y)
+
+where ¯Q(y) = P 
+
+> x
+
+pxQx(y). For y ∈ S x (where Q∗
+
+> x
+
+(y) > 0, so ηx(y) = 0 
+
+by complementary slackness), differentiating with respect to Qx(y) and using 
+
+∂ ¯Q(y)/∂Q x(y) = px gives: 
+
+∂I ∂Q x(y) = px
+
+ log Qx(y) − log ¯Q(y).Rate-Distortion Function for Encrypted Traffic Defense 7   
+
+> D(defense cost)
+> R(leakage rate)
+> I(X;Z)
+> Dmax 0
+> working point
+> Rsc (D)
+> zero-leakage
+
+Fig. 1: Side-channel rate-distortion curve Rsc (D): the exact Pareto frontier within Θiid . Any defense in the class operates at or above the curve. For the W1 term, since W1(·, P x) is a convex piecewise-linear function (LP value), we select a subgradient ϕ∗ 
+
+> x
+
+(the optimal Kantorovich dual potential). The sta-tionarity condition ∇Qx(y)L = 0 becomes: 
+
+px
+
+ log Q∗
+
+> x
+
+(y) − log ¯Q∗(y) + λ∗ϕ∗
+
+> x
+
+(y) + νx = 0 .
+
+Setting cx = νx/p x and exponentiating yields (4). 
+
+Constraint activation. Suppose D < D max but the constraint is inactive. Then λ∗ = 0 by complementary slackness, and the stationarity condition reduces to log Q∗
+
+> x
+
+(y) = log ¯Q∗(y) − cx, i.e. Q∗ 
+
+> x
+
+∝ ¯Q∗, which after normalization gives 
+
+Q∗ 
+
+> x
+
+= ¯Q∗ for all x. This implies I(X; Y ) = 0 , so the cost of this solution satisfies P 
+
+> x
+
+pxW1( ¯Q∗, P x) ≥ Dmax > D , contradicting feasibility. Hence λ∗ > 0 and the constraint is active. Equation (4) is the traffic-defense analog of the Boltzmann distribution in rate-distortion theory [7, 11]: ϕ∗ 
+
+> x
+
+acts as the per-class cost function and λ∗ is the marginal value of defense resources. A Blahut–Arimoto-style [2] sweep over λ
+
+traces the full Rsc (D) curve. 
+
+4.3 Pareto Frontier and Critical Cost Theorem 3 (Exact Pareto frontier within Θiid ). 
+
+(i) (Achievability) For every D ∈ [0 , D max ], there exists θ∗ ∈ Θiid with D(θ∗) ≤
+
+D and R(θ∗) = Rsc (D). For D ∈ (0 , D max ) the constraint is active. (ii) (Unimprovability) For any θ ∈ Θiid with D(θ) ≤ D, we have R(θ) ≥ Rsc (D).Proof. (i) Achievability. The feasible set is compact and I(X; Y ) is continuous, so the infimum in Definition 5 is attained for every D ≥ 0. Constraint activation for D ∈ (0 , D max ) follows from Theorem 2. 
+
+(ii) Unimprovability. Rsc (D) is defined as the infimum of R(θ) over all θ ∈
+
+Θiid with D(θ) ≤ D. By definition, R(θ) ≥ Rsc (D) for every such θ.8 G. Liu et al. 
+
+These two properties jointly say that Rsc (D) is a tight lower bound: no i.i.d. defense can do better, and the bound is achieved by a concrete distribution family {Q∗
+
+> x
+
+}.
+
+Proposition 1 (Critical cost for binary equal-prior). Let K = 2 and 
+
+pX (0) = pX (1) = 12 . Then Dmax ≥ 12 W1(P0, P 1). If a W1-geodesic midpoint 
+
+Q1/2 exists (i.e., W1(P0, Q 1/2) = W1(Q1/2, P 1) = 12 W1(P0, P 1)), then 
+
+Dmax = 12 W1(P0, P 1) = ∆(L)app 
+
+2L , (5) 
+
+where ∆(L)app = sup h∈H L |EP0 h−EP1 h| and the equality follows from Kantorovich– Rubinstein duality. Proof. Lower bound. By the W1 triangle inequality, for any Q:
+
+> 12
+
+ W1(Q, P 0) + W1(Q, P 1) ≥ 12 W1(P0, P 1).
+
+Since P(Z) is compact and Q 7 → P 
+
+> x
+
+pxW1(Q, P x) is continuous, the infimum over Q is attained and Dmax ≥ 12 W1(P0, P 1).
+
+Upper bound (geodesic midpoint). If Q1/2 exists, choose Q0 = Q1 ≡ Q1/2 as the common defended distribution for both classes. Then 
+
+Dmax ≤ 12
+
+ W1(P0, Q 1/2) + W1(P1, Q 1/2) = 12 W1(P0, P 1).
+
+Combining both bounds gives Dmax = 12 W1(P0, P 1).
+
+Kantorovich–Rubinstein link. On finite Z with metric d, K-R duality [27] states W1(P0, P 1) = sup h∈H 1 |EP0 h − EP1 h|. For general Lipschitz constant L,rescaling gives ∆(L)app = L W 1(P0, P 1), hence Dmax = ∆(L)app /(2 L).Equation (5) ties Dmax to a measurable quantity: the more distinguishable the two applications, the higher the cost threshold for zero leakage and the wider the useful budget range [0 , D max ).
+
+## 5 Empirical Evaluation 
+
+5.1 Experimental Setup Dataset. We use the public website fingerprinting dataset of Deng et al. [8], which is built on 95 monitored websites collected by Sirinam et al. [26] on Tor (1,000 traces per site). Four conditions are included: the undefended baseline (CW) and three defenses: Front [12], WTF-PAD [14], and TrafficSliver [3]. Front 
+
+injects dummy packets drawn from a Rayleigh distribution at zero latency cost. 
+
+WTF-PAD uses an adaptive two-state automaton to inject dummy packets in burst gaps. TrafficSliver splits Tor traffic across multiple guard nodes (BWR strategy), so an adversary observing a single node sees only a fraction of packets. Rate-Distortion Function for Encrypted Traffic Defense 9
+
+Table 1: Suboptimality gaps of three defenses (five class pairs, 95 % bootstrap CI).             
+
+> Defense ∆gap (bits) 95 % CI (bits) bD/D max
+> Front 0.028 [0.026, 0.030] 89.2 % WTF-PAD 0.034 [0.033, 0.036] 83.6 % TrafficSliver 0.124 [0.117, 0.130] 46.4 %
+
+Feature extraction. Raw traces are stored as signed-timestamp sequences. We extract inter-packet delays by differencing consecutive non-zero timestamps (direction-agnostic) and quantize to L = 50 uniform histogram bins, obtaining empirical distributions bPx and defended distributions bQmx per defense m.
+
+Class-pair selection. On the undefended CW data, we rank all  95 2
+
+ pairs by W1( bP0, bP1) and select the top five: pairs (21,90), (4,21), (10,90), (83,90), (2,90), with W1 ∈ [0 .039 , 0.042] . For each pair we assume equal prior pX (0) = 
+
+pX (1) = 12 and compute the theoretical curve Rsc (D) via Lagrange-multiplier sweep (SLSQP, Nλ = 60 log-uniform points). 
+
+Defense evaluation. For each (class pair, defense) combination the working-point coordinates are 
+
+bDm = 12
+
+W1( bQm 
+
+> 0
+
+, bP0) + W1( bQm 
+
+> 1
+
+, bP1), bRm = I(X; bY m).
+
+The suboptimality gap is ∆m 
+
+> gap
+
+= bRm − Rsc ( bDm) ≥ 0, and the cost utilization ratio is bDm/D max . Confidence intervals are obtained via 200-round flow-level bootstrap with hierarchical averaging across the five class pairs. 
+
+5.2 Results 
+
+Table 1 summarizes the average suboptimality gap for each defense, and Fig. 2 shows the two-metric comparison across class pairs. All three defenses sit strictly above the theoretical curve ( ∆gap > 0; 95 % confidence intervals do not include zero). Pairwise bootstrap tests confirm that the gaps are mutually distinguish-able. 
+
+Discussion. Front and WTF-PAD both approach the budget ceiling ( >83 % utilization) but still leave measurable gaps. This indicates that the direction of feature-space perturbation, not merely its magnitude, matters—consistent with the exponential-tilting structure in Theorem 2: optimal defenses must align per-turbations with the Kantorovich potential ϕ∗
+
+> x
+
+, whereas Front and WTF-PAD use fixed injection policies independent of the per-class cost gradient. TrafficSliver’s large gap ( 0.124 bits) at low cost utilization ( 46 % ) suggests that packet splitting reduces the observed packet count but does not reshape the timing distribution toward the optimal transport target. 10 G. Liu et al. Front WTF-PAD TrafficSliver           
+
+> 0.000
+> 0.025
+> 0.050
+> 0.075
+> 0.100
+> 0.125
+> 0.150
+> 0.175
+> Leakage excess  gap  (bits)
+> all pairwise p< 0.005
+> 0%
+> 20%
+> 40%
+> 60%
+> 80%
+> 100%
+> Cost utilization  D/Dmax  (%)
+> 21/90 4/21 10/90 83/90 2/90 mean gap mean D/Dmax
+
+Fig. 2: Cost utilization vs. suboptimality gap for three defenses across five class pairs (error bars: 95 % bootstrap CI). Front and WTF-PAD consume >83 % of the available budget yet remain suboptimal; TrafficSliver uses only 46 % of the budget and incurs the largest gap, revealing inefficiency of the splitting strategy under this metric. 
+
+## 6 Discussion and Conclusion 
+
+Scope of Rsc (D). The Pareto optimality result is exact within Θiid . For the broader class of memory-based defenses (e.g., those employing flow-level shared randomness κ), a Jensen argument shows 1 
+
+> n
+
+I(Xn; Y n) → I(X; Y |κ) ≥ Rsc (D)
+
+asymptotically under per-packet marginal cost, so Rsc (D) remains a valid lower bound. Whether strictly tighter bounds exist for adaptive causal defenses— requiring a multi-letter rate-distortion formulation—is an open problem. 
+
+Engineering gap. Dmax is a mathematical threshold; reaching it requires transporting all application distributions to a common target Q†. TCP acknowl-edgment constraints, buffer limits, and uplink/downlink asymmetry all prevent this in practice, so real deployments operate in [0 , D max ). Quantifying the ad-ditional implementation penalty relative to the distribution-layer baseline is a natural next step. 
+
+Conclusion. We have established Rsc (D), the first provable, computable baseline for the leakage-cost tradeoff in encrypted traffic defense. The curve is the exact Pareto frontier within Θiid ; the optimal defense follows an exponential-tilting law; and Dmax is tied to the Wasserstein distance between application distributions. Applied to three real-world defenses, the framework quantifies sub-optimality gaps—a principled benchmark against which any future defense can be measured. 
+
+Acknowledgments. This work was supported by the National Natural Science Foun-dation of China Joint Fund Integration Project (No. U2436601). Rate-Distortion Function for Encrypted Traffic Defense 11 
+
+Disclosure of Interests. The authors have no competing interests to declare. 
+
+## References 
+
+1. Berger, T.: Rate Distortion Theory: A Mathematical Basis for Data Compression. Prentice-Hall, Englewood Cliffs, NJ (1971) 2. Blahut, R.E.: Computation of channel capacity and rate-distortion functions. IEEE Transactions on Information Theory 18 (4), 460–473 (1972) 3. De la Cadena, W., Mitseva, A., Hiller, J., Pennekamp, J., Reuter, S., Filter, J., Engel, T., Wehrle, K., Panchenko, A.: TrafficSliver: Fighting website fingerprinting attacks with traffic splitting. In: Proceedings of the 2020 ACM SIGSAC Confer-ence on Computer and Communications Security. pp. 1971–1985. ACM (2020). https://doi.org/10.1145/3372297.3423351 4. Cai, X., Nithyanand, R., Wang, T., Johnson, R., Goldberg, I.: A systematic ap-proach to developing and evaluating website fingerprinting defenses. In: Proceed-ings of the 2014 ACM SIGSAC Conference on Computer and Communications Security. pp. 227–238. ACM (2014) 5. Chatzikokolakis, K., Palamidessi, C., Panangaden, P.: Anonymity protocols as noisy channels. Information and Computation 206 (2-4), 378–401 (2008) 6. Cherubin, G.: Bayes, not naïve: Security bounds on website fingerprinting defenses. Proceedings on Privacy Enhancing Technologies 2017 (4), 215–231 (2017) 7. Cover, T.M., Thomas, J.A.: Elements of Information Theory. Wiley, Hoboken, NJ, 2nd edn. (2006) 8. Deng, X., Li, Q., Xu, K.: Robust and reliable early-stage website fingerprinting attacks via spatial-temporal distribution analysis. In: Proceedings of the 2024 ACM SIGSAC Conference on Computer and Communications Security. pp. 423–436. ACM (2024). https://doi.org/10.1145/3658644.3670272 9. Dwork, C., Kenthapadi, K., McSherry, F., Mironov, I., Naor, M.: Our data, our-selves: Privacy via distributed noise generation. In: Advances in Cryptology – EU-ROCRYPT 2006. pp. 486–503. Springer (2006) 10. Dyer, K.P., Coull, S.E., Ristenpart, T., Shrimpton, T.: Peek-a-boo, I still see you: Why efficient traffic analysis countermeasures fail. In: Proceedings of the 2012 IEEE Symposium on Security and Privacy. pp. 332–346. IEEE (2012) 11. Gallager, R.G.: Information Theory and Reliable Communication. Wiley, New York, NY (1968) 12. Gong, J., Wang, T.: Zero-delay lightweight defenses against website fingerprinting. In: Proceedings of the 29th USENIX Security Symposium. pp. 717–734. USENIX Association (2020) 13. Hayes, J., Danezis, G.: k-fingerprinting: A robust scalable website fingerprinting technique. In: Proceedings of the 25th USENIX Security Symposium. pp. 1187– 1203. USENIX Association (2016) 14. Juarez, M., Imani, M., Perry, M., Diaz, C., Wright, M.: Toward an efficient website fingerprinting defense. In: Computer Security – ESORICS 2016. pp. 27–46. Springer (2016) 15. Lin, X., Xiong, G., Gou, G., Li, Z., Shi, J., Yu, J.: ET-BERT: A contextualized datagram representation with pre-training transformers for encrypted traffic clas-sification. In: Proceedings of the ACM Web Conference 2022. pp. 633–642. ACM (2022) 12 G. Liu et al. 16. Liu, G., Chen, G., Liu, W.: The inevitability of side-channel leakage in encrypted traffic. arXiv preprint arXiv:2602.14055 (2026), https://arxiv.org/abs/2602. 14055 
+
+17. Mathews, N., Holland, J.K., Oh, S.E., Rahman, M.S., Hopper, N., Wright, M.: SoK: A critical evaluation of efficient website fingerprinting defenses. In: Proceedings of the 44th IEEE Symposium on Security and Privacy. pp. 969–986. IEEE (2023) 18. Mei, H., Cheng, G., Yuan, Y.: High precision and efficient anonymous traffic classi-fication in the real-world. IEEE Transactions on Networking 33 (3), 966–981 (2025). https://doi.org/10.1109/TON.2025.3532094 19. Merhav, N., Shamai, S.: Information rates subject to state masking. IEEE Trans-actions on Information Theory 53 (6), 2254–2261 (2007) 20. Sabzi, A., Vora, R., Goswami, S., Seltzer, M., Lécuyer, M., Mehta, A.: NetShaper: A differentially private network side-channel mitigation system. In: Proceedings of the 33rd USENIX Security Symposium. pp. 3385–3402. USENIX Association (2024) 21. Serjantov, A., Danezis, G.: Towards an information theoretic metric for anonymity. In: Privacy Enhancing Technologies: 2nd International Workshop, PET 2002. Lec-ture Notes in Computer Science, vol. 2482, pp. 41–53. Springer (2003) 22. Shannon, C.E.: Coding theorems for a discrete source with a fidelity criterion. IRE International Convention Record 7(4), 142–163 (1959) 23. Shen, M., Ji, K., Wu, J., Li, Q., Kong, X., Xu, K., Zhu, L.: Real-time website fingerprinting defense via traffic cluster anonymization. In: Proceedings of the 2024 IEEE Symposium on Security and Privacy (SP). pp. 3238–3256. IEEE (2024) 24. Shen, M., Zhang, J., Zhu, L., Xu, K., Du, X., Liu, Y.: Accurate decentralized ap-plication identification via encrypted traffic analysis using graph neural networks. IEEE Transactions on Information Forensics and Security 16 , 2367–2380 (2021) 25. Siby, S., Barman, L., Wood, C.A., Fayed, M., Sullivan, N., Troncoso, C.: Evaluat-ing practical QUIC website fingerprinting defenses for the masses. Proceedings on Privacy Enhancing Technologies 2023 (4), 79–95 (2023) 26. Sirinam, P., Imani, M., Juarez, M., Wright, M.: Deep fingerprinting: Undermining website fingerprinting defenses with deep learning. In: Proceedings of the 2018 ACM SIGSAC Conference on Computer and Communications Security. pp. 1928– 1943. ACM (2018) 27. Villani, C.: Optimal Transport: Old and New, Grundlehren der math-ematischen Wissenschaften, vol. 338. Springer, Berlin, Heidelberg (2009). https://doi.org/10.1007/978-3-540-71050-9 28. Wang, T., Cai, X., Nithyanand, R., Johnson, R., Goldberg, I.: Effec-tive attacks and provable defenses for website fingerprinting. In: Proceed-ings of the 23rd USENIX Security Symposium. pp. 143–157. USENIX Association (2014), https://www.usenix.org/conference/usenixsecurity14/ technical-sessions/presentation/wang_tao 
+
+29. Wang, T., Goldberg, I.: Walkie-talkie: An efficient defense against passive website fingerprinting attacks. In: Proceedings of the 26th USENIX Security Symposium. pp. 1375–1390. USENIX Association (2017) 30. Yamamoto, H.: Rate-distortion theory for the Shannon cipher system. IEEE Trans-actions on Information Theory 43 (3), 827–835 (1997) 31. Yang, C., Qi, J., Zhou, A.: Wasserstein differential privacy. In: Proceedings of the 38th AAAI Conference on Artificial Intelligence. pp. 14928–14936. AAAI Press (2024)

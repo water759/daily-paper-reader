@@ -1,0 +1,1018 @@
+Title: VIGIL: Verifying Identity via Gated Intermittent Likelihoods for Continuous Biometric Authentication
+
+URL Source: https://arxiv.org/pdf/2607.16651v1
+
+Published Time: Tue, 21 Jul 2026 00:26:37 GMT
+
+Number of Pages: 16
+
+Markdown Content:
+# VIGIL: Verifying Identity via Gated Intermittent Likelihoods for Continuous Biometric Authentication 
+
+## Aldridge Fonseca San Jos´ e State University 
+
+ORCID: 0009-0002-0712-6493 aldridge.fonseca@sjsu.edu 
+
+## Udayan Atreya San Jos´ e State University 
+
+ORCID: 0009-0001-9509-6839 udayan.atreya@sjsu.edu 
+
+## Amith Kamath Belman San Jos´ e State University 
+
+ORCID: 0000-0003-1008-3025 amith.kamathbelman@sjsu.edu 
+
+## Frank Sicong Chen Dartmouth College 
+
+ORCID: 0000-0003-3573-4795 frank.chen@dartmouth.edu 
+
+## Abstract 
+
+Continuous multi-modal authentication has emerged as a necessity for securing modern environments against per-sistent threats. Existing temporal fusion techniques fail to identify a persistent attacker from a genuine user with poor signal strength. In this study, we propose VIGIL (Verify-ing Identity via Gated Intermittent Likelihoods for Contin-uous Biometric Authentication), a highly adaptive continu-ous authentication framework. We introduce configurable cross-modal fusion with per-modality weighting, enabling operators to select their choice of integration strategy. We improve temporal fusion using dual-state State Transition Machines (STM) with unidirectional transition matrices. A three-zone verification decision model that enables multi-round verification when evidence is inconclusive is used in combination with an adaptive shrinking verification win-dow. Monotonic decay, backflow elimination and analytical evaluation demonstrate that the proposed framework effec-tively addresses the limitations of existing approaches and reduces the time to detect intrusions while maintaining high usability for legitimate users. 
+
+## 1. Introduction 
+
+Point-of-entry authentication mechanisms are inade-quate for modern zero-trust environments [16], where sys-tems need to prevent post-login attacks throughout the ses-sion. Continuous authentication mitigates this limitation by verifying the user’s identity repeatedly throughout the ses-sion and leveraging biometric signals such as face recog-nition, voice, or keystroke patterns [19]. Multi-modal bio-metrics is another mechanism that verifies users by studying multiple signals simultaneously and combining them to au-thenticate [21]. Continuous authentication combined with multi-modal biometrics achieves a high degree of security. However, multi-modal continuous authentication systems encounter multiple challenges in real-world deployments. Research has explored Markov-chain [13] based frame-works to implement multi-modal continuous authentication systems [18] to incorporate the temporal dependency of continuous data streams. State transition machines (STMs) are used to adapt to real-world dynamics by using exponen-tial decay functions to ensure that past states diminish over time [22]. However, intermittent data fluctuations and the variable strength of the different signals cause an increase in false alarms in standard Markov based systems. Re-cent studies have successfully demonstrated how leveraging dual-STM architecture can reduce false alarm rates offer-ing more robust and user-friendly solutions [6]. Although existing architectures have implemented temporal fusion with intermittent states and verification windows which add some buffer before the alert is triggered [6], these static ap-proaches raise a trade-off; a short window can trigger false alerts due to momentary disruption in signal, and a long window can increase the time to detect an intrusion. An-other limitation is that in the specific case of periods with no biometric observations, the probability of the system re-maining in a Normal state inflates due to a backflow in the transition matrices. This backflow grants attackers a free recovery window towards a secure state without requiring biometric evidence. To mitigate these challenges, this paper proposes a highly adaptive multi-modal authentication framework leveraging the dual-state Markov chain approach. By dynamically adapting the verification window and user-1arXiv:2607.16651v1 [cs.CR] 18 Jul 2026 selectable strategies for cross-modal fusion, the proposed architecture minimizes accidental lockouts without com-promising security. The primary contributions of this paper are as follows: 1. Flexible Cross-Modal Fusion: A modular strategy al-lowing administrators to select between product rule, weighted sum, and weighted geometric mean [11] providing configurable handling of multi-modal data streams based on specific use cases. 2. Dual-state Robust Markov Modeling: A dual-state architecture where STM-1 deals with initial suspi-cion detection and STM-2 is responsible for alert es-calation. More importantly, STM-2 has a unidirec-tional transition matrix for verification, ensuring that the system remains sensitive to persistent and fluctu-ating unauthorized attempts, disabling attackers from breaching the system by leveraging the backflow na-ture of general Markov chains. 3. Adaptive Shrinking Window: A dynamic verifica-tion window during temporal fusion actively shrink-ing based on time and penalty decay. This allows the system to enforce stricter security boundaries during suspicious states while still keeping the system robust during data fluctuations. The paper is organized as follows: Section II discusses the background and related work, while Section III de-scribes the VIGIL framework. Finally, Section IV con-cludes our findings and discusses about future results. 
+
+## 2. Background and Related Work 
+
+Continuous authentication systems have shifted towards multi-modal approaches to integrate diverse biometric sig-nals, improving robustness to deal with limited accuracy in high-security environments [18]. Despite these ad-vancements, real-world deployment of multi-modal biomet-ric systems has significant challenges; variation in signal quality [1, 4] and disconnection of modalities [6, 12, 23] are some of the primary issues when dealing with behav-ioral biometrics. Furthermore, many traditional frameworks evaluate continuous data streams as isolated events that ne-glect human behavior and reduce user experience by flag-ging transient noise [7]. Combining continuous data streams from multiple sources requires robust fusion techniques. Multimodal fu-sion has been widely studied in continuous authentication at different fusion levels. Stylios et al. [20] proposed a feature-level fusion approach that combines touch-gesture and keystroke-dynamics features for mobile continuous au-thentication, showing that jointly modeling the two modali-ties can improve security and usability. Ray-Dowling et al. [15] evaluated score-level fusion for mobile behavioral bio-metrics by combining acceleration, gyroscope, and swipe-based authentication scores across public mobile datasets. Fridman et al. [8] proposed a decision-level fusion archi-tecture that integrates multiple behavioral biometric sen-sors, including keystroke dynamics, mouse movement, and stylometry, for continuous authentication. More recently, Chen et al. [6] proposed SSPRA, a two-level fusion frame-work that combines likelihoods from available modalities at each inspection through vertical-level fusion and incor-porates temporal state continuity through horizontal-level fusion. Attrapadung et al. [3] also introduce a two-dimensional fusion technique however they focus more on dynamically selecting a subset of classifiers based on the user’s environmental context to optimize the balance be-tween authentication accuracy and device resource con-sumption. Feature-level fusion is computationally heavy and strug-gles with the varied sampling rate of multi-modal sensors [14, 17]. Consequently, score-level fusion acts as a stan-dard method using two dimensions: vertical level fusion and horizontal fusion [6]. Chen et al. [6] show that vertical fu-sion allows integration of biometric scores across multiple modalities, while horizontal fusion deals with the temporal integration evaluating these fused scores for a time window to determine the final state of the system (compromised or not compromised). Although foundational state-space frameworks perform robustly with standard modalities [2, 9], fluctuating signals and volatile environments where prolonged sensor dropouts are common reveal limitations of these frameworks. Verti-cal fusion in these frameworks is implemented using a static window duration ( Wbase ) creating a vulnerability for per-sistent attackers. An impostor can trigger suspense, wait out the verification window while the system resets, and re-peat again. Such sophisticated probing grants an attacker the full verification duration every time, delaying the Time to Correct Alarm (TCA), as the system does not account for repeated suspicion. Furthermore, in continuous Markov models, transition probabilities are designed to decay over time reflecting the depletion of past state influence. How-ever, mathematical analysis indicates that periods of com-plete vacancy of observations lead to structural backflows from Suspense to Normal states, granting recovery over the passage of time without actual biometric evidence. State space frameworks are also restricted by rigid verti-cal fusion design relying on fusion techniques such as prod-uct rule: 
+
+L =
+
+> M
+
+Y
+
+> i=1
+
+P (si|H) (1) where H represents the hypothesis (Genuine or Imposter). The product rule is mathematically unforgiving; if a sin-gle modality performs poorly (near zero probability due 2to noise or disconnection), the entire fused likelihood col-lapses to zero. This “weakest link” behavior causes false alarms in real-world scenarios where erratic behavioral sen-sors may experience partial outages or temporary noise bursts, even if other sensors are reporting strong positive matches. 
+
+## 3. The VIGIL Framework                                                              
+
+> Table 1. Notation used in the VIGIL framework.
+> Symbol Definition
+> System modes & states
+> P1,P2Cruise mode (STM1) and verification mode (STM2)
+> N,S,ANormal, Suspense, Alert states
+> Ω1,Ω2State spaces: {N, S }for P1;{N, S, A }for
+> P2
+> Cross-modal fusion
+> MjBiometric modality j
+> AtSet of active modalities at time tPNj,P¬NjPer-modality intra-/inter-class likelihoods
+> LN,L¬NFused likelihoods (normal / not-normal)
+> ˆwjNormalized weight for modality j
+> Temporal fusion
+> PN,PS,PAState probabilities (posterior)
+> πN,πS,πAState probabilities (prior, after temporal fu-sion)
+> p(∆ t)STM1 decay function, half-life τp
+> q(∆ t)STM2 decay function, half-life τq
+> Decision thresholds
+> Tstay P1 stay threshold (below →enter P2)
+> Tback P2 recovery threshold ( PNpost ≥Tback )
+> Talert P2 alert threshold ( PNpost ≤Talert )
+> Adaptive window
+> Wbase Base verification window duration
+> Wmin Minimum window duration
+> δPenalty increment per P2 entry
+> λPenalty decay rate in Normal
+
+VIGIL (Verifying Identity via Gated Intermittent 
+
+Likelihoods) is a dual-state Markov framework for continu-ous authentication on intermittent biometric signals. Table 1 summarizes the notation used throughout. Building on the two-level fusion architecture and dual-STM mechanism of SSPRA [6], VIGIL introduces four design principles: 1. Layered Cross-Modal Fusion. A configurable, per-subset fusion strategy with per-modality weighting, which allows the system to adapt to the statistical prop-erties of the available modalities (Section 3.1). 2. Unidirectional Temporal Fusion. Transition matri-ces in both STM1 and STM2 ensure that only cross-modal fusion (processing of actual biometric evidence) can increase P (N ). In the absence of observations, 
+
+P (N ) will decay monotonically (Section 3.2). 3. Three-Zone Verification. A decision model in STM2 that is used to distinguish between recovery, alert, and inconclusive outcomes, which enables multi-round verification when evidence is ambiguous (Sec-tion 3.3.3). 4. Adaptive Window Shrinking. A penalty-based mechanism that reduces the verification window for repeated suspense entries. This adds increasing pres-sure on threats which are persistent while simultane-ously allowing legitimate users to recover naturally (Section 3.3.4). Figure 1 provides an overview of the complete VIGIL pipeline. 
+
+3.1. Layered Cross-Modal Fusion 
+
+In multi-modal fusion, different modalities have varying levels of reliability, and classifiers may exhibit different per-formance. A standard product rule: 
+
+P (Mt | st) = Y
+
+> j∈A t
+
+P (mjt | st) (2) assigns equal weight to every modality, so a single weak sensor can collapse the fused score. Instead, VIGIL explores alternative fusion strategies with per-modality weighting that account for these differences. Let P Nj and 
+
+P ¬Nj denote the intra-class and inter-class likelihoods for modality j. The primary strategies are given in Table 2. Each P Nj and P ¬Nj is obtained by evaluating the modal-ity’s score against per-modality class-conditional probabil-ity mass functions (PMFs) estimated from labeled valida-tion data, following standard score-level-fusion practice. VIGIL is agnostic to how these likelihoods are produced and it only requires that P Nj , P ¬Nj ∈ [0 , 1] .VIGIL uses the weighted geometric mean as its default fusion strategy. The geometric mean is chosen as it pre-serves the multiplicative structure of the product rule. Thus it is able to maintain sensitivity to each modality, while simultaneously preventing a single degraded sensor from making the fused likelihood collapse to zero. When all sen-sors are equally reliable, setting ˆwj = 1 /|A t| recovers the unweighted geometric mean. In practice, however, weights will be assigned based on each modality’s expected signal quality. This could be determined through validation-set EER or FAR/FRR characteristics. The strategies above are representative, and VIGIL will work for any function f : R|A t| → R that maps per-modality likelihoods to a non-negative scalar. So users of the system could add domain-specific rules (e.g., trimmed means, Dempster–Shafer) without any modifications to the framework. 3M1
+
+> M2
+> ...
+> Mk
+> At
+
+Cross-Modal Fusion    
+
+> ˆwj→LN, L ¬N
+
+Temporal Fusion & Decision 
+
+P1 — Cruise  
+
+> NS
+
+P2 — Verification     
+
+> NSA
+> 3-zone adaptive window
+> ⟲multi-round
+
+RECOVER 
+
+ALERT         
+
+> P(N)< T stay P(N)≥Tback
+
+Figure 1. VIGIL system architecture. Active modalities At feed Cross-Modal Fusion to produce LN , L ¬N . Temporal fusion operates in two modes: P1 (cruise, unidirectional decay) and P2 (verification, with three-zone decisions and adaptive window across multiple rounds). Mode transitions are driven by Tstay (escalate) and Tback (recover); P2 escalates to ALERT on ≤ Talert or after maximum rounds. Table 2. VIGIL fusion strategy characteristics. * ˆwj denotes the normalized weight for modality j, satisfying P 
+
+> j∈A t
+
+ˆwj = 1 .
+
+Strategy Formulation Behavior 
+
+Product L = Q 
+
+> j
+
+Pj Sensitive to weakest modality; collapses if any Pj ≈ 0
+
+Weighted Sum *
+
+L = P 
+
+> j
+
+ˆwj Pj Tolerates dropouts; lin-ear combination Weighted Geometric Mean *
+
+L = Q 
+
+> j
+
+P ˆwj 
+
+> j
+
+Multiplicative with damping; balances sensitivity ( default )Max Rule L = max j Pj Driven by strongest signal; ignores weak modalities Min Rule L = min j Pj Driven by weakest sig-nal; conservative bound 
+
+3.1.1 Subset-Configurable Fusion 
+
+VIGIL allows each subset of active modalities At to have its own fusion function and weight vector. Different sen-sor combinations may have different noise profiles, and thus may require different fusion strategies. At each observation, VIGIL retrieves the configuration for the current At; if none is defined, it will use the default fusion function and weight vector. Table 3 provides an example for a multi-modal sys-tem. Consider a system with the following validation-set Equal Error Rates: M1 (face) EER = 2%, M2 (iris) EER = 1.5%, M3 (voice) EER = 8%, M4 (keystroke) EER = 12%, M5 (gait) EER = 15%. Weights are determined from inverse EER and are then normalized per active subset. The fusion strategy per subset is chosen based on the noise characteristics of the sensors present. Weighted geometric mean is used when all sensors are reliable. Weighted sum is used when the subset includes noisy or dropout-prone be-havioral modalities. 
+
+Table 3. Example subset-configurable fusion for a five-modality system. Weights are derived from inverse EER normalized per active subset.                                       
+
+> Active Subset Strategy Weights Rationale
+> {M1–M5}Wtd. Geom. (0 .35 ,0.46 ,0.09 ,0.06 ,0.05) All available; geomet-ric preserves structure
+> {M1, M 2, M 3}Wtd. Geom. (0 .38 ,0.51 ,0.10) Three reliable sensors
+> {M1, M 3, M 4}Wtd. Sum (0 .71 ,0.18 ,0.12) Keystroke noisy; sum prevents collapse
+> {M3, M 4, M 5}Wtd. Sum (0 .46 ,0.30 ,0.24) All behavioral; toler-ates dropouts
+> {M1, M 2}Wtd. Geom. (0 .43 ,0.57) Physiological and reli-able
+> {M3, M 5}Wtd. Sum (0 .65 ,0.35) Behavioral and dropout-prone
+> {Mi}Product (1 .0) No weighting needed
+
+3.2. Unidirectional Temporal Fusion 
+
+A core principle of VIGIL is that only cross-modal fu-sion, which is the processing of actual biometric observa-tions, may increase P (N ). Without observations, P (N )
+
+decays monotonically. VIGIL is able to enforce this design via unidirectional transitions in both STM1 and STM2. The temporal-fusion decay functions in VIGIL follow the exponential half-life form f (∆ t) = e− ln 2  
+
+> τ·∆t
+
+, where τ
+
+is a configurable half-life parameter. VIGIL uses two decay functions: • p(∆ t) with half-life τp: this governs Normal-to-Suspense decay during cruise mode (STM1). • q(∆ t) with half-life τq : this governs Normal-to-Alert decay during verification mode (STM2). Separating p and q allows the system to decay at different rates depending on the mode. 43.2.1 VIGIL STM1 Design 
+
+During cruise mode (P1), VIGIL uses the following transi-tion matrix for temporal fusion: 
+
+T VIGIL   
+
+> P1
+
+=
+
+p 1 − p 00 1 00 0 1
+
+ (3) where the decay function p(∆ t) = e− ln 2   
+
+> τp ·∆t
+
+will govern the rate at which P (N ) decays with half-life τp. The prior update under this model is given as: 
+
+πNt = p · P Nt−1 (4) 
+
+πSt = (1 − p) · P Nt−1 + P St−1 (5) 
+
+πAt = P At−1
+
+Suspense is absorbing during temporal fusion; this means that any probability mass leaving Normal cannot re-turn without evidence. This gives VIGIL a strict monotonic decay under no observation conditions: 
+
+πNt = p(∆ t) · P Nt−1 < P Nt−1 for all ∆t > 0 (6) 
+
+3.2.2 Comparison with Baseline SSPRA 
+
+For reference, the Baseline SSPRA STM1 transition matrix includes an S → N path: 
+
+T base   
+
+> P1
+
+=
+
+p 1 − p 0
+
+u 1 − u 00 0 1
+
+ (7) where u(∆ t) = e− ln 2   
+
+> τu ·∆t
+
+models recovery from Suspense to Normal during temporal fusion. The corresponding prior update is: 
+
+πNt = p · P Nt−1 + u · P St−1 (8) 
+
+πSt = (1 − p) · P Nt−1 + (1 − u) · P St−1 (9) The u · P St−1 term transfers probability from Suspense back to Normal without biometric evidence. The net change in P (N ) is: 
+
+∆P (N ) = u · P St−1
+
+| {z } 
+
+> backflow into N
+
+− (1 − p) · P Nt−1
+
+| {z } 
+
+> decay out of N
+
+(10) Whenever ∆P (N ) > 0, P (N ) increases above its previ-ous value in spite of time passing and there being no new observations; even otherwise, the backflow will still elevate 
+
+P (N ) relative to the unidirectional model (Figure 2). 
+
+Backflow threshold. Substituting P S = 1 − P N and solv-ing Pnew (N ) > P old (N ) gives: 
+
+P (N ) < u
+
+1 − p + u (11) The threshold represents the value of P (N ) below which the backflow causes an increase rather than a decrease. Ta-ble 4 evaluates this threshold for representative intervals. 
+
+Table 4. Backflow threshold for Baseline SSPRA with τp = 10 s, 
+
+τu = 4 s. P (N ) increases whenever it is below this value. 
+
+∆t p u Threshold 0.25s 0.9828 0.9576 0.982 0.50s 0.9659 0.9170 0.964 1.0s 0.9330 0.8409 0.926 2.0s 0.8706 0.7071 0.845 5.0s 0.7071 0.4204 0.589 10.0s 0.5000 0.1768 0.261   
+
+> NS
+> p
+> 1−p
+> u
+> 1−u
+> (a) Baseline SSPRA
+> NS
+> p
+> 1−p
+> 1
+> (b) VIGIL
+
+Figure 2. P1 state transition diagrams. (a) Baseline SSPRA in-cludes an S → N path governed by u, enabling backflow without observations. (b) VIGIL makes Suspense absorbing; P (N ) can only decrease during temporal fusion. 
+
+At sub-second intervals the threshold approaches 1.0, meaning virtually any realistic P (N ) is elevated. Table 5 and Figure 3 compare trajectories: SSPRA exhibits a tran-sient spike above initial P (N ) while VIGIL decays mono-tonically. 
+
+Table 5. STM1 P (N ) with no observations. τp = 10 s, τu = 4 s. Initial: P (N ) = 0 .70 , P (S) = 0 .30 . Bold values exceed the initial P (N ).
+
+∆t Baseline SSPRA VIGIL Overest. 
+
+0s (last obs) 0.7000 0.7000 —0.25s 0.9753 0.6880 +41.7% 0.50s 0.9513 0.6762 +40.7% 1.0s 0.9054 0.6531 +38.6% 2.0s 0.8215 0.6094 +34.8% 3.75s 0.6964 0.5398 +29.0% 5.0s 0.6211 0.4950 +25.5% 10.0s 0.4030 0.3500 +15.1% 20.0s 0.1844 0.1750 +5.4% 
+
+3.3. Adaptive Multi-Round Verification 
+
+When P (N ) drops below the stay threshold Tstay dur-ing cruise mode, the system will transition to verification mode (P2). VIGIL’s P2 extends the dual-STM mechanism with key features, which are its unidirectional STM2 tran-sitions, a three-zone decision model, and adaptive window shrinking. 50.0 2.5 5.0 7.5 10.0 12.5 15.0 17.5 20.0     
+
+> Time since last observation (s)
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> P(N)
+> Initial P(N) = 0.7
+> Immediate spike at
+> sub-second intervals
+> Persistent
+> overestimation
+> Baseline SSPRA P(N)
+> VIGIL P(N)
+> Overestimation
+> Inflation above initial P(N)
+
+Figure 3. STM1 P (N ) trajectory with no observations. Baseline SSPRA exhibits a transient spike above the initial P (N ) due to 
+
+S → N backflow; VIGIL decays monotonically from the first time step. 
+
+3.3.1 VIGIL STM2 Design 
+
+At P2 entry, any Suspense state probability mass from P1 is directly transferred to Alert. This gives a starting state 
+
+[P N , 0, P A]. VIGIL’s STM2 uses the separate decay func-tion q(∆ t) = e− ln 2   
+
+> τq ·∆t
+
+with half-life τq . This allows the verification-mode decay rate to differ from cruise mode. The transition matrix during temporal fusion is: 
+
+T VIGIL   
+
+> P2
+
+=
+
+q 0 1 − q
+
+0 0 10 0 1
+
+ (12) The prior update becomes: 
+
+πNt = q · P Nt−1 (13) 
+
+πAt = (1 − q) · P Nt−1 + P At−1 (14) 
+
+πSt = 0 
+
+Similar to STM1, P (N ) decays monotonically without observations; only cross-modal fusion can restore it. 
+
+3.3.2 Comparison with Baseline SSPRA 
+
+For reference, the Baseline SSPRA STM2 transition matrix includes an S → N path: 
+
+T base   
+
+> P2
+
+=
+
+
+
+p 0 1 − ph 0 1 − h
+
+0 0 1
+
+ (15) where h(∆ t) governs the S → N backflow in STM2, with prior update: 
+
+πNt = p · P Nt−1 + h · P St−1 (16) 
+
+πAt = (1 − p) · P Nt−1 + (1 − h) · P St−1 + P At−1 (17) The h · P St−1 term allows P (N ) to rise without biomet-ric evidence, the same backflow effect observed in STM1. With the parameters from Table 5 and entry state P (N ) = 0.65 , the baseline exceeds Tback = 0 .70 within 0.25 s, en-abling free recovery without any observations. VIGIL’s uni-directional STM2 decay prevents this (Figure 4).    
+
+> NS
+> A
+> p
+> 1−p
+> h
+> 1−h
+> 1
+> (a) Baseline SSPRA
+> NS
+> A
+> q
+> 1−q1
+> 1
+> (b) VIGIL
+
+Figure 4. P2 state transition diagrams. (a) Baseline SSPRA in-cludes an S → N path governed by h, enabling backflow without observations. (b) VIGIL transfers all Suspense mass to Alert at P2 entry ( S → A with probability 1); only cross-modal fusion can increase P (N ).
+
+3.3.3 Three-Zone Decision Model 
+
+Baseline SSPRA uses a binary P2 decision: recover if 
+
+P (N ) ≥ Tback , otherwise alert. VIGIL replaces this with a three-zone decision model that introduces an inconclusive region, which is the basis of the multi-round verification: • P Npost ≥ Tback : Recovery — sufficient evidence to confirm the user is genuine. Transfer P A → P S and return to P1. • P Npost ≤ Talert : Alert — strong evidence against the user. Lock the session. • Talert < P Npost < T back : Inconclusive — evidence is ambiguous. Shrink window, carry posterior forward, and run another verification round. • No observations received during the window: Alert —verification failure. • Maximum rounds exceeded while still inconclusive: 
+
+Alert .Each additional round compounds pressure: the window shrinks (fewer observations, demanding a stronger signal) and P (A) accumulates (requiring stronger evidence to es-cape P2 than in the previous round). 
+
+3.3.4 Adaptive Window Shrinking 
+
+VIGIL introduces an adaptive penalty mechanism, in which each P2 entry adds a penalty δ to a running accumulator. 6Obs. received?     
+
+> P2 Window Opens
+> Cross-Modal + Temporal Fusion
+> Evaluate
+> PNpost
+> Shrink Window Next Round
+> Max rounds reached?
+> RECOVER to P1
+> ALERT Lock Session
+> Yes
+> Inconclusive
+> ≥Tback ≤Talert
+> No
+> Yes
+> No
+
+Figure 5. VIGIL multi-round P2 verification flow. Three paths lead to alert: no observations, P Npost ≤ Talert , or max rounds ex-hausted. Recovery requires P Npost ≥ Tback . Inconclusive rounds shrink the window and repeat. 
+
+The effective window is: 
+
+Wcurrent = max  Wmin , W base − penalty  (18) where Wmin is the minimum window duration to ensure at least one observation cycle. The penalty decays at rate λ
+
+while in the Normal state: penalty (t) = max  0, penalty 0 − λ · ∆tnormal 
+
+ (19) where ∆tnormal is the time in Normal since the last P2 exit. A genuine user who maintains stable behavior sees the penalty disappear. On the other hand, a persistent threat that keeps re-entering P2 in short duration will face a pro-gressively shrinking window. Table 6 traces a representative session that illustrates both effects. 
+
+Table 6. Adaptive window session timeline ( Wbase = 5 .0s, δ =1.0s, λ = 0 .1 s−1, Wmin = 1 .0s). Weff : effective window if P2 is entered at time t. Red : P2 entries (penalty increases by δ). Green : Normal periods (penalty decays at λ). 
+
+t Event Penalty Weff 
+
+0 s 1st P2 entry 0.0 5.0 s
+
+5 s 2nd P2 entry (immediate) 1.0 4.0 s
+
+9 s 3rd P2 entry (immediate) 2.0 3.0 s
+
+12 s Recovers to Normal 3.0 2.0 s
+
+22 s 10 s in Normal 2.0 3.0 s
+
+32 s 4th P2 entry 1.0 4.0 s
+
+36 s Recovers to Normal 2.0 3.0 s
+
+56 s 20 s in Normal (full reset) 0.0 5.0 s
+
+At t = 0 s the user enters P2 with a fresh penalty of zero and a full 5.0 s window. Two immediate re-entries at t = 5 sand t = 9 s increase the penalty to 3.0, shrinking the win-dow to 3.0 s. The user recovers at t = 12 s and remains in Normal. By t = 22 s (10 s of Normal), the penalty has de-cayed from 3.0 to 2.0 and the effective window has partially recovered to 3.0 s. At t = 32 s (20 s of Normal), the penalty reaches 1.0 and an isolated 4th P2 entry occurs with a 4.0 s window. The user recovers again at t = 36 s with penalty 2.0. After another 20 s of stable Normal behavior ( t = 56 s), the penalty decays to zero and the full 5.0 s window is re-stored. 
+
+Parameter rationale. Table 7 summarizes the verification parameters and their design rationale. 
+
+Table 7. VIGIL default verification parameters (deployment-configurable). 
+
+Parameter Value Rationale 
+
+Wbase 5.0 s Default verification window length. Provides sufficient time for multiple biometric observations before a deci-sion is made. 
+
+δ 1.0 s Reduces the window by 1.0 s per en-try. A persistent threat reaches Wmin 
+
+within four consecutive entries, fac-ing meaningful pressure within 3–5 probes. 
+
+Wmin 1.0 s Lower bound ensures at least one full observation cycle. Prevents zero-length windows. 
+
+λ 0.1 s−1 Penalty decays to zero after ≈ 40 sof stable Normal behavior (from max penalty), restoring the full window for legitimate users. 
+
+Tback 0.70 Requires 70% confidence in genuine identity before recovery. Matches the cruise-mode stay threshold Tstay .
+
+Talert 0.30 Symmetric complement of Tback :70% evidence against the user. Pro-vides a 40 percentage-point inconclu-sive band. 
+
+Effect of threshold selection on system behavior. Tback 
+
+and Talert are deployment-configurable. A higher Tback re-quires stronger evidence for recovery, improving security at the cost of more verification rounds. A higher Talert trig-gers lockout sooner, reducing attacker dwell time but in-creasing false alarm risk. The width of the inconclusive band ( Tback − Talert ) controls the multi-round behavior; a wider band will get more evidence but delays decisions. 
+
+3.3.5 Multi-Round Behavior 
+
+The three-zone model and adaptive window work together to create compounding pressure across verification rounds. When a round ends as inconclusive, the posterior state car-ries forward to the next round without reset. This means 7that if the user cannot produce sufficiently strong biomet-ric evidence, P (N ) decreases and P (A) grows with each round. Thus, recovering to cruise mode requires pro-gressively stronger biometric evidence in each subsequent round. This is because cross-modal fusion must now over-come a larger P (A) to push P (N ) above Tback .If no observations are received during any verification window, the system triggers an immediate alert without waiting for subsequent rounds. This prevents a scenario where an attacker could stall the system by avoiding bio-metric sensors entirely. A complete end-to-end numerical walkthrough covering P1 cruise, the P2 transition, and all verification scenarios is provided in the supplementary material. Figure 6 illustrates three representative scenarios. 
+
+> (a)
+> R1
+> 5s
+> R2
+> 4s
+> R3
+> 3s
+> RECOVER
+> (b)
+> R1
+> 5s
+> R2
+> 4s
+> R3
+> 3s
+> R4
+> 2s
+> R5
+> 1s
+> ALERT
+> (c)
+> R1
+> 5s
+> R2
+> 4s
+> 20s Normal
+> R1
+> 5s
+> RECOVER
+
+Figure 6. Multi-round P2 scenarios ( Wbase = 5 .0 s, δ = 1 .0 s, 
+
+Wmin = 1 .0 s). (a) Legitimate user recovers after three rounds. (b) Attacker exhausts max rounds; forced alert at Wmin . (c) User recovers in round 2, penalty decays during 20 s in Normal, sec-ond P2 entry uses full restored window. Yellow : inconclusive. Green : recover. Red : alert. Dashed: Normal period. 
+
+The legitimate user recovers in round 3 because a strong biometric signal overpowers the P (A) accumulation. The attacker, unable to produce strong scores, sees P (A) grow across rounds while the window shrinks from 5.0 s to 4.0 s to 3.0 s to 2.0 s to 1.0 s. By round 5, even borderline evi-dence is insufficient, and the compounding pressure forces a decisive outcome. 
+
+## 4. Conclusion 
+
+This paper presented VIGIL, a highly adaptive continu-ous authentication framework built on a dual-state Markov model for intermittent biometric signals. The framework addresses three key challenges. First, flexible cross-modal fusion enabling operators to select the fusion rule with per-modality weighting based on security requirements and use case. Second, a dual-state robust Markov modeling with unidirectional transition matrices in both state machines, which prevent backflow from suspense to normal states. Third, an adaptive shrinking verification window which is paired with a three-zone decision model across multiple ver-ification rounds. All parameters in the framework including fusion rules, thresholds, window duration, and decay rates are configurable. This allows operators to tune the trade-off between detection speed and false alarm rate for their specific environment. The current evaluation is analytical; VIGIL’s properties, such as monotonic decay under no observations, are es-tablished through mathematical derivation rather than em-pirical measurement. Per-modality likelihoods and fusion weights are derived from validation data and are not mea-sured end-to-end within the framework. Additionally, all decay functions use exponential half-life models and alter-native decay profiles have not been explored. Empirical val-idation on multimodal datasets is a natural next step. Future work could explore extending the framework to support online learning of per-modality weights. This could enable adaptation based on observed sensor reliability in a session. Automated parameter tuning methods could adapt framework parameters to specific deployment environments without any manual configuration. Additionally, empirical evaluation using real multimodal biometric datasets [10, 5] to measure end-to-end FAR/FRR under sensor dropout con-ditions would validate the framework presented in this work. 
+
+## References 
+
+[1] M. Abuhamad, A. Abusnaina, D. Nyang, and D. Mo-haisen. Sensor-based continuous authentication of smart-phones’ users using behavioral biometrics: A contemporary survey. IEEE Internet of Things Journal , 8(1):65–84, 2021. [2] H. Alotaibi, A. N. Mahmood, and A. Anwar. Deep learning approaches for continuous authentication based on activity patterns using mobile sensing. Sensors , 21(22):7519, 2021. [3] N. Attrapadung, G. Hanaoka, H. M. Kotoi-Xie, T. Mat-suda, T. Moriyama, T. Murakami, H. Nakamura, C. N. Ja-cob Schuldt, M. Tokuyama, and J. Zhang. Two-dimensional dynamic fusion for continuous authentication. In 2023 IEEE International Joint Conference on Biometrics (IJCB) , pages 1–9, 2023. [4] A. F. Baig and S. Eskeland. Security, privacy, and usability in continuous authentication: A survey. Sensors , 21(17), 2021. [5] E. Bailly-Bailli´ ere, S. Bengio, F. Bimbot, M. Hamouz, J. Kit-tler, J. Mari´ ethoz, J. Matas, K. Messer, V. Popovici, F. Por´ ee, B. Ruiz, and J.-P. Thiran. The banca database and evaluation protocol. In Proceedings of the 4th International Confer-ence on Audio- and Video-Based Biometric Person Authenti-cation , AVBPA’03, page 625–638, Berlin, Heidelberg, 2003. Springer-Verlag. [6] F. Chen, J. Xin, and V. V. Phoha. Sspra: A robust approach to continuous authentication amidst real-world adversarial challenges. IEEE Transactions on Biometrics, Behavior, and Identity Science , 6(2):245–260, 2024. [7] H. Feng, K. Fawaz, and K. G. Shin. Continuous authen-tication for voice assistants. In Proceedings of the 23rd Annual International Conference on Mobile Computing and Networking , pages 343–355. ACM, 2017. [8] L. Fridman, A. Stolerman, S. Acharya, P. Brennan, P. Juola, R. Greenstadt, and M. Kam. Multi-modal decision fusion for continuous authentication. Computers & Electrical En-gineering , 41:142–156, 2015. 
+
+8[9] D. Hintze, R. D. Findling, S. Muhammad, and R. Mayrhofer. Continuous mobile user authentication using combined bio-metric traits. Applied Sciences , 11(24):11756, 2021. [10] E. Khoury, L. El Shafey, C. McCool, M. G¨ unther, and S. Marcel. Bi-modal biometric authentication on mobile phones in challenging conditions. Image and Vision Com-puting , 32(12):1147–1160, 2014. [11] J. Kittler, M. Hatef, R. P. W. Duin, and J. Matas. On combin-ing classifiers. IEEE Transactions on Pattern Analysis and Machine Intelligence , 20(3):226–239, 1998. [12] M. Ma, J. Ren, L. Zhao, S. Tulyakov, C. Wu, and X. Peng. Smil: Multimodal learning with severely missing modality. 
+
+ArXiv , abs/2103.05677, 2021. [13] J. R. Norris. Markov chains. Cambridge Series in Statistical and Probabilistic Mathematics , 1997. [14] V. M. Patel, R. Chellappa, D. Chandra, and B. Barbello. Continuous user authentication on mobile devices: Recent progress and remaining challenges. IEEE Signal Processing Magazine , 33(4):49–61, 2016. [15] A. Ray-Dowling, D. Hou, S. Schuckers, and A. Barbir. Eval-uating multi-modal mobile behavioral biometrics using pub-lic datasets. Computers & Security , 121:102868, 2022. [16] S. Rose, O. Borchert, S. Mitchell, and S. Connelly. Zero trust architecture. Technical Report NIST SP 800-207, National Institute of Standards and Technology, 2020. [17] A. Ross and A. Jain. Information fusion in biometrics. Pat-tern Recognition Letters , 24(13):2115–2125, 2003. [18] T. Sim, S. Zhang, R. Janakiraman, and S. Kumar. Continuous verification using multimodal biometrics. IEEE Transactions on Pattern Analysis and Machine Intelligence , 29(4):687– 700, 2007. [19] Z. Sitov´ a, J. ˇ Sediv´ y, Q. Yang, G. Peng, G. Zhou, P. Gasti, and K. S. Balagani. HMOG: New behavioral biometric features for continuous authentication of smartphone users. 
+
+IEEE Transactions on Information Forensics and Security ,11(5):877–892, 2016. [20] I. Stylios, S. Chatzis, O. Thanou, and S. Kokolakis. Contin-uous authentication with feature-level fusion of touch ges-tures and keystroke dynamics to solve security and usability issues. Computers & Security , 132:103363, 2023. [21] I. Stylios, O. Thanou, I. Androulidakis, and E. Zaitseva. A review of continuous authentication using behavioral bio-metrics. In Proceedings of the South-East Europe Design Au-tomation, Computer Engineering, Computer Networks and Social Media Conference , pages 72–79. ACM, 2016. [22] P. Tuominen and R. L. Tweedie. Exponential decay and ergodicity of general markov processes and their discrete skeletons. Advances in Applied Probability , 11(4):784–803, 1979. [23] R. Wu, H. Wang, H.-T. Chen, and G. Carneiro. Deep multi-modal learning with missing modality: A survey. Transac-tions on Machine Learning Research , 2026. Survey Certifi-cation. 
+
+9Supplementary Material 
+
+## VIGIL: Verifying Identity via Gated Intermittent Likelihoods for Continuous Biometric Authentication 
+
+This supplement walks through the VIGIL framework end-to-end with full numerical examples. It covers P1 cruise mode, the P2 transition, and six verification scenarios (including a P2 →P1 →P2 re-entry cycle). Every fusion subset from Table 3 of the main paper is used at least once. 
+
+## A. Parameters and Setup 
+
+A.1. System Parameters 
+
+Table S1. VIGIL default verification parameters (deployment-configurable). 
+
+Parameter Value Rationale 
+
+Wbase 5.0 s Default verification window length. 
+
+δ 1.0 s Reduces window by 1.0 s per P2 entry. 
+
+Wmin 1.0 s Ensures at least one observation cycle. 
+
+λ 0.1 s−1 Penalty decays to zero after ≈ 40 s of Nor-mal. 
+
+Tback 0.70 Recovery threshold (matches Tstay ). 
+
+Talert 0.30 Alert threshold (40 pp inconclusive band). 
+
+τp 10 .0 s P1 (STM1) decay half-life. 
+
+τq 20 .0 s P2 (STM2) decay half-life. Max rounds 5 Maximum P2 rounds before forced alert. 
+
+A.2. Modalities and Fusion Subsets 
+
+Five modalities: M1 (face, EER = 2%), M2 (iris, 1.5%), M3 (voice, 8%), M4 (keystroke, 12%), M5 (gait, 15%). Table S2 reproduces the subset-configurable fusion from the main paper. All seven subsets are exercised across this walkthrough; each row indicates where it is used. 
+
+Table S2. Subset-configurable fusion (reproduced from Table 3). Weights are inverse-EER normalized per subset. 
+
+Active Subset Strategy Weights Used In 
+
+{M1–M5} Wtd. Geom. (0 .35 , 0.46 , 0.09 , 0.06 , 0.05) Obs 1 
+
+{M1, M 2, M 3} Wtd. Geom. (0 .38 , 0.51 , 0.10) Sc. A 
+
+{M1, M 3, M 4} Wtd. Sum (0 .71 , 0.18 , 0.12) Sc. B R2 
+
+{M3, M 4, M 5} Wtd. Sum (0 .46 , 0.30 , 0.24) Obs 3, Sc. C R3 
+
+{M1, M 2} Wtd. Geom. (0 .43 , 0.57) Obs 2, Sc. F 
+
+{M3, M 5} Wtd. Sum (0 .65 , 0.35) Sc. B R1, Sc. C R2 
+
+{Mi} (single) Product (1 .0) Sc. C R1 
+
+A.3. Key Equations 
+
+Decay function: f (∆ t) = e− ln 2  
+
+> τ·∆t
+
+STM1 temporal fusion (P1, p = f (∆ t) with τp): 
+
+πN = p · P (N )prev , πS = (1 − p) · P (N )prev + P (S)prev 
+
+STM2 temporal fusion (P2, q = f (∆ t) with τq ): 
+
+πN = q · P (N )prev , πA = (1 − q) · P (N )prev + P (A)prev 
+
+Bayesian update: P (N )post = LN · πN
+
+LN · πN + L¬N · πA
+
+10 B. Session Timeline 
+
+Figure S1 illustrates the complete session. The P1 cruise phase processes three observations at t = 0 , t = 2 s, and t = 5 s, each using a different fusion subset. After the third observation drops P (N ) below Tstay , the system enters P2. From this common entry point, six scenarios branch. 
+
+P1 
+
+A
+
+B
+
+C
+
+D
+
+E
+
+F
+
+> Obs 1
+> .9943
+> Obs 2
+> .9864
+> Obs 3
+> .6948
+> P2 entry
+
+R1 
+
+> 5.0 s
+> .9519
+
+RECOVER 
+
+R1 
+
+> 5.0 s
+> .5901
+
+R2 
+
+> 4.0 s
+> .8133
+
+RECOVER 
+
+R1 
+
+> 5.0 s
+> .4837
+
+R2 
+
+> 4.0 s
+> .3321
+
+R3 
+
+> 3.0 s
+> .2153
+
+ALERT 
+
+No observations ALERT 
+
+R1 
+
+> 5.0 s
+> .5843
+
+R2 
+
+> 4.0 s
+> .5086
+
+R3 
+
+> 3.0 s
+> .4584
+> R4
+> 2.0 s
+> .4277
+> R5
+> 1.0 s
+> .4131
+
+ALERT 
+
+R1  
+
+> 5.0 s
+> .9519
+> P1 cruise (20 s, penalty decays to 0)
+
+R1 
+
+> 5.0 s
+> .9178
+
+RECOVER     
+
+> P1 Cruise P2 Verification: Recovery Inconclusive Alert
+
+Figure S1. Session overview. Row P1 shows cruise-mode observations; rows A–F each show one P2 scenario progressing left to right. 
+
+P (N ) values annotate key transitions. Scenario F spans the full re-entry cycle with 20 s of P1 between two P2 episodes. 
+
+## C. Phase 1: P1 Cruise Mode 
+
+Session begins with a fresh login. Initial state: P (N ) = 0 .95 , P (S) = 0 .05 .
+
+C.1. Observation 1 — {M1–M5} at t = 0 s
+
+All five modalities available at login. Weighted Geometric Mean with ˆw = (0 .35 , 0.46 , 0.09 , 0.06 , 0.05) .
+
+1. Per-modality scores: 
+
+Modality P Nj P ¬Nj
+
+M1 (face) 0.92 0.08 
+
+M2 (iris) 0.95 0.05 
+
+M3 (voice) 0.55 0.45 
+
+M4 (keystroke) 0.50 0.50 
+
+M5 (gait) 0.48 0.52 
+
+2. Cross-modal fusion (Weighted Geometric Mean): 
+
+LN = 0 .92 0.35 × 0.95 0.46 × 0.55 0.09 × 0.50 0.06 × 0.48 0.05 = 0 .8312 
+
+L¬N = 0 .08 0.35 × 0.05 0.46 × 0.45 0.09 × 0.50 0.06 × 0.52 0.05 = 0 .0900 
+
+3. Temporal fusion (∆t = 0 s, so p = 1 .0): πN = 1 .0 × 0.95 = 0 .9500 , πS = 0 .0 × 0.95 + 0 .05 = 0 .0500 
+
+11 4. Bayesian update: P (N )post = LN ·πN    
+
+> LN·πN+L¬N·πS
+
+= 0.9943 
+
+5. Decision: 0.9943 ≥ Tstay = 0 .70 → Stay in P1 .
+
+C.2. Observation 2 — {M1, M 2} at t = 2 s
+
+Only physiological sensors available. Weighted Geometric Mean with ˆw = (0 .43 , 0.57) .
+
+1. Per-modality scores: 
+
+Modality P Nj P ¬Nj
+
+M1 (face) 0.90 0.10 
+
+M2 (iris) 0.93 0.07 
+
+2. Cross-modal fusion (Weighted Geometric Mean): 
+
+LN = 0 .90 0.43 × 0.93 0.57 = 0 .9170 
+
+L¬N = 0 .10 0.43 × 0.07 0.57 = 0 .0816 
+
+3. Temporal fusion (∆t = 2 s, p = e− ln 2 10 ×2 = 0 .8706 ): πN = 0 .8706 × 0.9943 = 0 .8656 , πS = 0 .1294 × 0.9943 + 0.0057 = 0 .1344 
+
+4. Bayesian update: P (N )post = LN ·πN    
+
+> LN·πN+L¬N·πS
+
+= 0.9864 
+
+5. Decision: 0.9864 ≥ 0.70 → Stay in P1 .
+
+C.3. Observation 3 — {M3, M 4, M 5} at t = 5 s — Triggers P2 
+
+Only behavioral sensors active. Noisy environment, poor readings. Weighted Sum with ˆw = (0 .46 , 0.30 , 0.24) .
+
+1. Per-modality scores: 
+
+Modality P Nj P ¬Nj
+
+M3 (voice) 0.40 0.60 
+
+M4 (keystroke) 0.35 0.65 
+
+M5 (gait) 0.30 0.70 
+
+2. Cross-modal fusion (Weighted Sum): 
+
+LN = 0 .46 × 0.40 + 0 .30 × 0.35 + 0 .24 × 0.30 = 0 .3610 
+
+L¬N = 0 .46 × 0.60 + 0 .30 × 0.65 + 0 .24 × 0.70 = 0 .6390 
+
+3. Temporal fusion (∆t = 3 s since Obs 2, p = e− ln 2 10 ×3 = 0 .8123 ): πN = 0 .8123 × 0.9864 = 0 .8012 , πS =0.1877 × 0.9864 + 0 .0136 = 0 .1988 
+
+4. Bayesian update: P (N )post = LN ·πN    
+
+> LN·πN+L¬N·πS
+
+= 0.6948 
+
+5. Decision: 0.6948 < T stay = 0 .70 → Enter P2 .
+
+## D. P2 Entry 
+
+At P2 entry, Suspense mass transfers to Alert: 
+
+P (N ) = 0 .6948 , P (A) = 1 − 0.6948 = 0 .3052 
+
+Penalty = 0 (first entry). Window = Wbase = 5 .0 s. Six scenarios branch from here. 
+
+## E. Scenario A: Immediate Recovery 
+
+Genuine user provides strong physiological evidence. Subset: {M1, M 2, M 3}, Wtd. Geom. (0 .38 , 0.51 , 0.10) .12 E.1. Round 1 (W = 5 .0 s) 
+
+1. Entry state: P (N ) = 0 .6948 , P (A) = 0 .3052 
+
+2. Per-modality scores and fusion: 
+
+Modality P Nj P ¬Nj
+
+M1 (face) 0.93 0.07 
+
+M2 (iris) 0.96 0.04 
+
+M3 (voice) 0.60 0.40 
+
+LN = 0 .93 0.38 × 0.96 0.51 × 0.60 0.10 = 0 .9053 , L¬N = 0 .07 0.38 × 0.04 0.51 × 0.40 0.10 = 0 .0643 
+
+3. STM2 temporal fusion (q = e− ln 2 20 ×5.0 = 0 .8409 ): πN = 0 .8409 × 0.6948 = 0 .5843 , πA = 0 .1591 × 0.6948 + 0.3052 = 0 .4157 
+
+4. Bayesian update: P (N )post = LN ·πN    
+
+> LN·πN+L¬N·πA
+
+= 0.9519 
+
+5. Decision: 0.9519 ≥ Tback = 0 .70 → RECOVER .
+
+Outcome: Return to P1 with P (N ) = 0 .9519 , P (S) = 0 .0481 . Penalty → 1.0 s. 
+
+## F. Scenario B: Multi-Round Recovery 
+
+Borderline behavioral evidence in R1 (inconclusive), then strong face-dominant evidence in R2. 
+
+F.1. Round 1 (W = 5 .0 s) — {M3, M 5}, Wtd. Sum 
+
+1. Entry state: P (N ) = 0 .6948 , P (A) = 0 .3052 
+
+2. Per-modality scores and fusion ( ˆw = [0 .65 , 0.35] ): 
+
+P Nj P ¬Nj
+
+M3 (voice) 0.52 0.48 
+
+M5 (gait) 0.48 0.52 
+
+LN = 0 .65 × 0.52 + 0 .35 × 0.48 = 0 .5060 , L¬N = 0 .65 × 0.48 + 0 .35 × 0.52 = 0 .4940 
+
+3. STM2 temporal fusion (q = 0 .8409 ): πN = 0 .5843 , πA = 0 .4157 
+
+4. Bayesian update: P (N )post = 0.5901 
+
+5. Decision: 0.30 < 0.5901 < 0.70 → INCONCLUSIVE . Carry forward, shrink window. 
+
+F.2. Round 2 (W = 4 .0 s) — {M1, M 3, M 4}, Wtd. Sum 
+
+Face becomes available. ˆw = (0 .71 , 0.18 , 0.12) .
+
+1. Entry state: P (N ) = 0 .5901 , P (A) = 0 .4099 
+
+2. Per-modality scores and fusion: 
+
+P Nj P ¬Nj
+
+M1 (face) 0.91 0.09 
+
+M3 (voice) 0.58 0.42 
+
+M4 (keystroke) 0.52 0.48 
+
+LN = 0 .71 × 0.91 + 0 .18 × 0.58 + 0 .12 × 0.52 = 0 .8129 
+
+L¬N = 0 .71 × 0.09 + 0 .18 × 0.42 + 0 .12 × 0.48 = 0 .1971 
+
+3. STM2 temporal fusion (q = e− ln 2 20 ×4.0 = 0 .8706 ): πN = 0 .8706 × 0.5901 = 0 .5137 , πA = 0 .1294 × 0.5901 + 0.4099 = 0 .4863 
+
+13 4. Bayesian update: P (N )post = 0.8133 
+
+5. Decision: 0.8133 ≥ 0.70 → RECOVER .
+
+Outcome: Return to P1 with P (N ) = 0 .8133 . Penalty = 2 δ = 2 .0 s. If re-entered immediately: Weff = max(1 .0, 5.0 −
+
+2.0) = 3 .0 s. 
+
+## G. Scenario C: Gradual Alert 
+
+An attacker with limited biometric capability. Each round uses a different subset as the attacker tries different sensors. All produce weak scores. 
+
+G.1. Round 1 (W = 5 .0 s) — {M4} single, Product rule 
+
+1. Entry state: P (N ) = 0 .6948 , P (A) = 0 .3052 
+
+2. Fusion: Single modality, Product rule. LN = 0 .40 , L¬N = 0 .60 
+
+3. STM2 temporal fusion (q = 0 .8409 ): πN = 0 .5843 , πA = 0 .4157 
+
+4. Bayesian update: P (N )post = 0.4837 
+
+5. Decision: 0.30 < 0.4837 < 0.70 → INCONCLUSIVE .
+
+G.2. Round 2 (W = 4 .0 s) — {M3, M 5}, Wtd. Sum 
+
+1. Entry state: P (N ) = 0 .4837 , P (A) = 0 .5163 
+
+2. Fusion ( ˆw = [0 .65 , 0.35] ): M3: (0 .42 , 0.58) , M5: (0 .38 , 0.62) .
+
+LN = 0 .4060 , L¬N = 0 .5940 
+
+3. STM2 temporal fusion (q = 0 .8706 ): πN = 0 .8706 × 0.4837 = 0 .4211 , πA = 0 .1294 × 0.4837 + 0 .5163 = 0 .5789 
+
+4. Bayesian update: P (N )post = 0.3321 
+
+5. Decision: 0.30 < 0.3321 < 0.70 → INCONCLUSIVE .
+
+G.3. Round 3 (W = 3 .0 s) — {M3, M 4, M 5}, Wtd. Sum 
+
+1. Entry state: P (N ) = 0 .3321 , P (A) = 0 .6679 
+
+2. Fusion ( ˆw = [0 .46 , 0.30 , 0.24] ): M3: (0 .42 , 0.58) , M4: (0 .38 , 0.62) , M5: (0 .35 , 0.65) .
+
+LN = 0 .3912 , L¬N = 0 .6088 
+
+3. STM2 temporal fusion (q = e− ln 2 20 ×3.0 = 0 .9013 ): πN = 0 .9013 × 0.3321 = 0 .2993 , πA = 0 .0987 × 0.3321 + 0.6679 = 0 .7007 
+
+4. Bayesian update: P (N )post = 0.2153 
+
+5. Decision: 0.2153 ≤ Talert = 0 .30 → ALERT .
+
+Outcome: Session locked. Total P2 duration: 5.0 + 4 .0 + 3 .0 = 12 .0 s. 
+
+P (A) progression: 0.3052 → 0.5163 → 0.6679 → 0.7847 . Compounding pressure forces the outcome. 
+
+## H. Scenario D: No Observations 
+
+1. Entry state: P (N ) = 0 .6948 , P (A) = 0 .3052 . Window = 5 .0 s. 
+
+2. System waits for observations. None arrive. 
+
+3. Decision: No observations → ALERT (immediate, no further rounds). This prevents an attacker from stalling by avoiding sensors entirely. 14 I. Scenario E: Max-Rounds Exhaustion 
+
+Attacker produces perfectly neutral evidence ( LN = L¬N = 0 .04 ) every round. Equal likelihoods mean the Bayesian update preserves the prior ( P (N )post = πN ), so P (N ) decreases purely from STM2 decay.                                   
+
+> Table S3. Scenario E: P(N)trajectory with equal evidence ( LN=L¬N= 0 .04 ).
+> Round WqP(N)post Decision
+> 15.0 s 0.8409 0.5843 Inconclusive 24.0 s 0.8706 0.5086 Inconclusive 33.0 s 0.9013 0.4584 Inconclusive 42.0 s 0.9330 0.4277 Inconclusive 51.0 s 0.9659 0.4131 Inconclusive Max rounds exhausted ALERT
+
+Total P2 duration: 5.0 + 4 .0 + 3 .0 + 2 .0 + 1 .0 = 15 .0 s. Even with neutral evidence, STM2 decay erodes P (N )
+
+monotonically. Shorter windows reduce per-round decay ( q closer to 1), but the cumulative effect is decisive. 
+
+## J. Scenario F: P2 → P1 → P2 Re-Entry 
+
+Demonstrates the full lifecycle: recovery, return to P1, penalty decay, and a second P2 entry with restored window. 
+
+J.1. First P2: Immediate Recovery (same as Scenario A) 
+
+1. Entry: P (N ) = 0 .6948 , P (A) = 0 .3052 . Penalty = 0 . Window = 5 .0 s. 
+
+2. R1 with {M1, M 2, M 3} Wtd. Geom. → P (N )post = 0 .9519 .
+
+3. Decision: 0.9519 ≥ 0.70 → RECOVER . Penalty → 1.0 s. 
+
+J.2. Return to P1 (20 s in Normal) 
+
+1. Re-enter P1: P (N ) = 0 .9519 , P (S) = 0 .0481 . Penalty = 1 .0 s. 
+
+2. Penalty decay over 20 s: max(0 , 1.0 − 0.1 × 20) = 0 .0. Full window restored. 
+
+3. P1 decay (no obs): p = e− ln 2 10 ×20 = 0 .2500 .
+
+πN = 0 .2500 × 0.9519 = 0 .2380 , πS = 0 .7500 × 0.9519 + 0 .0481 = 0 .7620 
+
+Without new observations, P (N ) decays to 0.2380 . A weak observation triggers P2 again. 
+
+J.3. Second P2 Entry — {M1, M 2}, Wtd. Geom. 
+
+1. Entry: P (N ) = 0 .55 (after weak P1 obs), P (A) = 0 .45 . Penalty = 0 . Window = 5 .0 s (restored). 
+
+2. Fusion ( ˆw = [0 .43 , 0.57] ): M1: (0 .91 , 0.09) , M2: (0 .94 , 0.06) .
+
+LN = 0 .91 0.43 × 0.94 0.57 = 0 .9270 , L¬N = 0 .09 0.43 × 0.06 0.57 = 0 .0714 
+
+3. STM2 temporal fusion (q = 0 .8409 ): πN = 0 .8409 × 0.55 = 0 .4625 , πA = 0 .1591 × 0.55 + 0 .45 = 0 .5375 
+
+4. Bayesian update: P (N )post = 0.9178 
+
+5. Decision: 0.9178 ≥ 0.70 → RECOVER . Penalty → 1.0 s. 
+
+Key insight: The penalty fully decayed during 20 s of Normal, so the second P2 uses the full 5.0 s window. VIGIL is fair to genuine users who maintain stable behavior between P2 episodes. 
+
+## K. Adaptive Window Session Timeline 
+
+Table S4 traces penalty accumulation and decay across multiple P2 entries. 15 Table S4. Adaptive window session ( Wbase = 5 .0 s, δ = 1 .0 s, λ = 0 .1 s−1, Wmin = 1 .0 s). 
+
+t Event Penalty Weff 
+
+0 s 1st P2 entry 0.0 5.0 s
+
+5 s 2nd P2 entry (immediate) 1.0 4.0 s
+
+9 s 3rd P2 entry (immediate) 2.0 3.0 s
+
+12 s Recovers to Normal 3.0 2.0 s
+
+22 s 10 s in Normal 2.0 3.0 s
+
+32 s 4th P2 entry 1.0 4.0 s
+
+36 s Recovers to Normal 2.0 3.0 s
+
+56 s 20 s in Normal (full reset) 0.0 5.0 s
+
+Red rows : P2 entries (penalty +δ). Green rows : Normal periods (penalty decays at λ). A persistent threat faces shrinking windows; a genuine user’s penalty resets. 
+
+## L. Summary 
+
+Table S5. Summary of all P2 verification scenarios. 
+
+Scenario Rnds Outcome Time Key Feature 
+
+A: Immediate Recovery 1 RECOVER 5.0 s Strong {M1, M 2, M 3}
+
+B: Multi-Round 2 RECOVER 9.0 s {M3, M 5} borderline →{M1, M 3, M 4} strong C: Gradual Alert 3 ALERT 12.0 s Weak across 3 subsets D: No Observations 0 ALERT 5.0 s Stalling prevention E: Max-Rounds 5 ALERT 15.0 s Neutral LN = L¬N , decay only F: P2 →P1 →P2 1+1 RECOVER — Penalty decay restores win-dow 
+
+These six scenarios demonstrate all terminal paths through VIGIL: 1. Recovery via strong evidence (A) — P (N )post ≥ Tback in R1. 2. Recovery via accumulated evidence (B) — inconclusive then strong, different subsets. 3. Alert via weak evidence (C) — attacker tries different sensors, P (A) compounds. 4. Alert via sensor avoidance (D) — no observations → immediate lockout. 5. Alert via exhaustion (E) — all rounds inconclusive, max rounds exceeded. 6. Re-entry with restoration (F) — penalty decays, window resets for genuine users. 16
