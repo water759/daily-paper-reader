@@ -1,0 +1,1008 @@
+Title: An Efficient Fault-Tolerance Scheme for CKKS Computation on CPUs
+
+URL Source: https://arxiv.org/pdf/2607.18720v1
+
+Published Time: Wed, 22 Jul 2026 00:30:59 GMT
+
+Number of Pages: 14
+
+Markdown Content:
+> IEEE TRANSACTIONS ON COMPUTER-AIDED DESIGN OF INTEGRATED CIRCUITS AND SYSTEMS 1
+
+# An Efficient Fault-Tolerance Scheme for CKKS Computation on CPUs 
+
+Jianan Mu , Ge Yu , Tenghui Hua , Liang Kong , Jing Ye , Xing Hu, Meng Li, Xiaowei Li , Senior Member, IEEE , and Huawei Li , Senior Member, IEEE 
+
+Abstract —Fully homomorphic encryption (FHE) enables com-putation directly on encrypted data, but its long ciphertext dataflow and high-dimensional modular arithmetic make it highly vulnerable to silent data corruption (SDC) caused by transient hardware faults. Although recent fault-tolerance schemes have been explored for dedicated FHE accelerators, efficient reliability protection for CPU-based FHE software remains underexplored. Direct redundant execution more than doubles the runtime, while directly applying existing checksum-based protection to CPUs still incurs substantial modular-arithmetic and memory-access overheads. This work presents an efficient fault-tolerance scheme specifi-cally designed for CKKS computation on general-purpose CPUs. The proposed scheme protects CKKS polynomial operators by checking their input–output consistency and reduces the associated overhead at three levels. First, modulus-aware bucket checksum exploits wide CPU accumulators to reduce expensive modular reductions. Second, dataflow-fused in-operator checking integrates checksum accumulation into the original operator dataflow, eliminating detached scans of long ciphertext poly-nomials. Third, cross-operator check fusion removes redundant checksum computation across adjacent polynomial operators while preserving the end-to-end checking invariant. We implement the proposed scheme in OpenFHE and eval-uate it on representative encrypted applications and ciphertext primitives under random single-bit transient faults. The proposed scheme achieves a 100% empirical detection rate over 150,000 evaluated non-crashing corrupted-result cases and maintains application accuracy close to the fault-free baseline across a wide range of fault rates. Meanwhile, it incurs only 6.0%–8.4% runtime overhead, averaging 6.8%, and reduces the average protection overhead by 4.9 × compared with direct checksum-based protection. 
+
+1 I NTRODUCTION 
+
+Fully Homomorphic Encryption (FHE) [1]–[5] is an emerg-ing cryptographic technique that enables computation directly on encrypted data. It allows clients to outsource computation to untrusted servers while keeping data encrypted throughout storage, transmission, and processing, as shown in Fig. 1(a). This property makes FHE a promising foundation for privacy-preserving services such as encrypted finance, biomedical analytics, private databases, and secure artificial intelligence (AI) inference [6]–[12]. The importance of FHE has also been recognized by the broader systems community: the 
+
+Jianan Mu, Ge Yu, Tenghui Hua, Jing Ye, Xing Hu, Xiaowei Li, Huawei Li (State Key Laboratory of Processors) are with the Institute of Computing Technology, Chinese Academy of Sciences, Beijing 100190, China, and also with the University of Chinese Academy of Sciences, Beijing 100190, China. Liang Kong is with the Tsinghua University, Beijing 100084, China. Meng Li is with the Peking University, Beijing 100871, China. Version 
+
+> Evaluation on
+> (a)
+
+？
+
+> Barrier
+> Trust  Ciphertexts
+> Encrypted(f(x))
+> Encrypted(x)
+
+f(x) 
+
+> Client
+
+x               
+
+> FHE
+> Decline
+> Sharp
+> (b)
+> 10−1210−1110−1010−910−810−710−6
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Accuracy (%)  LoLA
+> 10−1210−
+> 10−1210−1110−1010−910−810−710−6
+> 60
+> 80
+> Accuracy (%)
+> 10−1210−
+> Ideal No protection
+> Fault Rate
+> (b)
+> Plaintext
+> ResNet-20
+> 40
+> 20
+> 0
+> FHE
+
+Fig. 1: (a) Typical application scenarios of FHE. (b) Fault injection evaluation on CKKS-encrypted ResNet-20. SPEC CPU 2026 benchmark suite includes a homomorphic-encryption benchmark, 750.sealcrypto_r , based on en-crypted database queries [13]. Among existing FHE schemes, the Cheon-Kim-Kim-Song (CKKS) scheme [5] is particularly important because it supports single-instruction multiple-data (SIMD)-style approximate arithmetic, making it suitable for numerical and AI workloads. While recent FHE research has primarily focused on improving execution performance, the reliability of FHE algorithms on real-world hardware remains insufficiently studied. Real-world hardware inevitably experiences transient faults that may cause silent data corruption (SDC) : erroneous out-puts without crashes or visible error reports [14], [15]. Such faults are particularly concerning for FHE computation. On the one hand, FHE programs execute long chains of high-dimensional modular polynomial operations, making their ex-ecution much longer than plaintext computation and increasing the exposure window to transient faults. On the other hand, during outsourced FHE execution, the server cannot inspect plaintext semantics: ciphertexts appear pseudorandom, and a corrupted ciphertext may remain syntactically valid until it is decrypted by the client. As shown in Fig. 1(b), our pre-liminary fault-injection experiment on ResNet-20 shows that, for the same inference task, the CKKS-encrypted execution is substantially more vulnerable to hardware faults than the plaintext execution. While the plaintext model only exhibits a mild accuracy drop under fault injection, the encrypted model suffers a sharp accuracy degradation after decryption. These observations motivate the need for efficient SDC detection in FHE computation. Recent security and architecture studies have begun to investigate this reliability problem, especially for FHE ac-celerators, simulator-based accelerator designs, and ciphertext storage under memory faults [16]–[18]. However, CPU-based FHE software remains a critical but underexplored target arXiv:2607.18720v1 [cs.AR] 21 Jul 2026 for reliability protection. At present, CPUs are still widely used in FHE development, testing, algorithm prototyping, and lightweight encrypted-service deployment. Representative FHE software ecosystems, including Microsoft Simple En-crypted Arithmetic Library (SEAL)-based workloads in SPEC CPU 2026, OpenFHE, and Zama’s Torus Fully Homomorphic Encryption (TFHE)/Concrete software stack, all provide CPU-based implementations as part of their software backends [13], [19]–[21]. Even as GPU libraries and dedicated FHE acceler-ators continue to mature [22]–[27], CPU execution remains an important baseline for practical FHE software stacks. There-fore, protecting CPU-based FHE computation is necessary for dependable computation on ciphertext. The challenge, however, is not whether FHE computation can be protected, but whether it can be protected efficiently on CPUs. Straightforward dual modular redundancy (DMR) can detect computation faults by duplicating the execution, but it approximately doubles the runtime. Lightweight algorithm-level error-detection methods can reduce the amount of re-dundant computation by checking input-output consistency of numerical kernels [28]–[30], and recent FHE accelerator protection schemes further exploit customized hardware sup-port [17]. Nevertheless, as quantified in Sec. 3.2, directly applying these protection mechanisms to CPU-based FHE software still introduces substantial overhead, around 30%– 40% in our evaluation. This shows that efficient CPU-based FHE protection cannot be obtained by simply reusing existing approaches. The root cause is that low algorithmic complexity does not necessarily translate into low CPU execution overhead. Application-specific integrated circuit (ASIC) accelerators can provide customized parallelism, dedicated modular arithmetic units, and specialized datapaths for protection logic [22]–[27]. CPUs, in contrast, must execute the additional detection logic through fixed instruction pipelines, limited integer arithmetic resources, and cache-based memory hierarchies. As a result, a protection scheme that is efficient on an accelerator may still incur many extra instructions, frequent modular reductions, and cache-unfriendly memory scans on CPUs. This motivates an efficient protection design for CKKS software execution on CPUs: beyond reducing the amount of redundant compu-tation, the detection logic must be reshaped according to CPU resource constraints and the original CKKS operator flow. To address this problem, we design and implement an effi-cient fault-tolerance scheme for CKKS-based FHE programs running on CPUs. To the best of our knowledge, this is the first work to systematically design and optimize fault-tolerance protection for CPU-based CKKS computation. Rather than directly porting accelerator-oriented protection mechanisms, the proposed scheme restructures checksum computation ac-cording to CPU arithmetic resources, memory-access behavior, and the operator dataflow of CKKS computation. Our eval-uation shows that the resulting scheme incurs only 6.0%– 8.4% runtime overhead, averaging 6.8%, and reduces the average protection overhead by 4.9 × compared with direct checksum-based protection. This paper makes the following contributions:  
+
+> •
+
+Fault-injection characterization of CPU-based CKKS. 
+
+We conduct CPU-based fault-injection experiments show-ing that CKKS computation is highly vulnerable to tran-sient faults, and that single-bit errors can silently cause large application-level deviations.  
+
+> •
+
+Efficient fault-tolerance scheme for CPU-based CKKS. To the best of our knowledge, we present the first fault-tolerance scheme specifically designed to provide low-overhead protection for CKKS com-putation on general-purpose CPUs. We identify three major sources of protection overhead—frequent mod-ular reductions, detached polynomial scans, and re-dundant operator-boundary checks—and address them through modulus-aware bucket checksum, dataflow-fused in-operator checking, and cross-operator check fusion, respectively.  
+
+> •
+
+OpenFHE implementation and evaluation. We im-plement the proposed techniques in OpenFHE [19] and evaluate them on representative CKKS applications and primitives. The results show that the proposed scheme reduces the average protection overhead from 33.4% for direct checksum-based protection to 6.8%, while signifi-cantly improving reliability. 2 B ACKGROUND AND RELATED WORK 
+
+2.1 CKKS scheme and computation 
+
+CKKS scheme is an approximate-number FHE scheme that supports SIMD-style arithmetic over encrypted vectors [5]. A plaintext vector is first encoded into a polynomial and then encrypted into a Ring Learning With Errors (RLWE) ciphertext. Homomorphic evaluation is performed through ciphertext-level primitives, which are further decomposed into modular polynomial kernels [5], [31]. 
+
+2.1.1 Ciphertext data structure: Let RQ = ZQ[X]/(XN +1) denote the polynomial ring, where N is the polynomial degree and Q is the ciphertext modulus. A CKKS ciphertext is usually represented as ct = ( c0, c 1) ∈ R 2
+
+> Q
+
+, where each component is an N -coefficient polynomial [5]. Practical CKKS libraries adopt the Residue Number Sys-tem (RNS) to decompose the large modulus Q into several machine-word-sized primes, i.e., Q = Qℓi=0 qi [31]. Thus, each polynomial is stored as multiple residue towers, denoted as c(X) ⇒ { c(0) (X), c (1) (X), . . . , c (ℓ)(X)}, where c(i)(X) = 
+
+c(X) mod qi. This representation enables efficient modular arithmetic over small primes, but it also increases the amount of data that must be accessed and protected. In this work, CKKS data are viewed at three levels: ciphertext components, RNS polynomial towers, and modular coefficients. 
+
+2.1.2 Polynomial operators: CKKS computation is dom-inated by several polynomial-level operators, including the Number Theoretic Transform and its inverse transform, basis conversion, and element-wise multiplication [5], [31], [32]. We refer to them as Number Theoretic Transform/inverse Number Theoretic Transform (NTT/INTT), basis conversion (BConv), and element-wise multiplication (EWM), respectively. These operators are the major computation kernels in ciphertext multiplication, rotation, key switching, and bootstrapping. 2NTT. The NTT maps a polynomial from the coefficient domain to the transform domain, where polynomial multi-plication becomes EWM [33], [34]. For a polynomial tower 
+
+x = (x0, . . . , x N −1) ∈ ZNq , the NTT can be written as 
+
+ˆxj = PN −1 
+
+> i=0
+
+xiωij mod q, where 0 ≤ j < N and ω
+
+is an N -th primitive root of unity modulo q. The INTT reconstructs the coefficient-domain polynomial as xi =
+
+N −1 PN −1 
+
+> j=0
+
+ˆxj ω−ij mod q. Optimized CKKS implementa-tions may use negacyclic variants, precomputed twiddle fac-tors, and lazy reductions, but both NTT and INTT remain linear mappings over each RNS tower [31], [33]. 
+
+BConv. BConv converts coefficients from one RNS basis to another [31], [35]. Given an input basis Q = Q 
+
+> i
+
+qi and an output basis P = Q 
+
+> j
+
+pj , the converted residue under modulus 
+
+pj can be expressed as yj [k] = P 
+
+> i
+
+xi[k] · λi · αi,j mod pj ,
+
+where xi[k] is the k-th coefficient residue under qi, and λi
+
+and αi,j are precomputed Chinese Remainder Theorem (CRT)-related constants. BConv is coefficient-wise over polynomial positions, but it couples different RNS towers through the summation over i.
+
+EWM. After NTT, polynomial multiplication is reduced to EWM [5], [31]. Given two transformed polynomial towers 
+
+a = ( a0, . . . , a N −1) and b = ( b0, . . . , b N −1), EWM computes 
+
+ui = ai · bi mod q for 0 ≤ i < N . Although EWM has linear complexity, it appears frequently in ciphertext multiplication, key switching, and bootstrapping [32], [36]. 
+
+2.1.3 Ciphertext operators: At the ciphertext level, CKKS supports addition, multiplication, rotation, and bootstrap-ping [5], [31], [32]. Ciphertext addition is performed component-wise as (c0, c 1) + ( c′
+
+> 0
+
+, c ′
+
+> 1
+
+) = (c0 + c′
+
+> 0
+
+, c 1 +
+
+c′
+
+> 1
+
+) mod Q. Ciphertext-plaintext multiplication multiplies each ciphertext component by an encoded plaintext polynomial. Ciphertext-ciphertext multiplication first generates a three-component ciphertext, where d0 = c0c′ 
+
+> 0
+
+mod Q, d1 = c0c′ 
+
+> 1
+
++
+
+c1c′ 
+
+> 0
+
+mod Q, and d2 = c1c′ 
+
+> 1
+
+mod Q. The intermediate cipher-text (d0, d 1, d 2) is then relinearized back to two components through key switching [5], [31], [36]. Rotation applies an automorphism to permute encrypted slots, followed by key switching to restore the ciphertext under the original secret key. Bootstrapping refreshes a ciphertext by homomorphically evaluating a decryption-like function, which invokes many rotations, key switches, NTT/INTT operations, BConv operations, and EWM kernels [32]. Therefore, these high-level primitives ultimately rely on the same set of mod-ular polynomial operators. 
+
+2.1.4 Barrett modular reduction: Modular reduction is a basic operation in CKKS arithmetic. Since division by q
+
+is expensive, CPU implementations commonly use Barrett reduction, which replaces division with multiplication and shift operations [37], [38]. For a modulus q < 2w and an intermediate value x with 0 ≤ x < 22w, Barrett reduction first precomputes μ =
+
+j 22w
+
+> q
+
+k
+
+. Then, the quotient of x/q is approximated by a multiplication and a shift, and the residue is obtained as 
+
+t =
+
+j x · μ
+
+22w
+
+k
+
+, r = x − tq, r ← Correct( r, q ), (1) where Correct( r, q ) denotes the final correction step that repeatedly subtracts or adds q until 0 ≤ r < q . The resulting value satisfies r ≡ x (mod q).Although Barrett reduction avoids expensive integer divi-sion, invoking Eq. (1) repeatedly over long CKKS polynomials still causes significant overhead. This motivates our later optimization that reduces the number of modular reductions during protection-side detection. 
+
+2.2 Silent data corruptions 
+
+Silent data corruptions (SDCs) refer to hardware-induced er-rors that produce incorrect outputs without triggering crashes, exceptions, or error reports [15], [39], [40]. They may be caused by transient faults, marginal timing violations, man-ufacturing defects, or escaped design bugs [15], [41], [42]. Since no explicit failure signal is raised, corrupted values may silently propagate through the computation and only become observable at the final application output. Existing protection techniques, such as ECC, parity checks, guardbanding, and redundant execution, can reduce hardware error rates, but they either mainly protect storage structures or introduce high overhead for computation-intensive work-loads [43], [44]. Algorithm-based fault tolerance (ABFT) pro-vides a complementary approach by exploiting mathematical invariants of specific algorithms and checking the consistency between kernel inputs and outputs [28]. 
+
+Vulnerability of FHE computing. FHE computation is particularly sensitive to SDCs. It executes long sequences of modular polynomial operations, which increases the fault-exposure window. Meanwhile, ciphertexts are semantically opaque to the server, making intermediate corruptions difficult to detect. A local bit flip in one coefficient or RNS residue may be further amplified by CRT reconstruction, NTT/INTT, basis conversion, and key switching [17], [18]. Therefore, efficient SDC detection is necessary for reliable FHE execution. 
+
+Checksum for NTT. Checksum-based ABFT detects errors by verifying an algebraic invariant between the input and output of a kernel [28]–[30]. Since NTT is a linear trans-form, it naturally supports checksum protection [29], [30]. Let y = F x denote an NTT over one RNS tower, where 
+
+F is the NTT transformation matrix. The checker computes an input-side checksum Enc( x) = PN −1 
+
+> i=0
+
+eixi mod q and an output-side checksum Dec( y) = PN −1 
+
+> i=0
+
+diyi mod q. The encoding vector e and decoding vector d are selected to satisfy eT = dT F . Therefore, under fault-free execution, 
+
+Enc( x) = eT x = dT F x = dT y = Dec( y). The NTT result is accepted only when Enc( x) ?
+
+= Dec( y).
+
+2.3 Related work 
+
+Existing fault studies on lattice-based cryptography mainly focus on security-oriented fault attacks, especially injecting faults during decryption to recover secret information [16]. Recent studies have also investigated the reliability of FHE ciphertext storage under memory faults [18]. However, pro-tecting FHE computation itself is different from protect-ing stored ciphertexts. During homomorphic evaluation, er-rors can be generated and amplified by modular arithmetic, 3NTT/INTT, BConv, key switching, and bootstrapping. There-fore, computation-level SDC detection requires operator-level and pipeline-level protection. Recent FHE accelerator designs have explored efficient pro-tection using customized datapaths, redundant modular units, or checksum-based invariants [17]. These designs show that FHE arithmetic can be protected with lower overhead than full duplication. However, their assumptions do not directly hold for CPU-based FHE libraries. ASIC accelerators can introduce dedicated checksum datapaths and exploit massive customized parallelism, while CPUs must execute checksum logic through fixed instruction pipelines and cache hierarchies. As a result, a checksum scheme that is efficient on an accelerator may still cause substantial instruction, modular-reduction, and memory-access overheads on CPUs. This work therefore focuses on efficient checksum protection for CKKS software execution on CPUs. 3 CKKS VULNERABILITY AND PROTECTION CHALLENGES ON CPU S
+
+This section motivates the need for efficient CPU-oriented error detection for CKKS computation. We first evaluate the vulnerability of CKKS computations under transient faults. We further show that, although existing redundancy and ABFT-based protection can improve reliability, directly applying them still incurs excessive overhead on CPUs. 
+
+3.1 Vulnerability evaluation of CPU-based CKKS 
+
+We first introduce the experimental setup for reliability evaluation on CPUs. Then, we evaluate the average accuracy of different FHE workloads under fault injection and analyze the error propagation model. Finally, we discuss the challenges of implementing efficient CKKS protection on CPUs. 
+
+Evaluation setup. To evaluate the vulnerability of FHE computation to transient faults, we select representative FHE workloads, inject faults at different stages of their execution, and measure the final application accuracy. For application-level evaluation, we consider four representative encrypted inference workloads, including LoLA, MLP, ResNet-20, and VGG16 [10]–[12], [19]. We adopt a random single-bit transient fault model to evaluate the vulnerability of CPU-based FHE computation. Using PinFI [45], faults are probabilistically injected into eligible dynamic instructions during ciphertext computation. The fault rate denotes the probability that an eligible instruc-tion is selected for fault injection. Once selected, one randomly chosen bit in the instruction result is flipped. To conform to the single-fault assumption of the operator-level protection scheme, each invocation of a low-level polynomial operator is restricted to at most one injected fault. For each fault-rate setting, the experiment is repeated to characterize the impact of transient faults, and the resulting application accuracy is compared with that of the fault-free execution. 
+
+Evaluation results. Fig. 2 shows the accuracy of four CKKS homomorphic applications under different fault rates. The ideal fault-free execution maintains stable accuracy across all fault-rate settings. In contrast, the unprotected CKKS 10 −12 10 −11 10 −10 10 −9 10 −8 10 −7 10 −6                    
+
+> Fault Rate
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Accuracy (%)  (a) LoLA
+> 10 −12 10 −11 10 −10 10 −9 10 −8 10 −7 10 −6
+> Fault Rate
+> (b) MLP
+> 10 −12 10 −11 10 −10 10 −9 10 −8 10 −7 10 −6
+> Fault Rate
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Accuracy (%)  (c) ResNet-20
+> 10 −12 10 −11 10 −10 10 −9 10 −8 10 −7 10 −6
+> Fault Rate
+> (d) VGG16
+> Ideal No protection
+
+Fig. 2: Vulnerability evaluation on four CKKS homomorphic applications. 100 200 300 400 500    
+
+> Experiment
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> Result
+> 100 200
+> Experi
+> SET
+> (I)NTT BConv EWM
+
+Fig. 3: Vulnerability evaluation of fault injection on different polynomial operators. executions degrade rapidly as the fault rate increases. For LoLA and MLP, the accuracy starts to drop when the fault rate reaches around 10 −9–10 −8. For ResNet-20 and VGG-16, the degradation appears even earlier, and the final accuracy quickly approaches a nearly random level. These results show that CKKS applications are highly sensitive to transient hardware faults. Although CKKS is designed to tolerate cryptographic approximation noise, this tolerance does not naturally extend to arbitrary hardware-induced bit flips. As described in Sec. 2, FHE computation is composed of low-level polynomial operations. To further analyze how faults in different polynomial operators affect the final result, we inject faults into different polynomial operators during the execution of LoLA. As shown in Fig. 3, faults in (I)NTT, BConv, and EWM operations can all lead to incorrect classi-fication results. The vulnerable points are widely distributed across the polynomial pipeline rather than concentrated in a single operator. This indicates that protecting only one high-level ciphertext primitive or one selected polynomial operator is insufficient. An effective protection scheme should cover the major polynomial operations where errors are generated, transformed, and amplified. 
+
+3.2 Challenge: protection overhead on CPUs 
+
+Improving the reliability of FHE computation is feasible in principle. A straightforward solution is redundant execution, which duplicates the original computation and compares the two results. A more lightweight alternative is checksum-based error detection, which verifies the input–output consistency of polynomial operators using algorithmic invariants. To evaluate the effectiveness of this approach on CPUs, we re-implement 4the checksum-based protection scheme proposed in [17] in our CPU-based FHE software and conduct fault-injection experi-ments. As shown in Fig. 4, the basic checksum-based scheme substantially improves the reliability of encrypted inference. For both LoLA and ResNet-20, the accuracy of unprotected execution rapidly degrades as the fault rate increases, whereas the protected execution maintains accuracy close to the fault-free baseline over a wide range of fault rates. However, such protection is still too expensive for CPU-based FHE computing. As shown in Fig. 5, directly applying basic checksum-based protection introduces non-negligible overhead at both application and operator levels. For end-to-end encrypted applications, the normalized runtime increases to 135% for LoLA and ResNet-20. For individual CKKS operators, the runtime increases to 138% for NTT, 110% 
+
+for BConv, and 231% for EWM. Although this overhead is lower than that of full redundant execution, which more than doubles the runtime in our evaluation, it remains excessive for computationally intensive FHE workloads. Therefore, the key challenge is not whether FHE computation can be protected, but how to achieve efficient error detection for FHE on CPUs. 10−12 10−10 10−8 10−6   
+
+> Fault rate
+> 20
+> 40
+> 60
+> 80
+> 100
+> Accuracy (%)
+> LoLA
+> Protected
+> Unprotected
+> 10−1210−1010−810−6
+> Fault rate
+> ResNet-20
+> Protected
+> Unprotected
+
+Fig. 4: Reliability with basic protection under different fault rates. LoLA ResNet-20 NTT BConv EWM     
+
+> 0
+> 50
+> 100
+> 150
+> 200
+> Normalized runtime (%)
+> 135 135 138
+> 110
+> 231
+> Original Original + basi cch eck sum
+
+Fig. 5: Runtime overhead of basic checksum-based protection on CKKS applications and operators. To understand where this overhead comes from, we further profile the CPU execution behavior of basic checksum-based protection. We report four normalized metrics in Fig. 6. 
+
+Time measures the overall runtime overhead. Instr. reports the number of retired instructions, reflecting the extra arith-metic and control-flow work introduced by protection. L1D Loads measures the number of load accesses to the level-one data cache, reflecting the additional memory traffic. L1D Misses measures failed level-one data-cache accesses, indicat-ing cache-locality degradation and increased pressure on the memory hierarchy. All metrics are normalized to the original unprotected execution. Fig. 6 shows that basic checksum-based protection intro-duces both computation and memory overhead. For NTT, the runtime increases to 138 .5% , while the instruction count, L1D loads, and L1D misses increase to 122 .1% , 127 .4% ,and 106 .8% , respectively. This indicates that NTT protection introduces moderate arithmetic overhead and additional mem-ory accesses. For EWM, the overhead is much more severe: the runtime increases to 231 .1% , while the instruction count, L1D loads, and L1D misses increase to 209 .3% , 209 .8% ,and 218 .6% , respectively. These results show that checksum execution on CPUs is constrained by both arithmetic cost and memory behavior. Based on these results, we summarize three key observations that motivate our CPU-oriented protection design. Original Original + Basic Checksum (a) NTT  
+
+> 0
+> 50
+> 100
+> 150
+> 100.0
+> 138.5
+> Time
+> 100.0
+> 122.1
+> Instr.
+> 100.0
+> 127.4
+> L1D Loads
+> 100.0 106.8
+> L1D Misses
+> Norm. (%)
+> (b) EWM
+> 0
+> 50
+> 100
+> 150
+> 200
+> 250
+> 100.0
+> 231.1
+> Time
+> 100.0
+> 209.3
+> Instr.
+> 100.0
+> 209.8
+> L1D Loads
+> 100.0
+> 218.6
+> L1D Misses
+> Norm. (%)
+
+Fig. 6: Hardware-counter profile of basic checksum-based protection for NTT and EWM. 
+
+Observation 1: checksum computation over modular polynomials incurs high arithmetic overhead. In ordinary integer domains, checksum-based checking mainly consists of simple multiply-accumulate operations. However, CKKS op-erators process high-dimensional modular polynomials. Each protection-side term may involve high-bit-width modular mul-tiplication, Barrett modular reduction, and modular accumu-lation, rather than plain integer accumulation. This introduces substantial instruction overhead on CPUs. As shown in Fig. 6, the instruction count of protected NTT increases to 122 .1% ,and that of protected EWM further increases to 209 .3% .Therefore, reducing the modular arithmetic cost of protection-side computation is essential for efficient CPU-based FHE protection. 
+
+Observation 2: checking long ciphertext polynomials in-troduces high memory-access overhead. CKKS ciphertexts contain long RNS polynomial towers with large coefficient bit-widths. If checking is performed as a detached pass before or after the original operator, the protection logic needs to reload the operator inputs or outputs and traverse the long polynomial data again. As shown in Fig. 6, protected NTT increases L1D loads to 127 .4% , while protected EWM increases L1D loads and L1D misses to 209 .8% and 218 .6% , respectively. These results indicate that memory access is another major bottleneck of CPU-based protection. 
+
+Observation 3: operator-by-operator checking intro-duces redundant verification in end-to-end FHE computa-tion. Basic checksum-based protection usually protects each 5low-level polynomial operator independently. This design is convenient because each operator can be checked through its own input-output relation, but it does not match the actual execution flow of FHE programs. In CKKS, high-level primitives such as ciphertext multiplication, key switching, and bootstrapping are implemented as chains of polynomial operators, including INTT, BConv, NTT, and EWM. If every operator independently computes and verifies protection val-ues, the output check of one operator and the input check of the next operator may repeatedly process the same inter-mediate ciphertext data. This causes redundant arithmetic and redundant memory accesses across adjacent operators. In summary, accelerator-oriented protection schemes can-not be directly mapped to CPUs efficiently. Their checking overhead can be mitigated by customized hardware datapaths and parallel execution in accelerators, but must be paid as extra instructions, memory accesses, and sequential software operations on CPUs. Therefore, CPU-based FHE protection requires dedicated algorithmic and dataflow optimizations to reduce modular arithmetic, memory traffic, and redundant checks. 4 P ROPOSED EFFICIENT PROTECTION SCHEME 
+
+4.1 Overview 
+
+Complete protection mechanism. This section presents our efficient fault-detection scheme for CPU-based CKKS computation. We use polynomial operators as the basic de-tection granularity and protect each operator by checking the consistency between its inputs and outputs. When adjacent operators have compatible checks, they are further grouped into short fused segments. Once a mismatch is detected, only the affected operator or fused segment is re-executed, rather than the complete FHE task. We first introduce the three optimization principles in Sec. 4.2. Sec. 4.3 presents the protected NTT/INTT, EWM, and BConv operators. Sec. 4.4 constructs the protected CKKS pipeline with cross-operator check fusion. 
+
+4.2 Checksum optimizations for CPU-based CKKS computa-tion 
+
+To achieve efficient CKKS protection on CPUs, we propose three optimization methods: 
+
+4.2.1 Methodology 1: modulus-aware bucket checksum: 
+
+As introduced in Sec. 2, the basic checksum over a mod-ular polynomial follows a coefficient-wise reduction flow. As shown in Fig. 7(a), each product aibi is immediately reduced modulo q before accumulation. For an N -coefficient polynomial, this flow requires up to N Barrett reductions, resulting in substantial arithmetic overhead on CPUs. 
+
+Key idea. Our optimization is based on an important observation: the fixed-width wide intermediates provided by CPUs are not fully occupied by a single modular product in practical OpenFHE workloads. We exploit the unused bit-width to accumulate multiple unreduced intermediate products, thereby constructing a bucketed checksum that performs one modular reduction for multiple coefficients. BRs   
+
+> Result
+> 1 BR in 1 Bucket
+> Bucket 1 Bucket v
+> Result
+> (a) element-wise checksum (b) modulus-aware bucket checksum
+> Barrett Reduction (BR) Enc/Dec Result
+
+Fig. 7: Modulus-aware bucket checksum. 
+
+Bit-width utilization. In OpenFHE, each RNS coefficient is stored in a 64-bit word, while multiplying two coefficients already requires a 128-bit intermediate to hold the unreduced product. Most RNS moduli in our evaluated CKKS configura-tions are approximately 50 –60 bits. For ai, b i ∈ [0 , q − 1] , the product satisfies aibi ≤ (q−1) 2 and occupies at most 2⌈log 2 q⌉
+
+bits. Therefore, a single product occupies approximately 100 –
+
+120 bits, leaving about 8–28 unused bits in the existing 128-bit intermediate. As illustrated in Fig. 7(b), we use this remaining headroom to accumulate multiple products and invoke Barrett reduction only before another accumulation may cause overflow. This optimization reuses the intermediate datatype already required by OpenFHE modular multiplication and introduces no wider arithmetic support. 
+
+Modulus-aware pre-computation. Because each RNS tower has its own modulus q, its available accumulation headroom and safe bucket size are also different. After the CKKS ciphertext parameters are determined, we pre-compute the bucket parameters separately for each modulus. For an N -coefficient tower with modulus q and a D-bit accumulator, the maximum safe bucket size s(q) and the corresponding number of buckets v(q) are defined as         
+
+> s(q) =
+> 2D−1(q−1) 2
+> 
+> ,v(q) =
+> Ns(q)
+> 
+> .(2)
+
+Since each product is bounded by (q − 1) 2, accumulating at most s(q) products cannot overflow the D-bit accumulator. In our implementation, D = 128 , matching the intermediate width already used by the original modular multiplication. The values s(q) and v(q) are computed once during parameter initialization and reused for all subsequent operations on the corresponding RNS tower. Therefore, no dynamic overflow check or repeated bucket-size computation is required during checksum evaluation. 
+
+Bucketed checksum evaluation. Given a data vector a and a checksum vector b under modulus q, the proposed checksum is evaluated as      
+
+> Cq(a;b) =
+> 
+> v(q)−1
+> X
+> j=0
+> BR
+> 
+> min(( j+1) s(q),N )−1
+> X
+> i=js (q)
+> aibi, q
+> mod q,
+> (3)
+
+where BR( ·, q ) denotes the Barrett reduction introduced in Eq. (1). Within each bucket, up to s(q) products are accumu-lated without modular reduction. The accumulated bucket sum is then reduced once modulo q. Finally, the reduced results of all buckets are accumulated to obtain the final checksum. 6Correctness and benefit. The proposed computation pre-serves the original checksum because modular addition is linear. For a partition of the coefficients into buckets {B j }, 
+
+> N−1
+
+X
+
+> i=0
+
+aibi
+
+!
+
+mod q =
+
+X
+
+> j
+
+ X
+
+> i∈B j
+
+aibi
+
+ mod q
+
+ mod q. (4) 
+
+Thus, postponing modular reduction within each bucket does not change the checksum result or the original encode/decode invariant. In summary, the proposed method converts the unused bit-width of existing CPU intermediates into useful accumulation capacity. It reduces the number of checksum-side Barrett reductions from N to v(q), while requiring neither wider arithmetic types nor runtime overflow detection. By pre-computing the bucket size according to each RNS modulus, the method adapts efficiently to different CKKS parameters with negligible runtime management overhead. 1st Butterfl y 
+
+> Final Butterfl y
+> Load
+> Compute
+> Compute & Store
+> Output Decode
+> Mid dle Butterflies
+> Input Encode
+> Extra
+> input scan
+> Extra
+> output
+> scan
+> Two extra
+> memory
+> passes
+> Fused 1st Butterfl y
+> Load
+> Compute
+> Mid dle Butterflies
+> Original computation
+> unchanged
+> Fused Final Butterfl y
+> Compute & Store
+> Reuse loaded
+> input data
+> No extra
+> memory passes
+> Reuse produced
+> output data
+> (a) Detached checking (b) Proposed dataflow-
+> fused in-operator checking
+
+Fig. 8: Dataflow-fused in-operator checking. Taking NTT as an example, the proposed design fuses input encoding and output decoding into the operator dataflow and reuses live data. 
+
+4.2.2 Methodology 2: Dataflow-fused in-operator checking: 
+
+CKKS ciphertexts contain RNS polynomials with large sizes and high coefficient bit-widths. In OpenFHE, each coeffi-cient is typically represented using a 64-bit word, and the polynomial degree is usually N = 2 14 –216 . As shown in Fig. 8(a), a detached checker scans the input polynomial for encoding and scans the output polynomial again for decoding, introducing extra memory passes over large polynomial data. This overhead has also been confirmed by the CPU profiling results in Sec. 3.2. 
+
+Key idea. To address this problem, we propose dataflow-fused in-operator checking, which moves encode/decode com-putation into the original operator dataflow. As illustrated in Fig. 8(b), the input-side encode is accumulated when coefficients are loaded by the operator implementation, and the output-side decode is accumulated when coefficients are produced and stored. Taking NTT as an example, the encode accumulation is fused into the first butterfly stage, while the decode accumulation is fused into the final butterfly stage. The middle butterfly stages remain unchanged because the checker only needs to relate the operator input and output. In this way, the checker reuses data that are already live in the operator dataflow, instead of launching detached input/output scans. 
+
+Correctness and benefit. Dataflow-fused in-operator checking preserves the original encode/decode invariant; it only changes where the encode and decode terms are com-puted. By eliminating the two detached memory passes shown in Fig. 8(a), this optimization reduces memory traffic and improves cache locality. (a) Independent operator-level checking  
+
+> same intermediate polynomial
+> redudant boundary checks propagated checksum state boundary check fused
+> same end-to-end invariant
+> (b) Proposed cross-operator check fusion
+
+Fig. 9: Cross-operator check fusion. 
+
+4.2.3 Methodology 3: Cross-operator check fusion: CKKS computation is a static pipeline composed of multiple poly-nomial operators. This static structure exposes opportunities to fuse redundant checks introduced by operator-by-operator protection. As shown in Fig. 9(a), for two adjacent operators 
+
+f and g, the baseline scheme performs a decode operation after f and another encode operation before g on the same intermediate polynomial y. If these two boundary checks use the same checksum vector, they repeatedly compute the same checksum value, causing redundant arithmetic and memory accesses. 
+
+Key idea. We propose cross-operator check fusion to re-move redundant boundary checks between adjacent operators. Consider two consecutive operators y = f (x), z = g(y),the independent protection scheme verifies the two operators separately: 
+
+Enc f (x) ?
+
+= Dec f (y), Enc g (y) ?
+
+= Dec g (z). (5) If the decode vector of f is identical to the encode vector of g
+
+for the same intermediate representation and RNS tower, then 
+
+Dec f (y) = Enc g (y). (6) Therefore, the boundary decode/encode pair can be fused into one propagated checksum state. As shown in Fig. 9(b), the fused pipeline removes the explicit Dec f (y) and Enc g (y)
+
+evaluations at the operator boundary. Instead, it verifies the fused segment using the end-to-end relation: 
+
+Enc f (x) ?
+
+= Dec g (z). (7) 
+
+Correctness and benefit. Cross-operator fusion is applied only when the adjacent decode and encode operations share the 7same intermediate polynomial representation. Under this con-dition, Eq. (7) is equivalent to composing the two independent checks in Eq. (5), because the intermediate checksum state is identical by Eq. (6). Thus, the fused segment preserves the same end-to-end encode/decode invariant and does not weaken error detection. The benefit is that the redundant boundary check is removed. When a mismatch is detected, the fused segment is re-executed from its last verified input. 
+
+4.3 Operator-level protection for CKKS computation 
+
+In this section, we specify the protected invariant and the corresponding protection algorithm for each operator: 
+
+4.3.1 Protected NTT/INTT: For an N -coefficient polyno-mial under modulus q, let a = ( a0, . . . , a N −1) denote the input and ˆa = NTT( a) the transformed output. According to the NTT checksum invariant introduced in Sec. 2, the protected NTT verifies Cin = PN −1 
+
+> i=0
+
+ai mod q, Cout =
+
+PN −1 
+
+> i=0
+
+eiˆai mod q, where e = (e0, . . . , e N −1) is the de-code vector determined by the NTT transform matrix and the implementation-specific output ordering. The transform is accepted only if Cin ?
+
+= Cout .
+
+To reduce the protection overhead, the NTT checker adopts the two optimizations introduced in Sec. 4.2: dataflow-fused in-operator checking and modulus-aware bucket checksum. Comparator    
+
+> Stage 0
+> Encode fused into first stage Decode fused into last stage
+> Stage 1 Stage 2
+> Protected NTT
+> %q
+> %q
+> Bucket
+> Checksum
+
+Fig. 10: Protected NTT dataflow with dataflow-fused in-operator checking and modulus-aware bucket checksum. Algorithm 1 presents the protected implementation, while Fig. 10 illustrates how the checksum logic is integrated into the original NTT dataflow. The butterfly computation itself remains unchanged; only checksum accumulation and com-parison are inserted at the input and output boundaries. Lines 1–3 initialize the input checksum accumulator and the bucket accumulators. These variables correspond to Cin and the bucket checksum buffers shown at the top and right side of Fig. 10. Lines 5–8 correspond to the left part of Fig. 10. The input checksum is fused into the first butterfly stage: whenever an input coefficient ai is loaded by the original NTT operator, it is simultaneously accumulated into Cin .Therefore, checksum computation reuses the original data-loading process without introducing an additional input scan. Lines 9–13 correspond to the right part of Fig. 10. After the 
+
+Algorithm 1: Protected NTT with dataflow-fused in-operator checking and modulus-aware bucket check-sum. 
+
+Input: Input tower a[0 ..N − 1] , modulus q, decode vector 
+
+e[0 ..N − 1] , bucket size s(q), bucket number v(q)
+
+Output: Output tower ˆa = NTT( a), fault flag  
+
+> 1
+
+Cin ← 0 in a wide accumulator  
+
+> 2
+
+for b ← 0 to v − 1 do  
+
+> 3
+
+Ab ← 0 in a wide accumulator  
+
+> 4
+
+for each butterfly stage r do  
+
+> 5
+
+if r is the first stage then  
+
+> 6
+
+foreach input coefficient ai loaded by the NTT operator do  
+
+> 7
+
+Cin ← Cin + ai 
+
+> 8
+
+execute the original first-stage butterflies  
+
+> 9
+
+else if r is the final stage then  
+
+> 10
+
+foreach output coefficient ˆai produced by the final butterfly do  
+
+> 11
+
+store ˆai 
+
+> 12
+
+b ← ⌊ i/s ⌋ 
+
+> 13
+
+Ab ← Ab + ei ˆai 
+
+> 14
+
+else  
+
+> 15
+
+execute the original intermediate-stage butterflies  
+
+> 16
+
+Cin ← Cin mod q 
+
+> 17
+
+Cout ←  P v−1 
+
+> b=0
+
+BarrettReduce( Ab, q ) mod q 
+
+> 18
+
+if Cin ̸ = Cout then  
+
+> 19
+
+report fault  
+
+> 20
+
+else  
+
+> 21
+
+accept ˆa
+
+final butterfly produces ˆai, the checker immediately evaluates the weighted checksum term eiˆai and accumulates it into the corresponding bucket Ab. Each bucket performs unreduced multiply-accumulate operations and invokes Barrett reduc-tion only once before overflow, following the modulus-aware bucket checksum described in Sec. 4.2.1. Finally, Lines 16– 21 reduce all bucket sums to obtain Cout and compare it with 
+
+Cin .The proposed implementation preserves the original NTT checksum invariant because dataflow fusion only changes the placement of checksum accumulation, while bucket checksum only postpones modular reduction from each coefficient to each bucket. Consequently, detached checksum scans are elim-inated and the number of checksum-side Barrett reductions is reduced from N to v(q). The protected INTT is implemented in the same manner by replacing the NTT transform and decode vector with their inverse-transform counterparts. 
+
+4.3.2 Protected EWM: Unlike NTT, element-wise multi-plication (EWM) does not naturally admit a low-cost linear checksum because every output coefficient depends on both input operands. A straightforward checksum-based protec-tion scheme therefore needs to independently evaluate the coefficient-wise products on the input side. However, although a single EWM is cheaper than NTT, it is invoked frequently in ciphertext multiplication, key switching, and bootstrapping. As shown in Sec. 3.2, directly protecting EWM introduces the largest runtime overhead among the evaluated polynomial 8Comparator  
+
+> Encode Decode
+> %q
+> %q
+> Checksum fused
+
+Fig. 11: Protected EWM with dataflow-fused in-operator checking and modulus-aware bucket checksum. operators. Therefore, an efficient protection mechanism for EWM is essential. For two input polynomials a = (a0, . . . , a N −1), k =(k0, . . . , k N −1), and the output a1 = ( a10, . . . , a 1 
+
+> N−1
+
+), the pro-tected EWM verifies Cin = PN −1 
+
+> i=0
+
+aiki mod q, Cout =
+
+PN −1 
+
+> i=0
+
+a1 
+
+> i
+
+mod q, and accepts the computation when Cin ?
+
+=
+
+Cout . Figure 11 illustrates the protected EWM dataflow. Un-like NTT, EWM contains only one coefficient-wise multiplica-tion stage. Therefore, both checksum computation and oper-ator execution naturally access the same coefficient stream, allowing checksum computation to be fully fused into the original operator. During execution, every coefficient multiplication aiki is immediately accumulated into the input checksum bucket, while the generated output coefficient a1 
+
+> i
+
+is simultaneously accumulated into Cout . Following the modulus-aware bucket checksum introduced in Sec. 4.2.1, the input checksum per-forms unreduced multiply-accumulate operations inside each bucket and invokes Barrett reduction only once per bucket. The output checksum only requires direct accumulation because no coefficient multiplication is involved. Compared with detached checksum evaluation, the proposed design eliminates additional memory scans and reduces the number of checksum-side Barrett reductions from N to v.Since the checksum computation is completely fused into the original coefficient-wise multiplication loop, the protection incurs only a small amount of additional arithmetic while preserving the original EWM checksum invariant. 
+
+4.3.3 Protected BConv: Basis conversion maps input towers under Q = {qi} to output towers under 
+
+P = {pj }. For each output tower pj , we construct the encode result from the compressed input-tower check-sums and construct the decode result from the actual output tower: Enc BConv  
+
+> j
+
+= P
+
+> i
+
+PN −1 
+
+> k=0
+
+Xi[k] · λi
+
+
+
+αi,j 
+
+(mod pj ), Dec BConv  
+
+> j
+
+= PN −1 
+
+> k=0
+
+Yj [k] (mod pj ), Enc BConv 
+
+> j
+> ?
+
+=Dec BConv  
+
+> j
+
+, ∀pj ∈ P. 
+
+Here, Xi is the input tower under qi, Yj is the output tower under pj , λi is the per-tower scaling constant used in basis conversion, and αi,j is the constant mapping from input tower qi to output tower pj . This checksum is lightweight. On the decode side, the checker only accumulates the output coefficients of Yj . On the encode side, the checker first accumulates the coefficients of each input tower and then multiplies the compressed sum by the corresponding tower-level constants. Since the baseline BConv checksum is already much cheaper than NTT and EWM, this lightweight design is sufficient; after check fusion, the protection overhead of BConv is only about 3%. For other lightweight operators, such as ciphertext addition and polynomial automorphism, we adopt low-cost redundancy-based protection with check fusion. These operators have relatively low computational complexity and account for only a small fraction of the end-to-end CKKS runtime. Therefore, it introduces limited overall overhead. 
+
+4.4 Protected CKKS pipeline with cross-operator check fusion 
+
+Pipeline construction. The operator-level protection schemes described above can be connected to construct a fully protected CKKS computation pipeline. Fig. 12(a) shows a representative segment of the core polynomial-operator pipeline in CKKS ciphertext multiplication, where BConv, NTT, EWM are executed sequentially. Under the operator-level protection, each operator is independently surrounded by an input-side encode and an output-side decode. Although this design provides fine-grained error detection, the pipeline structure exposes opportunities for cross-operator check fu-sion: the output decode of one operator and the input encode of its successor may compute the same checksum over the shared intermediate polynomial. Enc-BConv 
+
+> BConv
+> Dec-BConv
+> Enc-NTT
+> NTT
+> Dec-NTT
+> Enc-EWM
+> EWM
+> Dec-EWM
+> Enc-INTT
+> INTT
+> Dec-INTT
+> Enc-BConv
+> BConv
+> NTT
+> Dec-NTT
+> Enc-EWM
+> EWM
+> INTT
+> Dec-INTT
+
+# }Fuse 
+
+> Dec-BConv
+> with Enc-NTT
+
+# }  
+
+> Cross-operator
+> Fuse
+> Dec-E WM
+> with Enc-INTT
+> check fusion
+> (b) Protected pipeline with (a) Operator-level
+> protection cross-operator check fusion
+
+Fig. 12: Protected CKKS pipeline with cross-operator check fusion. 
+
+Fusion instances. According to the cross-operator fusion rule introduced in Sec. 4.2.3, for two adjacent operators y =
+
+f (x) and z = g(y), if Dec f (y) = Enc g (y), the intermediate decode and encode computations can be removed. The two independent checks are then replaced by a composed check from Enc f (x) to Dec g (z), as formulated in Eqs. (5)–(7). In the CKKS pipeline shown in Fig. 12(a), this condition holds at two operator boundaries. First, the output decode of BConv and the input encode of NTT are both coefficient-sum checks over the same RNS tower. Second, the output decode of EWM and the input encode of INTT use the same coefficient-sum relation: Dec (t)BConv 
+
+ y(t) = PN −1 
+
+> i=0
+
+y(t) 
+
+> i
+
+mod 
+
+qt = Enc (t)NTT 
+
+ y(t), Dec (t)EWM 
+
+ u(t) = PN −1 
+
+> i=0
+
+u(t) 
+
+> i
+
+mod qt =Enc (t)INTT 
+
+ u(t).
+
+9Accordingly, the optimized pipeline in Fig. 12(b) removes the redundant Dec BConv –Enc NTT and Dec EWM –Enc INTT 
+
+boundary computations. The intermediate comparisons are eliminated, while the composed checksum relations are veri-fied at the outputs of the corresponding fused segments. Other operator boundaries remain independently checked when their decode and encode relations are incompatible. 
+
+Analysis. Cross-operator fusion composes compatible operator-level invariants without changing the end-to-end checksum relation. Thus, fusion postpones the comparison from the intermediate operator boundary to the end of the fused segment, rather than removing error detection. This optimization introduces a trade-off in fault-localization and re-covery granularity. With independent operator-level checking, a mismatch requires re-execution of only the affected operator. After fusion, the recovery scope expands to a short segment containing two adjacent polynomial operators. Nevertheless, detection and recovery remain at the polynomial-operator level, and the cost of re-executing is still small compared with the runtime of a complete FHE computation. Taken together, these three techniques reduce checksum overhead at the arithmetic, operator-dataflow, and operator-pipeline levels, enabling efficient protection for FHE programs running on CPUs. 5 E XPERIMENTAL EVALUATION 
+
+We first present the experimental setup in Section 5.1, in-cluding the evaluation platform, workloads, and fault models. Then, Section 5.2 provides the reliability evaluation. Finally, Section 5.3 presents the performance evaluation and ablation study. 
+
+5.1 Evaluation setup 
+
+FHE benchmarks and platform. We evaluate the pro-posed protection scheme at both application and primitive levels. For end-to-end evaluation, we select four representative CKKS encrypted inference workloads: LoLA, MLP, ResNet-20, and VGG-16. For primitive-level evaluation, we consider ciphertext–ciphertext multiplication (HMult) under two param-eter configurations and CKKS bootstrapping. The parameters used for the primitive-level experiments are summarized in Table I. All experiments are conducted on an Intel(R) Xeon(R) Platinum 8358P CPU. We use the official OpenFHE [19] and compile all experiments in Release mode. TABLE I: CKKS parameters used for primitive-level eval-uation. L denotes the multiplicative depth, Q denotes the ciphertext modulus, and λ denotes the security level.                         
+
+> Configuration NSlots Llog 2Qλ
+> HMult Set 1 216 215 30 ≈1560 128
+> HMult Set 2 215 214 20 ≈700 128
+> Bootstrapping 216 215 30 ≈1560 128
+
+Fault model and reliability evaluation. We evaluate both encrypted applications and ciphertext primitives under the random single-bit transient fault model described in Sec. 3.1. Using PinFI [45], faults are probabilistically injected into eligible dynamic instructions during ciphertext computation. The fault rate denotes the probability that an eligible instruc-tion is selected, after which one random bit in its result is flipped. We restrict each invocation of a low-level polynomial operator to at most one injected fault. 
+
+Performance overhead measurement. We evaluate run-time overhead on the encrypted applications and ciphertext primitives described above. For each workload, the unpro-tected and protected implementations are executed under the same configuration for 1,000 runs, and the average runtime is reported. We compare our method with dual modular redundancy (DMR) and a basic checksum-based baseline. DMR executes each polynomial operation twice and compares the two outputs. Since ReliaFHE [17] is designed for ASIC accelerators and is not open-sourced, we reproduce its algo-rithmic checksum scheme in OpenFHE without its customized hardware support. 
+
+5.2 Reliability evaluation Ours No protection Partial Protection                         
+
+> 10 −12 10 −11 10 −10 10 −9 10 −8 10 −7 10 −6
+> 020 40 60 80 100
+> Fault Rate Accuracy (%)  (a) LoLA
+> 10 −12 10 −11 10 −10 10 −9 10 −8 10 −7 10 −6
+> 0
+> Fault Rate
+> (b) MLP
+> 10 −12 10 −11 10 −10 10 −9 10 −8 10 −7 10 −6
+> 020 40 60 80 100
+> Fault Rate Accuracy (%)  (c) ResNet-20
+> 10 −12 10 −11 10 −10 10 −9 10 −8 10 −7 10 −6
+> 0
+> Fault Rate
+> (d) VGG16
+
+Fig. 13: Application-level reliability under different fault rates. We evaluate the reliability of the proposed scheme from two perspectives. First, we measure the end-to-end accuracy of encrypted applications under different fault rates. Second, we evaluate the SDC detection rate for faults occurring in the major polynomial operations. 
+
+Application-level reliability. Fig. 13 compares three con-figurations on LoLA, MLP, ResNet-20, and VGG-16: no protection, partial protection that protects only NTT/INTT and BConv, and the proposed full-protection scheme. When a mismatch is detected, the corrupted intermediate result is discarded and the corresponding polynomial operator or fused segment is re-executed. A consistent trend can be observed across all four applica-tions. Without protection, the application accuracy decreases rapidly as the fault rate increases, demonstrating that transient faults in low-level polynomial computation can propagate through the ciphertext dataflow and severely corrupt the final inference result. The degradation occurs particularly early for the deeper ResNet-20 and VGG-16 workloads, which con-tain longer ciphertext-computation flows and therefore expose more opportunities for error propagation. Partial protection consistently delays the accuracy degra-dation compared with the unprotected execution. However, 10 TABLE II: Error detection rate under random single-fault injection.                
+
+> Fault location Error cases Detected errors Detection rate
+> NTT/INTT 50,000 50,000 100%
+> BConv 50,000 50,000 100%
+> EWM 50,000 50,000 100%
+> Total 150,000 150,000 100%
+
+its accuracy still decreases substantially at higher fault rates because faults occurring in unprotected polynomial operations can escape detection. Therefore, protecting only selected op-erators improves reliability but cannot ensure dependable end-to-end execution. In contrast, the proposed full-protection scheme maintains nearly unchanged accuracy throughout the evaluated fault-rate range for all four applications. The clear separation between our method and the other two configurations shows that comprehensive protection of the major polynomial operations is necessary to prevent fault-induced errors from propagating to the final FHE output. 
+
+Error detection rate. We further evaluate the error-detection capability of the proposed operator-level checks using random single-fault injection. For each operator cat-egory, one random single-bit transient fault is injected into each evaluated operator invocation. Trials that directly cause program crashes are excluded. We continue the experiments until 50,000 non-crashing error cases are collected for each operator category. An error is considered detected when the injected fault corrupts the operator result and triggers a checksum mismatch before the corrupted result is consumed by subsequent com-putation. As shown in Table II, the proposed scheme achieves a 100% empirical detection rate over 150,000 collected non-crashing corrupted-result cases under the evaluated single-fault model. The reported 100% detection rate is empirical and applies to the collected non-crashing cases under the evaluated fault model. As with checksum-based detection, specially structured multiple errors that preserve the checksum relation may escape detection and are outside the fault model considered in this work. Together with the application-level results, these experi-ments demonstrate that the proposed protection scheme ef-fectively detects errors in the major CKKS polynomial opera-tions and prevents corrupted intermediate results from silently propagating to the final application output. 
+
+5.3 Performance evaluation 
+
+We evaluate the steady-state runtime overhead of the pro-posed protection scheme without fault injection. The bench-marks include four encrypted applications, two HMult con-figurations, and CKKS bootstrapping, as specified in Table I. We first compare the end-to-end overhead with dual modu-lar redundancy (DMR) and basic checksum protection, then perform a progressive ablation study, and finally analyze the operator-level execution behavior using hardware counters. 
+
+Overall performance comparison. Fig. 14 compares the normalized runtime of the different protection schemes, where the original unprotected execution is normalized to 100%. The results show a consistent trend across all encrypted applications and ciphertext primitives. DMR incurs the highest overhead, increasing the normalized runtime to 215 .3% –222 .3% . This is expected because DMR duplicates each protected computation and additionally com-pares the two results, resulting in more than twice the original runtime. Basic checksum protection is substantially more efficient than DMR, but still increases the normalized runtime to 
+
+130 .7% –135 .3% . Although it avoids full computation dupli-cation, its detached checksum evaluation introduces additional modular arithmetic and repeated scans over large RNS poly-nomial towers. Therefore, its algorithmic advantage does not directly translate into low execution overhead on CPUs. In contrast, our method consistently limits the normalized runtime to 106 .0% –108 .4% across all seven benchmarks. On average, the proposed scheme incurs only 6.8% additional runtime, compared with 33 .4% for basic checksum protection. This corresponds to a 4.9× reduction in average protection overhead. The consistently low overhead across applications, HMult configurations, and bootstrapping demonstrates that the proposed CPU-oriented optimizations remain effective across different CKKS workloads and parameter settings. 
+
+Progressive ablation study. Fig. 15 evaluates the con-tribution of the three proposed optimizations through pro-gressive ablation. Starting from the complete design ( Ours ), we cumulatively remove cross-operator check fusion ( Ours-
+
+), modulus-aware bucket checksum ( Ours--), and dataflow-fused in-operator checking ( Ours---). The original unprotected execution is normalized to 100%. The complete design ( Ours ) consistently achieves low over-head. After removing cross-operator check fusion ( Ours-), the normalized runtime increases to 110 .4% –112 .5% . Without cross-operator fusion, the output-side check of one operator Overall Performance Comparison    
+
+> Original DMR Basic checksum Ours
+> 0
+> 50
+> 100
+> 150
+> 200
+> 240
+> Normalized runtime (%)
+> 100.0
+> 215.3
+> 135.3
+> 107.2
+> LoLA
+> 100.0
+> 218.5
+> 133.5
+> 108.4
+> MLP
+> 100.0
+> 220.8
+> 135.2
+> 106.3
+> ResN et -20
+> 100.0
+> 217.2
+> 130.7
+> 106.5
+> VGG -16
+> 100.0
+> 217.1
+> 133.2
+> 107.2
+> HMult set 1
+> 100.0
+> 218.5
+> 133.2
+> 106.0
+> HMult set2
+> 100.0
+> 222.3
+> 132.8
+> 106.3
+> Bootstrapping
+
+Fig. 14: Overall performance comparison 11 Ablation Study     
+
+> Original Ours Ours-Ours--Ours---
+> 0
+> 30
+> 60
+> 90
+> 120
+> 150
+> Normalized runtime (%)
+> 100.0
+> 107. 2111.8
+> 124.5
+> 135.3
+> LoLA
+> 100.0
+> 108. 4112.2
+> 124.8
+> 133.5
+> MLP
+> 100.0 10 6.3
+> 112.4
+> 124.1
+> 135.2
+> ResN et -20
+> 100.0
+> 106.5
+> 112.5
+> 125.1 130.7
+> VGG -16
+> 100.0
+> 107.2 111.8
+> 125.4
+> 133.2
+> HMult set 1
+> 100.0
+> 106.0 111.1
+> 125.7
+> 133.2
+> HMult set2
+> 100.0
+> 106.3 110.4
+> 124.2
+> 132.8
+> Bootstrapping
+
+Fig. 15: Progressive ablation study on protection overhead. Ours denotes the complete design; Ours- removes cross-operator check fusion; Ours-- further removes modulus-aware bucket checksum; and Ours--- additionally removes dataflow-fused in-operator checking, thereby degenerating into the basic detached checksum implementation. Original Basic Checksum Ours 
+
+(a) NTT 
+
+> Norm. (%)
+> 050 100 150
+> Time
+> 100.0 138.5 108.6
+> Instr.
+> 100.0 122.1 104.4
+> L1D Loads
+> 100.0 127.4 103.3
+> L1D Misses
+> 100.0 106.8 107.0
+
+(b) EWM 
+
+> Norm. (%)
+> 050 100 150 200 250
+> Time
+> 100.0 231.1 116.0
+> Instr.
+> 100.0 209.3 108.0
+> L1D Loads
+> 100.0 209.8 118.0
+> L1D Misses
+> 100.0 218.6 102.0
+
+Fig. 16: Fine-grained hardware-counter profile of checksum protection on NTT and EWM. and the input-side check of its successor must process the same intermediate polynomial separately, leading to additional checksum computation. When modulus-aware bucket checksum is further removed (Ours--), the normalized runtime increases more substantially to 124 .1% –125 .7% . In this configuration, checksum products are reduced coefficient by coefficient instead of being accu-mulated in wide buckets and reduced once per bucket. The pronounced increase confirms that frequent modular reduction is a major source of protection overhead on CPUs, and validates the effectiveness of the proposed bucket checksum in reducing checksum-side modular arithmetic. Finally, after dataflow-fused in-operator checking is also removed ( Ours---), the implementation degenerates into the basic detached checksum baseline. The normalized runtime further increases to 130 .7% –135 .3% . This additional over-head comes from detached checksum computation outside the original operator dataflow, which introduces standalone scans over large RNS polynomial and reduces data locality. The result shows that in-operator fusion is important for avoiding extra memory accesses and improving cache reuse. Overall, the progressive ablation study demonstrates that all three optimizations are necessary for the final low-overhead design. 
+
+Further analysis on operator-level overhead. To connect the end-to-end results with the CPU bottlenecks identified in Sec. 3.2, we profile the representative NTT and EWM operators using hardware counters. As shown in Fig. 16, our design reduces the runtime of protected NTT from 138 .5% 
+
+to about 108 .6% , while bringing the instruction count and L1D loads close to the unprotected execution. For EWM, the runtime decreases from 231 .1% to 116 .0% , together with sub-stantial reductions in instructions, L1D loads, and L1D misses. These results confirm that modulus-aware bucket checksum reduces modular arithmetic overhead, while in-operator fusion eliminates most detached polynomial scans. The protection overhead of BConv is about 3% . Together, these operator-level improvements reduce the end-to-end normalized runtime of the protected applications to approximately 106% –108% .
+
+Fault-recovery overhead. When an error is detected, only the affected polynomial operator or short fused segment is re-executed. Across the evaluated workloads, one recovery accounts for less than 1.0% of the end-to-end runtime. 6 L IMITATIONS AND FUTURE WORK 
+
+This work has several limitations. First, our evaluation focuses on random single-bit transient faults and assumes at most one injected fault within each polynomial-operator invocation. Although this model covers common transient computation errors, it does not fully represent multiple or correlated faults within the same operator invocation. Future work will extend the protection framework and fault-injection evaluation to these more complex fault models. Second, the current implementation targets CKKS com-putation in OpenFHE on one CPU platform. Although the proposed optimizations exploit general properties of RNS-based polynomial computation, their effectiveness on other FHE schemes, software libraries, CPU architectures, and paral-lel execution environments requires further evaluation. Future work will also investigate automatic invariant construction and adaptive protection granularity for broader FHE workloads. 7 C ONCLUSION 
+
+This paper presents an efficient fault-tolerance scheme for CKKS computation on general-purpose CPUs. To reduce the 12 arithmetic, memory-access, and redundant-checking overheads of direct checksum protection, we propose modulus-aware bucket checksum, dataflow-fused in-operator checking, and cross-operator check fusion. Together, these techniques reduce modular reductions, eliminate detached polynomial scans, and remove redundant checks between adjacent operators. We implement the proposed scheme in OpenFHE and evaluate it on representative encrypted applications and CKKS primitives. Under the evaluated random single-bit transient fault model, the scheme detects all collected non-crashing corrupted-result cases and maintains application accuracy close to the fault-free baseline. It incurs only 6.0% –8.4% 
+
+runtime overhead, averaging 6.8% , and reduces the average protection overhead by approximately 4.9× compared with basic checksum protection. These results demonstrate that targeted checksum and dataflow optimizations can enable efficient and reliable CKKS computation on general-purpose CPUs. REFERENCES [1] C. Gentry, A fully homomorphic encryption scheme . Stanford university, 2009. [2] Z. Brakerski, “Fully homomorphic encryption without modulus switch-ing from classical gapsvp,” in Advances in Cryptology – CRYPTO 2012 .Springer, 2012, pp. 868–886. [3] Z. Brakerski, C. Gentry, and V. Vaikuntanathan, “(leveled) fully ho-momorphic encryption without bootstrapping,” ACM Transactions on Computation Theory (TOCT) , vol. 6, no. 3, pp. 1–36, 2014. [4] I. Chillotti, N. Gama, M. Georgieva, and M. Izabach` ene, “Tfhe: Fast fully homomorphic encryption over the torus,” Journal of Cryptology ,vol. 33, no. 1, pp. 34–91, 2020. [5] J. H. Cheon, A. Kim, M. Kim, and Y. Song, “Homomorphic encryption for arithmetic of approximate numbers,” in Advances in Cryptology – ASIACRYPT 2017 . Springer, 2017, pp. 409–437. [6] F. Effendi and A. Chattopadhyay, “Privacy-preserving graph-based ma-chine learning with fully homomorphic encryption for collaborative anti-money laundering,” in International Conference on Security, Privacy, and Applied Cryptography Engineering . Springer, 2024, pp. 80–105. [7] J. Kim, G. Jo, S. Ra, and H. Park, “Privacy preserving chest x-ray classification in latent space with homomorphically encrypted neural inference,” in International Conference on Medical Image Computing and Computer-Assisted Intervention . Springer, 2025, pp. 485–495. [8] S. Bian, Z. Zhang, H. Pan, R. Mao, Z. Zhao, Y. Jin, and Z. Guan, “He3db: An efficient and elastic encrypted database via arithmetic-and-logic fully homomorphic encryption,” in 2023 ACM SIGSAC Conference on Computer and Communications Security (CCS) , 2023, pp. 2930– 2944. [9] C. Juvekar, V. Vaikuntanathan, and A. Chandrakasan, “ {GAZELLE }:A low latency framework for secure neural network inference,” in 27th USENIX security symposium (USENIX security 18) , 2018, pp. 1651– 1669. [10] J.-W. Lee, H. Kang, Y. Lee, W. Choi, J. Eom, M. Deryabin, E. Lee, J. Lee, D. Yoo, Y.-S. Kim et al. , “Privacy-preserving machine learning with fully homomorphic encryption for deep neural network,” IEEE Access , vol. 10, pp. 30 039–30 054, 2022. [11] K. Han, S. Hong, J. H. Cheon, and D. Park, “Logistic regression on homomorphic encrypted data at scale,” in Proceedings of the AAAI Conference on Artificial Intelligence , vol. 33, no. 1, 2019, pp. 9466– 9471. [12] A. Brutzkus, R. Gilad-Bachrach, and O. Elisha, “Low latency privacy preserving inference,” in International Conference on Machine Learning .PMLR, 2019, pp. 812–821. [13] M. Madhav, A. Lee, A. Mejia, B. Moore, C. Soppadandi, C. Cambly, C. M¨ ullner, D. Bowers, D. Reiner, D. Bakhvalov et al. , “Spec cpu: The next generation,” arXiv preprint arXiv:2605.01575 , 2026. [14] G. Papadimitriou and D. Gizopoulos, “Silent data corruptions: Microar-chitectural perspectives,” IEEE Transactions on Computers , vol. 72, no. 11, pp. 3072–3085, 2023. [15] H. D. Dixit, S. Pendharkar, M. Beadon, C. Mason, T. Chakravarthy, B. Muthiah, and S. Sankar, “Silent data corruptions at scale,” arXiv preprint arXiv:2102.11245 , 2021. [16] L. L. Mankali, M. Nabeel, F. Raees, M. Maniatakos, O. Sinanoglu, and J. Knechtel, “ {GlitchFHE }: Attacking fully homomorphic encryption using fault injection,” in 34th USENIX Security Symposium (USENIX Security 25) , 2025, pp. 8481–8500. [17] F. Li, M. Kumar, R. Zhu, M. Zheng, Q. Lou, and X. Xin, “Reliafhe: Resilient design for fully homomorphic encryption accelerators,” in 
+
+Proceedings of the 31st ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 2, 2026, pp. 1605–1621. [18] R. A. Rajagede and Y. Solihin, “Reliability analysis of fully ho-momorphic encryption systems under memory faults,” arXiv preprint arXiv:2509.20686 , 2025. [19] A. Al Badawi, J. Bates, F. Bergamaschi, D. B. Cousins, S. Erabelli, N. Genise, S. Halevi, H. Hunt, A. Kim, Y. Lee et al. , “Openfhe: Open-source fully homomorphic encryption library,” in proceedings of the 10th workshop on encrypted computing & applied homomorphic cryptography , 2022, pp. 53–63. [20] Zama, “TFHE-rs: A Pure Rust Implementation of the TFHE Scheme for Boolean and Integer Arithmetics Over Encrypted Data,” 2022, https: //github.com/zama-ai/tfhe-rs. [21] ——, “Concrete ML: a privacy-preserving machine learning library using fully homomorphic encryption for data scientists,” 2022, https: //github.com/zama-ai/concrete-ml. [22] N. Samardzic, A. Feldmann, A. Krastev, S. Devadas, R. Dreslinski, C. Peikert, and D. Sanchez, “F1: A fast and programmable accelerator for fully homomorphic encryption,” in 2021 54th Annual IEEE/ACM International Symposium on Microarchitecture (MICRO) , 2021, pp. 238– 252. [23] J. Kim, G. Lee, S. Kim, G. Sohn, M. Rhu, J. Kim, and J. H. Ahn, “Ark: Fully homomorphic encryption accelerator with runtime data generation and inter-operation key reuse,” in 2022 55th IEEE/ACM International Symposium on Microarchitecture (MICRO) , 2022, pp. 1237–1254. [24] J. Kim, S. Kim, J. Choi, J. Park, D. Kim, and J. H. Ahn, “Sharp: A short-word hierarchical accelerator for robust and practical fully homomorphic encryption,” in 2023 50th Annual International Symposium on Computer Architecture (ISCA) , 2023, pp. 1–15. [25] N. Samardzic, A. Feldmann, A. Krastev, N. Manohar, N. Genise, S. Devadas, K. Eldefrawy, C. Peikert, and D. Sanchez, “Craterlake: a hardware accelerator for efficient unbounded computation on encrypted data,” in 2022 49th Annual International Symposium on Computer Architecture (ISCA) , 2022, pp. 173–187. [26] R. Agrawal, L. De Castro, C. Juvekar, A. Chandrakasan, V. Vaikun-tanathan, and A. Joshi, “Mad: Memory-aware design techniques for accelerating fully homomorphic encryption,” in 2023 56th Annual IEEE/ACM International Symposium on Microarchitecture (MICRO) ,2023, pp. 685–697. [27] N. Samardzic and D. Sanchez, “Bitpacker: Enabling high arithmetic efficiency in fully homomorphic encryption accelerators,” in 2024 ACM International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS) , 2024, pp. 137–150. [28] K.-H. Huang and J. A. Abraham, “Algorithm-based fault tolerance for matrix operations,” IEEE Transactions on Computers , vol. 100, no. 6, pp. 518–528, 1984. [29] S.-J. Wang and N. K. Jha, “Algorithm-based fault tolerance for fft networks,” IEEE Transactions on Computers , vol. 43, no. 7, pp. 849– 854, 1994. [30] M. Abdelmonem, L. Holzbaur, H. Raddum, and A. Zeh, “Efficient error detection methods for the number theoretic transforms in lattice-based algorithms,” in International Conference on Constructive Approaches for Security Analysis and Design of Embedded Systems . Springer, 2025, pp. 185–210. [31] J. H. Cheon, K. Han, A. Kim, M. Kim, and Y. Song, “A full rns variant of approximate homomorphic encryption,” in Selected Areas in Cryptography – SAC 2018 . Springer, 2019, pp. 347–368. [32] K. Han and D. Ki, “Better bootstrapping for approximate homomorphic encryption,” in Topics in Cryptology – CT-RSA 2020 . Springer, 2020, pp. 364–390. [33] J. Mu, Y. Ren, W. Wang, Y. Hu, S. Chen, C.-H. Chang, J. Fan, J. Ye, Y. Cao, H. Li, and X. Li, “Scalable and conflict-free ntt hardware accelerator design: Methodology, proof, and implementation,” IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems , vol. 42, no. 5, pp. 1504–1517, 2023. [34] P. Heckbert, “Fourier transforms and the fast fourier transform algo-rithm,” Computer Graphics , vol. 2, no. 1995, pp. 15–463, 1995. 
+
+13 [35] R. Agrawal, J. H. Ahn, F. Bergamaschi, R. Cammarota, J. H. Cheon, F. D. M. de Souza, H. Gong, M. Kang, D. Kim, J. Kim, H. de Lassus, J. H. Park, M. Steiner, and W. Wang, “High-precision rns-ckks on fixed but smaller word-size architectures: Theory and application,” in 
+
+2023 11th Workshop on Encrypted Computing & Applied Homomorphic Cryptography , 2023, pp. 23–34. [36] M. Kim, D. Lee, J. Seo, and Y. Song, “Accelerating he operations from key decomposition technique,” in Advances in Cryptology – CRYPTO 2023 . Springer, 2023, pp. 70–92. [37] P. Barrett, “Implementing the rivest shamir and adleman public key en-cryption algorithm on a standard digital signal processor,” in Conference on the Theory and Application of Cryptographic Techniques . Springer, 1986, pp. 311–323. [38] M. Knezevic, F. Vercauteren, and I. Verbauwhede, “Faster interleaved modular multiplication based on barrett and montgomery reduction methods,” IEEE Transactions on Computers , vol. 59, no. 12, pp. 1715– 1721, 2010. [39] D. F. Bacon, “Detection and prevention of silent data corruption in an exabyte-scale database system,” in The 18th IEEE Workshop on Silicon Errors in Logic–System Effects , 2022. [40] R. Dutta, H. D. Dixit, R. Van Riel, G. Vunnam, and S. Sankar, “Hardware sentinel: Protecting software applications from hardware silent data corruptions,” in Proceedings of the 30th ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 2 , 2025, pp. 482–497. [41] P. H. Hochschild, P. Turner, J. C. Mogul, R. Govindaraju, P. Ran-ganathan, D. E. Culler, and A. Vahdat, “Cores that don’t count,” in 
+
+Proceedings of the Workshop on Hot Topics in Operating Systems , 2021, pp. 9–16. [42] S. Mitra, B. Parthasarathy, S. Banerjee, R. Govindaraju, P. Hochschild, E. Liu, M. Fuller, M. Dixon, and P. Ranganathan, “Silent data corruption by 10x test escapes threatens reliable computing,” IEEE Design & Test ,vol. 42, no. 6, pp. 40–53, 2025. [43] A. N. Udipi, N. Muralimanohar, R. Balasubramonian, A. Davis, and N. P. Jouppi, “LOT-ECC: Localized and tiered reliability mechanisms for commodity memory systems,” in Proceedings of the 39th Annual International Symposium on Computer Architecture , 2012, pp. 285–296. [44] J. J. Zhang, K. Rangineni, Z. Ghodsi, and S. Garg, “Thundervolt: Enabling aggressive voltage underscaling and timing error resilience for energy efficient deep learning accelerators,” in Proceedings of the 55th Annual Design Automation Conference , 2018, pp. 19:1–19:6. [45] J. Wei, A. Thomas, G. Li, and K. Pattabiraman, “Quantifying the accuracy of high-level fault injection techniques for hardware faults,” in Proceedings of the 44th Annual IEEE/IFIP International Conference on Dependable Systems and Networks (DSN) . IEEE, 2014, pp. 375– 382. 
+
+14

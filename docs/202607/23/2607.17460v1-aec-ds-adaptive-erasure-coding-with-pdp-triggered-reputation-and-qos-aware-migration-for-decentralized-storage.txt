@@ -1,0 +1,448 @@
+Title: AEC-DS: Adaptive Erasure Coding with PDP-Triggered Reputation and QoS-Aware Migration for Decentralized Storage
+
+URL Source: https://arxiv.org/pdf/2607.17460v1
+
+Published Time: Tue, 21 Jul 2026 01:22:23 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# AEC-DS: Adaptive Erasure Coding with PDP-Triggered Reputation and QoS-Aware Migration for Decentralized Storage 
+
+## Shuaiwen Li 
+
+Zhejiang University Hangzhou, China swli@zju-if.com 
+
+## Weihang YU 
+
+Central University of Finance and Economics Beijing, China ywh20071028@163.com 
+
+## Ke Wang 
+
+Binjiang Institute of Zhejiang University Hangzhou, China kwang@zju-if.com 
+
+## Meng Han 
+
+Zhejiang University Hangzhou, China mhan@zju.edu.cn 
+
+Keywords 
+
+Decentralized Storage, Erasure Coding, Provable Data Possession, Reputation System, Closed-loop Feedback, Class Migration 
+
+1 Introduction 
+
+Erasure coding provides durability for decentralized storage, but current schemes still lack feedback between auditing results and redundancy adaptation [ 8 ]. Static-EC cannot reflect node reliabil-ity differences; Dynamic-EC [ 16 ] adjusts redundancy from global failure rates, causing bandwidth overhead during failures; DRD-EC [12 ] considers reputation in coding decisions but does not integrate audit feedback or proactively move valuable data, resulting in in-flexible overhead or delayed recovery. We present a PDP-driven adaptive mechanism that separates node reputation tiers from data service classes. The feedback loop follows the sequence of audit, reputation update, redundancy recomputation, migration, and re-audit, allowing the system to adjust the parity level and selectively relocate shards as conditions change. Nodes with consistently suc-cessful audit results are promoted gradually, whereas nodes with repeated failures receive an additional penalty through the penalty factor. Experiments on 800 nodes and 500 files achieve 1.25 × stor-age overhead, 66.8%–75.2% fewer recoveries, and 100% durability. Ablation results show that migration contributes 176.8% to loss prevention, indicating a trade-off between migration bandwidth and reliability. Our contributions are: (1) a PDP-based closed-loop framework connecting audits with relocation; (2) a QoS-aware dual-track migration strategy for proactive protection; (3) large-scale evaluation and ablation studies analyzing system components. 
+
+2 Related Work 
+
+Our work integrates erasure coding, PDP auditing, and reputation-based placement, which have been studied separately [ 4, 17 ]. PDP was introduced by Ateniese et al. [ 2 ] and refined by Shacham and Waters [ 14 ], but audit results were not linked to redundancy de-cisions. Existing erasure coding methods [ 15 ] also lack adaptive feedback. Static-EC [ 1, 10 ] uses fixed code rates, causing storage inefficiency and durability risks. Dynamic-EC [ 16 ] adjusts redun-dancy using global failure rates, but reacts slowly and ignores data importance. DRD-EC [ 12 ] introduces object-level reputation for parity adjustment, yet still lacks proactive shard relocation. We propose a closed-loop mechanism that combines PDP feedback, 
+
+Table 1: Functional comparison with prior work. ( ✓ = sup-ported, × = unsupported) 
+
+Capability Existing Work Ours 
+
+Closed-loop feedback (Audit results directly trigger redundancy & placement decisions) 
+
+× ✓
+
+Dual-track decoupling (Node tiers and data classes evolve independently) 
+
+× ✓
+
+Cross-tier data migration × ✓
+
+Preventive relocation (Triggered by reputa-tion decay, before data loss) 
+
+× ✓
+
+QoS-aware node selection (Data importance weighted in resource allocation) 
+
+× ✓
+
+Storage-honesty triggered (PDP audit out-come as the primary decision signal) 
+
+× ✓
+
+reputation modeling, adaptive erasure coding, and QoS-weighted migration. Unlike “audit → detect → reconstruct,” our system en-ables “audit → predict → migrate” to reduce recovery costs. Table 1 summarizes the differences from prior methods [12, 16]. 
+
+3 System Model and Design 
+
+This section presents the architecture and key algorithms of the pro-posed closed-loop adaptive erasure coding mechanism. Section 3.1 introduces the system model and threat assumptions, followed by the node layering architecture and reputation update rules in Sec-tion 3.2. Section 3.3 describes the closed-loop control process from “audit → reputation → redundancy adjustment → class migra-tion → re-audit.” Section 3.4 presents the promotion and demotion algorithms for shard migration within the dual-track layered ar-chitecture, while Section 3.5 discusses the co-design approach for off-chain data authenticity assurance. 
+
+3.1 System Model and Threat Assumptions 
+
+System Model. We consider a decentralized network of 𝑁 stor-age nodes N = {𝑛 1, . . . , 𝑛 𝑁 } managing 𝐹 files. Each file is Reed– Solomon [ 3 , 7 , 11 ] encoded into 𝑘 data shards and 𝑚 parity shards (𝑛 = 𝑘 + 𝑚 ), dispersed across distinct nodes. For simplicity we fix 
+
+𝑘 = 4; the parity count 𝑚 ∈ [ 𝑚 min , 𝑚 max ] is dynamically determined by our algorithm (typical configuration 𝑚 min = 1, 𝑚 max = 4). Each data object carries a static QoS class 𝑞 ∈ { H, M, L} (high, medium, 
+
+> 1arXiv:2607.17460v1 [cs.AI] 20 Jul 2026 Li et al.
+
+low), specified by the user at creation and mapped to a quantitative priority QoS ∈ ( 0, 1].
+
+Threat Assumptions. We consider two types of faulty behavior: (1) benign failures, where nodes may temporarily become unavail-able with probability 𝑝 offline due to network instability or hardware degradation; (2) Byzantine behavior, where up to a fraction 𝑓 mal of nodes may intentionally drop or modify stored data to avoid service costs. Malicious nodes may collude, but cannot generate valid PDP proofs under the adopted cryptographic mechanisms [ 2 , 14 ]. We assume the security of homomorphic verifiable tags and random challenges, while the smart contract layer responsible for issuing audit challenges and updating reputation is trusted and operates beyond direct node control. 
+
+3.2 Node Layering and Reputation Model 
+
+Node Layering Architecture. Based on dynamic reputation scores 
+
+𝑅 𝑖 ∈ [ 0, 1], nodes are divided into three logical tiers: 
+
+Hot tier: 𝑅 𝑖 < 0.7. Low-reputation or newly joined nodes. They undergo the highest PDP audit frequency (e.g., every 2 hours) for rapid fault detection. 
+
+Warm tier: 0.7 ≤ 𝑅 𝑖 ≤ 0.95 . Medium-reputation nodes, audited at 1/2 to 1/3 of the Hot tier frequency. 
+
+Cold tier: 𝑅 𝑖 > 0.95 . This tier contains stable nodes with high reputation. These nodes have the lowest audit frequency, which is about one-third of that of the Warm tier, thereby reducing commu-nication overhead. Node tiers are reviewed periodically, for example, every 24 hours, based on the latest reputation scores. When a node’s score crosses a tier threshold, the system updates its tier accordingly. The resulting node pools are then used for subsequent data shard class migration. 
+
+Reputation Update Model. A node’s reputation score 𝑅 𝑖 is updated only according to its PDP audit results. When the smart contract challenges node 𝑛 𝑖 , the node must return a proof of pos-session within the specified timeout. Let 𝑆 ∈ { 0, 1} denote the audit result, where 𝑆 = 1 represents a successful audit and 𝑆 = 0 repre-sents a timeout or an invalid proof. The reputation score is updated using an exponentially weighted moving average: 
+
+𝑅 (𝑡 +1) 
+
+> 𝑖
+
+= (1 − 𝛼 )𝑅 (𝑡 ) 
+
+> 𝑖
+
++ 𝛼 · 𝑆 (1) where 𝛼 ∈ ( 0, 1) is the learning rate that determines the influence of the latest audit result relative to the previous reputation score. We set 𝛼 = 0.1 in the experiments. Repeated successful audits gradually increase the reputation score toward 1. A single failed audit causes only a limited decrease, whereas consecutive failures cause the score to decay over successive updates and may lead to node demotion. 
+
+3.3 Closed-Loop Control Flow 
+
+The mechanism operates as a self-optimizing loop comprising four sequential stages, as illustrated in Figure 1. This section details the control logic and the adaptive redundancy recomputation, while the execution of data relocation is deferred to Section 3.4. 
+
+Stage 1: Differentiated PDP Auditing. Smart contracts issue integrity challenges at tier-specific intervals. Let the base interval for the Hot tier be 𝑇 𝐻 . Auditing intervals for the Warm and Cold tiers are scaled by factors 𝜆 𝑊 , 𝜆 𝐶 > 1, such that 𝑇 𝑊 𝑎𝑟𝑚 = 𝜆 𝑊 𝑇 𝐻 
+
+and 𝑇 𝐶𝑜𝑙𝑑 = 𝜆 𝐶 𝑇 𝐻 . This tiered frequency intensively monitors low-reputation nodes while minimizing overhead for stable ones. 
+
+Stage 2: Real-time Reputation Update. Once a PDP challenge is resolved, the binary outcome 𝑆 ∈ { 0, 1} (1 for success, 0 for failure or timeout) immediately triggers an on-chain reputation update for the challenged node. The node’s reputation score 𝑅 𝑖 is recalculated using the exponentially weighted moving average defined in Eq. (1) (Section 3.2), ensuring that audit results are reflected in node trust scores. 
+
+Stage 3: Adaptive Redundancy Re-computation. The parity count 𝑚 for a data object is recalculated to proactively adjust its fault tolerance before actual data loss occurs. Re-computation is triggered when either of two conditions is met: (i) The mean reputation ¯𝑅 of the nodes currently hosting the object’s shards drops by more than a threshold 𝜃 since the last re-computation. (ii) Any hosting node experiences 𝑓 fail consecutive PDP failures. The new parity count is computed as: 
+
+𝑚 = ⌈𝑚 min + ( 𝑚 max − 𝑚 min ) · ( 1 − ¯𝑅 ) · 𝛿 (QoS )⌉ (2) where 
+
+𝛿 (QoS ) =
+
+
+
+1.2, QoS > 0.81.0, 0.4 ≤ QoS ≤ 0.80.8, QoS < 0.4
+
+(3) 
+
+Stage 4: Shard Relocation and Tier Migration. Based on the decision made in Stage 3, the system updates the shard placement in one of two ways. A change in 𝑚 triggers global redistribution, including shard reconstruction when necessary and reselection of the 𝑘 + 𝑚 hosting nodes. If 𝑚 remains unchanged but a node’s rep-utation meets the migration condition, only the affected shards are relocated through incremental class migration. The corresponding procedures are described in Section 3.4. 
+
+Closed-Loop Nature. After relocation, the updated shard place-ment and parity configuration are used in the next PDP auditing cycle. The resulting audit outcomes update node reputations again and may lead to another redundancy adjustment or migration de-cision. In this way, PDP evidence is incorporated into subsequent coding and placement decisions rather than being used only for failure detection. 
+
+3.4 Redistribution and Class Migration 
+
+When the parity count 𝑚 is updated, the system relocates data to align with the new redundancy level and current node reputations. We distinguish two granularities: global redistribution triggered by 𝑚 changes, and incremental migration triggered by reputation fluctuations when 𝑚 is stable. 
+
+3.4.1 Global Redistribution. When 𝑚 changes, all 𝑛 = 𝑘 + 𝑚 new 
+
+hosting nodes are reselected. Lost shards are first recovered via Reed-Solomon decoding using any 𝑘 survivors. The 𝑛 new nodes are then chosen by a QoS-weighted priority score: 
+
+𝑃 𝑖 = 𝑅 𝛾 𝑖 · QoS 𝛿 (4) 
+
+> 2
+
+AEC-DS: Adaptive Erasure Coding with PDP-Triggered Reputation and QoS-Aware Migration for Decentralized Storage 2 Storage Deployment                                                        
+
+> Dual -Track Architecture
+> 3PDP Feedback
+> Audit, Reputation and Risk
+> 4Self -Healing Execution
+> Relocation and Reconstruction
+> Tiers evolve dynamically
+> 3.1 PDP Auditing
+> Integrity challenge
+> S=1 success; S=0 failure
+> 3.2 Update Reputation
+> Upon audit outcome
+> 1𝑅ᵢ ←(1−𝛼 )𝑅ᵢ +𝛼𝑆
+> 3.3 Risk Assessment
+> Evaluate reputation decay
+> 1Input Preparation
+> File Encoding and Placement
+> File 𝐹
+> Initial Node Selection
+> QoS -weighted priority score
+> 𝑃ᵢ =𝑅ᵢ ᵞ·𝑄𝑜𝑆 ᵟ
+> Reed -Solomon EC
+> Split into 𝑘 data shards
+> +𝑚 parity shards
+> with QoS -class weights
+> Hot Tier: 𝑹ᵢ <𝟎 .𝟕
+> Low reputation,
+> high audit frequency
+> Warm Tier:
+> 1𝟎 .𝟕 ≤𝑹ᵢ ≤𝟎 .𝟗𝟓
+> Medium reputation nodes
+> Cold Tier: 𝑹ᵢ >𝟎 .𝟗𝟓
+> High reputation,
+> low audit frequency
+> 4.3 Updated Shard Placement
+> The new layout re -enters PDP auditing
+> Promote :
+> safe shards up to higher tiers
+> Demote:
+> risky shards downward
+> 4.1 Class Migration
+> Preventive relocation
+> 4.2 Global Redistribution
+> Recompute parity count 𝑚
+> and shard placement
+> Recover lost shards
+> Reselect hosting nodes
+> Global risk trigger Local risk trigger
+
+PDP -Driven Closed -Loop Self -Healing Erasure Coding Mechanism  
+
+> Closed -Loop Feedback
+> Updated state drives the next audit cycle
+
+① Encode → ② Deploy → ③ Audit & Update → ④ Heal & Reconstruct 
+
+↻
+
+Figure 1: Closed-Loop Control with Tier Migration for PDP-Driven Adaptive Erasure Coding 
+
+where 𝛾 > 1 amplifies high-reputation advantage and 𝛿 < 1
+
+tempers QoS disparity, preventing top-tier monopolization ( 𝛾 =
+
+1.5, 𝛿 = 0.8). The top 𝑛 nodes by 𝑃 𝑖 host the reconstituted shards. 
+
+3.4.2 Dual-Track Architecture. Traditional schemes couple node tiers with data placement, causing two issues: data cannot migrate as trust evolves, and low-reputation nodes lack incentives to im-prove. We decouple these dimensions: 
+
+Node-centric track: Node tiers (Hot, Warm, Cold) evolve solely based on their dynamic reputation scores, independent of the data they store. 
+
+Data-centric track: Data objects retain an immutable, user-defined QoS class throughout their lifecycle. A shard’s physical location is thus determined by the dynamic intersection of its data object’s static QoS class and its hosting node’s current tier. This decoupling enables cross-tier migration on demand without altering the data’s inherent class, allowing the system to proactively move high-value shards to more trustworthy nodes as their reputations change. 
+
+3.4.3 Class Migration. When 𝑚 remains stable but node reputa-tions fluctuate significantly, incremental migration adjusts shard placements preventively using asymmetric strategies: 
+
+Promotion (Lower to Higher Tier). A shard on a Hot or Warm node is promoted only if its host passes 𝑐 up consecutive PDP audits and the migration priority 𝑃 migrate = 𝑅 𝑖 · QoS exceeds threshold 
+
+𝜏 up (e.g., 0.88). The shard then moves to the optimal node in the target higher tier via Eq. (4) . This conservative design operates at single-shard granularity and requires sustained honest behavior. 
+
+Demotion (Higher to Lower Tier). Demotion rapidly isolates risk through a penalized score: 
+
+𝑃 demote = 𝑅 𝑖 · QoS · ( 1 − 𝜆 · 𝑓 fail ) (5) where 𝑓 fail counts consecutive PDP failures and 𝜆 ∈ ( 0.2, 0.3)
+
+amplifies the penalty. When 𝑃 demote falls below 𝜏 down (e.g., 0.65), all shards on that node—prioritized by descending QoS—are immedi-ately evacuated to the highest-scoring nodes in a lower tier. 
+
+3.4.4 Distinction and Synergy. Redistribution addresses "is redun-dancy sufficient?" by global reselection upon 𝑚 changes. Migration addresses "where is data safest?" by local adjustment upon reputa-tion shifts. Together they achieve full preventive coverage. Notably, compressed redundancy ( 𝑚 near 𝑚 min = 1) ensures Cold-tier nodes bear low absolute storage load, while 𝛿 < 1 in Eq. (4) implicitly balances load across the network by preventing QoS-based monop-olization. 
+
+3.5 Off-Chain Data Authenticity Assurance 
+
+AEC-DS uses the verified outcome of each PDP audit as an input to node reputation updates. We adopt a homomorphic-tag-based remote integrity auditing scheme following established PDP/POR constructions [ 2, 5, 6, 14 ]. For each audit, the smart contract de-rives a fresh challenge nonce from on-chain randomness, and the challenged node returns an aggregated proof. The proof is verified without retrieving the original shards, and the fresh nonce pre-vents a proof prepared for an earlier challenge from being reused. The contract records the binary verification result and updates the reputation of the challenged node accordingly. The security of the underlying proof protocol follows prior work [ 2, 18 ]; this paper focuses on how verified audit outcomes are incorporated into redundancy and placement decisions. In a practical deployment, audit transactions could be batched or submitted through a Layer-2 system to reduce on-chain cost, although these optimizations are not evaluated in our simulations. 
+
+4 Experiments 
+
+We evaluate AEC-DS through event-driven simulations, using stor-age overhead, cumulative recovery operations, and data durability as the main performance measures. The experiments compare AEC-DS with three baselines, examine the contribution of its individual components, and test its behavior under different adversarial-node ratios. The following subsections present the research questions, simulation settings, baselines, and evaluation metrics. 
+
+4.1 Research Questions 
+
+The evaluation focuses on the following three research questions: 
+
+RQ1 (Overall Performance): How does AEC-DS compare with the baseline methods in terms of storage overhead, cumulative recovery operations, and data durability? 
+
+RQ2 (Closed-Loop Effectiveness): How much does each com-ponent, including class migration, adaptive EC, reputation, PDP feedback, and QoS, contribute to the overall performance? How 
+
+3Li et al. 
+
+are recovery operations and storage overhead affected when each component is removed? 
+
+RQ3 (Robustness): Does data durability remain stable under different adversarial node ratios? Can the reputation system accu-rately reflect node reliability? RQ1 evaluates the overall performance of AEC-DS, RQ2 mea-sures the contribution of each component through ablation ex-periments, and RQ3 examines the robustness of the system under different conditions. 
+
+4.2 Experimental Setup and Parameters 
+
+Simulation Platform. We developed an event-driven simulator in Python. The simulator models node behavior, PDP audits, reputa-tion updates, RS encoding and decoding, data reconstruction, and shard migration. Each round corresponds to one global audit cycle. 
+
+Main Configuration. Table 2 lists the main parameters used for RQ1 and RQ2. 
+
+Table 2: Main simulation parameters                                 
+
+> Parameter Value
+> Nodes 𝑁 800 Files 𝐹 500 Simulation rounds 500 Independent runs 10 Adversarial ratio 10% Offline probability 0.003/round Reputation drop threshold 𝜃 0.01 Consecutive failure limit 𝑓 fail 3QoS distribution H:35%, M:45%, L:20% Data shards 𝑘 4Parity range [𝑚 min , 𝑚 max ][1,4]
+> Learning rate 𝛼 0.1 Promotion threshold 𝜏 up 0.88 Demotion threshold 𝜏 down 0.65 Penalty factor 𝜆 0.25 Priority exponents (𝛾, 𝛿 )(1.5,0.8)
+
+Supplementary Configuration. For the robustness analysis in RQ3, we use a smaller and faster configuration, as shown in Table 3. This configuration preserves the main experimental trends while reducing the runtime of each simulation by approximately 80%. 
+
+Table 3: Fast vs. main configuration             
+
+> Parameter Fast Config. Main Config.
+> Simulation rounds 200 500 Independent runs 310 Nodes 400 800 Files 250 500 Node churn Off On
+
+4.3 Baselines 
+
+We compare AEC-DS with three baseline methods. Their main differences are summarized in Table 4. 
+
+Static-EC keeps 𝑚 = 2 fixed, ignoring node dynamics [1, 10]. 
+
+Dynamic-EC sets 𝑚 = ⌈𝑚 min + ( 𝑚 max − 𝑚 min ) · 𝑝 fail ⌉ per round, but global triggers cause bandwidth storms [ 16 ] and react to lagging indicators. 
+
+DRD-EC computes 𝑚 = ⌈𝑚 min + ( 𝑚 max − 𝑚 min ) · ( 1 − ¯𝑅 )⌉ using mean reputation, yet lacks a feedback loop and proactive migration [12] , making it our key ablation baseline. The comparisons isolate gains: Proposed-EC vs. DRD-EC re-veals closed-loop and migration benefits; DRD-EC vs. Dynamic-EC [ 12 , 16 ] shows reputation-guided over failure-guided adjustment; Dynamic-EC vs. Static-EC captures value of any dynamism. 
+
+4.4 Evaluation Metrics 
+
+We define metrics covering storage efficiency, reliability, and dy-namic behavior. 
+
+Storage Overhead: the ratio of total stored data to original size, for RS codes (𝑘 + 𝑚 )/ 𝑘 . Closer to 1 indicates higher efficiency. The average across all files is: StorageOverhead = 1
+
+𝐹 
+
+> 𝐹
+
+∑︁  
+
+> 𝑓 =1
+
+𝑘 + 𝑚 𝑓 
+
+𝑘 (6) where 𝑚 𝑓 is the parity count of file 𝑓 .
+
+Cumulative Recovery Count: total reconstruction operations executed during simulation. Unlike prior work reporting instanta-neous rates, we use the cumulative count to reflect long-term cost. Lower values indicate more effective prevention. 
+
+Data Durability: the fraction of objects with at least 𝑘 surviving shards at any time. An object is lost when missing shards exceed 
+
+𝑚 . We report final durability and monitor its time evolution. 
+
+5 Experimental Results 
+
+This section presents the evaluation results. Section 5.1 reports com-prehensive performance comparisons against the three baselines (RQ1); Section 5.2 quantifies marginal contributions of core compo-nents via ablation studies (RQ2); Section 5.3 analyzes robustness under varying adversarial node ratios (RQ3). 
+
+5.1 Comprehensive Performance Comparison 
+
+Table 5 reports the means and standard deviations of storage over-head, cumulative recovery count, and final data durability across 10 independent runs. All methods sustain 100% data durability, indicat-ing that basic redundancy prevents permanent data loss under our fault model. However, storage and recovery costs diverge markedly. 
+
+Storage Efficiency. Proposed-EC and DRD-EC achieve the low-est overhead (1.25), reducing storage cost by 16.7% compared with Static-EC and 29.0% compared with Dynamic-EC [ 16 ]. Although both reduce 𝑚 to 𝑚 min = 1, they employ different adaptation strate-gies. DRD-EC updates 𝑚 reactively according to current mean rep-utation [ 12 ], without preventive migration; when node reliability declines, recovery is required after failures occur. Proposed-EC in-stead relocates shards to high-reputation Cold-tier nodes in advance. As a result, Proposed-EC requires only 33.2% of DRD-EC’s recover-ies (1420 vs. 4283), showing the advantage of proactive migration over reconstruction. 
+
+Recovery Count. Proposed-EC’s 1420 cumulative recoveries represent reductions of 70.7% over Static-EC, 75.2% over Dynamic-EC, and 66.8% over DRD-EC. Pairwise 𝑡 -tests (Table 6) confirm 
+
+> 4AEC-DS: Adaptive Erasure Coding with PDP-Triggered Reputation and QoS-Aware Migration for Decentralized Storage
+
+Table 4: Differences between proposed and baseline methods 
+
+## Method Redundancy Criterion Feedback Loop QoS-Aware Class Migration Granularity 
+
+## Static-EC Fixed value None No No —Dynamic-EC Global failure rate Open-loop No No Global DRD-EC Mean reputation Unidirectional open-loop No No Per-object Proposed-EC Mean reputation + QoS Closed-loop Yes Yes Per-object 
+
+Table 5: Key performance indicators (mean ± std, 10 runs)                               
+
+> Method Storage Overhead Cumulative Recoveries Data Durability
+> Static-EC 1.500 ±0.000 4848 ±156 1.000 Dynamic-EC 1.760 ±0.131 5720 ±1410 1.000 DRD-EC 1.250 ±0.000 4283 ±1599 1.000 Proposed-EC 1.250 ±0.000 1420 ±557 1.000
+
+statistical significance ( 𝑝 < 0.01 ) with Cohen’s 𝑑 magnitudes ex-ceeding 2.2 (“very large” effect sizes), directly evidencing the value of the closed-loop design. 
+
+Table 6: Statistical significance of recovery count differences (Proposed-EC vs. baselines)                    
+
+> Comparison Mean Diff. t-statistic 𝑝 -value Cohen’s 𝑑
+> vs. Static-EC −3428 .7−16 .44 <0.001 −7.949
+> vs. Dynamic-EC −4300 .7−6.94 <0.001 −3.805
+> vs. DRD-EC −2863 .4−4.45 0.0016 −2.269
+
+Time Evolution. Storage overhead converges from 1.5 to 1.25 within 30–50 rounds for both Proposed-EC and DRD-EC (Figure 2). The cumulative recovery curves (Figure 3) show a clear difference: DRD-EC recoveries increase almost linearly, while Proposed-EC exhibits a slower growth trend. This difference reflects the impact of closed-loop adaptation. Without continuous audit feedback, DRD-EC accumulates recovery operations as failures increase; in contrast, Proposed-EC updates placement decisions over time and reduces future recovery demand. 
+
+5.2 Ablation Study 
+
+We quantify the marginal contribution of each closed-loop compo-nent by sequentially removing PDP feedback (NoPDP), reputation (NoReputation), class migration (NoMigration), adaptive EC (NoAd-aptiveEC), and QoS differentiation (NoQoS). Table 7 ranks compo-nents by their comprehensive impact; Figure 4 plots corresponding cumulative recovery curves. 
+
+Class migration is the dominant pillar: removing it (NoMi-gration) inflates recoveries from 1,457.5 to 4,035.0 (+176.8%), the severest degradation. This quantifies how proactively evacuating at-risk shards drastically reduces passive reconstruction. 
+
+Figure 2: Time Evolution of Storage Overhead for Various Methods 
+
+Figure 3: Cumulative Recovery Counts for Various Methods Table 7: Component impact ranking             
+
+> Rank Removed Component Recovery Count Change
+> 1Class Migration +176 .8%
+> 2Adaptive EC −17 .0%
+> 3Reputation System +8.5%
+> 4PDP Feedback +12 .7%
+> 5QoS Differentiation +5.0%
+
+Adaptive EC determines storage efficiency. Figure 5 compares the storage overhead among all variants. Removing adaptive EC (NoAdaptiveEC) fixes ( 𝑚 = 2), increasing overhead from 1.25 to 1.50 (+20%), while reducing recoveries by 17.0% due to higher re-dundancy. The results illustrate the storage–recovery trade-off: adaptive EC improves storage utilization while maintaining relia-bility, although it introduces additional algorithmic complexity. 
+
+Reputation is used to distinguish nodes with different reliability levels during placement. In the NoReputation variant, the storage overhead rises to 1.50 and the number of recoveries increases by 8.5%. Without reputation scores, the system cannot distinguish node reliability when making placement and redundancy decisions. 
+
+> 5
+
+Li et al. 0 100 200 300 400 500 
+
+> 0
+> 500
+> 1,000
+> 1,500
+> 2,000
+> 2,500
+> 3,000
+> 3,500
+> 4,000
+> Round
+> Number of Recoveries
+
+Ablation Study: Cumulative Recovery Count 
+
+> Proposed-Full
+> Proposed-NoPDP
+> Proposed-NoReputation
+> Proposed-NoMigration
+> Proposed-NoAdaptiveEC
+> Proposed-NoQoS
+
+Figure 4: Comparison of Recovery Counts 0 100 200 300 400 500 
+
+> 1.25
+> 1.3
+> 1.35
+> 1.4
+> 1.45
+> 1.5
+> Round
+> Storage Overhead (ratio)
+
+Ablation Study: Storage Overhead 
+
+> Proposed-NoAdaptiveEC
+> Proposed-Full
+> Proposed-NoPDP
+> Proposed-NoReputation
+> Proposed-NoMigration
+> Proposed-NoQoS
+
+Figure 5: Comparison of Storage Overhead PDP feedback provides recent audit results for system adjust-ment. Removing this feedback (NoPDP) increases the number of recoveries by 12.7%. This suggests that timely audit results help the system identify risky nodes and take preventive action. At the same time, the auditing process may introduce additional communication overhead. 
+
+QoS differentiation has the smallest effect, with a 5.0% increase in recoveries after it is removed. Its main role is to set different placement priorities for data objects, so that high-value data can be assigned to more reliable nodes. Therefore, its effect on the overall metrics is relatively limited. Overall, class migration and adaptive EC determine where shards are placed and how much redundancy is used. Reputation and PDP feedback provide information for these decisions, while QoS differentiation adjusts the priority of different data objects. 
+
+5.3 Robustness Analysis 
+
+We evaluate the system with adversarial-node ratios of 5% and 10% using the fast configuration, and each result is averaged over three runs. As shown in Table 8, the system maintains 100% data dura-bility in both settings. When the adversarial ratio increases from 5% to 10%, the final mean reputation decreases from 0.938 to 0.911, while cumulative recoveries increase from 1043.6 to 1222.9. These results show that a higher adversarial ratio leads to lower reputa-tion scores and greater recovery demand, while no permanent data loss is observed under the tested settings. 
+
+Table 8: Robustness to adversarial ratio (fast config., 3-run means) 
+
+Adversarial Ratio Storage Overhead Final Mean Reputation Cumulative Recovers Final Durability 
+
+5% 1.25 0.938 1043.6 1.000 10% 1.25 0.911 1222.9 1.000 
+
+6 Discussion 6.1 Trade-off and Applicable Scenarios 
+
+AEC-DS uses additional migration traffic to reduce recovery de-mand, lowering cumulative recoveries by 66.8%–75.2%. It is there-fore more suitable for bandwidth-tolerant decentralized storage, such as edge, Web3, and P2P networks [ 3, 9, 11 , 13 ], but less suitable for bandwidth-limited or latency-sensitive environments. 
+
+6.2 Limitations 
+
+The current evaluation is simulation-based, uses a fixed 𝑘 = 4, omits economic incentives, and relies on manually selected parameters. Future work will include testbed validation, automatic parame-ter tuning, and staking mechanisms. Overall, AEC-DS combines PDP feedback, adaptive erasure coding, and dual-track migration, achieving a 1.25 × storage overhead and 66.8%–75.2% fewer recov-eries while maintaining 100% durability. These results suggest that additional migration traffic can improve storage reliability when sufficient bandwidth is available. 
+
+Acknowledgments 
+
+This research was supported by National Key R&D Program of China (Grant No. 2023YFB2704400). 
+
+References 
+
+[1] M. Abebe et al . 2018. EC-Store: Bridging the Gap between Storage and Latency in Distributed Erasure Coded Systems. In Proceedings of the IEEE International Conference on Distributed Computing Systems .[2] Giuseppe Ateniese, Randal Burns, Reza Curtmola, Joseph Herring, Lea Kissner, Zachary Peterson, and Dawn Song. 2007. Provable Data Possession at Untrusted Stores. In Proceedings of the 14th ACM Conference on Computer and Communica-tions Security . 598–609. https://doi.org/10.1145/1315245.1315318 [3] Juan Benet. 2014. IPFS - Content Addressed, Versioned, P2P File System. arXiv:1407.3561. https://arxiv.org/abs/1407.3561 [4] Yourong Chen, Yubo Zhuang, Shiwei Wang, Yidan Guo, Meng Han, Liyuan Liu, and Zhen Hong. 2025. A Fast Consensus Algorithm of Large-Scale Heterogeneous Dynamic IoT Nodes for DAG-based Blockchain. IEEE Internet of Things Journal 
+
+(2025). [5] M. Etemad et al . 2016. A Generic Dynamic Provable Data Possession Framework. Cryptology ePrint Archive, Paper 2016/748. https://eprint.iacr.org/2016/748 [6] Ari Juels and Burton S. Kaliski. 2007. PORs: Proofs of Retrievability for Large Files. In Proceedings of the 14th ACM Conference on Computer and Communications Security .[7] John Kubiatowicz et al . 2000. OceanStore: An Architecture for Global-Scale Persistent Storage. In Proceedings of the Ninth International Conference on Archi-tectural Support for Programming Languages and Operating Systems .[8] C. Li et al . 2024. SoK: Decentralized Storage Network. Blockchain: Research and Applications (2024). https://www.sciencedirect.com/science/article/pii/ S2667295224000424 [9] M.M. Merlec et al . 2024. Blockchain-Based Decentralized Storage Systems for Sustainable Data Self-Sovereignty: A Comparative Study. Sustainability (2024). [10] N. Nicolaou et al . 2022. ARES: Adaptive, Reconfigurable, Erasure coded, Atomic Storage. ACM Transactions on Storage (2022). [11] Protocol Labs. 2017. Filecoin: A Decentralized Storage Network. https://research.protocol.ai/publications/filecoin-a-decentralized-storage-network/protocollabs2017a.pdf [12] Jiehan Qiao, Jinnan Zhang, Rurong Chen, et al . 2025. DRD-EC: a dynamic risk-driven erasure coding method for IoT blockchains. In Proceedings of SPIE, Volume 
+
+6AEC-DS: Adaptive Erasure Coding with PDP-Triggered Reputation and QoS-Aware Migration for Decentralized Storage 
+
+13692: International Conference on Computer Application and Information Security (ICCAIS 2024) , Vol. 13692. https://doi.org/10.1117/12.3069027 [13] S. Reno et al . 2025. StorjLedger: An Innovative Distributed Storage Ecosystem That Overcomes Blockchain Trade-Offs Using Erasure-Coded Sharding and Proof-of-Storage Consensus. Engineering Reports (2025). [14] Hovav Shacham and Brent Waters. 2008. Compact Proofs of Retrievability. In 
+
+Advances in Cryptology – ASIACRYPT 2008 . Springer. [15] Z. Shen, K. Cheng, et al . 2025. A Survey of the Past, Present, and Future of Erasure Coding for Storage Systems. ACM Transactions on Storage (2025). [16] Ming Zhang, Chen Wu, Jia Li, and Minyi Guo. 2024. Dynamic-EC: An efficient dynamic erasure coding method for permissioned blockchain systems. Frontiers of Computer Science (2024). https://doi.org/10.1007/s11704-023-3209-3 [17] Yifeng Zhang, Qianqian Ren, Yourong Chen, and Meng Han. 2025. Beyond contrastive learning: adaptive graph representations with mutual information maximization for blockchain and structured data. Complex & Intelligent Systems 
+
+11, 9 (2025), 412. [18] Yan Zhu, Hongxin Hu, Gail-Joon Ahn, and Mengyang Yu. 2012. Cooperative Provable Data Possession for Integrity Verification in Multicloud Storage. IEEE Transactions on Parallel and Distributed Systems (2012). 7
