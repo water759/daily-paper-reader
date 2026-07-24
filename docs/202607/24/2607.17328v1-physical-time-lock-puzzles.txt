@@ -1,0 +1,908 @@
+Title: Physical Time-Lock Puzzles
+
+URL Source: https://arxiv.org/pdf/2607.17328v1
+
+Published Time: Tue, 21 Jul 2026 01:13:17 GMT
+
+Number of Pages: 14
+
+Markdown Content:
+> 1
+
+# Physical Time-Lock Puzzles 
+
+Niloufar Sayadi, Chenglu Jin, Phuong Ha Nguyen, Zheng Yang, and Marten van Dijk 
+
+Abstract —Traditional time-lock puzzles enforce delayed ac-cess to encrypted secrets by relying on inherently sequential computational steps. However, since software-based constructions impose no fundamental bound on the physical execution speed of individual steps, they remain vulnerable to hardware acceleration and improved implementations. In practice, this renders existing schemes “step-lock” rather than true “time-lock” puzzles, making long-term delay guarantees highly speculative against decades of unpredictable hardware advancement. To address this fundamental limitation, we introduce the 
+
+Physical Time-Lock Puzzle (P-TLP), a new paradigm that anchors solving delay directly to the intrinsic, hardware-bounded evalu-ation latency of silicon hardware. By leveraging noisy Physical Unclonable Functions (PUFs) as non-parallelizable delay oracles, P-TLPs establish resistance against both parallel computation and algorithmic acceleration under the random oracle model. To tolerate PUF evaluation noise while maintaining a tightly concentrated and predictable solving-delay window, we propose a composite puzzle architecture that combines multiple indepen-dent basic puzzles. We formally prove the optimality of a sequential greedy solving strategy and derive tightly concentrated solving-delay windows using Hoeffding and Berry-Esseen bounds. We addi-tionally prove early-solve hardness, establishing that adversaries with substantial classical computation budgets cannot bypass the physically-enforced PUF evaluation bottleneck. We validate our theoretical analysis with an FPGA prototype built around a configurable Ring Oscillator PUF, confirming that our analytical delay predictions tightly match empirical measurements. Our results demonstrate that P-TLPs can deliver highly predictable, long-term delay guarantees, enabling practical deployment in high-value applications such as digital legacy management. 
+
+Index Terms —Physical Unclonable Functions, Time-Lock Puz-zles 
+
+I. I NTRODUCTION 
+
+Informally, a time-lock puzzle is a cryptographic mechanism for effectively sending messages into the future [1], [2], [3]. Specifically, a message is encrypted such that it can only be decrypted after a strictly specified amount of time has elapsed, but never beforehand. In this context, the encrypted ciphertext acts as the puzzle, and the original message is the solution successfully retrieved after a defined time parameter T . From a security perspective, no adversary should be able to solve the puzzle in time significantly less than T , even when natively equipped with massively parallel computing resources.                    
+
+> N. Sayadi is with Centrum Wiskunde & Informatica and Vrije Universiteit Amsterdam, the Netherlands (e-mail: niloufar.sayadi@cwi.nl). C. Jin is with Centrum Wiskunde & Informatica, Amsterdam, the Nether-lands (e-mail: chenglu.jin@cwi.nl). P. H. Nguyen is with eBay, San Jose, CA, the USA (e-mail: phuongha.ntu@gmail.com). Z. Yang is with Southwest University, Chongqing, China (e-mail: youngzheng@swu.edu.cn). M. van Dijk is with Centrum Wiskunde & Informatica, Vrije Universiteit Amsterdam, the Netherlands, and the University of Connecticut, Storrs, CT, the USA (e-mail: marten.van.dijk@cwi.nl).
+
+Early constructions of time-lock puzzles are purely software-based, relying exclusively on inherently sequential computations. The pioneering construction by Rivest, Shamir, and Wagner [1] is based on the serial nature of repeated squaring and the hardness of factoring, while recent schemes have explored randomized encodings [3] and lattice prob-lems [4]. In all of these existing software constructions, the solving algorithms strictly demand an inherently sequential 
+
+computational execution path. Most software-based time-lock puzzles bound computa-tional steps instead of execution time, acting as step-lock puzzles sensitive to hardware speed. Developing puzzles in-dependent of raw computation remains an open challenge. Rivest’s 1999 puzzle [5] illustrates this difficulty, as its 35-year estimate relied on speculative Moore’s Law projections to account for future hardware acceleration. In practice, this speculative delay guarantee often appeared overly optimistic. The puzzle, intended to be secure until 2034, was solved 15 years early in 2019. A software implementation utilizing the GNU Multiple Precision Arithmetic Library on a commercial desktop CPU successfully extracted the solution after 3 years and 3 months of continuous execution [6]. Even more remarkably, an independent group leveraged customized FPGA hardware to accelerate the underlying operations, solv-ing the identical puzzle in a mere 2 months [6]. This vividly demonstrated the significant inaccuracies and vulnerabilities inherent to purely software-based delay guarantees against customized hardware acceleration. To tackle these fundamental vulnerabilities, we ask a core question: can we cryptographically bind computation time directly to a specific physical hardware, ensuring that only this exact piece of hardware can be used to solve the puzzle? If so, the required solving time immediately becomes independent of advances in general-purpose algorithmic com-puting and external implementation variance. Consequently, constructing a highly predictable, long-term time-lock puzzle becomes practically feasible. Silicon Physical Unclonable Functions (PUFs) [7] are hardware primitives that leverage uncontrollable and unclon-able manufacturing variations to produce unique challenge-response behavior. For physical time-lock puzzles, we specif-ically exploit their intrinsic evaluation latency τP . Because this propagation delay is rooted in physical electronics, no adversary can evaluate a PUF faster than the hardware-defined latency τP .Essentially, we utilize the PUF as a non-parallelizable random oracle within our puzzle construction. During gen-eration, a generator securely queries the PUF with a randomly chosen challenge; to subsequently unlock the puzzle, a solver must perform an exhaustive search across the entire defined challenge space to locate that exact query. Because evaluat-arXiv:2607.17328v1 [cs.CR] 19 Jul 2026 2
+
+ing a massive search space sequentially is inherently more time-consuming than executing a single generation query, this asymmetrical workload naturally establishes a structural efficiency gap between the puzzle generator and the solver. A seminal result by Mahmoody et al. [2] established a formal negative result in the standard random-oracle model, strictly ruling out time-lock puzzles that require more parallel time to solve than the total work required to generate the puzzle. However, by substituting the parallelizable random oracle with a physical silicon PUF, we formally anchor the adversary to strict, non-parallelizable physical hardware delay. This enables us to successfully bypass the theoretical impossibility result of random oracle-based time-lock puzzles. Unlike traditional software-based TLPs, our P-TLPs require physical PUF access for both generation and solving. While public solvability is a common feature of software TLPs, our physical construction intentionally shifts the paradigm by binding the delay strictly to a specific physical token. This novel trade-off successfully addresses hardware acceleration vulnerabilities while inevitably losing compatibility with cer-tain traditional TLP applications that require purely public puzzles. Consequently, P-TLPs are uniquely suited for high-value applications requiring tangible physical anchoring:  
+
+> •
+
+Digital Legacy Management : By encrypting virtual assets within a hardware token, a creator ensures heirs cannot access the legacy prematurely. Unlike traditional software-based puzzles, the physical token prevents re-mote copying and stealth solving.  
+
+> •
+
+Delayed-Access Hardware Wallets : P-TLPs can secure cryptocurrency keys for predetermined lockdown periods, binding access to a physical PUF to mitigate permanent asset loss from forgotten passwords or sudden death.  
+
+> •
+
+Strict Key-Escrow Schemes : P-TLPs establish physi-cally regulated escrow procedures, structurally guaran-teeing that restricted message keys remain mathematically inaccessible to regulators until an explicit time period has elapsed. 
+
+a) Our Contributions.: In this paper, we propose a
+
+Physical Time-Lock Puzzle (P-TLP) that leverages a noisy silicon PUF as a non-parallelizable hardware delay primitive. Compared to traditional software-based time-lock puzzles, our approach binds the solving effort to the intrinsic evaluation latency of a specific hardware device. Our main contributions are 1: 
+
+> •
+
+We introduce the formal framework for P-TLP operating over noisy PUF oracles. We construct a basic puzzle and rigorously prove the optimality of the proposed solving algorithm.  
+
+> •
+
+We present an advanced, composite P-TLP construction that can better tolerate PUF noise and restricts variance without compromising the intrinsic efficiency gap.  
+
+> 1Importantly, designing PUFs immune to advanced machine learning mod-eling attacks remains an open problem. Our work establishes the foundational P-TLP architecture; the FPGA implementation presented in this paper is strictly a timing and error-correction proof-of-concept, not a claim of modeling resilience. As designing secure, lightweight, strong PUFs remains a highly active area of hardware research, our framework can seamlessly integrate future state-of-the-art PUF designs.
+> •
+
+We derive tight analytical windows for honest solving delays utilizing concentrated Hoeffding bounds. Further-more, we establish a guarantee of early-solve hardness, ensuring that adversaries granted substantial classical ora-cle testing budgets cannot bypass the physically-enforced PUF evaluation limits.  
+
+> •
+
+We implement the proposed P-TLP practically on an FPGA using a configurable Ring Oscillator PUF, suc-cessfully validating our tight theoretical delay derivations. Finally, we demonstrate the unique advantages of an-choring time-locks to physical hardware for high-value applications such as digital legacy management. 
+
+b) Organization.: Section II reviews relevant background and related work. Section III introduces the definitional frame-work of P-TLP. Section IV presents a basic P-TLP construction with its analysis, while Section V details our composite architecture. We establish formal security proofs in Section VI and provide experimental FPGA validations in Section VII. We discuss more details about the potential applications of P-TLP in the digital legacy management in Section VIII. Finally, we conclude our paper and discuss future work in Section IX. II. B ACKGROUND AND RELATED WORK 
+
+A. Physically Unclonable Functions 
+
+Intuitively, a silicon Physically Unclonable Function (PUF) embedded within a microchip acts as a hardware fingerprint possessing three critical properties: (1) it evaluates a given challenge (input) c to generate a random-looking response (output) r by leveraging intrinsic manufacturing process vari-ations; (2) it is physically unclonable; and (3) it is mathemat-ically unclonable. Mathematical unclonability ensures that the physical function cannot be efficiently modeled or predicted in software, even when an adversary is given a polynomial number of challenge-response pairs. Over the past decade, a variety of strong PUF constructions have been proposed, including Arbiter PUFs [7], Ring Oscilla-tor PUFs [8], XOR APUFs [8], Lightweight Secure PUFs [9], Composite PUFs [10], LPN-based PUFs [11], [12], Interpose PUFs [13], and LP PUFs [14]. Despite these advances, many silicon PUF constructions remain vulnerable to physical cloning [15], [16] and advanced cryptanalysis [17], [18], [19]. Machine-learning-based model-ing attacks have proven especially potent [20], [21], [22], [23], [24], [25], [26]. Importantly, our P-TLP framework is agnostic to the under-lying PUF architecture, requiring only that the implemented strong PUF maintains mathematical security against modeling attacks given the specified oracle access. As designing secure, lightweight strong PUFs remains a highly active area of hard-ware research, our construction can be seamlessly instantiated with future state-of-the-art PUF designs. Furthermore, the physical evaluation time of a PUF constitutes a fundamental hardware measurement that cannot be bypassed or parallelized. This unique physical bound makes PUFs exceptionally well-suited for enforcing hardware-bound solving delays in physical time-lock puzzles, assuming the adversary cannot physically or mathematically clone the specific PUF. 3
+
+B. Related Work 
+
+Time-lock puzzles were first introduced by Rivest, Shamir, and Wagner [1] as a cryptographic mechanism for enforcing delayed access to encrypted information. Subsequent work by Mahmoody et al. [2] provided a formal treatment of time-lock puzzles and established fundamental limitations on constructing puzzles with a work gap between the generator and a parallel adversary in the random-oracle model. Later, Bitansky et al. [3] introduced a general standard-model frame-work for time-lock puzzles based on randomized encodings, demonstrating how inherently sequential computation can be enforced without relying on number-theoretic assumptions. At a high level, most time-lock puzzle constructions follow a common pattern: puzzle generation is fast, while puzzle solving requires carrying out a sequence of computational work that cannot be parallelized. The delay is enforced by lower-bounding the number of computational steps that must be executed by any solver, even adversaries equipped with substantial parallel resources. As a result, the delay guarantees in these constructions are expressed entirely in terms of computational steps rather than elapsed physical time. A representative example is the classical RSW construc-tion [1], which is rooted in the serial nature of modular exponentiation and the hardness of integer factoring. Specifi-cally, to solve the puzzle, an honest solver must compute the value b = a2t
+
+(mod n), where a is a random integer in Z∗
+
+> n
+
+,
+
+n = p × q is the product of two randomly generated prime numbers, and t defines the time parameter for the puzzle. Without knowledge of the prime factorization of n, the solver is forced to perform exactly t sequential squarings to compute 
+
+b, imposing a strict computational delay. In contrast, the puzzle generator can compute b highly efficiently by utilizing their knowledge of the secret primes p and q. First, the generator computes the reduced exponent e = 2 t (mod ϕ(n)) , where 
+
+ϕ(n) = ( p − 1)( q − 1) . The value b is then directly computed via a single modular exponentiation b = ae (mod n). Any attempt by an adversary to shortcut this sequential squaring process without exponentiating step-by-step computationally reduces to the well-known integer factorization problem. In recent years, the study of time-lock puzzles has ex-panded significantly to support advanced cryptographic fea-tures and multi-instance environments. For example, homo-morphic time-lock puzzles computationally enable operations on time-locked data without unlocking it early [27], while non-malleable constraints secure puzzles against active tam-pering and related-puzzle attacks in strictly composable pro-tocols [28]. To handle multiple instances efficiently, other extensions have introduced chained structures for sequential multi-instance solving with public verifiability [29], [30], as well as batchable architectures capable of amortizing the cost of generating or solving many puzzles simultaneously [31], [32]. Closely related to this theoretical ecosystem are Verifi-able Delay Functions (VDFs) [33], a primitive utilizing similar sequential hardness assumptions to strictly certify elapsed time with polylogarithmic verification, rather than directly hiding a secret message. While all of these extensions dras-tically improve cryptographic functionality, scalability, and verifiability, they fundamentally continue to enforce delay strictly through sequential computational effort, leaving them inevitably sensitive to raw hardware acceleration and parallel processing speeds. A fundamentally different approach to enforcing crypto-graphic delay is taken in CaSCaDE [34], which leverages physical communication latency rather than local computation. By exploiting the finite speed of light across satellite commu-nication networks, the construction imposes a strict physical lower bound on message propagation time. Through care-fully orchestrated interactive protocols among geographically distributed nodes, CaSCaDE ensures that specific protocol steps cannot be executed faster than the underlying network latency. This allows for the creation of publicly verifiable time-lock puzzles and verifiable delay functions whose security is anchored in physical constraints rather than computational hardness assumptions. However, the exact delay enforced by CaSCaDE is inherently tied to a complex distributed infras-tructure, which severely restricts its practical deployability for standalone or lightweight applications. III. P HYSICAL TIME -L OCK PUZZLES 
+
+Definition 1 (PUFs - Physical Unclonable Functions [35]) .
+
+A PUF P is a physical system that can be stimulated with challenges ci drawn from a challenge set CP = {0, 1}λ,upon which it reacts by producing corresponding responses 
+
+ri from a response set RP ⊆ {0, 1}m. Each response ri
+
+depends not only on the applied challenge but also on intrinsic manufacturing variations within P that effectively render it physically unclonable with existing technology. The tuples 
+
+(ci, r i) are defined as the challenge-response pairs (CRPs) of P. We generally refer to λ as the security parameter of the PUF. a) Noisy PUF Oracle.: Each PUF inherently defines a challenge–response mapping. However, due to natural envi-ronmental noise, repeated queries on the exact same challenge may yield slightly different responses. Definition 2 formalizes this physical noisy behavior by abstracting the PUF as an idealized oracle, capturing the noisy response evaluation via a per-bit error probability ep.
+
+Definition 2 (PUF-Oracle) . Let O be an oracle with achallenge–response (CRP) list. For each challenge c ∈{0, 1}λ:
+
+O(c) = 
+
+
+
+r ⊕ εr , if ∃(c, r ) ∈ List ,εr ← Bernoulli (ep)m,r, if (c, ·) /∈ List ,r ← { 0, 1}m,
+
+List ← List ∪ { (c, r )}.
+
+Here, Bernoulli (ep)m determines a binary noise vector 
+
+εr ∈ { 0, 1}m where each entry is i.i.d. and follows a Bernoulli 4
+
+distribution with probability parameter 2 ep, and r is uniformly random over {0, 1}m.
+
+While recent work [36] provides a precise definition of PUF-based random oracles, it incorporates error correction into its construction. In contrast, we do not attempt to correct PUF responses, so we define the PUF oracle differently. 
+
+b) PUF–Oracle Indistinguishability.: Beyond being in-herently hard to invert, a secure PUF should be computa-tionally indistinguishable from an idealized PUF oracle as established in Definition 2. We formalize this property below. Let Exp P 
+
+> D
+
+(λ) and Exp OD (λ) denote the experiments where a PPT distinguisher D adaptively queries either a physical PUF P or a PUF oracle O, respectively, and outputs a bit 
+
+b indicating whether D correctly identified the source in the experiments. We say that PUF P is oracle-indistinguishable if, for all PPT distinguishers D, there exists a negligible function negl( ·) such that the advantage of distinguishing P from O is negligible in its security parameter λ, formalized as: 
+
+Adv PUF -ind( P,O) 
+
+> D
+
+(λ) = Pr[ Exp P 
+
+> D
+
+(λ) = 1] − Pr[ Exp OD (λ) = 1] 
+
+≤ negl( λ).
+
+Defining this indistinguishability allows us to rigorously analyze our theoretical constructions in the PUF oracle model 
+
+rather than directly analyzing a concrete physical PUF. Hence, throughout the remainder of this paper, we perform all theo-retical analyses by modeling the PUF as an abstract oracle O,consistent with Definition 2. The security parameter λ strictly governs the indistinguishability between the physical PUF and the ideal oracle, while also defining the size of the underlying challenge space. Importantly, this definition also means that the physical PUF remains secure against any modeling attacks given bounded oracle access. Furthermore, because our puzzle framework relies on comparing exactly two PUF evaluations for a given target challenge (one during generation, one during solving), it is mathematically symmetrical to treat the first query as noise-free and attribute the aggregated variance entirely to the second query as modeled in Definition 2. 
+
+c) PUF-based Time-Lock Puzzles.: A PUF-based time-lock puzzle is constructed by successfully coupling puzzle generation with puzzle solving, both of which require ac-tive queries to the PUF P. The puzzle generation algorithm (PUZ .Gen ) produces a secret round-key and associated helper data; conversely, the solving algorithm ( PUZ .Solve ) subse-quently attempts to recover the round-key given only the helper data. 
+
+Definition 3 (PUF-based Time-Lock Puzzle Scheme) . A PUF-based time-lock puzzle PUZ relative to a PUF P is a pair         
+
+> 2In practice, epmay depend on both the challenge cand its specific position within the response. For the purposes of this work, we treat epas the expected value of its underlying distribution. Using an expected value suffices for our failure analysis without overcomplicating the noise modeling; however, we explicitly acknowledge that this simplified model makes PUF indistinguishability an idealized assumption in our formal proofs. Note that the security analysis in Section VI assumes the worst-case scenario for the defenders with ep= 0 , meaning the attackers can query the PUF without any noise.
+
+of probabilistic polynomial-time (PPT) algorithms PUZ =(PUZ .Gen , PUZ .Solve ) strictly requiring oracle access to P.These algorithms take an optional unique label ℓ (where 
+
+ℓ = nil if strict independence from other puzzle instances is not required) and operate as follows:  
+
+> •
+
+(k, h ; g) ← PUZ .Gen (ℓ): Outputs a round-key k, helper data h, and the generation cost g (the total number of PUF invocations).  
+
+> •
+
+(ˆk; s) ← PUZ .Solve (ℓ, h ): Outputs a candidate round-key ˆk (or ⊥ if no valid key is successfully recovered), and the solving cost s (the total number of PUF invocations). d) Induced Random Variables.: Executing PUZ (ℓ) pro-duces a joint outcome (K, H, G, ˆK, S ): the generated round key K, helper data H, generation cost G, recovered round key ˆK, and solving cost S. A concrete execution of PUZ (ℓ)
+
+yields a realization (k, h, g, ˆk, s ) drawn directly from this joint distribution. Notably, the joint distribution (K, H, G, ˆK, S ) is assumed to be identical and independent of the input label ℓ. This i.i.d. assumption enables the analysis of total solving efforts across n independent puzzle instances as a sum of independent random variables. 
+
+Definition 4 (Induced Random Variables) . Let PUZ =(PUZ .Gen , PUZ .Solve ) be a PUF time-lock puzzle scheme. We say the jointly distributed random variables (K, H, G, ˆK, S )
+
+correspond to PUZ if, for all input labels ℓ, their joint distribution is defined by 
+
+Pr[( K, H, G, ˆK, S ) = ( k, h, g, ˆk, s )] = Pr[( k, h, g, ˆk, s ) ← PUZ (ℓ)] .
+
+Definitions for P-TLP properties are provided alongside their analysis in Section IV. IV. B ASIC PUZZLE PUZ 
+
+A. Construction 
+
+Let D be a target distribution over the domain {0, 1, . . . , B −
+
+1}. The basic puzzle generation process, denoted (k, h ; g) ←
+
+PUZ .Gen (ℓ), proceeds as follows: First, a secret round key 
+
+k ∼ D is sampled. Next, k and the puzzle input label ℓ are strictly mapped to a challenge c via a collision-resistant hash function. Finally, the PUF is physically evaluated at c, and the resulting response serves as the public helper data h within the generated puzzle. Notice that generation requires only a single PUF invocation ( g = 1 ). 
+
+PUZ .Gen (ℓ) : 1. k ∼ D 
+
+2. c ← Hash( k ∥ ℓ)3. h ← PUF (c)4. Return ( k, h ; 1) 
+
+To subsequently solve the basic puzzle via (ˆk; s) ←
+
+PUZ .Solve (ℓ, h ), a solver systematically enumerates candidate keys from the domain, starting sequentially from 0. For each candidate ˆk, the solver derives the corresponding challenge and queries the PUF to obtain a physical response ˆr. The 5
+
+search terminates immediately upon identifying a key ˆk whose response distance to the helper data h falls within a pre-defined noise threshold τ ∈ (0 , 1) (i.e., Hamming distance 
+
+dH (ˆ r, h ) ≤ τ · m). 
+
+PUZ .Solve (ℓ, h ) : 1. For ˆk = 0 to B − 1 do : 2. ˆc ← Hash( ˆk ∥ ℓ)3. ˆr ← PUF (ˆ c)4. If dH (ˆ r, h ) ≤ τ · m then : 5. Return ( ˆk; ˆk + 1) 6. Return ( ⊥; B)
+
+If ⊥ is returned, it is considered a failure in the search, which means that the valid ˆk = k has been missed, potentially due to the noise in the evaluation of the PUF. 
+
+B. Optimal Solving Strategy a) Optimal Candidate Enumeration Strategy.: An opti-mal solver should evaluate puzzle key candidates in order of strictly decreasing likelihood. This logically requires a structural property within the underlying key distribution that explicitly aligns the probability order with a sequential numer-ical search starting from 0. We formally define this required property below and prove that the greedy enumeration strategy is strictly optimal. 
+
+Definition 5 (Decreasing Distribution of K). Let K be a random variable representing the secret round key. The distri-bution of K is defined as strictly decreasing over its domain if, for all integers i and j such that 0 ≤ i < j < B :
+
+Pr[ K = i] > Pr[ K = j]
+
+Assuming the round keys are drawn from a decreasing distribution, a greedy approach, that tests the most probable candidates first, strictly minimizes the expected solving effort. 
+
+Lemma 1 (Optimality of Greedy Enumeration) . Let PUZ be a basic PUF-based time-lock puzzle where the secret key K
+
+is supported over the domain {0, 1, . . . , B − 1}. If K follows a decreasing distribution, sequentially enumerating candidate keys from 0 to B −1 in the first B steps minimizes the expected solving effort among all possible sequential strategies. Proof. Suppose a solver evaluates candidates in some arbitrary sequential order, say (k0, k 1, . . . , k B−1). The solver terminates successfully at exactly step i if and only if the true key is K =
+
+ki. Thus, the total expected solving effort E[S] is the inner product of the search step indices and their corresponding true key probabilities: 
+
+E[S] = 
+
+> B−1
+
+X
+
+> i=0
+
+(i + 1) · Pr[ K = ki]
+
+By the Rearrangement Inequality, the sum of products of two sequences is minimized when the sequences are sorted in opposite monotonic directions. Since the sequence of step indices is inherently strictly increasing, minimizing the ex-pectation E[S] requires the corresponding sequence of proba-bilities (Pr[ K = k0], Pr[ K = k1], . . . , Pr[ K = kB−1]) to be strictly decreasing. Therefore, aligning the evaluation sequence 
+
+ki exactly with the numerical sequential order 0, 1, . . . , B − 1
+
+maps the highest probabilities to the smallest step indices. This perfectly satisfies the Rearrangement Inequality condition, achieving the global minimum expected solving effort among all possible sequential strategies. 
+
+b) Optimal Decision Rule for Noisy Responses.: For each enumerated candidate ˆk, the solver must statistically decide if the resulting noisy PUF response ˆr matches the public helper data h. This decision is rigorously formulated as a binary hypothesis test. 
+
+Lemma 2 (Optimality of Hamming Distance Thresholding) .
+
+Assume a PUF noise model follows Def. 2 with independent bit-flip probability ep < 1/2. Let ˆk be a candidate key yielding response ˆr. Consider the hypotheses:  
+
+> •
+
+H0 : ˆk = k (The candidate key is correct, ˆr is a noisy evaluation of r) 
+
+> •
+
+H1 : ˆk̸ = k (The candidate key is incorrect, ˆr is uniformly random) The optimal Neyman-Pearson likelihood-ratio test for distin-guishing H0 from H1 is mathematically equivalent to a simple Hamming distance threshold test dH (h, ˆr) ≤ τ · m for some threshold parameter τ ∈ (0 , 1) .Proof. Under H0, ˆr deviates from h purely due to i.i.d. bit flips with probability ep. Under H1, ˆr is drawn uniformly from {0, 1}m. The likelihood ratio is: 
+
+Λ(ˆ r) = Pr(ˆ r|H0)Pr(ˆ r|H1) = ( ep 
+
+> 1−ep
+
+)dH (h, ˆr) · (1 − ep)m
+
+2−m
+
+By the Neyman-Pearson lemma, the optimal decision rule accepts H0 if Λ(ˆ r) ≥ η for a chosen target boundary η. Since 
+
+ep < 1/2, the ratio ep 
+
+> 1−ep
+
+< 1. Consequently, Λ(ˆ r) is strictly monotonically decreasing with respect to dH (h, ˆr). Therefore, evaluating Λ(ˆ r) ≥ η is strictly equivalent to bounding the Hamming distance below a threshold τ · m.Combining Lemma 1 and Lemma 2, we formally conclude that any optimal puzzle solver, whether legitimate or adver-sarial, must logically follow the exact same solving strategy: performing a greedy sequential enumeration of candidates ˆk
+
+together with a Hamming distance threshold test. 
+
+C. Failure Probability Analysis 
+
+The solving procedure PUZ .Solve may fail to recover the correct key k in two distinct ways: False Negatives (FN) and False Positives (FP). The decoding failure probability rigorously quantifies this incorrectness, defining how likely the solver is to output an incorrect key or to fail to output any key at all. We bound these two specific failure scenarios separately by ρ and ρ⊥, respectively. 
+
+Definition 6 (Decoding Failure Bound) . Let PUZ be a PUF-based time-lock puzzle with corresponding induced random variables (K, H, G, ˆK, S ). We say PUZ has a decoding failure 6
+
+probability tightly bounded by ρ and ρ⊥ if, for every helper data h:
+
+Pr[ ˆK̸ = K, ˆK̸ = ⊥ | H = h] ≤ ρ, and 
+
+Pr[ ˆK = ⊥ | H = h] ≤ ρ⊥.
+
+Equivalently, for all ℓ, the total failure probability is: 
+
+1 −
+
+P 
+
+> k
+
+Pr 
+
+"(k, h ; ·) ← PUZ .Gen (ℓ),
+
+(k; ·) ← PUZ .Solve (ℓ, h )
+
+#
+
+Pr[( ·, h ; ·) ← PUZ .Gen (ℓ)] 
+
+a) FN Probability of PUZ .: Let ep denote the indepen-dent per-bit flip probability of the noisy PUF oracle model, as formulated in Definition 2. For a fixed PUF challenge, the Hamming distance between two independent evaluations inherently follows the binomial distribution Binom (m, e p).The FN probability of PUZ , denoted as ρFN , represents the probability that the correct round key candidate is rejected. This occurs exclusively when the evaluation noise exceeds the threshold, i.e., dH (ˆ r, h ) > τ · m.
+
+ρFN = Pr[ dH (ˆ r, h ) > τ ·m] = 
+
+> m
+
+X 
+
+> j=⌊τ·m⌋+1
+
+mj
+
+
+
+epj (1 −ep)m−j ,
+
+Using Hoeffding’s inequality, for any τ > e p we have ρFN ≤
+
+exp  −2m(τ − ep)2, which decays exponentially in m.
+
+b) FP Probability of PUZ .: The probability that a uni-formly random vector ˆr (generated by evaluating an incorrect key candidate) accidentally falls inside the acceptable thresh-old region around the target helper data h is: 
+
+ρ(1) FP = Pr [ dH (ˆ r, h ) ≤ τ · m] = 12m 
+
+> ⌊τ·m⌋
+
+X
+
+> j=0
+
+mj
+
+
+
+.
+
+By Hoeffding’s inequality, for any threshold τ < 1/2, we have ρ(1) FP ≤ exp  −2m(1 /2 − τ )2, which also decays expo-nentially with respect to the response length m. During the 
+
+PUZ .Solve enumeration process, the solver may iteratively test up to B − 1 incorrect round key candidates. An incorrect key could be falsely accepted either due to PUF noise falling within the threshold or due to a hash collision with probability 
+
+ρcoll when mapping candidates to challenges. Applying a standard union bound, the overall FP probability across all possible incorrect candidates is strictly bounded by: 
+
+ρFP ≤ (B − 1) · (ρ(1) FP + ρcoll )
+
+≤ (B − 1)  exp  −2m(1 /2 − τ )2 + ρcoll 
+
+.
+
+For a basic puzzle PUZ , ρ = ( B −1)(exp  −2m(1 /2−τ )2+
+
+ρcoll ), and ρ⊥ = exp  −2m(τ − ep)2.
+
+D. Solving Delay Analysis 
+
+The distribution of the random variable S, which represents the solving delay of a puzzle, is defined below. 
+
+Definition 7 (Solving-Cost Distribution S). For any PPT algorithm A possessing oracle access to PUF , we define 
+
+S[APUF (h)] as the induced solving-cost distribution produced by A when given the public helper data h. Formally: 
+
+Pr[ s ← S[APUF (h)] | H = h]= Pr (·; s) ← A PUF (h) | H = h.
+
+a) Solving-Time Windows.: A window [α, β ] statistically bounds the solving-time period during which a legitimate solver will confidently complete the puzzle with probability at least 1 − δ. When this boundary threshold is strictly satisfied, the puzzle construction successfully guarantees a ([ α, β ], δ )-Solving-Time Window property. 
+
+Definition 8 (Solving Time Window) . Let PUZ be a PUF-based puzzle with corresponding induced random variables 
+
+(K, H, G, ˆK, S ), and let APUF be a PPT solving algorithm provided with public helper value h. We say APUF has a 
+
+([ α, β ], δ ) solving-time window conditional upon success if, for all h where Pr[ H = h] > 0:
+
+Pr s ∈ [α, β ], s ← S[APUF (h)] | ˆK = K, H = h ≥ 1 − δ, 
+
+where δ bounds the window’s concentration error. b) The Distribution of Key K.: The precise selection of the sampling distribution D for the key K directly dictates how tightly the expected solving time remains concentrated around its mean. Thus, assigning a carefully tailored distribution for the puzzle keys is critical. As established in Lemma 1, D is required to be a strictly decreasing distribution to ensure the solver optimality. Anatural choice capturing these requirements is the Geometric Distribution , where each guess succeeds independently with probability p. The corresponding probability mass function is simply given by: 
+
+Pr[ K = k] = p(1 − p)k, for k ≥ 0. (1) This distribution strictly satisfies the decreasing property (Def-inition 5) because for any k1 < k 2, (1 − p)k1 > (1 − p)k2 (for 
+
+0 < p < 1), meaning p(1 − p)k1 > p (1 − p)k2 .However, an unbounded geometric distribution is not suit-able for physical hardware implementation, as real-world puzzle instances strictly demand a finite bounded key do-main k ∈ {0, 1, . . . , B − 1}. Therefore, we define D as a Truncated Geometric Distribution with its support strictly cutting off at boundary B. To safely preserve the exponentially decreasing structure of the distribution while facilitating clean on-device implementation, we employ a standard rejection-sampling method during the puzzle generation routine: repeat-edly sample independent keys K ∼ Geom( p), returning the first output satisfying K < B . This straightforwardly produces the conditional probability distribution: 
+
+˜Pr[ K = k] = Pr[ K = k | K < B ]= p(1 − p)k
+
+1 − (1 − p)B , for 0 ≤ k ≤ B − 1. (2) This truncated geometric distribution also satisfies the decreas-ing property of Definition 5. Thus, it is fully compatible with the optimal greedy solving strategy. Moreover, its bounded support allows us to safely apply standard concentration 7
+
+inequalities (e.g., Hoeffding’s inequality) to bound the total solving time S.Suppose K follows the truncated geometric distribution in (2). Let a := (1 −p)B . The mean and variance of the truncated geometric distribution are explicitly given by: 
+
+E[K] = 1 − pp − Ba 
+
+1 − a (3) Var [K] = E[K2] − (E[K]) 2 = 1 − pp2 − B2a
+
+(1 − a)2 (4) The moments of the truncated distribution can be expressed as the moments of the unbounded geometric distribution minus an exact analytical correction term. Both the mean and the variance are strictly decreased by truncation, with the magnitude of reduction controlled by the tail mass parameter 
+
+a = (1 − p)B . When a ≪ 1, the right-hand correction terms become negligible, and the truncated distribution tightly approximates its unbounded counterpart. 
+
+Theorem 1 (Solving-Time Window of PUZ ). Let PUZ be the basic PUF-based puzzle with a key drawn from the truncated geometric distribution (2) with parameter p ∈ (0 , 1) and support {0, . . . , B − 1}. Then, conditioned on correct key recovery ( ˆK = K), PUZ .Solve has a ([ α, β ], δ )-solving-time window (Definition 8) for any δ ∈ (0 , 1) , where 
+
+α = E[S] − ∆( δ) = (1 + E[K]) − (B − 1) 
+
+r ln(2 /δ )2 , (5) 
+
+β = E[S] + ∆( δ) = (1 + E[K]) + ( B − 1) 
+
+r ln(2 /δ )2 . (6) 
+
+Proof. The solving cost S = 1 + K is bounded in [1 , B ], with range B − 1. Applying Hoeffding’s inequality: 
+
+Pr  |S − E[S]| > ∆  ≤ 2 exp 
+
+
+
+− 2∆ 2
+
+(B − 1) 2
+
+
+
+≤ δ, 
+
+we get 
+
+∆( δ) = ( B − 1) 
+
+r ln(2 /δ )2 .
+
+E. Efficiency Analysis 
+
+Definition 9 (PUF-based Puzzle Efficiency) . Let PUZ =(PUZ .Gen , PUZ .Solve ) be a PUF-based time-lock puzzle scheme. Let the induced random variables (K, H, G, ˆK, S )
+
+correspond to PUZ . The efficiency gap of PUZ , denoted by μ,is formally defined as the ratio of expected solving effort to expected generation effort: 
+
+μ := E[ S | ˆK = K ]
+
+E[ G ] .
+
+A large efficiency parameter μ indicates that recovering a hidden key requires disproportionately more physical PUF evaluations than initially generating the puzzle. In our basic puzzle construction, the PUZ .Gen algorithm calls the PUF exactly once to evaluate h ← PUF (c). The 
+
+PUZ .Solve algorithm sequentially evaluates candidate keys starting from ˆk = 0 . Conditioned on succeeding exactly at the true key K (i.e., no false positives accepted early), the solver evaluates exactly K + 1 candidates, requiring K + 1 
+
+PUF queries. Thus, E[S | ˆK = K] = E[K] + 1 .
+
+μ = E[K] + 1 = 1
+
+p − B(1 − p)B
+
+1 − (1 − p)B (7) This result shows that the efficiency gap scales inversely with 
+
+p (for sufficiently large B). V. P UZZLE COMPOSITION PUZ n
+
+A. Construction 
+
+To improve the concentration bounds of the solving delay and to reduce the failure rate due to the PUF noises, we propose sequentially composing multiple independent basic puzzles to formulate a larger, more robust composite structure. Let n denote the total number of puzzle rounds. By defining the key domain size as B = 2 q , each internal round key ki
+
+natively maps to an element within the Galois field F2q . During execution, each independent puzzle round yields a potentially noisy candidate key ˆki evaluated via the basic puzzle PUZ .The final key is subsequently reconstructed by passing these candidates through a Reed-Solomon code to tolerate PUF errors, followed by a final cryptographic hash. 
+
+a) Composite Puzzle Generation PUZ n.Gen .: The gen-eration algorithm concatenates n independent basic puzzle instances. Every basic puzzle instance is strictly independent from one another because of the unique identifier i. This process generates a vector of round keys k = ( k1, . . . , k n)
+
+along with their corresponding helper data responses r =(r1, . . . , r n). A Reed-Solomon encoder adds 2ω parity sym-bols p = ( p1, . . . , p 2ω ) over F2q which allows the correction of up to ω errors or 2ω erasures. The final secret key key is derived by hashing the concatenated key vector. 
+
+PUZ n.Gen (ℓ) : 1. For i = 1 to n do : 2. (ki, r i; 1) ← PUZ .Gen (ℓ ∥ i)3. k ← (k1, . . . , k n)4. (p1, . . . , p 2ω ) ← RS .Encode (k)5. h ← (r1, . . . , r n, p 1, . . . , p 2ω )6. key ← Hash( k1 ∥ · · · ∥ kn)7. Return ( key , h; n)
+
+The output of PUZ n.Gen (ℓ) constitutes the required puzzle components. A complete physical time-lock puzzle can en-crypt a solution message msg using the derived key and com-pute a hash of the key key as z ← (Enc key (msg ), Hash (key )) .The final combined puzzle data released to the solver is (z, h).
+
+Hash (key ) functions as an integrity check validating the final recovered solution. 
+
+b) Composite Puzzle Solving PUZ n.Solve .: Given the helper data h, an integrated solver sequentially reconstructs the secret keys for each round. If a round solver fails to find a valid key candidate within the allowed Hamming distance τ · m,it returns the erasure symbol ⊥. The recovered round keys, containing errors and erasures, are passed alongside the parity symbols to the Reed-Solomon decoder. Finally, the corrected keys are hashed, producing the final key ˆkey .8
+
+PUZ n.Solve (ℓ, h) : 1. Parse h as (r1, . . . , r n, p 1, . . . , p 2ω )2. For i = 1 to n do : 3. (ˆki; si) ← PUZ .Solve (ℓ ∥ i, r i)4. (˜k1, . . . , ˜kn) ← RS .Decode (ˆk1, . . . , ˆkn, p 1, . . . , p 2ω )5. If RS .Decode fails, Return ( ⊥; Pni=1 si)6. ˆkey ← Hash( ˜k1 ∥ · · · ∥ ˜kn)7. Return ( ˆkey ; Pni=1 si)
+
+If a final key ˆkey is successfully returned, the solver parses 
+
+z and performs the integrity check Hash ( ˆkey ) ?
+
+= Hash (key ).Upon verification success, the solver transparently recovers the target message msg = Dec ˆkey (Enc key (msg )) . By modeling 
+
+Hash as a random oracle, we assume any malicious solver using digital computation for additional help cannot bypass the basic puzzle solving by merely inverting Hash (key ).Unlike traditional software-based time-lock puzzles that tightly chain sequential outputs to delay solvers [29], [30], our framework generates each basic puzzle completely inde-pendently. This intentional architectural choice isolates noise and minimizes error propagation between rounds, while strate-gically binding all puzzles sequentially to the strict hardware bottleneck of a single PUF chip. Furthermore, the usage of unique round identifiers effectively partitions the local search spaces so that resolving one puzzle round yields zero information for accelerating subsequent rounds. 
+
+B. Optimal Solving Strategy for PUZ n
+
+Lemma 1 establishes that, within a single isolated round, greedy sequential enumeration from 0 to B − 1 is uniquely optimal when the round key K follows a decreasing distribu-tion. In the composite puzzle PUZ n, however, the solver must simultaneously manage n independent rounds, each requiring the successful recovery of a distinct key ki. Crucially, due to the Reed-Solomon error-correction layer, not every individual round must be successfully solved for the overall decryption to succeed. This introduces a natural strategic question: should the solver fully complete each round before advancing to the next, or interleave candidate evaluations across rounds to oppor-tunistically reduce overall expected effort? The key complica-tion arises from the inherent stochastic noise of physical PUF evaluations. Even when the true key is tested, the reconstructed response may fail the Hamming distance check, producing a false negative. Once the true key has been silently rejected, all further search effort within that round is wasted. A natural mitigation is to prematurely abandon partially-explored rounds and restart fresh ones, trading depth for breadth. The theorem below formally characterizes the precise con-dition under which the simpler sequential greedy strategy, completing the current round exhaustively before advancing, is provably optimal, eliminating the need for such premature abandonment. 
+
+Theorem 2 (Condition for Sequentially Greedy Optimality under Noise) . Let PUZ n be a composite puzzle where each round key is drawn from the truncated geometric distribution (Eq. 2) with parameter p and cutoff B. Let ρFN and ρ(1) 
+
+> FP
+
+be the false negative and false positive probabilities per candidate evaluation, respectively. Suppose that the number of false negatives plus twice the number of false positives falls within the RS code decoding capacity. The sequentially greedy strategy (completing the current round before starting the next) strictly minimizes the expected total solving effort if and only if ρFN < (1 − p)B (1 − ρ(1)  
+
+> FP
+
+).Proof. Consider a solver that has sequentially tested and rejected candidates 0, 1, . . . , i − 1 within round j. Let F<i 
+
+denote this event. For the solver to legitimately reach candidate 
+
+i without halting, it must have correctly rejected every earlier candidate. There are exactly two disjoint reasons this can occur: 1) The true key Kj ≥ i, and accordingly all i earlier non-key candidates were correctly rejected. The probability of this scenario is Pr[ Kj ≥ i] · (1 − ρ(1)  
+
+> FP
+
+)i.2) The true key Kj < i , but it was silently rejected by a false negative, while all i − 1 remaining non-key candidates were also correctly rejected. The probability of this scenario is Pr[ Kj < i ] · ρFN · (1 − ρ(1)  
+
+> FP
+
+)i−1.For notational convenience, define γ = 1 − ρ(1)  
+
+> FP
+
+. The total probability of the rejection event F<i is therefore: 
+
+Pr[ F<i ] = (1 − p)i − (1 − p)B
+
+1 − (1 − p)B γi + 1 − (1 − p)i
+
+1 − (1 − p)B ρFN γi−1.
+
+The solver’s optimal choice at depth i is governed by the conditional probability of successfully finding the true key on exactly the next candidate. This probability is: 
+
+Pr[ Kj = i ∩ Accept i] = p(1 − p)i
+
+1 − (1 − p)B γi(1 − ρFN ).
+
+The ratio of these two quantities is the conditional proba-bility of success on step i:
+
+f (i) = Pr[ Kj = i ∩ Accept i]Pr[ F<i ]= pγ (1 − ρFN )(1 − p)i
+
+ (1 − p)i − (1 − p)B γ + ρFN 
+
+ 1 − (1 − p)i .
+
+To determine whether the solver should continue in the current round, we analyze whether the conditional success probability f (i) strictly increases as depth i grows. If f (i)
+
+is strictly increasing with i, then the marginal probability of finding the key precisely at depth i is higher than at any earlier depth j < i (including j = 0 for an entirely fresh round). Consequently, the solver minimizes expected effort by always greedily choosing the currently deepest round, ensuring it never abandons a partially searched round. Substituting x = (1 − p)i, which strictly decreases as i
+
+increases, we rewrite f as: 
+
+f (x) = pγ (1 − ρFN )x
+
+ x − (1 − p)B γ + ρFN (1 − x)= pγ (1 − ρFN )xx(γ − ρFN ) + ρFN − γ(1 − p)B .9
+
+The sign of the derivative ∂f ∂x is entirely determined by 
+
+ρFN − γ(1 − p)B . Since x decreases as i increases, the success probability f (i) strictly increases with depth i if and only if 
+
+f (x) strictly decreases with x, requiring ∂f ∂x < 0. This holds if and only if 
+
+ρFN − γ(1 − p)B < 0 = ⇒ γ(1 − p)B > ρ FN 
+
+=⇒ (1 − ρ(1)  
+
+> FP
+
+)(1 − p)B > ρ FN .
+
+When this condition is satisfied, f (i) strictly increases with 
+
+i, meaning the relative concentration of true-key probability within the remaining search space consistently outpaces the accumulated risk from earlier false negatives. Conditioning on the assumption that the RS code can decode the resulting false negatives, the solver does not need to retry a false negative puzzle round as part of the solving strategy. Thus, continuing deeper in the current round dominates all alternative strategies, making the sequential greedy approach provably optimal. This condition is trivially satisfied when no FPs or FNs occur during solving; thus, the optimality claim remains valid for the adversary in the security analysis of Section VI. 
+
+C. Failure Analysis for PUZ n
+
+We analyze the decoding failure probability for the compo-sition of n independent rounds. For each round i, we define a random variable Fi ∈ { 0, 1, 2} encoding the outcome as: 
+
+Fi =
+
+
+
+0, if ˆki = ki (correct) ,
+
+1, if ˆki =⊥ (erasure) ,
+
+2, if ˆki̸ = ki, ˆki̸ =⊥ (error) .
+
+Let fE denote the number of rounds that produce an error, and f⊥ the number of rounds that yield an erasure. For an RS code with 2ω parity symbols, decoding succeeds if and only if Eq. (8) holds: 
+
+2fE + f⊥ ≤ 2ω. (8) From Definition 6, for every independent puzzle round, the per-round outcome probabilities satisfy: 
+
+Pr[ Fi = 2] ≤ ρ, Pr[ Fi = 1] ≤ ρ⊥,
+
+implying E[Fi] ≤ 2ρ + ρ⊥.
+
+Since the Fi are independent and bounded within [0 , 2] , we can use Hoeffding’s inequality to bound the overall decoding failure probability of the composite puzzle PUZ n:
+
+Pr 
+
+" nX
+
+> i=1
+
+Fi > 2ω
+
+#
+
+≤ exp − 2 2ω − n(2 ρ + ρ⊥)2
+
+4n
+
+!
+
+,
+
+provided that 2ω > n (2 ρ + ρ⊥).
+
+D. Solving Delay Analysis for PUZ n
+
+We analyze the total solving delay incurred by an honest solver executing PUZ n.Solve , defined as the total number of PUF invocations performed across all n rounds and denoted 
+
+T . Each round independently contributes a bounded number of PUF invocations. Specifically, a round may conclude in one of three ways: (i) a correctly recovered key, incurring a cost of 1 + ki PUF invocations; (ii) a false negative (FN), where no candidate passes the threshold check and the entire key space of 2q values is exhausted; or (iii) a false positive (FP), where an incorrect key candidate prematurely passes the check. By the Reed-Solomon decoding guarantee, successful decoding requires at most 2ω FN rounds or at most ω FP rounds. 
+
+Theorem 3 (Solving-Delay Bound) . Let T be the total solving delay measured as the total number of PUF invocations performed by the (legitimate) solver across n puzzle rounds, and let ω be the maximum number of error corrections by the Reed-Solomon encoder. Then for any δ ∈ (0 , 1) , the solver completes solving the puzzle with probability at least 1 − δ
+
+within the interval 
+
+T ∈ [α − ∆( δ), β + ∆( δ)] ,
+
+where 
+
+α = ( n − ω)(1 + E[K]) + ω, β = ( n − 2ω)(1 + E[K]) + 2 ω · 2q ,
+
+and 
+
+∆( δ) = 2 q
+
+s
+
+n
+
+2 ln 
+
+ 2
+
+δ
+
+
+
+.
+
+Proof. The total solving delay T is the sum of n bounded per-round contributions. For rounds that are correctly decoded by the RS code, the solver performs 1 + Ki ∈ [1 , 2q ]
+
+PUF invocations, where Ki follows the truncated geometric distribution. For FN error rounds, the solver enumerates the entire key space, resulting in exactly 2q PUF invocations. For FP error rounds, we conservatively assume that the solver performs only a single PUF invocation to establish the lower bound. Conditioned on a successful RS decoding, we know that either at most 2ω rounds with FN error or at most ω rounds with FP error can occur. Hence, the lower and upper bounds of solving delay window are obtained by considering the worst-case and best-case distributions of FN and FP error rounds permitted by the RS decoding. The expected solving delay of the honest solver is bounded as 
+
+E[T ] ∈ (n−ω)(1+ E[K])+ ω , (n−2ω)(1+ E[K])+2 ω·2q ,
+
+which defines the interval [α, β ]. Applying Hoeffding’s in-equality to the sum of these bounded contributions yields the stated theorem. 
+
+a) Realistic Solving Delay Window.: The bound in The-orem 3 is RS-aware and distribution-free, producing a conser-vative worst-case window. In practice, however, the dominant contribution to the honest solver’s delay T comes exclusively from rounds that are correctly decoded without FN or FP errors. In this typical regime, T is well-approximated as a sum of n i.i.d. contributions 1 + Ki, where each Ki follows the truncated geometric distribution. Since per-round delays have finite variance σ2 = Var[ K],the Central Limit Theorem guarantees convergence of the normalized sum to a Gaussian as n grows. To replace this asymptotic approximation with a rigorous finite-sample guar-antee, we apply the Berry-Esseen theorem. Specifically, we use 10 
+
+Shevtsova’s tightened bound [37], which bounds the maximum CDF approximation error between the normalized sum and the standard normal CDF Φ( z), provided the absolute third central moment ϱ = E[|K − E[K]|3] satisfies ϱ ≥ 1.286 σ3:
+
+sup 
+
+> z
+
+Pr 
+
+ T − E[T ]
+
+pVar[ T ] ≤ z
+
+
+
+− Φ( z)
+
+≤ 0.3328( ϱ + 0 .429 σ3)
+
+σ3√n := ∆ BE .
+
+where E[T ] = n(1 + E[K]) and Var[ T ] = nσ 2. For practical puzzle compositions where p ≪ 1, the geometric distribution closely approximates an exponential decay, yielding a skew-ness ratio ϱσ3 ≈ 12  
+
+> e
+
+− 2 ≈ 2.4145 , which satisfies Shevtsova’s prerequisite. Substituting this value directly produces a tight closed-form bound on the maximum deviation: 
+
+∆BE ≈ 0.3328(2 .4145 + 0 .429) 
+
+√n ≈ 0.946 
+
+√n .
+
+As a concrete example, a composition of n = 1000 rounds guarantees a maximum CDF deviation of at most ∆BE ≈ 0.03 
+
+(i.e., 3% ). To construct a strict ([ α, β ], δ ) solving-time window, we absorb this approximation error into the normal tails by setting 
+
+zBE = Φ −1(1 − δ/ 2 + ∆ BE ), which guarantees 1 − δ coverage and yields the tighter, realistic bounds: 
+
+α = E[T ] − zBE 
+
+pVar[ T ], β = E[T ] + zBE 
+
+pVar[ T ].
+
+This formulation exploits geometric concentration properties rather than worst-case limits, producing a substantially tighter analytical window that accurately reflects practical implemen-tations, as experimentally verified in Section VII. 
+
+E. Efficiency Analysis for PUZ n
+
+Following Definition 9, the efficiency μn evaluates the expected honest solving delay relative to the generation effort. Because PUZ n.Gen constructs exactly n independent basic puzzles, and its solving demands executing exactly n sequen-tial rounds with an expected total number of PUF evaluations of n(1 + E[K]) , both efforts scale linearly by the exact same composition multiplier. Consequently, μn = μ. This shows that our composition successfully scales the absolute time delay and sharply restricts solver variation, without sacrificing the efficiency gap between the puzzle generator and solver. VI. S ECURITY ANALYSIS 
+
+This section formally establishes the security of the com-posite puzzle PUZ n in terms of early-solve hardness (Defini-tion 10). We prove security by analyzing a strictly more pow-erful adversary than the legitimate solver, and bounding their ability to bypass physical PUF queries using an information-theoretic analysis combined with Hoeffding’s inequality. 
+
+a) Adversarial Model and Extra Capability.: Consider an adversary A attempting to solve the composite n-round puzzle PUZ n significantly faster than the honest solving-delay window. The adversary runs at most a classical computational steps and makes sA total physical PUF invocations. To obtain a robust worst-case security bound, we grant the adversary the following idealized capabilities: 1) Noise-Free Oracle Access: The adversary has perfect, noiseless oracle access to the PUF, incurring no false positive or false negative errors during solving. 2) Oracle Testing Budget: The adversary has an oracle test-ing budget of a steps that can finish within no time. This budget models some additional classical computational power that an adversary is willing to spend to speed up the computation. To cleanly capture the capability of this additional computation budget, we conservatively model each algorithmic step as eliminating at most one key candidate (e.g., by evaluating a guessed combination against the final Hash (key )). This grants the adversary a maximum total information-resolving capacity of log 2 a
+
+bits. While the above idealized capabilities grant the adversary maximum algorithmic and informational leverage, we do not assume the attackers can launch invasive physical manipula-tions on the PUF. In practical deployments, our assumptions implicitly require a trusted, tamper-evident hardware boundary, which may necessitates additional active sensors. We note that because our P-TLP requires exact replication of the PUF responses for successful decoding, invasive physical attacks may lead to the degradation of the PUF reliability. Such degradation may ultimately cause decoding failures rather than enabling a faster, early-solve vulnerability. The goal of the adversary is to leverage the additional oracle testing budget alongside the structural redundancies of the puzzle to recover the secret while minimizing their total number of physical PUF invocations sA.
+
+Definition 10 (Early-Solve Hardness) . Let A(a) denote the set of PPT algorithms A with oracle access to PUF P, which on input helper data h outputs a candidate key ˆk in at most 
+
+a parallel classical computational steps with solving cost s
+
+(the number of PUF invocations), i.e., (ˆk, s ) ← A P(h). We say that the puzzle satisfies early-solve hardness at α if there exists a function αeff (a) = α − O(log a) and a negligible function negl( ·) such that for every a, every A ∈ A(a), and every solving effort ξ < α eff (a),
+
+Pr s ≤ ξ ∧ ˆk = K (ˆk; s) ← A P(h), H = h
+
+≤ negl( αeff (a) − ξ) .
+
+Note. The quantity (αeff (a) − ξ) is the time margin by which the adversary attempts to solve the puzzle ahead of the effective threshold αeff (a).
+
+b) Information-Theoretic Constraints.: The PUZ n is en-capsulated using a RS code over GF(2 q ), with 2ω parity symbols appended to accommodate benign evaluation errors. From an adversarial perspective, these parity symbols repre-sent exploitable informational redundancy that can be used to resolve puzzle uncertainty without additional PUF queries. 11 
+
+Since each puzzle symbol encodes q bits, the 2ω RS parity symbols allow the adversary to resolve exactly 2ω · q bits of uncertainty via erasure decoding without any PUF queries. Combined with the oracle testing budget, the total amount of uncertainty the adversary can resolve without physically querying the PUF is bounded by: Emax ≤ 2ω · q + log 2 a bits. To minimize physical evaluations, the adversary may se-lectively skip the search space in certain puzzle rounds. Let 
+
+gi denote the number of candidate keys omitted from PUF evaluations in round i, which introduces log 2 gi bits of residual uncertainty. Any successful solving strategy must satisfy: 
+
+> n
+
+X
+
+> i=1
+
+log 2 gi ≤ 2ω · q + log 2 a. (9) 
+
+c) Optimal Adversarial Skipping Strategy.: Given the entropy budget in Eq. (9), the adversary seeks the allocation of unqueried candidates {gi} that maximizes the total number of skipped PUF invocations P 
+
+> i
+
+gi. This formulates as: maximize 
+
+> n
+
+X
+
+> i=1
+
+gi
+
+s.t. 
+
+> n
+
+X
+
+> i=1
+
+log 2 gi ≤ Emax , 0 ≤ gi ≤ 2q .
+
+The sum P 
+
+> i
+
+gi is maximized when the budget is concentrated rather than spread evenly. Given the per-round cap gi ≤ 2q ,the optimal strategy is to set as many rounds as possible to 
+
+gi = 2 q (i.e., skip the round entirely). Hence, the maximum number of completely skipped rounds is 2ω+
+
+j log 2 aq
+
+k
+
+. Note that while list decoding can theoretically correct errors beyond the threshold [38], it is only useful when the attacker is querying a noisy PUF. Because our idealized security model assumes a best-case scenario for the adversary with noise-free PUF access, list decoding provides no additional advantage. Hence, the adversary must physically solve each remaining round by sequentially querying the PUF. 
+
+Theorem 4 (Early-Solve Hardness of PUZ n). Let the effective early-solve threshold be αeff (a) = n′(1 + E[K]) , where 
+
+n′ = n − 2ω −
+
+j log 2 aq
+
+k
+
+is the number of rounds the adversary must physically solve. Then for every a, every A ∈ A(a), and every candidate solving effort ξ < α eff (a), the puzzle PUZ n
+
+satisfies: 
+
+Pr  sA ≤ ξ ∧ ˆkey = key  ≤ ϵ(αeff (a) − ξ), (10) 
+
+where ϵ(x) := exp 
+
+
+
+− 2x2 
+
+> n′(2 q−1) 2
+
+
+
+is negligible in x.Proof. Since the adversary possesses noise-free oracle access, and by Lemma 1, the greedy sequential strategy maximizes the cumulative probability of success at any bounded step limit, each of the remaining n′ required rounds costs exactly 1 + 
+
+Ki PUF invocations, where Ki ∈ [0 , 2q − 1] . Therefore, the adversary’s total physical solving cost is sA = Pn′
+
+> i=1
+
+(1 + Ki).The expected total cost exactly equals the effective threshold: 
+
+E[sA] = n′(1+ E[K]) = αeff (a). Since each summand 1+ KiCounter  
+
+> 1
+> Counter
+> 2
+> Counter 2k-1
+> Counter
+> 2k
+> Comparator 1
+> XOR
+> Comparator k
+> LFSR
+> Challenge[ λ-1:0] Delay Configuration
+> Enable
+> Shift
+> Register
+> Response
+> [m-1 :0]
+
+Fig. 1: XOR Configurable Ring Oscillator PUF is bounded in [1 , 2q ] with range 2q − 1, applying Hoeffding’s inequality directly yields that for any target ξ < α eff (a):
+
+Pr[ sA ≤ ξ] = Pr[ sA − αeff (a) ≤ − (αeff (a) − ξ)] 
+
+≤ exp 
+
+
+
+− 2( αeff (a) − ξ)2
+
+n′(2 q − 1) 2
+
+
+
+.
+
+We assume honest solvers lack the additional computational resources necessary to perform advanced erasure-skipping strategies, and thus follow the standard sequential decoding. In practical deployments, the chosen parameters can explicitly target either the honest solving bound or the adversarial early-solve bound, depending on the assumed capabilities of the solver. VII. E XPERIMENTS 
+
+We physically evaluated our P-TLP design by implementing the composite puzzle PUZ n on a Xilinx Artix-7 FPGA using the Digilent Nexys-A7 evaluation board, accessed from a host machine via a UART interface. 
+
+A. PUF Design and Hardware Implementation 
+
+The underlying physical primitive driving our P-TLP is an XOR Configurable Ring Oscillator (CRO) PUF implemented on the FPGA, illustrated in Figure 1. The architecture of each RO is inspired by the configurable construction detailed in [39], utilizing hybrid delay-configurable units (DCU) to dynamically shift oscillator behavior. Note that our puzzle construction is generic, so it can be realized with any secure strong PUF. In our XOR CRO PUF, each RO consists of 64 independent DCUs. Each DCU is composed of a pair of logic gates whose routing paths and effective propagation delays can be explicitly adjusted via a configuration input (CI) bit. Consequently, sweeping different CI configurations yields distinct intrinsic oscillation frequencies. Our implementation instantiates 10 
+
+structurally identical configurable ROs arranged into 5 disjoint pairs. For each pair, the oscillation frequencies are allowed to run freely and are measured by high-resolution counters over a fixed observation window before passing into digital com-parators. The PUF output response for a given configuration is exactly the combined XOR of these 5 parallel comparison results. Mathematically, each pair of the configurable ROs can be modeled in the same way as an arbiter PUF [7], so technically the entire XOR CRO PUF can be considered as a slower implementation of a 5-XOR arbiter PUF [8]. For protocol integration, the λ-bit puzzle challenge state directly seeds a linear feedback shift register (LFSR) where 12 75000 80000 85000 90000 95000 
+
+Total Solving delay (T) per Run 
+
+0
+
+5
+
+10 
+
+15 
+
+20 
+
+25 
+
+> Frequency
+> Mean [T]=84353
+> +1 =88174
+> +2 =91994
+> +2 =95815
+
+Fig. 2: Solving time concentration of PUZ n with n = 200 ,
+
+B = 10 3, p = 0 .001 in 100 independent runs. 
+
+λ = 64 . The LFSR deterministically expands the challenge seed to extract distinct configuration vectors internally on-chip, dynamically feeding the arrays to output an accumulated m-bit response vector where m = 64 .A defining advantage of the CRO PUF, unlike classical Arbiter PUFs, is the designer’s ability to explicitly control the physical evaluation latency. The physical latency of a single query is strictly governed by the count_depth parameter. This parameter dynamically locks the number of dedicated clock cycles over which the RO oscillations are aggregated, establishing a constant time τP per PUF evaluation. In our deployments, we bound τP and balance noise profiles by fixing count_depth to 10 ,000 . This specific depth suppressed environmental noise to deliver a robust intra-device physical reliability of approximately 98% , establishing a re-sponse uniformity clustered between 42% and 44% . Crucially, because the trusted computing base is strictly limited to the FPGA encompassing the LFSR, the PUF, and the UART interface, any other puzzle solving operations occur on an un-trusted host computer. We assume the physical TCB provides a trusted, tamper-proof hardware enclosure that prevents the adversary from modifying the internal logic to maliciously reduce the evaluation latency. Hence, the adversarial physical latency bounds analyzed in our proofs apply holistically to this entire hardware TCB. While an adversary remains uncon-strained to implement and accelerate their software solving strategy, Theorem 2 has already proven the optimal strategy for minimizing the expected solving time; thus, our rigid non-parallelizable hardware latency firmly bounds the solving delay. 
+
+B. Experimental Results Analysis 
+
+We instantiated PUZ n following Sections IV and V. We target various puzzle solving delays by adjusting (n, p, B )
+
+while satisfying Theorem 2, and fix the Hamming distance threshold to τ = 0 .2 based on our measured ≈ 2% noise rate, balancing FN and FP error rates. Notably, early termination based on partial bit collisions is impossible, as the 64 config-uration steps aggregate atomically in hardware and cannot be segmented externally. Tables I and II detail our main experimental results, rig-orously capturing hardware variance, evaluation latency, and intrinsic physical stability limits. To examine error stability versus algorithmic delay concentration independently, we split our methodology explicitly: Table I observes solving delay concentration when running the optimal algorithm on a single, randomly generated puzzle instance over 100 runs. Conversely, Table II tests solving delay concentration given a fixed parame-ter setting by performing runs against independently generated random puzzle instances with the same parameter settings .
+
+Decoding Stability and Intrinsic Noise Variance: The results documented in Table I conclusively highlight profound stability within the physical evaluation process. Because the tested puzzle instance is fixed, the theoretical physical PUF evaluations T should remain completely static, with practical execution variance resulting solely from FN/FP errors. Con-sequently, the measured standard deviation is demonstrably small compared to the puzzle solving time (e.g., σT = 89 .7
+
+spanning an execution mean of ≈ 81 ,531 rounds under 
+
+n = 200 ). In the first row ( n = 100 ), physical evaluation drift generated exactly one single False Negative that repeated in the exact same round across the 100 runs, resulting in a recorded standard deviation of 0. Crucially, the Reed-Solomon code could correct the small errors and successfully recover the secret across all experiments. 
+
+Geometric Concentration Bounds vs Experimental Eval-uation: Table II evaluates our theoretically analyzed solving time concentration by solving random puzzle instances us-ing identical parameter settings, confirming the robust delay predictions established in Section V-D. In all cases involv-ing more than 10 runs, the measured mean value of the solving time T matches remarkably well with the theoretical prediction E[T ]. A clear trend indicates that the measured mean effectively converges to the theoretical prediction as the number of independent runs increases. Additionally, the standard deviations of evaluated distributions scaled exactly as expected (e.g., tracking empirically at 103 ,273 against a theoretically projected value of 99 ,738 iterations), verifying the correctness of our bounding analysis in Section V-D. A plot of the solving time distribution for n = 200 is illustrated in Figure 2. We further benchmarked a long 7-day puzzle instance at n = 6000 , successfully containing aggregate noise profiles to just 36 FN errors and 37 FP errors on average, which is beneath the Reed-Solomon decoding capacity. VIII. P OTENTIAL APPLICATIONS IN DIGITAL LEGACY 
+
+MANAGEMENT 
+
+Digital legacy management involves securing sensitive per-sonal data, accounts, and virtual assets so that designated heirs can access them only after a prolonged delay following the owner’s passing. Traditional software-based TLPs are poorly suited for this scenario: as purely digital artifacts, they can be freely copied and solved simultaneously by multiple parties on independent machines. Furthermore, since computational speed advances unpredictably over decades, setting an accurate delay for a puzzle that must survive until the far future is highly speculative, exposing the legacy to premature decryp-tion. Our P-TLP resolves both issues by anchoring the solving 13 
+
+TABLE I: For each parameter setting, a random puzzle instance is generated, and then the solving algorithm is evaluated over the specified number of runs. 
+
+Parameters Theoretical prediction Experimental results Errors (/ run) 
+
+n B p #Runs E[K] E[T ] † Mean [T ] ‡STD [T ] Gen. time (s) Solve. time (s) FN FP 100 1000 0.001 100 417 41,848 42,319 0 5.30 678.82 1 0200 1000 0.001 100 417 83,697 81,531 89.7 7.26 1,307.77 2 0.27 300 5000 0.001 100 965 289,850 273,000 132.1 10.65 4,374.26 1 0.20  
+
+> †
+
+The mean of the measured solving delay T (the total PUF invocations no.) over runs.  
+
+> ‡
+
+The standard deviation of the measured solving delay T (the total PUF invocations no.) over runs. 
+
+TABLE II: For each parameter setting, independent puzzle instances are generated and solved. Theoretical values are computed from the truncated geometric model, while experimental results are averaged over the specified number of runs. 
+
+Parameters Theoretical prediction Experimental results Errors (/ run) 
+
+n B p #Runs E[K] E[T ] σT †Mean [T ] ‡ STD [T ] Gen. time (s) Solve. time (s) FN FP 100 1000 0.001 100 417 41,848 2,816 42,528 3,117 1.74 682.16 0.98 0.06 200 1000 0.001 100 417 83,697 3,983 84,353 3,821 3.34 1,352.93 1.65 0.10 1000 9000 0.0005 10 1,898 1,899,010 55,487 1,925,477 59,341 21.80 8h, 34m, 24.41s 7.8 2.4 3000 10000 0.0005 10 1,931 5,796,746 99,738 5,938,065 103,273 50.32 26h, 24m, 14.46s 20 6.6 6000 30000 0.00015 1 6,329 37,978,607 453,104 38,549,120 / 125.97 7d+3h+36m+33.50s 36 37  
+
+> †
+
+The mean of the measured solving delay T (the total PUF invocations no.) over runs.  
+
+> ‡
+
+The standard deviation of the measured solving delay T (the total PUF invocations no.) over runs. 
+
+process to a unique, unclonable physical hardware token. The puzzle cannot be duplicated or solved in parallel across machines, transforming it into a tangible physical “will” that only the designated heir in possession of the specific token can initiate and complete. This strict hardware binding inherently prevents remote attackers from copying or accelerating the puzzle, making P-TLP uniquely suited for secure digital legacy management. IX. F UTURE WORK AND CONCLUSION 
+
+One practical consideration for long-term deployment is PUF aging: over extended periods, such as a decade, PUF aging increases inherent noise, potentially affecting puzzle reliability beyond what the Reed-Solomon code can accom-modate. While decade-long stability falls outside our cur-rent scope and remains a practical limitation of the work, this degradation could theoretically be managed by chaining puzzles with gradually increased error-correction capability. Investigating the practical efficacy of these mitigations is an interesting direction for future work. In conclusion, this paper introduced P-TLP, shifting the foundational anchor of delay from algorithmic steps to the intrinsic, hardware-bounded physical latency of silicon hard-ware. Our composite construction, supported by formal anal-ysis and FPGA experiments, achieves a tightly concentrated and predictable solving-delay window, establishing a practical path toward hardware-anchored time-lock applications. ACKNOWLEDGMENTS 
+
+Chenglu Jin and Marten van Dijk are (partially) supported by project CiCS of the research programme Gravitation, which is (partly) financed by the Dutch Research Council (NWO) under the grant 024.006.037. REFERENCES [1] R. L. Rivest, A. Shamir, and D. A. Wagner, “Time-lock Puzzles and Timed-release Crypto,” Cambridge, MA, USA, Tech. Rep., 1996. [2] M. Mahmoody, T. Moran, and S. P. Vadhan, “Time-Lock Puzzles in the Random Oracle Model,” in Advances in Cryptology - CRYPTO 2011 -31st Annual Cryptology Conference, Santa Barbara, CA, USA, August 14-18, 2011. Proceedings , 2011, pp. 39–50. [3] N. Bitansky, S. Goldwasser, A. Jain, O. Paneth, V. Vaikuntanathan, and B. Waters, “Time-Lock Puzzles from Randomized Encodings,” in 
+
+Proceedings of the 2016 ACM Conference on Innovations in Theoretical Computer Science, Cambridge, MA, USA, January 14-16, 2016 , 2016, pp. 345–356. [4] S. Agrawalr, G. Malavolta, and T. Zhang, “Time-lock puzzles from lattices,” in Annual International Cryptology Conference . Springer, 2024, pp. 425–456. [5] R. L. Rivest, “Description of the LCS35 time capsule crypto-puzzle,” https://people.csail.mit.edu/rivest/lcs35-puzzle-description.txt, 1999, ac-cessed: 2026. [6] ——, “LCS35 time-lock crypto puzzle,” https://people.csail.mit.edu/ rivest/pubs/Riv19f.pdf, 2019, accessed: 2026. [7] B. Gassend, D. Clarke, M. van Dijk, and S. Devadas, “Silicon physical random functions,” in Proc. of ACM Conference on Computer and Communications Security . New York, NY, USA: ACM Press, 2002, pp. 148–160. [8] G. E. Suh and S. Devadas, “Physical unclonable functions for device authentication and secret key generation,” in Design Automation Con-ference . New York, NY, USA: ACM Press, 2007, pp. 9–14. [9] M. Majzoobi, F. Koushanfar, and M. Potkonjak, “Lightweight secure PUFs,” in Proc. of the 2008 IEEE/ACM International Conference on Computer-Aided Design(ICCAD) . Piscataway, NJ, USA: IEEE Press, 2008, pp. 670–673. [10] D. P. Sahoo, S. Saha, D. Mukhopadhyay, R. S. Chakraborty, and H. Kapoor, “Composite PUF: A New Design Paradigm for Physically Unclonable Functions on FPGA,” in IEEE International Symposium on Hardware-Oriented Security and Trust (HOST) , Arlington, VA, USA, May 2014. [11] C. Herder, L. Ren, M. van Dijk, M. M. Yu, and S. Devadas, “Trapdoor Computational Fuzzy Extractors and Stateless Cryptographically-Secure Physical Unclonable Functions,” IEEE Transactions on Dependable and Secure Computing , 2016. [12] C. Jin, C. Herder, L. Ren, P. H. Nguyen, B. Fuller, S. Devadas, and M. Van Dijk, “Fpga implementation of a cryptographically-secure puf based on learning parity with noise,” Cryptography , vol. 1, no. 3, p. 23, 2017. [13] P. H. Nguyen, D. P. Sahoo, C. Jin, K. Mahmood, U. R¨ uhrmair, and M. van Dijk, “The interpose PUF: secure PUF design against state-of-the-art machine learning attacks,” IACR Trans. Cryptogr. 14 
+
+Hardw. Embed. Syst. , vol. 2019, no. 4, pp. 243–290, 2019. [Online]. Available: https://doi.org/10.13154/tches.v2019.i4.243-290 [14] N. Wisiol, “Towards attack resilient delay-based strong pufs,” in 2022 IEEE International Symposium on Hardware Oriented Security and Trust (HOST) . IEEE, 2022, pp. 5–8. [15] C. Helfmeier, C. Boit, D. Nedospasov, and J.-P. Seifert, “Cloning Physi-cally Unclonable Functions,” in Proc. of IEEE International Symposium on Hardware-Oriented Security and Trust (HOST) , 2013, pp. 1–6. [16] S. Tajik, E. Dietz, S. Frohmann, J. Seifert, D. Nedospasov, C. Helfmeier, C. Boit, and H. Dittrich, “Physical Characterization of Arbiter PUFs,” in 
+
+Cryptographic Hardware and Embedded Systems - CHES 2014 - 16th International Workshop, Busan, South Korea, September 23-26, 2014. Proceedings , 2014, pp. 493–509. [17] P. H. Nguyen, D. P. Sahoo, R. S. Chakraborty, and D. Mukhopadhyay, “Efficient Attacks on Robust Ring Oscillator PUF with Enhanced Challenge-Response Set,” in Proc. of Design, Automation Test in Europe Conference Exhibition (DATE) , 2015. [18] D. P. Sahoo, P. H. Nguyen, D. Mukhopadhyay, and R. S. Chakraborty, “A Case of Lightweight PUF Constructions: Cryptanalysis and Machine Learning Attacks,” IEEE Trans. on CAD of Integrated Circuits and Systems , 2015. [19] L. Kraleva, M. Mahzoun, R. Posteuca, D. Toprakhisar, T. Ashur, and I. Verbauwhede, “Cryptanalysis of strong physically unclonable functions,” IEEE Open Journal of the Solid-State Circuits Society , vol. 3, pp. 32–40, 2022. [20] D. Lim, “Extracting Secret Keys from Integrated Circuits,” Master’s thesis, MIT, USA, 2004. [21] U. R¨ uhrmair, F. Sehnke, J. S¨ olter, G. Dror, S. Devadas, and J. Schmid-huber, “Modeling attacks on physical unclonable functions,” in Proc. of 17th ACM conference on Computer and communications security(CCS) .New York, NY, USA: ACM, 2010, pp. 237–249. [22] U. R¨ uhrmair, J. S¨ olter, F. Sehnke, X. Xu, A. Mahmoud, V. Stoyanova, G. Dror, J. Schmidhuber, W. Burleson, and S. Devadas, “PUF modeling attacks on simulated and silicon data,” IEEE Transactions on Informa-tion Forensics and Security , vol. 8, no. 11, pp. 1876–1891, 2013. [23] J. Tobisch and G. T. Becker, “On the Scaling of Machine Learning Attacks on PUFs with Application to Noise Bifurcation,” in Proc. of 11th International Workshop on Radio Frequency Identification: Security and Privacy Issues (RFIDsec) , 2015, pp. 17–31. [Online]. Available: http://dx.doi.org/10.1007/978-3-319-24837-0 2 [24] G. T. Becker, “The Gap Between Promise and Reality: On the Insecurity of XOR Arbiter PUFs,” in Proc. of 17th International Workshop on Cryptographic Hardware and Embedded Systems ( CHES) , 2015. [25] N. Mishra, K. Pratihar, S. Mandal, A. Chakraborty, U. R¨ uhrmair, and D. Mukhopadhyay, “Calypso: An enhanced search optimization based framework to model delay-based pufs,” IACR Transactions on Cryptographic Hardware and Embedded Systems , vol. 2024, no. 1, pp. 501–526, 2024. [26] N. Sayadi, P. H. Nguyen, M. Van Dijk, and C. Jin, “Breaking xor arbiter pufs with chosen challenge attack,” IEEE Transactions on Information Forensics and Security , 2025. [27] G. Malavolta and S. A. K. Thyagarajan, “Homomorphic time-lock puz-zles and applications,” in Annual International Cryptology Conference .Springer, 2019, pp. 620–649. [28] C. Freitag, I. Komargodski, R. Pass, and N. Sirkin, “Non-malleable time-lock puzzles and applications,” in Theory of Cryptography Conference .Springer, 2021, pp. 447–479. [29] A. Abadi and A. Kiayias, “Multi-instance publicly verifiable time-lock puzzle and its applications,” in International Conference on Financial Cryptography and Data Security . Springer, 2021, pp. 541–559. [30] A. Abadi, D. Ristea, A. Grigor, and S. Murdoch, “Scalable time-lock puzzle,” in Proceedings of the 20th ACM Asia Conference on Computer and Communications Security , 2025, pp. 839–855. [31] S. Srinivasan, J. Loss, G. Malavolta, K. Nayak, C. Papamanthou, and S. A. Thyagarajan, “Transparent batchable time-lock puzzles and applications to byzantine consensus,” in IACR International Conference on Public-Key Cryptography . Springer, 2023, pp. 554–584. [32] J. Dujmovic, R. Garg, and G. Malavolta, “Time-lock puzzles with efficient batch solving,” in Annual International Conference on the Theory and Applications of Cryptographic Techniques . Springer, 2024, pp. 311–341. [33] D. Boneh, J. Bonneau, B. B¨ unz, and B. Fisch, “Verifiable delay functions,” in Annual international cryptology conference . Springer, 2018, pp. 757–788. [34] C. Baum, B. M. David, E. Pagnin, and A. Takahashi, “Cascade:(time-based) cryptography from space communications delay,” in International Conference on Security and Cryptography for Networks . Springer, 2024, pp. 252–274. [35] C. Jin, W. Burleson, M. van Dijk, and U. R¨ uhrmair, “Programmable access-controlled and generic erasable puf design and its applications,” 
+
+Journal of Cryptographic Engineering , vol. 12, no. 4, pp. 413–432, 2022. [36] M. van Dijk and C. Jin, “A theoretical framework for the analysis of physical unclonable function interfaces and its relation to the random oracle model,” Journal of Cryptology , vol. 36, no. 4, p. 35, 2023. [37] I. Shevtsova, “On the absolute constants in the berry-esseen type inequalities for identically distributed summands,” arXiv preprint arXiv:1111.6554 , 2011. [38] J. Brakensiek, S. Gopi, and V. Makam, “Generic reed-solomon codes achieve list-decoding capacity,” in Proceedings of the 55th Annual ACM Symposium on Theory of Computing , 2023, pp. 1488–1501. [39] D. Deng, S. Hou, Z. Wang, and Y. Guo, “Configurable ring oscillator puf using hybrid logic gates,” IEEE Access , vol. 8, pp. 161 427–161 437, 2020.

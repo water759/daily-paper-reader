@@ -6,71 +6,59 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-23
-- 运行时间：2026-07-23 21:33:44 UTC
+- 最新运行日期：2026-07-24
+- 运行时间：2026-07-24 21:23:57 UTC
 - 运行状态：成功
-- 本次总论文数：17
-- 精读区：6
-- 速读区：11
+- 本次总论文数：13
+- 精读区：5
+- 速读区：8
 
 ### 今日简报（AI）
-今日日报聚焦隐私保护与AI安全，精读6篇、速读11篇。最值得关注的是《End-to-End Differential Privacy》（9.0分）的端到端差分隐私训练方法，以及《TurboVec》在企业RAG中的高效私有检索方案。建议普通读者优先精读差分隐私实践，同时留意AI代理的渗透测试风险。
-- 详情：[/202607/23/README](/202607/23/README)
+今日共13篇论文，精读5篇、速读8篇，重点关注加密模型预测控制安全验证与AI驱动工作流授权两大方向。最值得精读的是《Safety and Security: Experimental Validation of Encrypted Model Predictive Control》（9.0分）与《From Neural Intent to Cryptographic Authorization: Securing AI-Driven Enterprise Workflows》（8.0分），速读中《Quantum-Resilient Distributed Optimization》与《Examining User Behavior and Cognitive Biases in Personal Password Security》也值得一看。建议先聚焦加密MPC的实验验证方法，再了解AI授权机制，以把握安全与密码学交叉的前沿趋势。
+- 详情：[/202607/24/README](/202607/24/README)
 
 ### 精读区论文标签
-1. [End-to-End Differential Privacy in Training Deep Neural Network Classifiers](/202607/23/2607.19580v1-end-to-end-differential-privacy-in-training-deep-neural-network-classifiers)  
+1. [Safety and Security: Experimental Validation of Encrypted Model Predictive Control](/202607/24/2607.21136v1-safety-and-security-experimental-validation-of-encrypted-model-predictive-control)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：神经网络分类器的差分隐私训练
-2. [TurboVec: A Case Study in Cost-Efficient Private Retrieval for Enterprise RAG via Codebook-Oblivious Quantization](/202607/23/2607.16973v1-turbovec-a-case-study-in-cost-efficient-private-retrieval-for-enterprise-rag-via-codebook-oblivious-quantization)  
+   evidence：使用全同态加密的模型预测控制在云平台的安全部署
+2. [From Neural Intent to Cryptographic Authorization: Securing AI-Driven Enterprise Workflows](/202607/24/2607.15596v2-from-neural-intent-to-cryptographic-authorization-securing-ai-driven-enterprise-workflows)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：基于无码书量化的RAG私有检索
-3. [Broken Gates: Re-evaluating Web Bot Defenses in the Age of LLM Agents](/202607/23/2607.18659v1-broken-gates-re-evaluating-web-bot-defenses-in-the-age-of-llm-agents)  
+   evidence：AI工作流的密码授权
+3. [CryptanalysisBench: Can LLMs do Cryptanalysis?](/202607/24/2607.18538v1-cryptanalysisbench-can-llms-do-cryptanalysis)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：评估基于LLM的浏览器代理对机器人防御的威胁
-4. [An Efficient Fault-Tolerance Scheme for CKKS Computation on CPUs](/202607/23/2607.18720v1-an-efficient-fault-tolerance-scheme-for-ckks-computation-on-cpus)  
+   evidence：语言模型进行密码分析，属于人工智能安全威胁与防御
+4. [Pure-DP Statistical Query Release at the Conjectured Square-Root Rate](/202607/24/2607.20418v1-pure-dp-statistical-query-release-at-the-conjectured-square-root-rate)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：CKKS全同态加密的容错方案，属于机密计算技术
-5. [Data Leakage Prevention in Agentic Applications via Preemptive Hardening](/202607/23/2607.18847v1-data-leakage-prevention-in-agentic-applications-via-preemptive-hardening)  
+   evidence：纯差分隐私统计查询发布的平方根率最优界
+5. [Toward cryptographically verifiable authorization for autonomous AI agents: A security hypothesis, preliminary formal model, and proof-of-concept implementation](/202607/24/2607.21325v1-toward-cryptographically-verifiable-authorization-for-autonomous-ai-agents-a-security-hypothesis-preliminary-formal-model-and-proof-of-concept-implementation)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：基于预置加固的LLM代理应用数据泄露防护
-6. [The Chronos Vulnerability: A Taxonomy of Temporal Persistence and Memory-Based Deception in Agentic AI](/202607/23/2607.19433v1-the-chronos-vulnerability-a-taxonomy-of-temporal-persistence-and-memory-based-deception-in-agentic-ai)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：AI代理中时间持久性和基于内存攻击的分类
+   evidence：AI代理的密码学授权
 
 ### 速读区论文标签
-1. [Integrity of peer-to-peer distributed LLM inference under malicious nodes](/202607/23/2607.19490v1-integrity-of-peer-to-peer-distributed-llm-inference-under-malicious-nodes)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：对等分布式LLM推理在恶意节点下的完整性
-2. [Twin Agent: Context Residual Compression for Privilege Separated Agents](/202607/23/2607.19595v1-twin-agent-context-residual-compression-for-privilege-separated-agents)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：大语言模型代理安全，特权分离防御提示注入攻击
-3. [Know Your Agent: Reconnaissance-Driven Pentesting of AI Agents](/202607/23/2607.19837v1-know-your-agent-reconnaissance-driven-pentesting-of-ai-agents)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：对AI代理进行侦察驱动的渗透测试
-4. [Chained Attacks on Drone-Based Federated Learning: From Network Disruption to Device Impersonation](/202607/23/2607.20280v1-chained-attacks-on-drone-based-federated-learning-from-network-disruption-to-device-impersonation)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：针对联邦学习的链式攻击（人工智能安全）
-5. [A Systematic Evaluation of Traditional Privacy Policy Analysis Tools Against LLMs](/202607/23/2607.17075v2-a-systematic-evaluation-of-traditional-privacy-policy-analysis-tools-against-llms)  
+1. [Quantum-Resilient Distributed Optimization for Multi-Region Unit Commitment](/202607/24/2607.19581v1-quantum-resilient-distributed-optimization-for-multi-region-unit-commitment)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：系统评估LLMs在隐私政策分析中的能力
-6. [Optimal Domain-Aware Privacy Mechanisms for Synthetic Data Generation](/202607/23/2607.18021v1-optimal-domain-aware-privacy-mechanisms-for-synthetic-data-generation)  
+   evidence：多区域机组组合中用于分布式优化的量子弹性安全聚合
+2. [Examining User Behavior and Cognitive Biases in Personal Password Security](/202607/24/2607.19586v1-examining-user-behavior-and-cognitive-biases-in-personal-password-security)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：差分隐私合成数据生成，隐私保护
-7. [Exploiting Load/Store Leakage of Sparse Vectors for Key Recovery in HQC](/202607/23/2607.19109v1-exploiting-loadstore-leakage-of-sparse-vectors-for-key-recovery-in-hqc)  
+   evidence：用户密码安全行为与认知偏差
+3. [AuthProbe: Specification-Driven, Multi-Identity Detection of Broken Object-Level Authorization in Recruitment API](/202607/24/2607.20574v1-authprobe-specification-driven-multi-identity-detection-of-broken-object-level-authorization-in-recruitment-api)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：针对HQC的侧信道密钥恢复攻击
-8. [Enterprise Integration Modernization with SAP BTP](/202607/23/2607.19662v1-enterprise-integration-modernization-with-sap-btp)  
+   evidence：检测对象级授权缺陷应对API中的身份认证问题
+4. [IssueTrojanBench: Benchmarking AI Coding Agents Against Malicious Issue Requests](/202607/24/2607.20759v1-issuetrojanbench-benchmarking-ai-coding-agents-against-malicious-issue-requests)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：混合多云集成现代化框架
-9. [Towards Inference-Aware Privacy Guidance for Data Preparation](/202607/23/2607.16710v1-towards-inference-aware-privacy-guidance-for-data-preparation)  
+   evidence：对AI编码智能体进行恶意issue请求基准测试评估人工智能安全性
+5. [Information-Theoretically Secure Aggregation for Lightweight Federated Learning: Resilient to Dropouts and Adversaries](/202607/24/2607.20890v1-information-theoretically-secure-aggregation-for-lightweight-federated-learning-resilient-to-dropouts-and-adversaries)  
+   标签：评分：7.0/10、query:sec-cloud-ai
+   evidence：联邦学习中信息论安全聚合实现隐私保护
+6. [Tractable Query Answering under Epistemic Confidentiality Policies in DL Ontologies (extended version)](/202607/24/2607.16715v2-tractable-query-answering-under-epistemic-confidentiality-policies-in-dl-ontologies-extended-version)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：隐私感知的数据准备指导，涉及人工智能隐私保护
-10. [AEC-DS: Adaptive Erasure Coding with PDP-Triggered Reputation and QoS-Aware Migration for Decentralized Storage](/202607/23/2607.17460v1-aec-ds-adaptive-erasure-coding-with-pdp-triggered-reputation-and-qos-aware-migration-for-decentralized-storage)  
+   evidence：保密性保持的查询回答
+7. [Physical Time-Lock Puzzles](/202607/24/2607.17328v1-physical-time-lock-puzzles)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：去中心化存储中的自适应纠删码，结合安全审计
-11. [Isolation Failure From Shared Storage: Characterizing and Exploiting Page-Cache SCA Leakage Across Containers and VMs](/202607/23/2607.17518v2-isolation-failure-from-shared-storage-characterizing-and-exploiting-page-cache-sca-leakage-across-containers-and-vms)  
+   evidence：物理时间锁谜题作为延迟访问的密码原语
+8. [Evaluating Large Language Models for Symbolic Security Protocol Analysis](/202607/24/2607.20712v1-evaluating-large-language-models-for-symbolic-security-protocol-analysis)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：云平台共享存储隔离失败导致的安全漏洞
+   evidence：评估LLM进行安全协议分析，与密码认证相关
 
 
 <div class="dpr-home-promo-card">

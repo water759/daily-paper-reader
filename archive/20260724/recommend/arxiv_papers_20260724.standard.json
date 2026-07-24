@@ -1,0 +1,516 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-24T21:17:23.638731+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 5,
+    "deep_cap": 6,
+    "deep_selected": 5,
+    "quick_candidates": 8,
+    "quick_skim_target": 11,
+    "quick_selected": 8
+  },
+  "deep_dive": [
+    {
+      "id": "2607.21136v1",
+      "source": "arxiv",
+      "title": "Safety and Security: Experimental Validation of Encrypted Model Predictive Control",
+      "abstract": "In this paper, we revisit the problem of an encrypted model predictive control (MPC) design, representing a significant challenge in the recent field of secure process control. Existing methods in secure optimization-based control are non-existent and even partial implementation fails to address the closed-loop system stability and recursive feasibility properties of the constrained MPC. To overcome these limitations, we propose a novel approach that utilizes a polynomial approximation of the optimal control law. This method evaluates the explicit control law within a fully homomorphic encryption framework, ensuring that the controller is securely deployed on any third-party or cloud-based platform, with both process data and controller coefficients protected. Experimental results from a laboratory-scale implementation and validation of the proposed privacy-aware control method demonstrate its advantages.",
+      "authors": [
+        "Juraj Holaza",
+        "Martin Kalúz",
+        "Matúš Furka",
+        "Martin Klaučo",
+        "Juraj Oravec"
+      ],
+      "primary_category": "eess.SY",
+      "categories": [
+        "eess.SY"
+      ],
+      "published": "2026-07-23T10:14:29+00:00",
+      "link": "https://arxiv.org/pdf/2607.21136v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "encrypted model predictive control using fully homomorphic encryption for cloud deployment",
+      "llm_evidence_cn": "使用全同态加密的模型预测控制在云平台的安全部署",
+      "llm_evidence": "使用全同态加密的模型预测控制在云平台的安全部署",
+      "canonical_evidence": "使用全同态加密的模型预测控制在云平台的安全部署",
+      "llm_tldr_en": "Proposes an encrypted model predictive control scheme using polynomial approximation and fully homomorphic encryption for secure cloud deployment.",
+      "llm_tldr_cn": "针对云平台上的模型预测控制（MPC）安全性问题，该论文提出一种加密MPC设计。通过多项式近似替代最优控制律，并在全同态加密框架下计算，确保控制器在第三方云上安全运行而不泄露数据和参数。实验验证了闭环稳定性和递归可行性。",
+      "llm_tldr": "针对云平台上的模型预测控制（MPC）安全性问题，该论文提出一种加密MPC设计。通过多项式近似替代最优控制律，并在全同态加密框架下计算，确保控制器在第三方云上安全运行而不泄露数据和参数。实验验证了闭环稳定性和递归可行性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.15596v2",
+      "source": "arxiv",
+      "title": "From Neural Intent to Cryptographic Authorization: Securing AI-Driven Enterprise Workflows",
+      "abstract": "The rapid adoption of artificial intelligence (AI)-driven workflows is transforming high-consequence} government and enterprise systems into language-based, tool-using and increasingly autonomous infrastructures. While these workflows can delegate planning autonomously, security-critical execution should be strictly mediated. Conventional key management services authenticate who may invoke a cryptographic primitive, but remain agnostic to which workflow steps are authorized at runtime. An AI-driven workflow can still be hijacked by injection attacks into executing malicious actions that satisfy identity checks yet violate user intent. We propose \\emph{Neural Cryptographic Services} (NCS), a neuro-symbolic security enforcement plane interposed between neural planners and privileged tools. NCS decouples cognitive planning from execution authority: an untrusted neural planner drafts structured plans, while a deterministic symbolic controller gates execution using an offline-signed, hash-chained instruction stream. Specifically, NCS validates cryptographic signatures and hash chains incrementally, releasing a single instruction payload at a time while strictly binding proposed tool parameters to the verified payload. Out-of-order or altered tool calls fail-closed, and state transitions are logged for post-hoc auditing. NCS does not attempt to prevent neural planner compromise under injection; it guarantees that a compromised planner cannot dispatch actions outside the cryptographic authorization. We evaluate NCS on AgentDojo and a custom argument-hijacking benchmark. NCS drives attack success rates to near zero while preserving acceptable utility on benign workflows. NCS thus shifts security for high-consequence AI-powered workflows from verifying model-intent compliance to verifying that a proposed dispatch matches a cryptographically authorized step.",
+      "authors": [
+        "Jiasi Weng",
+        "Jian Weng",
+        "Minrong Chen",
+        "Ming Li",
+        "Jia-Nan Liu",
+        "Zhi Li",
+        "Yue Zhang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-17T03:44:05+00:00",
+      "link": "https://arxiv.org/pdf/2607.15596v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "cryptographic authorization for AI workflows",
+      "llm_evidence_cn": "AI工作流的密码授权",
+      "llm_evidence": "AI工作流的密码授权",
+      "canonical_evidence": "AI工作流的密码授权",
+      "llm_tldr_en": "Proposes Neural Cryptographic Services (NCS), a neuro-symbolic security plane that enforces workflow-level cryptographic authorization, preventing injection attacks.",
+      "llm_tldr_cn": "本文提出神经密码服务（NCS），一种神经符号安全平面，通过将用户意图转化为细粒度的运行时授权，弥补了传统密钥管理对工作流上下文的忽视。NCS能够阻止满足身份检查但违反用户意图的注入攻击，为AI驱动的工作流提供可执行的语义安全保障。",
+      "llm_tldr": "本文提出神经密码服务（NCS），一种神经符号安全平面，通过将用户意图转化为细粒度的运行时授权，弥补了传统密钥管理对工作流上下文的忽视。NCS能够阻止满足身份检查但违反用户意图的注入攻击，为AI驱动的工作流提供可执行的语义安全保障。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security and password authentication",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.18538v1",
+      "source": "arxiv",
+      "title": "CryptanalysisBench: Can LLMs do Cryptanalysis?",
+      "abstract": "Cryptanalysis - the task of finding attacks against cryptographic schemes - sits at the intersection of mathematical reasoning and cybersecurity, two areas where LLMs have advanced fastest. Cryptanalysis represents both a clean testbed for frontier reasoning (as practical attacks can be automatically verified) and a domain with unusually high stakes, since the primitives under study underpin our digital security. In this paper we ask whether LLMs can do cryptanalysis, and find that the answer is increasingly yes.   We introduce CryptanalysisBench, 191 tasks across six families of cryptographic primitives (block ciphers, hash functions, etc.) drawn primarily from four NIST standardization competitions. Our benchmark consists of three tiers: (i) primitives with known practical breaks; (ii) primitives with no known practical break, evaluated both at full strength and as scaled-down variants; and (iii) a challenge set of production primitives at the frontier of cryptanalysis.   Five frontier models (Claude Opus 4.8, Sonnet 5, Mythos 5, GPT 5.5, and the open-weights GLM 5.2) break 65%-86% of Tier 1 schemes, 6-12 Tier-2 schemes at full strength, and 24-61 across all scaled-down variants. Beyond deriving known results, models produce novel cryptanalysis, such as a key-recovery attack that exploits a design flaw in the SpoC AEAD and an error in KINDI's published CCA-security proof, both to the best of our knowledge not previously known.   We release CryptanalysisBench as a tool to help track if (or when) AI cryptanalysis becomes a serious factor and as a scaffold for stress-testing candidate schemes before deployment. The attacks that the benchmark already surfaces are an early snapshot of a fast-moving frontier that may soon match, and in places exceed, the published state of the art.",
+      "authors": [
+        "Lukas Fluri",
+        "Avital Shafran",
+        "Nicholas Carlini",
+        "Matthew Jagielski",
+        "Milad Nasr",
+        "Orr Dunkelman",
+        "Eyal Ronen",
+        "Florian Tramèr"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-20T22:09:40+00:00",
+      "link": "https://arxiv.org/pdf/2607.18538v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "LLMs for cryptanalysis AI security threats",
+      "llm_evidence_cn": "语言模型进行密码分析，属于人工智能安全威胁与防御",
+      "llm_evidence": "语言模型进行密码分析，属于人工智能安全威胁与防御",
+      "canonical_evidence": "语言模型进行密码分析，属于人工智能安全威胁与防御",
+      "llm_tldr_en": "Investigates whether LLMs can perform cryptanalysis; introduces CryptanalysisBench a benchmark of 191 tasks across six families. Results show increasing capability.",
+      "llm_tldr_cn": "该论文探讨大型语言模型（LLM）是否能够执行密码分析任务，并提出了一个包含191个任务、涵盖六大类密码原语的基准测试CryptanalysisBench。研究发现LLM在密码分析方面能力日益增强，这既展示了LLM在数学推理方面的进步，也对数字安全提出了新的挑战和机遇。",
+      "llm_tldr": "该论文探讨大型语言模型（LLM）是否能够执行密码分析任务，并提出了一个包含191个任务、涵盖六大类密码原语的基准测试CryptanalysisBench。研究发现LLM在密码分析方面能力日益增强，这既展示了LLM在数学推理方面的进步，也对数字安全提出了新的挑战和机遇。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.20418v1",
+      "source": "arxiv",
+      "title": "Pure-DP Statistical Query Release at the Conjectured Square-Root Rate",
+      "abstract": "Nikolov and Ullman asked whether k statistical queries on a universe of size T can be released under pure differential privacy with expected worst-coordinate error at the square-root rate suggested by known lower bounds. We prove their conjectured upper bound. For every database size n and privacy parameter $\\varepsilon>0$, there is an $\\varepsilon$-differentially private mechanism with expected error $O(\\min\\{1,\\sqrt{\\log(2T)\\log(2k)/(\\varepsilon n)}\\})$. This matches the lower-bound dependence in the standard high-dimensional regimes where those bounds apply; the shifted logarithms and outer minimum make the upper bound valid without additional parameter assumptions. The construction starts from a selection-only private multiplicative weights transcript, then replaces its probability mass function by a distance-penalized likelihood envelope. To prove that the modification preserves accuracy, a likelihood-level Maurey argument upper-bounds each Hamming-ball maximum by a small family of auxiliary PMW laws. Renyi moment bounds control nearby balls, a direct mixture bound controls distant balls, and grouping radii at the privacy scale prevents an additional $1/\\varepsilon$ factor in the error. The mechanism is information-theoretic. A companion Lean 4 development machine-checks the finite construction, pure privacy after deterministic decoding, and the displayed all-regimes upper bound.",
+      "authors": [
+        "Jack Fitzsimons"
+      ],
+      "primary_category": "cs.DS",
+      "categories": [
+        "cs.DS",
+        "cs.CR"
+      ],
+      "published": "2026-07-22T17:54:46+00:00",
+      "link": "https://arxiv.org/pdf/2607.20418v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "pure differential privacy for statistical query release at square-root rate",
+      "llm_evidence_cn": "纯差分隐私统计查询发布的平方根率最优界",
+      "llm_evidence": "纯差分隐私统计查询发布的平方根率最优界",
+      "canonical_evidence": "纯差分隐私统计查询发布的平方根率最优界",
+      "llm_tldr_en": "Proves the conjectured upper bound for pure-differential privacy statistical query release, achieving square-root error rate.",
+      "llm_tldr_cn": "本文证明了Nikolov和Ullman关于纯差分隐私下统计查询发布的猜想上界，实现了与已知下界匹配的平方根误差率。构造从选择型私有乘性权重转录出发，达到了最优的误差界限，为差分隐私理论做出了重要贡献。",
+      "llm_tldr": "本文证明了Nikolov和Ullman关于纯差分隐私下统计查询发布的猜想上界，实现了与已知下界匹配的平方根误差率。构造从选择型私有乘性权重转录出发，达到了最优的误差界限，为差分隐私理论做出了重要贡献。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.21325v1",
+      "source": "arxiv",
+      "title": "Toward cryptographically verifiable authorization for autonomous AI agents: A security hypothesis, preliminary formal model, and proof-of-concept implementation",
+      "abstract": "Autonomous AI agents increasingly execute actions, invoke tools, and operate on protected resources with limited human oversight. Existing authentication and authorization mechanisms establish identity and delegate authority, but do not inherently provide cryptographic evidence that a concrete request issued by a specific agent satisfies the applicable policy in a specific execution context. This paper hypothesizes that agent authorization can be formalized as a cryptographically verifiable relation, denoted $R_{CVA}$, that jointly binds an agent principal, a concrete authorization request, an execution context, and the satisfaction of an applicable policy, while selectively preserving the confidentiality of private authorization attributes. We introduce a preliminary formal abstraction for Cryptographically Verifiable Agent Authorization (CVA), define a compact set of candidate security properties including authorization soundness, principal binding, request binding, policy binding, and replay resistance, and provide an executable zero-knowledge proof of concept that instantiates selected elements of the model over a Groth16 zk-SNARK construction. We further identify and formalize the structural separation among identity binding, authorization-request binding, and runtime execution binding as a central open problem in the design of secure agentic systems (a distinction {not explicitly addressed by} current agentic security frameworks) and present a falsifiable research agenda for its resolution.",
+      "authors": [
+        "M. Llambí-Morillas",
+        "D. Fernández-Fernández"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-23T13:55:02+00:00",
+      "link": "https://arxiv.org/pdf/2607.21325v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Cryptographic authorization for AI agents",
+      "llm_evidence_cn": "AI代理的密码学授权",
+      "llm_evidence": "AI代理的密码学授权",
+      "canonical_evidence": "AI代理的密码学授权",
+      "llm_tldr_en": "Proposes cryptographically verifiable authorization for autonomous AI agents, formalizing a relation binding agent, request, context, and policy satisfaction, with a proof-of-concept implementation.",
+      "llm_tldr_cn": "自主AI代理在执行操作时缺乏可加密验证的授权证明。本文提出将代理授权形式化为一个可加密验证的关系RCVA，绑定代理主体、请求、执行上下文与政策满足，并提供初步形式化模型和概念验证实现。该工作为AI代理的信任和安全执行提供了新方向。",
+      "llm_tldr": "自主AI代理在执行操作时缺乏可加密验证的授权证明。本文提出将代理授权形式化为一个可加密验证的关系RCVA，绑定代理主体、请求、执行上下文与政策满足，并提供初步形式化模型和概念验证实现。该工作为AI代理的信任和安全执行提供了新方向。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.19581v1",
+      "source": "arxiv",
+      "title": "Quantum-Resilient Distributed Optimization for Multi-Region Unit Commitment",
+      "abstract": "Multi-region unit commitment with reserve sharing requires coordinated optimization across jurisdictionally distinct system operators, exposing sensitive cost curves, topology, and dispatch decisions to inference attacks. The accelerating progress of quantum computing further compounds this threat. As quantum hardware matures, current classically-encrypted data flow becomes vulnerable to retrospective decryption. To enable post-quantum-secure distributed optimization, we propose a customized Benders decomposition-based approach with the global summation structure to share aggregated cuts and variables. By exploiting this structure, we further develop a multi-layer quantum-resilient secure aggregation protocol comprising additive masking for information-theoretic content privacy, affine variable transformation hiding individual sensitive data flows, and reveal-bound lattice-based zero-knowledge proofs providing resilience against active adversaries. Simulation results show that the proposed approach achieves the mean suboptimality of 0.09%-0.22% with lightweight computational overhead, recovers up to 51% of system cost via inter-regional reserve sharing, and imposes no measurable cost-quality trade-off, whereas the noisy ADMM degrades monotonically under tightening privacy budgets and becomes structurally infeasible on combinatorially dense systems.",
+      "authors": [
+        "Junhong Liu",
+        "Qinfei Long",
+        "Alex Pengfei Zhao",
+        "Xianping Zhong",
+        "Yunfeng Li",
+        "Xiaohai Dai",
+        "Francis Yunhe Hou"
+      ],
+      "primary_category": "eess.SY",
+      "categories": [
+        "eess.SY"
+      ],
+      "published": "2026-07-21T21:17:26+00:00",
+      "link": "https://arxiv.org/pdf/2607.19581v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "quantum-resilient secure aggregation for distributed optimization in multi-region unit commitment",
+      "llm_evidence_cn": "多区域机组组合中用于分布式优化的量子弹性安全聚合",
+      "llm_evidence": "多区域机组组合中用于分布式优化的量子弹性安全聚合",
+      "canonical_evidence": "多区域机组组合中用于分布式优化的量子弹性安全聚合",
+      "llm_tldr_en": "Proposes a quantum-resilient secure aggregation protocol for distributed optimization using Benders decomposition and additive masking.",
+      "llm_tldr_cn": "本文针对多区域机组组合分布式优化中数据泄露和量子计算威胁，提出一种定制的Benders分解方法，利用全局求和组织共享聚合切割和变量，并开发多层量子弹性安全聚合协议，包含加法掩码和区域签名，实现了后量子安全的分布式优化。",
+      "llm_tldr": "本文针对多区域机组组合分布式优化中数据泄露和量子计算威胁，提出一种定制的Benders分解方法，利用全局求和组织共享聚合切割和变量，并开发多层量子弹性安全聚合协议，包含加法掩码和区域签名，实现了后量子安全的分布式优化。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing security and confidential computing",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.16715v2",
+      "source": "arxiv",
+      "title": "Tractable Query Answering under Epistemic Confidentiality Policies in DL Ontologies (extended version)",
+      "abstract": "We study Controlled Query Evaluation (CQE), a declarative approach to confidentiality-preserving data access, in the context of Description Logic (DL) ontologies, and for confidentiality policies expressed through Epistemic Dependencies (EDs). We first address the problem of answering queries (specifically, Boolean unions of conjunctive queries) under known semantics for CQE (GA- and IGA-entailment). Our results show that if the TBox is expressed in $\\text{DL-Lite}_{\\mathcal{R}}$, CQE is computationally intractable in general. Moreover, in the presence of EDs, the IGA semantics has recently been proven not to satisfy an important confidentiality preservation property known as indistinguishability. With the goal of defining computationally easier and confidentiality-preserving forms of CQE, we introduce a new semantics for CQE, based on the notion of minimal policy violation (MPV). We show that the new semantics provides a sound approximation of the previous ones, while satisfying the indistinguishability property. We also prove that, in the case of $\\text{DL-Lite}_{\\mathcal{R}}$ ontologies, query entailment under the MPV semantics can be decided in polynomial time in data complexity. Finally, we present a software implementation of our framework that we used to evaluate the feasibility of this new approach using an existing benchmark for OWL 2 QL.",
+      "authors": [
+        "Lorenzo Marconi",
+        "Daniela Rieti",
+        "Riccardo Rosati"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-18T09:07:57+00:00",
+      "link": "https://arxiv.org/pdf/2607.16715v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "confidentiality-preserving query answering",
+      "llm_evidence_cn": "保密性保持的查询回答",
+      "llm_evidence": "保密性保持的查询回答",
+      "canonical_evidence": "保密性保持的查询回答",
+      "llm_tldr_en": "Studies controlled query evaluation under epistemic confidentiality policies in DL ontologies, revealing intractability and proposing new semantics.",
+      "llm_tldr_cn": "本文研究描述逻辑本体中基于认知保密策略的受控查询评估（CQE）。证明在DL-Lite_R下CQE计算上困难，并指出现有IGA语义不满足不可区分性属性。为此，提出一种新的CQE语义，保证保密性，同时保持可追踪性（在适当限制下）。贡献在于为知识图谱中的保密查询提供了理论基础。",
+      "llm_tldr": "本文研究描述逻辑本体中基于认知保密策略的受控查询评估（CQE）。证明在DL-Lite_R下CQE计算上困难，并指出现有IGA语义不满足不可区分性属性。为此，提出一种新的CQE语义，保证保密性，同时保持可追踪性（在适当限制下）。贡献在于为知识图谱中的保密查询提供了理论基础。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.19586v1",
+      "source": "arxiv",
+      "title": "Examining User Behavior and Cognitive Biases in Personal Password Security",
+      "abstract": "Despite increasing awareness of cybersecurity risks, users continue to engage in insecure password practices, such as reusing passwords, choosing weak credentials, and neglecting security recommendations. The study explores the behavioral and cognitive factors that influence password decision-making by integrating insights from behavioral economics, particularly hyperbolic discounting, status quo bias, and present bias. We conducted a survey to analyze how people create, store and manage their passwords, examining whether security habits have improved over time in response to greater awareness. Our findings reveal that immediate convenience often outweighs long-term security considerations, leading users to prioritize memorability over strength. Additionally, we identify key psychological biases that contribute to security procrastination and resistance to adopting more secure authentication practices, such as password managers and multi-factor authentication. The study contributes to human-centered security by bridging the gap between security awareness and action, offering practical insights to design user-friendly authentication policies that align with real-world decision-making tendencies.",
+      "authors": [
+        "Evelyn Crowe",
+        "Patralika Ghosh",
+        "Shreyas Kumar",
+        "Rebecca Schlegel",
+        "Rebecca Ward",
+        "Guofei Gu"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.CY"
+      ],
+      "published": "2026-07-21T21:28:35+00:00",
+      "link": "https://arxiv.org/pdf/2607.19586v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "User behavior and cognitive biases in password security",
+      "llm_evidence_cn": "用户密码安全行为与认知偏差",
+      "llm_evidence": "用户密码安全行为与认知偏差",
+      "canonical_evidence": "用户密码安全行为与认知偏差",
+      "llm_tldr_en": "Examines behavioral and cognitive factors influencing password practices, revealing that immediate convenience often overrides long-term security considerations.",
+      "llm_tldr_cn": "该研究通过调查分析用户创建、存储和管理密码的行为，发现认知偏差如双曲贴现、现状偏见和当前偏见导致用户倾向于便捷而非安全。尽管安全意识提高，但用户仍优先考虑可记忆性而非密码强度，对密码安全策略设计有重要启示。",
+      "llm_tldr": "该研究通过调查分析用户创建、存储和管理密码的行为，发现认知偏差如双曲贴现、现状偏见和当前偏见导致用户倾向于便捷而非安全。尽管安全意识提高，但用户仍优先考虑可记忆性而非密码强度，对密码安全策略设计有重要启示。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.17328v1",
+      "source": "arxiv",
+      "title": "Physical Time-Lock Puzzles",
+      "abstract": "Traditional time-lock puzzles enforce delayed access to encrypted secrets by relying on inherently sequential computational steps. However, since software-based constructions impose no fundamental bound on the physical execution speed of individual steps, they remain vulnerable to hardware acceleration and improved implementations. In practice, this renders existing schemes ``step-lock'' rather than true ``time-lock'' puzzles, making long-term delay guarantees highly speculative against decades of unpredictable hardware advancement. To address this fundamental limitation, we introduce the Physical Time-Lock Puzzle (P-TLP), a new paradigm that anchors solving delay directly to the intrinsic, hardware-bounded evaluation latency of silicon hardware. By leveraging noisy Physical Unclonable Functions (PUFs) as non-parallelizable delay oracles, P-TLPs establish resistance against both parallel computation and algorithmic acceleration under the random oracle model. To tolerate PUF evaluation noise while maintaining a tightly concentrated and predictable solving-delay window, we propose a composite puzzle architecture that combines multiple independent basic puzzles. We formally prove the optimality of a sequential greedy solving strategy and derive tightly concentrated solving-delay windows using Hoeffding and Berry-Esseen bounds. We additionally prove early-solve hardness, establishing that adversaries with substantial classical computation budgets cannot bypass the physically-enforced PUF evaluation bottleneck. We validate our theoretical analysis with an FPGA prototype built around a configurable Ring Oscillator PUF, confirming that our analytical delay predictions tightly match empirical measurements. Our results demonstrate that P-TLPs can deliver highly predictable, long-term delay guarantees, enabling practical deployment in high-value applications such as digital legacy management.",
+      "authors": [
+        "Niloufar Sayadi",
+        "Chenglu Jin",
+        "Phuong Ha Nguyen",
+        "Zheng Yang",
+        "Marten van Dijk"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-19T16:31:29+00:00",
+      "link": "https://arxiv.org/pdf/2607.17328v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "physical time-lock puzzles as cryptographic primitive for delayed access",
+      "llm_evidence_cn": "物理时间锁谜题作为延迟访问的密码原语",
+      "llm_evidence": "物理时间锁谜题作为延迟访问的密码原语",
+      "canonical_evidence": "物理时间锁谜题作为延迟访问的密码原语",
+      "llm_tldr_en": "Physical time-lock puzzles anchor delay to hardware-bounded evaluation latency using PUFs, providing true time-lock guarantees against hardware acceleration.",
+      "llm_tldr_cn": "本文提出物理时间锁谜题（P-TLP），利用物理不可克隆函数将解密延迟锚定到硅硬件固有的评估延迟上，避免传统方案因硬件加速导致的延迟不确定性。该工作为长周期秘密存储提供了真正的物理时间锁安全保证。",
+      "llm_tldr": "本文提出物理时间锁谜题（P-TLP），利用物理不可克隆函数将解密延迟锚定到硅硬件固有的评估延迟上，避免传统方案因硬件加速导致的延迟不确定性。该工作为长周期秘密存储提供了真正的物理时间锁安全保证。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cryptographic techniques for key recovery and user authentication",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.20574v1",
+      "source": "arxiv",
+      "title": "AuthProbe: Specification-Driven, Multi-Identity Detection of Broken Object-Level Authorization in Recruitment API",
+      "abstract": "Broken Object-Level Authorization (BOLA), also known as Insecure Direct Object Reference (IDOR), has topped the OWASP API Security ranking since 2019 and is the root cause of some of the largest exposures of applicant data in recruitment technology. The defining feature of this flaw class is that a malicious request is byte-for-byte indistinguishable from a legitimate one, which is precisely why web application firewalls and single identity scanners fail to catch it. We present AuthProbe, an open-source, black-box scanner that detects BOLA and IDOR in HTTP APIs by driving its tests from an OpenAPI specification and by acting under two or more identities that the operator controls. AuthProbe discovers, for each identity, the objects that identity legitimately owns, then attempts to read one identity's objects while authenticated as another and confirms a leak by comparing the response against a ground-truth fetch by the true owner. It also walks predictable identifiers to expose enumeration and reports missing authentication and existence oracles. The tool returns a severity-thresholded exit code and machine-readable reports so that it can gate a continuous integration build. On a synthetic recruitment API in which the McHire failure class is reproduced, AuthProbe detects every planted cross-identity read with no false positives on a hardened counterpart, and its running time grows linearly with the number of objects under test. AuthProbe is released under the Apache 2.0 license with an authorized-use guardrail.",
+      "authors": [
+        "Jay Barach"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.HC"
+      ],
+      "published": "2026-07-22T03:04:04+00:00",
+      "link": "https://arxiv.org/pdf/2607.20574v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "detection of broken object-level authorization addresses identity authentication in APIs",
+      "llm_evidence_cn": "检测对象级授权缺陷应对API中的身份认证问题",
+      "llm_evidence": "检测对象级授权缺陷应对API中的身份认证问题",
+      "canonical_evidence": "检测对象级授权缺陷应对API中的身份认证问题",
+      "llm_tldr_en": "Presents AuthProbe, a black-box scanner that detects broken object-level authorization (BOLA/IDOR) in HTTP APIs using multi-identity testing.",
+      "llm_tldr_cn": "该论文提出AuthProbe，一种黑盒扫描器，通过OpenAPI规范和多重身份测试来检测HTTP API中的对象级授权缺陷（BOLA/IDOR）。AuthProbe利用两个或更多身份来发现单一身份扫描器无法检测的授权漏洞。实验证明AuthProbe能有效发现API中的授权问题，如申请者数据泄露。",
+      "llm_tldr": "该论文提出AuthProbe，一种黑盒扫描器，通过OpenAPI规范和多重身份测试来检测HTTP API中的对象级授权缺陷（BOLA/IDOR）。AuthProbe利用两个或更多身份来发现单一身份扫描器无法检测的授权漏洞。实验证明AuthProbe能有效发现API中的授权问题，如申请者数据泄露。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.20712v1",
+      "source": "arxiv",
+      "title": "Evaluating Large Language Models for Symbolic Security Protocol Analysis",
+      "abstract": "Security protocol verification relies on formal tools such as ProVerif and OFMC. This study evaluates whether Large Language Models (LLMs) can perform comparable analysis. We test GPT and DeepSeek in chat and reasoning modes over three runs on 130 obfuscated AnB/AnBx protocols covering 388 security goals, scored against ProVerif and OFMC. Chat models reach 69 to 81% recall at precision below 31%. Reasoning models reverse this trade-off, reaching 66.5% precision for GPT and 45.4% for DeepSeek, but detect just over half the attacks. DeepSeek's two modes share one underlying model, so the comparison isolates reasoning itself, which raises precision from 27.2% to 45.4%. The GPT contrast spans a model-version change and is only suggestive. All models perform worst on authentication goals: reasoning models detect well under half of injective and non-injective agreement attacks, whereas chat models over-flag them at low precision. Confidentiality is the exception, with F1 up to 95.7% in reasoning mode. Verdicts are unstable across runs, identical on 89.7% of goals for GPT but 74.0% for DeepSeek. Self-reported confidence is uniformly high yet shows no meaningful correlation with correctness. On this benchmark LLMs do not match formal verification, but may serve, at best, as pre-screening filters.",
+      "authors": [
+        "Paolo Modesti",
+        "Syed Ahmed",
+        "Ioannis Sfyrakis",
+        "Derek Enodolomwanyi"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-22T20:29:59+00:00",
+      "link": "https://arxiv.org/pdf/2607.20712v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "LLM evaluation for security protocol analysis, relevant to cryptographic authentication",
+      "llm_evidence_cn": "评估LLM进行安全协议分析，与密码认证相关",
+      "llm_evidence": "评估LLM进行安全协议分析，与密码认证相关",
+      "canonical_evidence": "评估LLM进行安全协议分析，与密码认证相关",
+      "llm_tldr_en": "Evaluates LLMs like GPT and DeepSeek on symbolic security protocol analysis, showing reasoning modes improve precision but miss many attacks",
+      "llm_tldr_cn": "该论文评估了大型语言模型（GPT和DeepSeek）在符号安全协议分析中的能力。在130个混淆协议（涵盖388个安全目标）上，聊天模式召回率69-81%但精度低于31%，推理模式将GPT精度提升至66.5%但只能检测一半攻击。研究揭示了LLM在协议分析中的潜力与局限，为自动化安全验证提供了参考。",
+      "llm_tldr": "该论文评估了大型语言模型（GPT和DeepSeek）在符号安全协议分析中的能力。在130个混淆协议（涵盖388个安全目标）上，聊天模式召回率69-81%但精度低于31%，推理模式将GPT精度提升至66.5%但只能检测一半攻击。研究揭示了LLM在协议分析中的潜力与局限，为自动化安全验证提供了参考。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cryptographic techniques for key recovery and user authentication",
+      "matched_requirement_id": "req-10",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.20759v1",
+      "source": "arxiv",
+      "title": "IssueTrojanBench: Benchmarking AI Coding Agents Against Malicious Issue Requests",
+      "abstract": "AI coding agents powered by LLMs are increasingly integrated into real-world software development, where they generate, edit, and execute code with autonomous access to local files and tools. Coding agents inherit security risks from both the LLM backbone, where adversarial prompts, poisoned training data, and backdoor triggers can cause models to emit insecure or attacker-chosen code, and their agentic architecture, where tool-using autonomy enables induced misuse of external APIs, data exfiltration, and persistent compromise of development environments. This paper presents a systematic evaluation of malicious issue requests against state-of-the-art coding agents (Cursor, Claude Code, and Codex Desktop), powered by two major model families (OpenAI GPT-5.3 Codex/GPT-5.4 and Anthropic Sonnet 4.6). Our novel benchmark IssueTrojanBench contains malicious issues that are constructed based on four novel attack categories (i.e., embedded as malicious instructions in issues), six delivery vectors (e.g., PDF, or issue comment), and further augmented by perturbations. Our results reveal critical vulnerabilities in the as-deployed modern coding agents, i.e., 66.5% of the malicious issues from IssueTrojanBench penetrate all the guardrails (agent- and LLM-level) of coding agents. Our further analysis shows that rejection is almost entirely from LLMs rather than the agent frameworks, with GPT models broadly vulnerable and Sonnet 4.6 exhibiting more selective, risk-aware blocking of high-impact actions. Our evaluation also highlights that the current agent-level defense strategy offers limited additional protection for coding agents. Our findings highlight the urgent need for stronger agent- and model-level safety mechanisms to protect AI coding agents.",
+      "authors": [
+        "Ankur Singh",
+        "Jinqiu Yang",
+        "Tse-Hsun Chen"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.SE"
+      ],
+      "published": "2026-07-22T22:20:02+00:00",
+      "link": "https://arxiv.org/pdf/2607.20759v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "benchmarking AI coding agents against malicious issue requests evaluates AI security",
+      "llm_evidence_cn": "对AI编码智能体进行恶意issue请求基准测试评估人工智能安全性",
+      "llm_evidence": "对AI编码智能体进行恶意issue请求基准测试评估人工智能安全性",
+      "canonical_evidence": "对AI编码智能体进行恶意issue请求基准测试评估人工智能安全性",
+      "llm_tldr_en": "Presents IssueTrojanBench, a systematic benchmark evaluating AI coding agents against malicious issue requests, revealing security risks.",
+      "llm_tldr_cn": "该论文提出IssueTrojanBench基准，系统评估AI编码智能体（如Cursor、Claude Code）面对恶意issue请求时的安全性。攻击者可能通过特制请求诱导智能体生成不安全代码或执行恶意操作。实验发现多种智能体存在漏洞，可能被利用进行数据泄露和持久化攻击。",
+      "llm_tldr": "该论文提出IssueTrojanBench基准，系统评估AI编码智能体（如Cursor、Claude Code）面对恶意issue请求时的安全性。攻击者可能通过特制请求诱导智能体生成不安全代码或执行恶意操作。实验发现多种智能体存在漏洞，可能被利用进行数据泄露和持久化攻击。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.20890v1",
+      "source": "arxiv",
+      "title": "Information-Theoretically Secure Aggregation for Lightweight Federated Learning: Resilient to Dropouts and Adversaries",
+      "abstract": "On-device federated learning (FL) enables privacy-preserving and personalized model training on resource-constrained devices such as smartphones and IoT nodes. To reduce communication cost, sign-based methods (e.g., signSGD) transmit one-bit gradients. However, exposing gradient signs makes them vulnerable to inference attacks, while existing secure aggregation schemes are often incompatible with such methods or incur significant computational and communication overhead. We propose a lightweight and information-theoretically secure aggregation framework tailored for sign-based FL. The framework securely computes the majority vote (MV) polynomial through single-round secure multiplication, ensuring end-to-end information-theoretic security under the honest-majority assumption while revealing only the final aggregated sign to the server. To enhance efficiency and scalability, we introduce two key techniques. First, inverse-form exponent reduction halves the effective MV polynomial degree, reducing both communication and computation costs. Second, we propose single-round secure multiplication, achieving linear offline complexity and storage with only a single online communication. Together, these techniques reduce online communication by up to 99.5% and latency by up to 85.7% compared to conventional approaches. Also, by leveraging inherent MDS-code-based decoding, the framework achieves robustness against both dropouts and adversarial behaviors, yielding accuracy gains of up to 20.65% and 10.74%, respectively. Overall, the proposed framework establishes a practical foundation for large-scale, low-latency, and information-theoretically secure aggregation in sign-based FL.",
+      "authors": [
+        "Hyeong-Gun Joo",
+        "Songnam Hong",
+        "Dong-Joon Shin"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-07-23T03:26:41+00:00",
+      "link": "https://arxiv.org/pdf/2607.20890v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Information-theoretically secure aggregation for privacy in federated learning",
+      "llm_evidence_cn": "联邦学习中信息论安全聚合实现隐私保护",
+      "llm_evidence": "联邦学习中信息论安全聚合实现隐私保护",
+      "canonical_evidence": "联邦学习中信息论安全聚合实现隐私保护",
+      "llm_tldr_en": "Proposes a lightweight, information-theoretically secure aggregation framework for sign-based federated learning, resilient to dropouts and adversaries.",
+      "llm_tldr_cn": "针对基于符号的联邦学习中梯度暴露和现有安全聚合开销高的问题，提出轻量级信息论安全聚合框架。该框架通过单轮安全乘法计算多数投票多项式，抵抗用户退出和恶意攻击。理论分析证明其安全性，实验表明在资源受限设备上高效可行，为隐私保护联邦学习提供了实用方案。",
+      "llm_tldr": "针对基于符号的联邦学习中梯度暴露和现有安全聚合开销高的问题，提出轻量级信息论安全聚合框架。该框架通过单轮安全乘法计算多数投票多项式，抵抗用户退出和恶意攻击。理论分析证明其安全性，实验表明在资源受限设备上高效可行，为隐私保护联邦学习提供了实用方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}
