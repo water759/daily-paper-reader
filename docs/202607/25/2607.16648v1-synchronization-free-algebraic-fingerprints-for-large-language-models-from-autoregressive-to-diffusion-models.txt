@@ -1,0 +1,858 @@
+Title: Synchronization-Free Algebraic Fingerprints for Large Language Models: From Autoregressive to Diffusion Models
+
+URL Source: https://arxiv.org/pdf/2607.16648v1
+
+Published Time: Tue, 21 Jul 2026 00:26:37 GMT
+
+Number of Pages: 25
+
+Markdown Content:
+# Synchronization-Free Algebraic Fingerprints for Large Language Models: From Autoregressive to Diffusion Models 
+
+Jarosław Janas 1, Josef Pieprzyk 1,2, and Paweł Morawiecki 1 
+
+> 1
+
+Institute of Computer Science, Polish Academy of Sciences, Warsaw, Poland  
+
+> 2
+
+CSIRO, Sydney, Australia 
+
+Abstract. Large Language Models (LLMs) have created an urgent need for reliable watermarking meth-ods that enable attribution of generated text while remaining robust to editing and paraphrasing. We propose a novel synchronization-free watermarking scheme in which every watermark consists of a single binary congruence generated from a pair of neighbouring tokens. For each token pair, a cryptographic hash determines an evaluation point of a Reed–Solomon polynomial representing the secret identity, while the parity of the polynomial evaluation determines the watermark bit embedded into the second token of the pair. Since each congruence is self-contained and depends only on the local token pair, the proposed construction is naturally resistant to insertions, deletions, and token reordering. We analyse the recovery problem from an algebraic perspective, discuss several decoding algorithms suitable for different identity sizes, and model watermark corruption as a Binary Symmetric Channel. The analysis shows that reliable recovery requires only a small redundancy even for relatively high token corruption rates. Unlike existing block-based watermarking schemes, the proposed method avoids synchronization problems while providing a flexible framework for embedding both short and long secret identities. 
+
+1 Introduction 
+
+Artificial Intelligence (AI) has become one of the most influential technologies of the twenty-first cen-tury, transforming science, industry, healthcare, finance, education, and cybersecurity. Recent advances in deep learning have enabled machines to perform tasks that were previously considered uniquely human, including image recognition, speech understanding, code generation, and natural language processing. Among these developments, Large Language Models (LLMs) represent a major break-through. Trained on massive text corpora and based primarily on the Transformer architecture, LLMs are capable of generating coherent, contextually relevant, and human-like text for a wide variety of applications, including question answering, summarization, software development, scientific writing, and conversational AI. Representative examples include GPT-4 [15], PaLM [1], and LLaMA [19]. The widespread deployment of LLMs has also created new security, privacy, and intellectual prop-erty challenges. As AI-generated content becomes increasingly indistinguishable from human writing, it is becoming difficult to determine its origin or to establish ownership. This raises important con-cerns regarding copyright protection, attribution of authorship, accountability for generated content, academic integrity, automated misinformation, and malicious use of AI. Consequently, techniques that allow AI-generated content to be authenticated or traced back to its source are becoming an essential component of trustworthy AI systems. Digital watermarking offers one of the most promising approaches to addressing these challenges. Traditionally, watermarking has been extensively studied for digital images, audio, video, software, databases, and multimedia content, where it has been used for copyright protection, ownership veri-fication, traitor tracing, fingerprinting, tamper detection, and content authentication. More recently, the concept has been extended to generative AI, where the objective is to embed an invisible identifier into generated text while preserving its semantic quality and fluency. Such identifiers enable the origin arXiv:2607.16648v1 [cs.CR] 18 Jul 2026 2
+
+of the generated content to be verified, facilitate forensic investigations, and provide a mechanism for assigning responsibility to individual users or AI systems. Text watermarking for LLMs has recently become an active research area. Existing approaches may be broadly classified into statistical watermarking, lexical or semantic substitution methods, syn-tactic watermarking, and cryptographic watermarking schemes. Among these, statistical approaches based on biased token sampling have received considerable attention due to their simplicity and com-patibility with existing autoregressive language models [7]. More sophisticated constructions employ error-correcting codes, secret-key token partitioning, or constrained decoding to improve robustness against editing attacks. Nevertheless, most existing schemes remain inherently synchronization de-pendent. Their encoding process partitions the generated text into fixed-size blocks or relies on the sequential position of tokens, making watermark recovery sensitive to insertions, deletions, sentence re-ordering, and other editing operations that destroy synchronization between the encoder and decoder. Developing synchronization-free watermarking techniques capable of reliable detection after arbitrary text editing therefore remains one of the fundamental open problems in LLM watermarking. In this paper we propose a synchronization-free watermarking framework that eliminates the need for explicit token alignment during watermark recovery. Instead of relying on the positional structure of the generated text, the proposed construction embeds the watermark into statistically independent token pairs selected according to a secret cryptographic key. The resulting scheme naturally supports probabilistic analysis through a Binary Symmetric Channel model, allowing the robustness of water-mark recovery to be evaluated analytically rather than relying exclusively on empirical experimentation. 
+
+2 Related Work and Motivation 
+
+Digital watermarking has been extensively studied for more than three decades as a mechanism for copyright protection, ownership verification, fingerprinting, tamper detection, and content authentica-tion [2]. Classical watermarking techniques were originally developed for multimedia objects such as images, audio, and video, where a hidden signal is embedded while preserving perceptual quality. With the rapid adoption of Large Language Models (LLMs), watermarking has become equally important for protecting AI-generated content, enabling provenance verification, authorship attribution, misuse detection, and accountability. Existing watermarking techniques for LLMs may be broadly classified into four categories. The first class embeds the watermark during model training by modifying either the training data or the optimization objective. Representative examples include Text Radioactivity [18], TextMarker [10], and knowledge injection techniques [3]. While these approaches provide strong ownership guarantees, they require retraining or fine-tuning the underlying model, making them impractical for closed-source commercial LLMs. The second category modifies the token probability distribution during text generation. The pio-neering work of Kirchenbauer et al. [7] partitions the vocabulary into green and red token sets and softly biases the sampling process toward green tokens, creating statistically detectable watermarks. Numerous variants have since been proposed, including logits-to-text watermarking [20], GumbelSoft watermarking [5], semantic watermarking [9], and SynthID-Text developed by Google DeepMind [8]. These methods preserve text quality while achieving reliable statistical detection. A third class embeds watermarks directly during token sampling by introducing controlled ran-domness or lexical constraints [21,23]. Finally, attribution-based approaches focus on identifying the generating model or user after text generation using stylometric or statistical features rather than explicit embedded watermarks [14,22]. 3
+
+Although the proposed techniques differ considerably in their implementation, most existing wa-termarking schemes remain inherently synchronization dependent . Watermark bits are typically em-bedded sequentially or organised into fixed-size algebraic blocks, so insertions, deletions, paraphrasing, or sentence reordering destroy the alignment between the embedding and detection processes. As a consequence, even small editing operations may invalidate entire watermark blocks and substantially reduce recovery performance. Developing synchronization-free watermarking schemes that remain ro-bust under arbitrary editing therefore remains one of the major open problems in LLM watermarking. A recent and closely related effort by Qu et al. [16] similarly targets efficient multi-bit watermarking through pseudo-random segment assignment combined with Reed–Solomon error correction, achieving substantially better extraction accuracy and speed than earlier multi-bit schemes; unlike the present work, however, their segments are assigned via the hash of a single preceding token and recovered through per-segment enumeration, so watermark bits sharing a segment remain positionally coupled during extraction, whereas our construction embeds every bit as an independent algebraic constraint recoverable in any order. 
+
+2.1 Our Contributions 
+
+The main contributions of this paper are summarized as follows. 
+
+• We propose a synchronization-free watermarking framework in which every watermark bit is em-bedded independently, eliminating the need for token alignment during watermark recovery. 
+
+• We introduce a Reed–Solomon-based encoding method that reconstructs the embedded identity from any sufficiently large collection of correctly recovered congruences, irrespective of their posi-tions in the generated text. 
+
+• We demonstrate that all sources of corruption, including embedding errors and text editing opera-tions such as insertions, deletions, and substitutions, can be modelled by a single Binary Symmetric Channel (BSC). 
+
+• We derive exact and approximate probabilistic formulas that predict the minimum text length required for successful watermark recovery with a prescribed confidence level. 
+
+• We propose lightweight variants that partition long identities into multiple independently recover-able fragments, substantially reducing computational complexity while preserving synchronization-free operation. 
+
+• Finally, we extend the proposed watermarking framework to diffusion-based language models and present efficient token commitment algorithms together with their probabilistic analysis. 
+
+3 Algebraic Building Blocks 
+
+This section introduces the algebraic framework underlying the proposed watermarking scheme. Unlike conventional LLM watermarking techniques, which embed watermark bits sequentially into generated tokens, our construction associates every identity with an algebraic fingerprint derived from a Reed– Solomon evaluation code. Each observed token pair reveals one independently generated binary con-straint on the embedded identity. Consequently, watermark recovery does not depend on the relative positions of the surviving tokens, making the scheme naturally synchronization free. Let S = {0, 1, . . . , 2n − 1} denote the space of admissible identities, where every identity is repre-sented by an n-bit binary vector S = ( s0, s 1, . . . , s n−1), s i ∈ { 0, 1}. Throughout the paper we assume that q > 2n is an odd prime. Every identity is uniquely represented by the polynomial 
+
+fS (x) = s0 + s1x + · · · + sn−1xn−1 ∈ Fq[x].4
+
+Since the polynomial degree is at most n − 1, the mapping S ←→ fS (x) is one-to-one. The polynomial representation provides an algebraic encoding of the identity and allows every evaluation point α ∈ Fq
+
+to generate one binary observation. For every identity S, define the binary evaluation function ϕS : Fq −→ { 0, 1} by 
+
+ϕS (α) = fS (α) mod 2 .
+
+The function ϕS will be referred to as the algebraic fingerprint of the identity S. Unlike classical Reed– Solomon decoding, the receiver never observes the field value fS (α) itself. Instead, only its parity is available. Consequently, every evaluation point produces exactly one binary observation, 
+
+w = ϕS (α),
+
+which later becomes embedded into the generated text. The complete fingerprint of the identity is therefore the binary function Φ(S) = {(α, ϕ S (α)) : α ∈ Fq}. During watermark extraction only a small subset of these evaluations is observed. The proposed construction employs Reed–Solomon codes. Let α1, α 2, . . . , α m ∈ Fq be distinct evaluation points. The corresponding fingerprint bits are wi = ϕS (αi) = fS (αi) mod 2 , i = 1 , . . . , m. 
+
+The vector w = ( w1, . . . , w m) constitutes an algebraic fingerprint of the identity. Observe that this differs fundamentally from classical Reed–Solomon codes. In a standard Reed–Solomon codeword the symbols fS (αi) are transmitted. In contrast, our construction reveals only their parity, 
+
+fS (αi) mod 2 ,
+
+which substantially reduces the amount of information revealed while remaining sufficient for identity recovery. The probabilistic analysis relies on the following assumption. 
+
+Assumption 1 (Balanced Binary Evaluation) For every pair of distinct identities 
+
+S, T ∈ S , and every evaluation point chosen uniformly from Fq,
+
+Pr [ ϕS (α) = ϕT (α)] = 12 .
+
+Furthermore, evaluations performed at distinct points are assumed to be statistically inde-pendent. 
+
+Assumption 1 reflects the behaviour observed experimentally for randomly selected evaluation points over sufficiently large finite fields. It is analogous to the random oracle assumption commonly adopted in cryptographic security analyses and allows the fingerprint to be analysed as a sequence of independent binary tests. 
+
+Remark 1 (Scope of the independence assumption). Assumption 1 concerns evaluations at distinct 
+
+points αi̸ = αj . In the construction of Section 4, the evaluation point is derived from the identity of a single preceding token, αi = H(K, id( ti)) mod q. Consequently, two token pairs sharing the same preceding token necessarily yield the same evaluation point and therefore the same fingerprint bit; the independence assumption applies only across pairs whose preceding tokens are distinct, and re-peated common tokens (e.g. function words) contribute no additional independent observation beyond the first occurrence. Should this reduction in effective sample size be a concern for a given text dis-tribution, the evaluation point can instead be derived from a short context window, for instance 5
+
+αi = H(K, id( ti−1), id( ti)) mod q, so that repetitions of a single token no longer collide unless the preceding context also repeats, at the cost of a (typically mild) increase in synchronisation sensitiv-ity. A related tension appears in Qu et al. [16], where a token’s assigned message segment is likewise selected via the hash of the single preceding token; the resulting imbalance in segment assignment (frequent tokens routing disproportionately many observations to the same segment) is precisely the same phenomenon, which they address with a dynamic-programming-based balanced assignment over the vocabulary rather than by widening the hash context. 
+
+3.1 Probabilistic Analysis 
+
+Each observed fingerprint bit partitions the identity space into two subsets according to the value of 
+
+ϕS (α). Under Assumption 1, each observation removes, on average, one half of all remaining candidate identities. 
+
+Lemma 1. Suppose that the observed fingerprint consists of m independent binary evaluations. Then the expected number of identities consistent with all observations equals 2 n−m.
+
+Proof. Initially the identity space contains 2n candidates. Every independent binary evaluation elimi-nates one half of the remaining candidates in expectation. Consequently, after observing m evaluations, 
+
+2n   12
+
+m = 2 n−m candidate identities remain on average. □
+
+The previous lemma shows that every binary evaluation approximately halves the number of candidate identities. We next derive a sufficient condition for unique identification of the embedded identity. 
+
+Theorem 1. Suppose that the binary fingerprint evaluations satisfy Assumption 1. Let m = n+λ, λ ≥
+
+0, be the number of independently observed fingerprint bits. Then the probability that the embedded identity cannot be recovered is bounded by Pr[Failure] < 2−λ.
+
+Proof. Fix the embedded identity S and let α1, . . . , α m denote the observed evaluation points, with 
+
+wi = φS (αi) for i = 1 , . . . , m . Recovery fails whenever some identity T̸ = S agrees with S on all m
+
+observed points, that is, φT (αi) = φS (αi) for every i = 1 , . . . , m ; note this is a much weaker event than 
+
+T and S agreeing as functions on all of Fq, since we only require agreement at the m observed points. Fix any T̸ = S. By Assumption 1, Pr[ φT (αi) = φS (αi)] = 12 for every evaluation point αi, and since the observations are independent, 
+
+Pr φT (αi) = φS (αi) for all i = 1 , . . . , m  = 2 −m.
+
+There are at most 2n − 1 identities T̸ = S. Applying the union bound over all such T ,
+
+Pr[Failure] ≤ (2 n − 1) 2 −m < 2n−m.
+
+Substituting m = n + λ yields Pr[Failure] < 2−λ, which completes the proof. □
+
+The watermark construction requires a collection of evaluation points α1, . . . , α m ∈ Fq. Since every evaluation produces an independent binary observation, the evaluation points should be distinct. Throughout the paper they are generated pseudorandomly from a secret key using a cryptographic hash function 
+
+αi = H(K, τ i) mod q, 
+
+where τi denotes the identifier associated with the current token pair and K is known only to the wa-termark detector. The probability that two independently generated evaluation points coincide follows directly from the birthday paradox. 6
+
+Proposition 1. Suppose m evaluation points are sampled independently and uniformly from Fq. Then 
+
+Pr[collision] < m(m − 1) 2q .
+
+Proof. For every pair of sampled evaluation points, Pr[ αi = αj ] = 1 
+
+> q
+
+. Applying the union bound over the  m
+
+> 2
+
+ pairs gives 
+
+Pr[collision] ≤
+
+m
+
+2
+
+ 1
+
+q < m(m − 1) 2q .
+
+□
+
+The preceding analysis establishes that the proposed fingerprinting mechanism possesses two de-sirable properties. First, every observed token pair contributes one statistically independent binary constraint on the embedded identity. Consequently, approximately one additional observation elimi-nates one additional bit of uncertainty. Second, the recovery probability depends only on the number of surviving observations and not on their positions within the generated text. This property distin-guishes the proposed construction from existing block-based watermarking schemes, whose recovery depends on maintaining synchronization between the embedding and extraction processes. The alge-braic fingerprint introduced in this section forms the mathematical foundation of the watermarking scheme described in the next section. 
+
+4 Watermark Construction 
+
+The algebraic framework developed in the previous section associates every identity with a binary fin-gerprint function ϕS : Fq → { 0, 1}. The watermarking scheme embeds evaluations of this function into the generated text. Unlike existing synchronization-dependent watermarking schemes, each embedded watermark bit is completely independent of all previously generated bits. Consequently, watermark recovery depends only on the number of surviving observations rather than their positions in the text. The construction uses the following public parameters. 
+
+• An odd prime q > 2n.
+
+• A cryptographic hash function H : {0, 1}∗ → Fq.
+
+• A language model capable of generating two disjoint token classes corresponding to binary values 
+
+0 and 1.The detector additionally possesses the secret key K, which determines the sequence of evaluation points. Let S = ( s0, . . . , s n−1) be the identity to be embedded. Construct the polynomial 
+
+fS (x) = s0 + s1x + · · · + sn−1xn−1 ∈ Fq[x].
+
+The associated binary fingerprint is ϕS (α) = fS (α) mod 2 . No further preprocessing of the identity is required. Watermark embedding proceeds independently for every consecutive token pair Pi = ( ti, t i+1 ). The first token determines the evaluation point, while the second token carries the watermark bit. For every pair Pi, the sender performs the following operations. 1. Compute αi = H(K, id( ti)) mod q. 
+
+2. Evaluate the fingerprint wi = ϕS (αi).7
+
+3. Generate the second token ti+1 using any binary watermarking mechanism that biases generation toward the token class corresponding to wi.Since every evaluation point depends only on the current token pair, each watermark bit is generated independently of all previous observations. Suppose that, after arbitrary editing, the detector identifies r surviving token pairs Pi1 , . . . , P ir . For every surviving pair the detector recomputes αj = H(K, id( tij )) mod q and determines the embedded bit ˆwj from the token class of the second token. This produces the observation set 
+
+{(αj , ˆwj )}rj=1 .
+
+Unlike conventional watermarking schemes, these observations may appear in arbitrary order. No synchronization between embedding and extraction is required. The detector reconstructs the embedded identity by searching for the unique polynomial fS (x)
+
+whose binary fingerprint agrees with all observed evaluations, 
+
+ϕS (αj ) = ˆ wj , j = 1 , . . . , r. 
+
+Recovery succeeds whenever a unique identity satisfies the observed constraints. According to Theo-rem 1, if r ≥ n + λ, then Pr[Failure] < 2−λ. Therefore successful watermark recovery depends only on the number of surviving token pairs and is independent of their original positions in the generated text. The proposed construction differs fundamentally from existing block-based watermarking tech-niques. In conventional watermarking schemes, watermark bits are embedded sequentially. Insertions or deletions shift subsequent watermark positions, destroying synchronization between the encoder and decoder. In contrast, every watermark bit in the proposed construction is bound only to its own token pair through the cryptographic hash function. Consequently, 
+
+• insertions create additional token pairs without affecting previous observations; 
+
+• deletions merely remove individual observations; 
+
+• substitutions affect only the modified token pair; 
+
+• sentence reordering leaves every surviving observation unchanged. The detector therefore operates on an unordered collection of binary evaluations rather than on a synchronized bit stream. This synchronization-free property constitutes the principal advantage of the proposed watermarking framework. 
+
+5 Recovery Algorithms 
+
+During watermark extraction the detector observes a collection O = {(αi, ˆwi)}ri=1 , where ˆwi = ϕS (αi) = 
+
+fS (αi) mod 2 denotes the recovered fingerprint bit associated with the evaluation point αi. The objec-tive of the recovery algorithm is to determine the unique identity S ∈ S whose fingerprint agrees with all observed evaluations. Formally, the detector searches for an identity satisfying ϕS (αi) = ˆ wi, i = 1 , . . . , r. 
+
+According to Theorem 1, if r ≥ n + λ, the solution is unique except with probability at most 2−λ.Depending on the size of the identity space, different recovery algorithms become appropriate. 
+
+Algorithm 1: Exhaustive Search When the identity space is sufficiently small, recovery can be performed by exhaustive enumeration. For every candidate identity S′ ∈ S , the detector constructs the corresponding polynomial fS′ (x) and evaluates 
+
+ϕS′ (αi) = fS′ (αi) mod 2 , i = 1 , . . . , r. 8
+
+The resulting fingerprint is compared with the observed watermark bits. The unique candidate satis-fying all observations is returned as the embedded identity. 
+
+Algorithm 1 Exhaustive Recovery 
+
+Require: Observations O = {(αi, ˆwi)}ri=1 
+
+1: for all S′ ∈ S do 
+
+2: Construct fS′ (x).3: Compute ϕS′ (αi) for every observation. 4: if all fingerprint bits agree then 
+
+5: Return S′.6: end if 
+
+7: end for 
+
+8: Return Fail .
+
+The complexity of exhaustive recovery is O(2 n), making it practical whenever n ≲ 20 .
+
+Algorithm 2: Meet-in-the-Middle Recovery For larger identities the exhaustive search becomes infeasible. A significant reduction in complexity is obtained by partitioning the identity into halves. Let n = nL + nR, and write S = ( SL, S R), where 
+
+SL = ( s0, . . . , s nL−1), SR = ( snL , . . . , s n−1).
+
+The polynomial representation decomposes naturally as fS (x) = fL(x) + xnL fR(x). The algorithm first enumerates every possible lower half SL, computes its contribution to every observed evaluation point, and stores the resulting vectors in a lookup table. The second stage enumerates every upper half SR
+
+and searches for compatible entries in the lookup table. The search therefore requires approximately 
+
+2n/ 2 operations instead of 2n.
+
+Algorithm 2 Meet-in-the-Middle Recovery 
+
+Require: Observed fingerprint O
+
+1: Construct a lookup table containing the evaluation vectors of all lower-half identities. 2: for all upper-half identities do 
+
+3: Compute the corresponding evaluation vector. 4: Search the lookup table for a compatible lower-half. 5: if a unique match exists then 
+
+6: Return the reconstructed identity. 7: end if 
+
+8: end for 
+
+9: Return Fail .
+
+Ignoring the cost of hash-table operations, the computational complexity becomes O(2 n/ 2), while the memory requirement is O(2 n/ 2). Consequently, the meet-in-the-middle algorithm extends practical recovery to substantially larger identity spaces. 
+
+Example 1. We illustrate the meet-in-middle recovery algorithm (Algorithm 2) with parameters n = 4 , q = 17 , split position k = 2 , true identity S = 6 = ( s0, s 1, s 2, s 3) = (0 , 1, 1, 0) , so that f6(x) = x + x2 ∈ F17 [x], and evaluation points 
+
+α1 = 2 , α2 = 3 , α3 = 5 , α4 = 7 .
+
+Observed bits. Each observed bit is wi =  f6(αi) mod 17  mod 2 .9
+
+i α i f6(αi) mod 17 wi
+
+1 2 6 02 3 12 03 5 13 14 7 5 1
+
+This gives the observed bit vector ˆw = (0 , 0, 1, 1) .
+
+Splitting the identity. Write the left and right halves of S = ( s0, s 1, s 2, s 3) as the integers 
+
+SL = s0 + 2 s1 = 2 , SR = s2 + 2 s3 = 1 ,
+
+so that the full identity is recovered as S = SL + 2 k SR. Correspondingly, fS (x) splits as 
+
+fS (x) = ( s0 + s1x)
+
+| {z } 
+
+> hSL(x)
+
++ xk (s2 + s3x)
+
+| {z }
+
+=: gSR (x)
+
+,
+
+so hSL depends only on the left half (s0, s 1) and gSR only on the right half (s2, s 3). For the true identity, h2(x) = x and 
+
+g1(x) = x2.
+
+Baby step: precompute the left-half table. For every candidate SL ∈ { 0, 1, 2, 3}, precompute rL(SL) =  hSL (αi) mod 
+
+q4 
+
+> i=1
+
+∈ { 0, . . . , q − 1}4. This table depends only on SL and is built once, independently of SR.
+
+SL (s0, s 1) hSL (x) rL(SL)0 (0 , 0) 0 (0 , 0, 0, 0) 1 (1 , 0) 1 (1 , 1, 1, 1) 2 (0 , 1) x (2 , 3, 5, 7) 3 (1 , 1) 1 + x (3 , 4, 6, 8) 
+
+Giant step: search over the right half. For every candidate SR ∈ { 0, 1, 2, 3}, compute rR(SR) =  gSR (αi) mod q4 
+
+> i=1
+
+∈{0, . . . , q − 1}4, then scan the baby-step table for an SL such that 
+
+ r(i) 
+
+> L
+
+(SL) + r(i) 
+
+> R
+
+(SR) mod q ≡ wi (mod 2) for every i = 1 , . . . , 4.
+
+In practice the constraints are checked in order i = 1 , 2, 3, 4, and a candidate SL is discarded as soon as a single constraint fails; this early termination is what makes the search efficient in general. 
+
+SR (s2, s 3) rR(SR) Result 
+
+0 (0 , 0) (0 , 0, 0, 0) no SL satisfies all four constraints 
+
+1 (1 , 0) (4 , 9, 8, 15) SL = 2 satisfies all four constraints ✓
+
+2 (0 , 1) (8 , 10 , 6, 3) no SL satisfies all four constraints 
+
+3 (1 , 1) (12 , 2, 14 , 1) no SL satisfies all four constraints 
+
+Verifying the unique match SL = 2 , SR = 1 .
+
+i r (i) 
+
+> L
+
+(2) r(i) 
+
+> R
+
+(1) sum sum mod17 parity wi
+
+1 2 4 6 6 0 0 ✓
+
+2 3 9 12 12 0 0 ✓
+
+3 5 8 13 13 1 1 ✓
+
+4 7 15 22 5 1 1 ✓
+
+Note the wraparound at i = 4 : although r(4)  
+
+> L
+
+= 7 and r(4)  
+
+> R
+
+= 15 are individually odd, their sum 22 exceeds q = 17 , so 
+
+22 mod 17 = 5 is odd , not even. Combining the two parities directly (e.g. via XOR) before reducing modulo q would therefore give the wrong bit; the reduction mod q must be applied before taking parity. Since (SL, S R) = (2 , 1) is the unique pair satisfying all four constraints, the identity is recovered as ˆS = SL + 2 k SR = 2 + 4 · 1 = 6 , correctly matching the true identity S = 6 . ✓
+
+For n = 60 the baby-step table holds 230 ≈ 1.07 ×10 9 entries, requiring roughly 9–17 GB of memory depending on encoding — comfortably within reach of a single well-specified workstation. The method remains correct up to n ≈ 64 , but at that point the table grows to 232 ≈ 4.3×10 9 entries ( ∼ 35 –70 GB), 10               
+
+> Table 1. Comparison of recovery algorithms. Algorithm Time Memory Typical range Exhaustive search O(2 n)O(1) n≤20
+> Meet-in-the-middle O(2 n/ 2)O(2 n/ 2)20 < n ≤60
+
+which requires a dedicated high-memory machine rather than typical hardware; we therefore report 
+
+n ≤ 60 as the practical range and treat larger n up to 64 as an achievable but hardware-demanding edge case. For substantially larger identity spaces, the recovery problem may also be formulated as a system of Boolean constraints or as an instance of the Closest Vector Problem in an appropriately constructed lattice. Although these formulations appear promising, a detailed complexity analysis is beyond the scope of the present work and is therefore left for future research. 
+
+6 Security Analysis 
+
+The security of the proposed watermarking scheme relies on two independent principles. First, the embedded identity must be recovered uniquely from the observed watermark. Second, the watermark must remain recoverable after the generated text has undergone editing operations such as insertions, deletions or substitutions. Unlike existing synchronization-dependent watermarking schemes, the pro-posed construction embeds each fingerprint bit independently. Consequently, the combined effect of all error mechanisms can be modelled by a Binary Symmetric Channel (BSC), which enables a simple probabilistic analysis of watermark recovery. Suppose that the detector observes r watermark bits generated from an embedded identity S ∈ S .According to Theorem 1, if r ≥ n + λ, the probability that another identity satisfies all observed fingerprint constraints is at most 2−λ. Consequently, the probability of falsely attributing a docu-ment to another registered identity decreases exponentially with the number of surviving watermark observations. The proposed watermarking scheme assumes that every token pair embeds one binary fingerprint bit w = ϕS (α) = fS (α) mod 2 , where the evaluation point α is derived from the preceding token using the secret-keyed hash function. During embedding and subsequent editing of the generated text, individual fingerprint bits may become corrupted. We model the combined effect of all error mechanisms by a Binary Symmetric Channel (BSC) with crossover probability p. Each watermark bit is therefore recovered correctly with probability 1 − p and incorrectly with probability p, independently of all remaining bits. This model is particularly well suited to the proposed construction because every fingerprint observation is statistically independent of every other observation. 
+
+6.1 Why the BSC Model Applies 
+
+Most existing LLM watermarking schemes embed watermark bits in synchronized blocks. A single inser-tion or deletion usually destroys the alignment of the remaining watermark bits, causing an entire block to be decoded incorrectly. The proposed scheme behaves fundamentally differently. Every watermark bit depends only on one token pair through the evaluation point α = H(K, id( t)) . Consequently, 
+
+• each token pair contributes one independent fingerprint bit; 
+
+• editing operations affect only local observations; 
+
+• watermark recovery depends only on the number of surviving observations and not on their positions within the document. 11 
+
+Therefore all editing operations may be represented by a single channel parameter p rather than analysed individually. The effective crossover probability p reflects both imperfections of the language model and adversarial editing of the generated text. 
+
+Embedding errors. Despite applying a logit bias, the language model may occasionally generate a token from the wrong colour class, producing one erroneous fingerprint bit. 
+
+Insertion. Suppose an adversary inserts a token tf between two consecutive tokens ti and ti+1 , re-placing one watermarked pair by the two pairs (ti, t f ) and (tf , t i+1 ). For the insertion to remain completely undetected, two independent events must occur simultaneously: (i) the inserted token must belong to the required colour class, and (ii) its hash-derived evaluation point must produce the ex-pected fingerprint bit for the subsequent token. Each event occurs with probability approximately 1/2,yielding Pr[ undetected insertion ] ≈ 14 . Hence an insertion is detected with probability approximately 
+
+3/4. Equivalently, among u random insertions, only about u/ 4 remain invisible to the detector, while approximately 3u/ 4 introduce at least one detectable watermark inconsistency. 
+
+Deletion. Suppose an adversary deletes the token ti+1 from the sequence (ti, t i+1 , t i+2 ). The original watermark observations associated with the pairs (ti, t i+1 ) and (ti+1 , t i+2 ) disappear and are replaced by the single pair (ti, t i+2 ). For the deletion to remain completely undetected, the newly formed pair must simultaneously satisfy two independent conditions. First, ti+2 must belong to the colour class prescribed by the watermark bit associated with the new evaluation point generated from ti. Second, the newly generated evaluation point must produce the correct fingerprint relation for the surviving token pair. Under the random oracle assumption, each event occurs with probability approximately 
+
+1/2. Hence Pr[ undetected deletion ] ≈ 14 , and therefore Pr[ detected deletion ] ≈ 34 . Consequently, among 
+
+u random deletions, approximately u/ 4 remain undetected, whereas about 3u/ 4 introduce at least one detectable watermark inconsistency. 
+
+Substitution. Suppose an adversary replaces a token ti by another token t′
+
+> i
+
+. This modification changes both the colour class of the substituted token and the evaluation point used to generate the sub-sequent fingerprint constraint. For the substitution to remain undetected, two independent events must occur simultaneously. The replacement token must belong to the expected colour class, and its hash-derived evaluation point must generate the correct fingerprint relation for the following token. Assuming both events occur independently with probability approximately 1/2, we obtain 
+
+Pr[ undetected substitution ] ≈ 14 , and therefore Pr[ detected substitution ] ≈ 34 . Thus, among u random substitutions, approximately u/ 4 remain undetected, while about 3u/ 4 produce a detectable violation of the embedded watermark. Paraphrasing, deletion of contiguous text fragments, and insertion of multiple consecutive tokens can all be decomposed into sequences of the elementary editing operations analysed above. Conse-quently, their effect on the watermark can be modelled by composing the corresponding insertion, deletion, and substitution probabilities, yielding an effective crossover probability for the resulting Binary Symmetric Channel. 
+
+6.2 Probability of Successful Recovery 
+
+Suppose that the watermark is embedded into N token pairs and let X ∼ Binomial( N, 1 − p) denote the number of correctly recovered fingerprint bits. Since the proposed Reed–Solomon construction 12 
+
+reconstructs the embedded identity from any collection of at least n correct observations, successful recovery occurs whenever X ≥ n. Thus, 
+
+Pr[Recovery] = Pr[ X ≥ n].
+
+For a desired recovery probability γ, the minimum watermark length is therefore the smallest integer 
+
+N satisfying Pr[ X ≥ n] ≥ γ. For moderate values of N , the binomial distribution may be accurately approximated by a normal distribution, yielding 
+
+N ∗ ≈
+
+
+
+11 − p
+
+ zγ
+
+pp(1 − p) + 
+
+q
+
+z2 
+
+> γ
+
+p(1 − p) + 4 n(1 − p)2
+
+
+
+> 2
+
+
+
+,
+
+where zγ denotes the standard normal quantile associated with probability γ.                                                    
+
+> Example 2. For a 32 -bit identity and target recovery probability γ= 0 .99 , Table 2 compares the exact binomial solution with the normal approximation. The results demonstrate that the redundancy required by the proposed scheme is
+> Table 2. Minimum number of transmitted token pairs required for reliable recovery of a 32 -bit identity.
+> pExact N∗Approx. N∗Overhead Success probability
+> N∗−n
+> 0.001 33 33 10.9995 0.005 34 34 20.9993 0.010 34 34 20.9953 0.050 37 37 50.9905 0.100 41 41 90.9939 0.200 48 49 16 0.9907 0.300 57 58 25 0.9908 remarkably small. Even for an extremely noisy channel with crossover probability p= 0 .30 , only 25 additional token pairs are required to recover a 32 -bit identity with probability at least 99% . Under more realistic editing conditions (p≤0.10 ), fewer than ten additional token pairs are sufficient. Consequently, reliable watermark recovery can typically be achieved from only a few sentences of generated text.
+
+The Binary Symmetric Channel representation constitutes one of the main advantages of the pro-posed watermarking framework. Because every fingerprint bit is generated independently, synchro-nization errors never propagate through the watermark. Instead, insertions, deletions, substitutions and embedding imperfections merely increase the effective crossover probability p. Consequently, the complete robustness analysis reduces to a classical coding-theoretic problem whose behaviour is fully characterised by the binomial distribution. This considerably simplifies both the analysis and the practical design of the watermarking system while providing explicit guarantees on the probability of successful watermark recovery. 
+
+7 Scaling to Long Identities by Fragmentation 
+
+The recovery algorithms presented in Section 5 become progressively more expensive as the identity length increases. To overcome this limitation, we partition the secret identity into several shorter frag-ments and recover each fragment independently. Consequently, one large recovery problem is replaced by a collection of small independent recovery problems, while preserving all desirable properties of 13 
+
+the proposed watermarking scheme, including synchronization-free embedding and robustness against editing. Suppose that the secret identity consists of n = mv bits and is divided into v = 2 r frag-ments S(1) , S (2) , . . . , S (v), each containing m bits. Every fragment is encoded independently using the Reed–Solomon construction described in Section 4. For every token pair (ti, t i+1 ), the keyed hash H(K, id( ti)) is interpreted as two independent random variables. The first r = log 2 v bits determine the fragment index j(i) ∈ { 1, . . . , v }, while the remain-ing bits generate the evaluation point αi ∈ Fq for that fragment. The embedded watermark bit is therefore wi = fS(j(i)) (αi) mod 2 , where fS(j) denotes the Reed–Solomon polynomial representing frag-ment S(j). Since both the fragment index and the evaluation point are generated independently from the keyed hash function, every watermark observation remains independent of all other observations. Consequently, the fragmented construction remains synchronization-free. 
+
+Minimum Transmission Length Assume that each embedded watermark bit is transmitted through a Binary Symmetric Channel with crossover probability p. For a fixed fragment, each transmitted token pair contributes one correct watermark observation with probability q = 1−pv , since the corresponding fragment is selected with probability 1/v and its watermark bit is recovered correctly with probability 
+
+1 − p.Let Xj denote the number of correctly recovered observations for the j-th fragment. The random variables X1, . . . , X v follow a multinomial distribution. Since q is small, we approximate each Xj by an independent random variable Xj ∼ Binomial( N, q ). Recovery of fragment j succeeds whenever Xj ≥ m.Consequently, successful recovery of the complete identity requires Xj ≥ m, j = 1 , . . . , v. Using the independence approximation, Pr[ Recovery ] ≈ Pr[ X1 ≥ m]v. For a prescribed recovery probability γ,the required per-fragment success probability is therefore γ0 = γ1/v , and the minimum transmission length N ∗ is the smallest integer satisfying Pr[Binomial( N, q ) ≥ m] ≥ γ0. Since q = (1 − p)/v is typically small, the Binomial distribution is well approximated by a Poisson distribution with mean 
+
+λ = N q. Let λ∗ denote the smallest value satisfying 
+
+1 − FPois( λ)(m − 1) ≥ γ0,
+
+where FPois( λ) is the cumulative Poisson distribution. The required transmission length is therefore approximated by N ∗ ≈
+
+l vλ ∗
+
+> 1−p
+
+m
+
+. This expression shows that the required text length grows linearly with the number of fragments and inversely with the channel reliability 1 − p.                            
+
+> Example 3. Table 3 considers a 128 -bit identity divided into v= 32 fragments of m= 4 bits each. The target recovery probability is γ= 0 .99 , giving γ0≈0.999686 and λ∗≈14 .52 . Table 4 considers a 64 -bit identity divided into v= 8
+> fragments of m= 8 bits each for target recovery probabilities γ= 0 .99 and γ= 0 .90 .
+
+The results demonstrate that fragmentation enables watermarking of arbitrarily long identities while preserving synchronization-free embedding. As predicted by N ∗ ≈ vλ ∗/(1 − p), the required transmission length grows approximately linearly with the number of fragments and inversely with the probability of correct watermark recovery. For small fragment sizes, the Poisson approximation closely matches the exact Binomial solution over the entire range of channel error probabilities considered. In particular, for m = 4 the approximation differs from the exact solution by at most six transmitted token pairs, while for m = 8 the difference never exceeds seven token pairs. Consequently, the Poisson approximation provides a simple and accurate design rule for determining the minimum document length required for reliable watermark recovery. 
+
+Remark 2. The independence approximation Pr[min j Xj ≥ m] ≈ Pr[ X1 ≥ m]v is slightly conservative because the random variables X1, . . . , X v are negatively correlated through the fixed total number of 14                                                                                                                                
+
+> Table 3. Minimum transmission length N∗for n= 128 ,m= 4 ,v= 32 ,γ= 0 .99 .
+> pq= (1 −p)/v Exact N∗Poisson N∗Overhead Success
+> N∗−vm probability 0.001 0.031219 460 466 332 0.9902 0.005 0.031094 461 467 333 0.9900 0.010 0.030937 464 470 336 0.9902 0.050 0.029687 484 490 356 0.9902 0.100 0.028125 511 517 383 0.9902 0.200 0.025000 575 581 447 0.9901 0.300 0.021875 658 664 530 0.9901
+> Table 4. Minimum transmission length N∗for n= 64 ,m= 8 ,v= 8 .
+> γ= 0 .99 γ= 0 .90
+> pqExact Poisson Overhead Exact Poisson Overhead
+> N∗−vm N∗−vm
+> 0.001 0.12488 149 155 85 121 125 57 0.005 0.12438 149 156 85 121 126 57 0.010 0.12375 150 156 86 122 126 58 0.050 0.11875 157 163 93 127 131 63 0.100 0.11250 166 172 102 134 139 70 0.200 0.10000 187 193 123 152 156 88 0.300 0.08750 215 221 151 174 178 110
+
+transmitted token pairs. Consequently, the true probability of successful recovery is typically slightly larger than that reported in Tables 3 and 4. 
+
+8 Evaluation Methodology 
+
+Evaluation of LLM watermarking schemes is traditionally based on large-scale experiments involving several language models, benchmark datasets and collections of editing attacks. Such experiments are important because they demonstrate that a watermarking method is implementable and effective under practical conditions. However, purely experimental evaluation also suffers from several fundamental limitations. First, the outcome inevitably depends on the particular LLMs selected for the experiments. Since new language models and improved versions are released continuously, it is impossible to evaluate every relevant model. Consequently, experimental results often become outdated within a short period of time. Second, the performance of a watermarking scheme depends strongly on the underlying text distri-bution. Scientific papers, source code, news articles, legal documents and conversational text exhibit very different statistical properties, resulting in different watermarking behaviour. Any experimental study therefore reflects only the particular corpora that were chosen. Third, the robustness of a watermark depends on numerous implementation parameters, including the logit bias used during embedding, the decoding strategy of the language model, and the types of adversarial editing performed after generation. Exploring all combinations of these parameters rapidly becomes computationally infeasible. 15 
+
+For these reasons, we argue that experimental evaluation should be complemented by mathematical modelling. Instead of analysing each LLM, each corpus and each attack separately, it is desirable to replace their combined effect by a statistical communication channel whose parameters capture the overall probability of watermark corruption. In the proposed scheme this abstraction is particularly natural. Each embedded watermark bit is recovered independently of all other watermark bits, and every source of corruption simply changes the value of that bit with some probability. Consequently, the complete watermarking process can be modelled by a Binary Symmetric Channel (BSC) with crossover probability p. The parameter p
+
+incorporates the combined influence of 
+
+• imperfect watermark embedding caused by the language model, 
+
+• the choice of logit bias and decoding algorithm, 
+
+• statistical properties of the generated text, 
+
+• token insertions, deletions and substitutions, 
+
+• paraphrasing and other editing operations. Once the effective crossover probability p has been estimated, performance analysis becomes inde-pendent of the particular language model or text corpus. Quantities such as the probability of successful recovery, the required text length, redundancy, and resistance to editing attacks can all be derived an-alytically. This provides guarantees that remain valid for every watermarking system exhibiting the same effective error probability. The BSC model should therefore be viewed as an abstraction rather than a description of a particu-lar LLM. Different language models, embedding algorithms and editing strategies may produce different values of p, but their watermarking performance can nevertheless be compared within the same math-ematical framework. This significantly reduces the need for repeated large-scale experiments whenever a new LLM or decoding algorithm appears. Naturally, the Binary Symmetric Channel is only the simplest member of a hierarchy of increasingly realistic statistical models. Future work may consider channels with memory, such as the Gilbert–Elliott model [6,4,13], Hidden Markov Models [17], or explicit insertion/deletion channels [11,12]. Such models may capture burst errors or context-dependent editing more accurately. Nevertheless, the BSC already provides a remarkably useful approximation for analysing synchronisation-free watermarking schemes, because all editing operations ultimately manifest themselves as independent errors in the recovered parity bits. We believe that developing statistical channel models for LLM watermarking represents an im-portant research direction. Such models would provide a principled methodology for comparing wa-termarking schemes, predicting their robustness, and analysing new generations of language models without requiring exhaustive experimental evaluation for every individual LLM. 
+
+9 Extension to Diffusion Language Models 
+
+Diffusion Language Models (DLMs) constitute an alternative paradigm for text generation. Unlike autoregressive language models, which generate tokens sequentially from left to right, diffusion models begin with a corrupted (or masked) sequence and iteratively refine it until a coherent sentence is obtained. During each refinement step, a subset of tokens is updated while the remaining tokens remain unchanged. The process terminates once the generated sequence becomes stable. The synchronization-free watermark proposed in this paper naturally extends to diffusion models. This is because every 16 
+
+watermark bit depends only on a pair of neighbouring tokens and not on the global history of generation. Consequently, watermark constraints can be verified and enforced locally throughout the diffusion process. Let T = ( t1, t 2, . . . , t N ) denote the current sequence of tokens produced by the diffusion model. As in the autoregressive construction, the secret identity S ∈ S is represented by the Reed–Solomon polynomial fS (x) = s0 + s1x + · · · + sm−1xm−1, where m denotes the identity length. For every neigh-bouring pair (ti, t i+1 ) we compute αi = H(K, id( ti)) mod q, where H is a cryptographic hash function and K is the secret watermarking key. The corresponding watermark bit equals wi = fS (αi) mod 2 .
+
+Exactly as in the autoregressive case, the vocabulary is partitioned into two colour classes, V0 and V1,
+
+and token ti+1 is said to satisfy the watermark constraint whenever ti+1 ∈ Vwi . Since every watermark constraint depends only upon two consecutive tokens, the watermarking problem becomes a collection of local consistency conditions. Every interior token participates simultaneously in two neighbouring constraints. Left constraint. The colour of token ti must agree with the watermark bit determined by its left neighbour, ti ∈ V fS (H(K, id( ti−1))) mod 2 .
+
+Right constraint. The colour of token ti+1 must agree with the watermark bit generated from the current token, ti+1 ∈ V fS (H(K, id( ti))) mod 2 .
+
+An interior token is therefore classified into one of four states. Left constraint Right constraint State Satisfied Satisfied Fully consistent Satisfied Violated Left consistent Violated Satisfied Right consistent Violated Violated Inconsistent Only fully consistent tokens are guaranteed to remain unchanged throughout subsequent refinement iterations. The probabilistic analysis developed in the remainder of this section is based on the following assumptions. 17 
+
+Assumption 2 The colour selected for each generated token is treated as an independent random variable. The probability that the left constraint is satisfied is denoted by ε, where  
+
+> 12
+
+≤ ε ≤ 1. The parameter ε models the effectiveness of the watermark embedding mecha-nism. Modern LLM watermarking algorithms bias the logits towards the desired colour class before sampling the next token. Consequently, whenever both colour classes contain suffi-ciently many candidate tokens, the probability of selecting a token from the desired colour class can be made arbitrarily close to one. On the other hand, there are rare situations in which the language model offers no suitable token of the required colour, making successful embedding impossible. For this reason, ε should be regarded as an average success prob-ability over all generated tokens. Throughout the paper we analyse the algorithms for an arbitrary ε, while the conservative choice 
+
+ε = 12
+
+corresponds to unbiased sampling and therefore represents the worst practical case. The right constraint depends only on the cryptographic hash function. Under the standard assumption that the hash behaves as a pseudorandom function, its output is uniformly distributed, giving 
+
+Pr[ right constraint holds ] = 12 .
+
+Furthermore, the left and right constraints are assumed to be independent. It immediately follows that 
+
+Pr[ both constraints hold ] = ε
+
+2 , and Pr[ neither constraint holds ] = 1 − ε
+
+2 .
+
+These probabilities are independent of the identity length, the particular language model, and the gen-erated text. Their only dependence is through the embedding efficiency parameter ε and the standard pseudorandomness assumption on the cryptographic hash function. The diffusion process gradually transforms the sequence into one satisfying all watermark con-straints. To formalise this evolution, we distinguish two classes of tokens. Committed token. A token is called committed if both neighbouring constraints are simultaneously satisfied. Once committed, the token is regarded as fixed and is no longer modified by the water-marking algorithm. Uncommitted token. A token is called uncommitted whenever at least one neighbouring constraint is violated. Such tokens remain eligible for further refinement. Let Uk denote the number of uncommitted tokens after the k-th diffusion iteration. The principal objective of watermark embedding is therefore to drive Uk −→ 0, while preserving the semantic quality and fluency of the generated text. The following subsections describe two algorithms achieving this objective. The first algorithm commits tokens monotonically and is particularly easy to analyse. The second algorithm additionally allows local rearrangements of committed tokens, leading to substantially faster convergence while preserving synchronization-free watermark recovery. 
+
+9.1 Basic Commit Algorithm 
+
+The Basic Commit Algorithm is the simplest synchronization-free watermarking strategy for diffusion language models. The algorithm scans the sequence from left to right and commits a token as soon as 18 
+
+its left watermark constraint is satisfied. Once committed, a token is never modified again and therefore serves as a permanent synchronization point for all subsequent iterations. Initially all tokens are uncommitted. During every diffusion iteration, each uncommitted token is examined independently. If the watermark constraint with its left neighbour is satisfied, the token becomes permanently committed; otherwise it remains uncommitted and will be reconsidered during the next iteration. Since only uncommitted tokens may change, the number of committed tokens can only increase. 
+
+Algorithm 3 Basic Commit Algorithm                          
+
+> Require: Initial sequence of Ntokens
+> Ensure: Fully committed watermark 1: Mark every token as uncommitted .2: repeat
+> 3: for i= 2 , . . . , N do
+> 4: if token iis uncommitted then
+> 5: if the left watermark constraint is satisfied then
+> 6: Permanently commit token i.7: end if
+> 8: end if
+> 9: end for
+> 10: until no further commitments occur
+
+Probabilistic Analysis The analysis is based on Assumption 2. Recall that the probability that the left watermark constraint is satisfied equals ε, where 12 ≤ ε ≤ 1. The parameter ε models the effectiveness of the watermark embedding procedure and depends on the amount of logit bias applied by the language model. Let Ut denote the number of uncommitted tokens after the t-th diffusion iteration. During one iteration every currently uncommitted token becomes committed independently with probability ε.Consequently, it remains uncommitted with probability 1 − ε. Therefore, E[Ut+1 ] = (1 − ε)E[Ut]. Since initially U0 = N , E[Ut] = N (1 − ε)t. Thus the expected number of uncommitted tokens decreases exponentially. 
+
+Theorem 2. Assume that the events determining whether the left watermark constraint holds are mutually independent and occur with probability ε > 0. Then after t diffusion iterations, E[Ut] = 
+
+N (1 − ε)t. Consequently, lim t→∞ E[Ut] = 0 , and every token is eventually committed with probability one. Proof. Each uncommitted token survives one diffusion iteration with probability 1−ε. Hence E[Ut+1 ] = (1 − ε)E[Ut]. Repeated substitution gives E[Ut] = N (1 − ε)t. Since 0 < 1 − ε < 1, (1 − ε)t →
+
+0 as t → ∞ . Therefore, E[Ut] → 0. Furthermore, the waiting time until an individual token becomes committed follows a geometric distribution with parameter ε. Its expected value equals E[T ] =  
+
+> 1
+> ε
+
+, which is finite whenever ε > 0. Consequently every token is committed almost surely, implying convergence of the algorithm. □
+
+The Basic Commit Algorithm has three important properties. 
+
+• The number of committed tokens is monotonically increasing. 
+
+• Once committed, a token is never modified again. 
+
+• The convergence speed depends only on the embedding probability ε. In particular, the expected number of diffusion iterations required to reduce the number of uncommitted tokens to a constant is 19 
+
+approximately ln N  
+
+> −ln(1 −ε)
+
+≈ ln Nε , where the approximation follows from ln(1 − ε) ≈ − ε for moderate values of ε.The algorithm propagates commitment information only from left to right. Consequently, long runs of initially uncommitted tokens may require many diffusion iterations before becoming fully committed. This limitation motivates the Refined Commit Algorithm presented in the next section, where commitment may propagate from either direction. 
+
+9.2 Refined Commit Algorithm 
+
+The Basic Commit Algorithm commits a token whenever the left constraint is satisfied. It ignores the right constraint completely. Although remarkably simple, this strategy commits many correct tokens but fails to exploit additional information available from the neighbouring token. In particular, whenever the left constraint holds while the right one fails, the algorithm cannot determine whether the inconsistency originates from the current token or from its right neighbour. The Refined Commit Algorithm addresses this limitation by examining both neighbouring con-straints. Whenever the left constraint holds, the current token is committed as in the Basic Commit Algorithm. If the right constraint also holds, no further action is required. Otherwise, the algorithm assumes that the inconsistency is more likely to originate from the neighbouring token and revokes its commitment, allowing it to be reconsidered during a later iteration. In this way, local watermark errors are gradually propagated through the text until they disappear. Consequently, Pr[ L] = ε, Pr[ R] = 12 ;
+
+and therefore Pr[ L ∧ R] = ε 
+
+> 2
+
+; Pr[ L ∧ R] = ε 
+
+> 2
+
+; Pr[ L ∧ R] = 1−ε 
+
+> 2
+
+; Pr[ L ∧ R] = 1−ε 
+
+> 2
+
+, where Pr[ L] and Pr[ R]
+
+stands for probabilities that the left and right constraints hold. Hence the probability that exactly one constraint is satisfied equals Pr[ exactly one ] = 12 , independently of ε.Let Li =  H(K, t i−1) = c(ti) denote the left constraint and Ri =  H(K, t i) = c(ti+1 ) the right constraint, where c(ti) stands for a colour of the token ti. The refined algorithm is given below. 
+
+Algorithm 4 Refined Commit Algorithm                                       
+
+> 1: for every uncommitted token tido
+> 2: if Liand Rihold then
+> 3: Commit ti
+> 4: else if Liholds and Rifails then
+> 5: Commit ti
+> 6: Revoke commitment of ti+1
+> 7: else if Lifails and Riholds then
+> 8: Commit ti
+> 9: Revoke commitment of ti−1
+> 10: else
+> 11: Leave tiuncommitted 12: end if
+> 13: end for
+
+Unlike the Basic Commit Algorithm, the refined procedure actively repairs local inconsistencies by moving them towards neighbouring tokens. The watermark therefore gradually “self-corrects” during successive iterations. Let Ct denote the fraction of committed tokens after iteration t. A token becomes committed whenever at least one of the two constraints holds. Hence Pr[ commit ] = Pr[ L ∪ R] = ε + 12 − ε 
+
+> 2
+
+= 1+ ε 
+
+> 2
+
+.20 
+
+Thus, during the first iteration, C1 = 1+ ε 
+
+> 2
+
+. For the conservative choice ε = 12 , C1 = 34 , whereas for nearly perfect watermark embedding ( ε ≈ 1), C1 ≈ 1.
+
+Thus, during the first iteration, C1 = 1+ ε 
+
+> 2
+
+. For the conservative choice ε = 12 , C1 = 34 , whereas for nearly perfect watermark embedding ( ε ≈ 1), C1 ≈ 1. Recall from Section 9.1 that the Basic Commit Algorithm’s first-round commitment probability is ε. The Refined Commit Algorithm therefore commits more tokens than Basic already in the first round, though the size of this advantage depends on ε, as the following theorem shows. 
+
+Theorem 3. Under the independence assumption, C1 = 1+ ε 
+
+> 2
+
+, and 34 ≤ C1 ≤ 1, for every 12 ≤ ε ≤ 1.Moreover, 
+
+C1 − ε = 1 − ε
+
+2 ,
+
+so the first-round advantage of the Refined Commit Algorithm over the Basic Commit Algorithm is  
+
+> 1−ε
+> 2
+
+. This gain is maximal, equal to 14 , at the conservative choice ε = 12 , and vanishes as ε → 1: when the embedding bias is already strong, Basic’s own commit probability approaches 1 and there is little room left for the right-constraint repair mechanism to add value. Proof. A token is committed whenever at least one neighbouring constraint is satisfied. By inclusion– exclusion, 
+
+Pr[ L ∪ R] = Pr[ L] + Pr[ R] − Pr[ L ∧ R].
+
+Substituting Pr[ L] = ε, Pr[ R] = 12 , Pr[ L ∧ R] = ε 
+
+> 2
+
+, gives 
+
+C1 = ε + 12 − ε
+
+2 = 1 + ε
+
+2 .
+
+Since 12 ≤ ε ≤ 1, we immediately obtain 34 ≤ C1 ≤ 1. Recalling that the Basic Commit Algorithm’s first-round commit probability is ε (Theorem 2), the gain of Refined over Basic is 
+
+C1 − ε = 1 + ε
+
+2 − ε = 1 − ε
+
+2 ,
+
+which proves the claim. □
+
+The refined algorithm offers two advantages over the Basic Commit Algorithm. First, the expected fraction of committed tokens after one iteration increases from ε to 1+ ε 
+
+> 2
+
+, a gain of 1−ε 
+
+> 2
+
+. This gain is largest, 14 , at the conservative choice ε = 12 , and shrinks toward 0 as ε → 1: when the embedding bias is already strong, Basic’s own commit rate is close to its ceiling and there is little room left for the right-constraint repair mechanism to add value. Second, local watermark inconsistencies are not merely ignored but are actively propagated towards neighbouring tokens. Consequently, repeated iterations gradually eliminate isolated errors and improve the density of committed tokens, with the largest benefit realised precisely when the embedding bias ε is weak. The convergence behaviour of this iterative correction process is analysed in the following subsection. 
+
+9.3 Sliding Commit Algorithm 
+
+The Basic Commit Algorithm commits a token whenever its left watermark constraint is satisfied. The Refined Commit Algorithm additionally corrects local inconsistencies by revoking neighbouring committed tokens. Both algorithms are monotone in the sense that, apart from local corrections, the number of committed tokens generally increases during successive iterations. The following algorithm 21 
+
+adopts a different philosophy. Instead of fixing incorrect commitments locally, it allows the commitment boundary itself to move through the text. Consequently, committed tokens may become uncommitted while neighbouring uncommitted tokens become committed. The commitment therefore “slides” until a stable configuration is reached. Suppose that an uncommitted token ti lies between two committed tokens ti−1 and ti+1 . The algorithm proceeds as follows. 1. If both watermark constraints hold, commit ti.2. If only the left constraint holds, commit ti and revoke the commitment of ti+1 .3. If only the right constraint holds, commit ti and revoke the commitment of ti−1.4. If neither constraint holds, no modification is made. Thus every successful commitment either enlarges the committed region or shifts it by one position. 
+
+Algorithm 5 Sliding Commit Algorithm                              
+
+> 1: repeat
+> 2: for every uncommitted token tiwhose neighbours are committed do
+> 3: if left and right constraints hold then
+> 4: Commit ti
+> 5: else if left constraint holds then
+> 6: Commit ti
+> 7: Uncommit ti+1
+> 8: else if right constraint holds then
+> 9: Commit ti
+> 10: Uncommit ti−1
+> 11: end if
+> 12: end for
+> 13: until no further changes occur
+
+Assume the probabilistic model introduced in Assumption 2. Then Pr[ L] = ε, Pr[ R] = 12 , where the left and right constraints are mutually independent. Consequently, Pr[ L ∧ R] = ε 
+
+> 2
+
+, Pr[ L ∧ R] = ε 
+
+> 2
+
+,
+
+Pr[ L ∧ R] = 1−ε 
+
+> 2
+
+, and Pr[ L ∧ R] = 1−ε 
+
+> 2
+
+. Therefore, Pr[ a sliding operation occurs ] = Pr[ L ∧ R] + Pr[ L ∧
+
+R] = 12 . Remarkably, the probability of moving the commitment boundary is independent of ε.
+
+Theorem 4. Under Assumption 2, every active boundary advances by one position with probability  
+
+> 12
+
+, during each iteration. Consequently, the expected displacement after t iterations equals t 
+
+> 2
+
+, while the variance equals t 
+
+> 4
+
+. Thus the commitment boundary performs a biased random walk whose drift is independent of the watermark embedding probability ε.Proof. A boundary movement occurs precisely when exactly one of the two constraints holds. Since 
+
+Pr[ L ∧ R] = ε 
+
+> 2
+
+and Pr[ L ∧ R] = 1−ε 
+
+> 2
+
+, their sum equals ε 
+
+> 2
+
++ 1−ε 
+
+> 2
+
+= 12 . Each successful movement shifts the boundary by one token. The number of successful movements after t iterations therefore follows the binomial distribution Xt ∼ Binomial  t, 12
+
+ . Hence E[Xt] = t 
+
+> 2
+
+, and Var( Xt) = t 
+
+> 4
+
+, which proves the theorem. □
+
+Unlike the Basic and Refined Commit Algorithms, the Sliding Commit Algorithm does not at-tempt to preserve every existing commitment. Instead, commitments migrate through the text until neighbouring constraints become mutually consistent. In this respect the algorithm resembles local op-timisation methods, where the current solution is allowed to deteriorate temporarily in order to obtain 22 
+
+a better global configuration. Another attractive property is that the expected speed of propagation is independent of the embedding quality ε. Increasing the logit bias improves the probability that the correct token colour is generated, but does not change the expected rate at which commitment boundaries move through the document. 
+
+9.4 Comparison of Commit Algorithms 
+
+Table 5 summarises the three commit algorithms introduced above. All three share the same underlying constraint model ( Pr[ L] = ε, Pr[ R] = 12 , independent) but differ in which constraints trigger a commit, whether existing commitments can be revoked, and where in the sequence they operate. 
+
+Table 5. Comparison of the three commit algorithms for diffusion watermarking.                                                       
+
+> Property Basic Refined Sliding
+> Commit rule Lholds L∨Rholds boundary token, Lor Rholds Right constraint used no yes (repair only) yes (repair + commit) Can revoke commitments no yes, on the neighbour yes, on one neighbour Applies to every uncommitted token every uncommitted token uncommitted tokens flanked by committed neighbours Monotonic in |committed |yes no (local repair) no (boundary shifts) First-iteration commit prob. ε(1 + ε)/212(boundary advances) Depends on εyes, directly only through the gain term no Convergence measure E[Ut] = N(1 −ε)tnot closed-form; errors self-correct E[displacement ] = t/ 2,Var = t/ 4
+> Iterations to convergence O(ln N/ε )slower than Basic (empirical) O(N)
+> Propagation direction left-to-right only bidirectional, local bidirectional, boundary walk
+
+Discussion. The three algorithms occupy distinct points on a speed/robustness trade-off. The Basic Commit Algorithm is the simplest and fastest to analyse: since it never revokes a commitment, its expected number of uncommitted tokens decays exponentially, E[Ut] = N (1 − ε)t, requiring only 
+
+O(ln N/ε ) iterations to stabilise. Its weakness is that it ignores the right constraint entirely, so an incorrectly committed token can never be corrected once fixed. The Refined Commit Algorithm keeps the same commit condition on L but additionally uses R to decide whether the neighbouring token’s commitment should be revoked. This raises the first-iteration commit probability from ε to (1 + ε)/2 — a gain of 1−ε
+
+2 , largest at the conservative choice ε = 12
+
+and shrinking to 0 as ε → 1, since Pr[ exactly one constraint holds ] = 12 is itself independent of ε even though the resulting gain over Basic is not. The Sliding Commit Algorithm is qualitatively different: rather than committing tokens throughout the sequence, it operates only at the boundary between committed and uncommitted regions, and a successful step moves that boundary by exactly one token. Because the probability of such a step is 12
+
+independently of ε, the boundary behaves as a driftless-in-ε random walk with E[displacement ] = t/ 2
+
+and Var = t/ 4. The practical consequence is that Sliding needs O(N ) iterations for a single boundary to traverse the sequence — asymptotically slower than Basic’s O(ln N/ε ) — but it guarantees that every local inconsistency is eventually pushed out of the committed region rather than being frozen in place, which neither Basic nor Refined guarantees on its own. In short: Basic is fastest but cannot repair errors; Refined adds a fixed, ε-independent improvement in commit rate together with local self-correction; Sliding sacrifices asymptotic speed for a guarantee of eventual consistency along the commitment boundary. A practical implementation may combine Refined commits in the interior of the sequence with Sliding-style boundary repair to obtain both the faster convergence rate of Refined and the correctness guarantee of Sliding. 
+
+Example 4. We compare the number of denoising iterations required to fully commit a sequence of n
+
+tokens under the Basic, Refined, and Sliding commit algorithms, fixing the embedding-bias strength 23 
+
+at ε = 0 .75 . For each algorithm we report t0.90 and t0.99 , the smallest number of iterations t such that the whole sequence is committed with probability at least 0.90 and 0.99 respectively. Table 6 reports 
+
+t0.90 and t0.99 for n ∈ { 32 , 64 , 128 , 512 , 1024 }. Three patterns emerge. Basic scales logarithmically in n,                                          
+
+> Table 6. Simulated/exact number of denoising iterations tprequired to commit the entire sequence with probability p,for ε= 0 .75 . Basic and Sliding are computed exactly; Refined is estimated from 4,000 Monte Carlo trials.
+> p= 0 .90 p= 0 .99
+> nBasic Refined Sliding Basic Refined Sliding
+> 32 511 72 616 82 64 513 141 718 154 128 615 275 720 293 512 718 1063 823 1099 1024 719 2104 925 2153
+
+exactly as predicted by tp = O(ln N/ε ): moving from n = 32 to n = 1024 (a 32 × increase) raises t0.90 
+
+from only 5 to 7 iterations. Sliding scales linearly in n, and is dramatically slower than the other two algorithms for large sequences: at n = 1024 it requires roughly 2100 iterations versus fewer than 20 for Basic or Refined. This is a direct, quantitative consequence of Theorem ?? — an ε-independent advance probability of  
+
+> 12
+
+forces Θ(n) iterations to sweep a single boundary across the sequence, regardless of how strong the watermark bias is. Sliding is therefore unsuitable as a stand-alone algorithm for long sequences; its value lies in local self-repair rather than driving full-sequence convergence. Refined is slower than Basic at every value of n tested, which at first appears to contradict Sec-tion 9.2’s observation that Refined’s per-token, per-iteration commit probability, (1 + ε)/2, exceeds Basic’s ε. The resolution is that Refined’s advantage is local and per-token, while full-sequence com-pletion requires all n − 1 tokens to be simultaneously and durably committed. Because a token can be revoked by a neighbour whose own right-constraint check fails purely by chance (probability 12 ,independent of correctness), already-valid commitments face a persistent, ε-independent hazard of be-ing undone. For a single token this repair mechanism is a net benefit, but across a long sequence it introduces churn that delays the moment at which the entire sequence is simultaneously stable, offset-ting Refined’s higher instantaneous commit rate. This suggests that Refined is best used together with Basic-style permanent commitment once a token’s constraints have been verified for several consecutive iterations, rather than being applied uniformly throughout the diffusion process. 
+
+9.5 Future Research 
+
+Watermark-aware denoising. One may seek denoising strategies that maximise the number of satisfied congruences at every step while preserving text quality, potentially reducing denoising steps. 
+
+Variable-length blocks. If the denoising mechanism permits insertion of dummy tokens or deletion of tokens, the synchronisation-free property is preserved by assigning dummy tokens a reserved identifier contributing no watermark observation. Their insertion or removal affects neither evaluation points nor embedded bits of surrounding pairs. 
+
+Theoretical convergence analysis. A rigorous bound on the number of denoising steps as a function of n, watermark density, and the LLM’s token distribution remains an important open problem. The analysis above suggests that diffusion LLMs require only O(log n) denoising steps to embed an n-bit watermark, which is negligible relative to typical diffusion generation budgets. 24 REFERENCES 
+
+10 Conclusions and Future Research 
+
+We have presented a new synchronization-free watermarking scheme for Large Language Models based on binary congruence constraints derived from Reed–Solomon polynomial evaluations. Unlike existing watermarking approaches, which typically embed consecutive blocks of watermark bits, the proposed method associates every watermark with a single token pair. A cryptographic hash computed from one token determines the evaluation point, while the corresponding parity bit is embedded into the following token. Consequently, every watermark is locally verifiable and independent of the surrounding text, making the scheme naturally robust against insertions, deletions, substitutions, and token reordering. The paper provides the mathematical foundations of the proposed construction, including proba-bilistic analysis of binary congruence systems, sufficient conditions for reliable recovery, several recov-ery algorithms covering different identity sizes, and an error analysis based on the Binary Symmetric Channel model. The obtained results indicate that only a modest redundancy is required to recover the embedded identity with high probability even when a significant fraction of watermark bits is corrupted. An important advantage of the proposed framework is its scalability. Although the paper consid-ers embedding a single secret identity represented by one Reed–Solomon codeword, the construction naturally generalises to arbitrarily long identities. A long secret can be partitioned into multiple short segments (for example, 32- or 64-bit blocks), each protected by an appropriately sized Reed–Solomon code. During embedding, the watermark corresponding to each token pair is determined by a small number of bits extracted from a cryptographic hash, which pseudorandomly selects both the identity segment and the evaluation point within its associated code. As a result, information belonging to different parts of the secret is uniformly scattered throughout the generated text rather than stored in contiguous blocks. This randomisation improves robustness against local text modifications and preserves the synchronization-free nature of the scheme. Several research directions remain open. The most important theoretical problem is the design of optimal collections of binary congruence constraints that minimise the number of transmitted wa-termark bits while guaranteeing unique recovery. It would also be interesting to investigate decoding algorithms based on SAT/SMT solvers, lattice reduction, and probabilistic inference for very large identity spaces. Finally, practical implementation within modern LLM decoding pipelines, together with extensive evaluation against paraphrasing attacks, machine translation, summarisation, and ad-versarial editing, will provide further insight into the practical security and robustness of the proposed watermarking framework. 
+
+References         
+
+> [1] Aakanksha Chowdhery, Anish Vaswani, Steven J. Rennie, Mikhail Pavlov, Jacob Devlin, Sanjay Aggarwal, Mike Lewis, Neil Houlsby, Colin Raffel, Barbara Plank, Lee Howard, Martin D. Riley, Michael Swietojanski, Mo Yu, Dipanjan Das, Mike Schuster, Yiming Yang, Jakob Uszkoreit, and Yonghui Wu. PaLM: Scaling language modeling with pathways. In Proceedings of the 39th International Conference on Machine Learning (ICML 2022) , 2022. [2] Ingemar J. Cox, Matthew L. Miller, Jeffrey A. Bloom, Jessica Fridrich, and Ton Kalker. Digital Watermarking and Steganography . Morgan Kaufmann, 2 edition, 2007. [3] Xinyue Cui, Johnny Tian-Zheng Wei, Swabha Swayamdipta, and Robin Jia. Robust data watermarking in language models by injecting fictitious knowledge. ArXiv eprint 2503.04036, 03 2025. [4] E. O. Elliott. Estimates of error rates for codes on burst-noise channels. Bell System Technical Journal , 42(5):1977– 1997, 1963. [5] Jiayi Fu, Xuandong Zhao, Ruihan Yang, Yuansen Zhang, Jiangjie Chen, and Yanghua Xiao. Gumbelsoft: Diversified language model watermarking via the gumbelmax-trick. ArXiv eprint 2402.12948, 02 2024.
+
+REFERENCES 25 [6] Edgar N. Gilbert. Capacity of a burst-noise channel. Bell System Technical Journal , 39(5):1253–1265, 1960. [7] John Kirchenbauer, Jonas Geiping, Yuxin Wen, Jonathan Katz, Ian Miers, and Tom Goldstein. A watermark for large language models. In Andreas Krause, Emma Brunskill, Kyunghyun Cho, Barbara Engelhardt, Sivan Sabato, and Jonathan Scarlett, editors, Proceedings of the 40th International Conference on Machine Learning (ICML 2023) ,volume 202 of Proceedings of Machine Learning Research , pages 17061–17084. PMLR, 2023. [8] Pushmeet Kohli et al. Synthid-text: Practical watermarking for large language models. Nature , 2024. [9] Rohith Kuditipudi et al. Robust and semantically invariant watermarks for large language models. ICLR , 2024. [10] Yixin Liu, Hongsheng Hu, Xun Chen, Xuyun Zhang, and Lichao Sun. Watermarking text data on large language models for dataset copyright. arXiv preprint arXiv:2302.13971, 05 2023. [11] Michael Mitzenmacher. A survey of results for deletion channels and related synchronization channels. Probability Surveys , 6:1–33, 2009. [12] Ruslan Morozov and Tolga M. Duman. Markov insertion/deletion channels: Information stability and capacity bounds. arXiv preprint arXiv:2401.16063 , 2024. [13] Mordechai Mushkin and Isaac Bar-David. Capacity and coding for the gilbert–elliott channels. IEEE Transactions on Information Theory , 35(6):1277–1290, 1989. [14] Georg Niess and Roman Kern. Ensemble watermarks for large language models. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (ACL) , 2025. [15] OpenAI. GPT-4 Technical Report. https://openai.com/research/gpt-4 , 2023. [16] Wenjie Qu, Wengrui Zheng, Tianyang Tao, Dong Yin, Yanze Jiang, Zhihua Tian, Wei Zou, Jinyuan Jia, and Jiaheng Zhang. Provably robust multi-bit watermarking for AI-generated text. arXiv preprint arXiv:2401.16820 , 2025. v5, 28 Jan 2025. [17] Lawrence R. Rabiner. A Tutorial on Hidden Markov Models and Selected Applications in Speech Recognition ,volume 77. 1989. [18] Tom Sander, Pierre Fernandez, Alain Durmus, Matthijs Douze, and Teddy Furon. Watermarking makes language models radioactive. ArXiv eprint, 02 2024. [19] Hugo Touvron, Thibault Louvrier, Matthieu Cord, Piotr Bojanowski, Edouard Grave, and Guillaume Lample. LLaMA: Open and efficient foundation language models. arXiv preprint arXiv:2302.13971 , 2023. [20] Ka Him Wong, Jicheng Zhou, Jiantao Zhou, and Yain-Whar Si. An end-to-end model for logits based large language models watermarking, 2025. [21] Zhenyu Xu, Kun Zhang, and Victor S. Sheng. Freqmark: Frequency-based watermark for sentence-level detection of llm-generated text. ArXiv eprint 2410.10876, 10 2024. [22] Xuandong Zhao, Prabhanjan Vijendra Ananth, Lei Li, and Yu-Xiang Wang. Provable robust watermarking for ai-generated text. In The Twelfth International Conference on Learning Representations (ICLR) , 2024. [23] Chaoyi Zhu, Jeroen Galjaard, Pin-Yu Chen, and Lydia Y. Chen. Duwak: Dual watermarks in large language models. ArXiv eprint 2403.13000, 03 2024.

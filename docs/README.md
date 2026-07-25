@@ -6,59 +6,46 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-24
-- 运行时间：2026-07-24 21:23:57 UTC
+- 最新运行日期：2026-07-25
+- 运行时间：2026-07-25 21:13:15 UTC
 - 运行状态：成功
-- 本次总论文数：13
-- 精读区：5
-- 速读区：8
+- 本次总论文数：8
+- 精读区：2
+- 速读区：6
 
 ### 今日简报（AI）
-今日共13篇论文，精读5篇、速读8篇，重点关注加密模型预测控制安全验证与AI驱动工作流授权两大方向。最值得精读的是《Safety and Security: Experimental Validation of Encrypted Model Predictive Control》（9.0分）与《From Neural Intent to Cryptographic Authorization: Securing AI-Driven Enterprise Workflows》（8.0分），速读中《Quantum-Resilient Distributed Optimization》与《Examining User Behavior and Cognitive Biases in Personal Password Security》也值得一看。建议先聚焦加密MPC的实验验证方法，再了解AI授权机制，以把握安全与密码学交叉的前沿趋势。
-- 详情：[/202607/24/README](/202607/24/README)
+今日精选8篇论文，聚焦AI安全与高效检测两大战场。  
+精读推荐：针对MCP智能体的多步攻击时空检测框架《ChainWatch》，以及利用逐token时序窃取模型架构与优化的《Leaky Language Models》。  
+建议优先关注AI Agent的时序侧信道防护，同时绿能AI在安卓恶意软件检测中的安全-能耗平衡思路值得深入跟进。
+- 详情：[/202607/25/README](/202607/25/README)
 
 ### 精读区论文标签
-1. [Safety and Security: Experimental Validation of Encrypted Model Predictive Control](/202607/24/2607.21136v1-safety-and-security-experimental-validation-of-encrypted-model-predictive-control)  
-   标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：使用全同态加密的模型预测控制在云平台的安全部署
-2. [From Neural Intent to Cryptographic Authorization: Securing AI-Driven Enterprise Workflows](/202607/24/2607.15596v2-from-neural-intent-to-cryptographic-authorization-securing-ai-driven-enterprise-workflows)  
+1. [ChainWatch: A Kill Chain-Aligned Sequential Detection Framework for Multi-Step Attacks in MCP-Based AI Agent Systems](/202607/25/2607.19432v1-chainwatch-a-kill-chain-aligned-sequential-detection-framework-for-multi-step-attacks-in-mcp-based-ai-agent-systems)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：AI工作流的密码授权
-3. [CryptanalysisBench: Can LLMs do Cryptanalysis?](/202607/24/2607.18538v1-cryptanalysisbench-can-llms-do-cryptanalysis)  
+   evidence：AI代理系统中多步攻击的序列检测框架
+2. [Leaky Language Models: Stealing Architecture and Inference Optimizations via Per-Token Timing](/202607/25/2607.20723v1-leaky-language-models-stealing-architecture-and-inference-optimizations-via-per-token-timing)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：语言模型进行密码分析，属于人工智能安全威胁与防御
-4. [Pure-DP Statistical Query Release at the Conjectured Square-Root Rate](/202607/24/2607.20418v1-pure-dp-statistical-query-release-at-the-conjectured-square-root-rate)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：纯差分隐私统计查询发布的平方根率最优界
-5. [Toward cryptographically verifiable authorization for autonomous AI agents: A security hypothesis, preliminary formal model, and proof-of-concept implementation](/202607/24/2607.21325v1-toward-cryptographically-verifiable-authorization-for-autonomous-ai-agents-a-security-hypothesis-preliminary-formal-model-and-proof-of-concept-implementation)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：AI代理的密码学授权
+   evidence：时序攻击窃取LLM架构和推理优化信息
 
 ### 速读区论文标签
-1. [Quantum-Resilient Distributed Optimization for Multi-Region Unit Commitment](/202607/24/2607.19581v1-quantum-resilient-distributed-optimization-for-multi-region-unit-commitment)  
+1. [Synchronization-Free Algebraic Fingerprints for Large Language Models: From Autoregressive to Diffusion Models](/202607/25/2607.16648v1-synchronization-free-algebraic-fingerprints-for-large-language-models-from-autoregressive-to-diffusion-models)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：多区域机组组合中用于分布式优化的量子弹性安全聚合
-2. [Examining User Behavior and Cognitive Biases in Personal Password Security](/202607/24/2607.19586v1-examining-user-behavior-and-cognitive-biases-in-personal-password-security)  
+   evidence：LLM输出的水印用于归属和鲁棒性
+2. [Taming the Security-Energy Paradox: A Green AI Approach to Optimized Android Malware Detection](/202607/25/2607.20003v1-taming-the-security-energy-paradox-a-green-ai-approach-to-optimized-android-malware-detection)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：用户密码安全行为与认知偏差
-3. [AuthProbe: Specification-Driven, Multi-Identity Detection of Broken Object-Level Authorization in Recruitment API](/202607/24/2607.20574v1-authprobe-specification-driven-multi-identity-detection-of-broken-object-level-authorization-in-recruitment-api)  
+   evidence：使用MLP优化Android恶意软件检测，平衡安全与能耗
+3. [Dynamic Logic with Parallel Operator for Verifying Communication Protocols](/202607/25/2607.20180v1-dynamic-logic-with-parallel-operator-for-verifying-communication-protocols)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：检测对象级授权缺陷应对API中的身份认证问题
-4. [IssueTrojanBench: Benchmarking AI Coding Agents Against Malicious Issue Requests](/202607/24/2607.20759v1-issuetrojanbench-benchmarking-ai-coding-agents-against-malicious-issue-requests)  
+   evidence：密码协议的形式化验证确保真实性和安全性
+4. [Geometric Configurations of Perturbed Jailbreak Prompts](/202607/25/2607.20581v1-geometric-configurations-of-perturbed-jailbreak-prompts)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：对AI编码智能体进行恶意issue请求基准测试评估人工智能安全性
-5. [Information-Theoretically Secure Aggregation for Lightweight Federated Learning: Resilient to Dropouts and Adversaries](/202607/24/2607.20890v1-information-theoretically-secure-aggregation-for-lightweight-federated-learning-resilient-to-dropouts-and-adversaries)  
-   标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：联邦学习中信息论安全聚合实现隐私保护
-6. [Tractable Query Answering under Epistemic Confidentiality Policies in DL Ontologies (extended version)](/202607/24/2607.16715v2-tractable-query-answering-under-epistemic-confidentiality-policies-in-dl-ontologies-extended-version)  
+   evidence：越狱提示扰动技术及大语言模型安全
+5. [Towards an Automated Test of LLM Security Knowledge](/202607/25/2607.18496v2-towards-an-automated-test-of-llm-security-knowledge)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：保密性保持的查询回答
-7. [Physical Time-Lock Puzzles](/202607/24/2607.17328v1-physical-time-lock-puzzles)  
+   evidence：自动化评估LLM安全知识的方法，与AI安全评估相关
+6. [Building Trust in Autonomous Commerce: A Verifiable Global Event Timeline and AI-Ready Fraud Intelligence Layer](/202607/25/2607.19436v1-building-trust-in-autonomous-commerce-a-verifiable-global-event-timeline-and-ai-ready-fraud-intelligence-layer)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：物理时间锁谜题作为延迟访问的密码原语
-8. [Evaluating Large Language Models for Symbolic Security Protocol Analysis](/202607/24/2607.20712v1-evaluating-large-language-models-for-symbolic-security-protocol-analysis)  
-   标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：评估LLM进行安全协议分析，与密码认证相关
+   evidence：自主商务的可验证事件时间线和欺诈智能
 
 
 <div class="dpr-home-promo-card">
