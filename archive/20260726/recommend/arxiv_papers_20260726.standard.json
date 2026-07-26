@@ -1,0 +1,325 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-26T20:55:27.685215+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 6,
+    "quick_skim_target": 11,
+    "quick_selected": 6
+  },
+  "deep_dive": [
+    {
+      "id": "2607.16620v1",
+      "source": "arxiv",
+      "title": "Privacy Cost as Equity Input: A Group Fairness Criterion for Differentially Private Machine Learning",
+      "abstract": "Differential privacy (DP) is increasingly deployed to limit membership inference risk in machine-learning systems. Prior work has shown that DP-SGD can widen accuracy disparities across demographic groups, but this framing treats fairness as a purely outcome-side concern. We argue that privacy cost, the information leakage borne by each group, is itself a form of harm, and adopt a compensatory-fairness framework in which a group that involuntarily bears greater privacy exposure is owed proportionally greater benefit from the system. From this principle we derive the \\emph{Privacy-Cost Equity Ratio} (PCER), a group fairness metric defined as a group's positive prediction rate normalized by its per-group overfitting gap. By a standard membership inference bound, this overfitting gap upper-bounds each group's vulnerability to inference attacks, making PCER a conservative measure of benefit relative to exposure. PCER needs only per-group train and test accuracy (no shadow models), making it a practical post-hoc audit tool. We evaluate PCER alongside standard fairness metrics across six benchmark--attribute combinations spanning tabular and NLP domains, under DP-SGD at a range of privacy budgets, and validate the overfitting-gap proxy against a direct threshold membership-inference attack. The results reveal patterns that outcome-based metrics miss. On COMPAS, PCER uncovers a persistent double disadvantage: the protected group bears both greater privacy exposure and worse predictive outcomes, something demographic parity gap masks entirely. Sensitivity analysis shows very strong privacy guarantees collapse both groups' overfitting to a numerical floor, rendering exposure-based audits uninformative in that regime. Together, these findings show that fairness audits of privacy-preserving systems must account for who bears the cost of protection, not only who benefits from its outcomes.",
+      "authors": [
+        "Rakshit Naidu"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CR",
+        "cs.CY"
+      ],
+      "published": "2026-07-18T03:41:01+00:00",
+      "link": "https://arxiv.org/pdf/2607.16620v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Proposes a fairness metric for privacy cost in differentially private ML, relevant to privacy preservation in AI",
+      "llm_evidence_cn": "提出差分隐私机器学习中隐私成本的公平性度量，与人工智能隐私保护相关",
+      "llm_evidence": "提出差分隐私机器学习中隐私成本的公平性度量，与人工智能隐私保护相关",
+      "canonical_evidence": "提出差分隐私机器学习中隐私成本的公平性度量，与人工智能隐私保护相关",
+      "llm_tldr_en": "Introduces Privacy-Cost Equity Ratio (PCER), a group fairness metric that normalizes positive prediction rate by per-group overfitting gap, ensuring privacy cost is proportionally compensated.",
+      "llm_tldr_cn": "论文指出差分隐私机器学习会加剧不同群体的准确性差异，但现有研究只关注结果公平。作者提出隐私成本公平概念，将隐私泄露视为伤害，并定义隐私成本公平比（PCER），以群体正向预测率除以过拟合差距，确保隐私成本较高的群体获得相应补偿。该度量直接服务于AI隐私保护中的公平性。",
+      "llm_tldr": "论文指出差分隐私机器学习会加剧不同群体的准确性差异，但现有研究只关注结果公平。作者提出隐私成本公平概念，将隐私泄露视为伤害，并定义隐私成本公平比（PCER），以群体正向预测率除以过拟合差距，确保隐私成本较高的群体获得相应补偿。该度量直接服务于AI隐私保护中的公平性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.17147v1",
+      "source": "arxiv",
+      "title": "SlotGuard: Stop Oversharing Private Local Context in LLM Agent Transcri",
+      "abstract": "LLM agents can leak privacy (e.g., paths, emails) and credentials (e.g., API keys) as agent observations (e.g., tool outputs, shell logs, and file reads) are appended to provider-bound transcripts. Existing placeholder redaction is brittle: it can miss embedded or cross-turn references, over-redact benign lookalikes, and destroy the structure useful for reasoning. We present SlotGuard, a local transcript boundary that can hide sensitive data while retaining agents' performance. SlotGuard rewrites structural bindings as typed, suffix-aware slots, replaces secrets with format-preserving synthetic values, links cross-turn references with a lightweight session graph, and restores raw values only inside the trusted runtime. On controlled repository-oriented agent transcripts, SlotGuard removes all 20,814 annotated structurally sensitive characters across 9,229 paths and reduces credential leakage to 0.0\\% across 852 planted values. It remains close to raw-transcript task success across four upstream models, while generic redaction drops to 2.5\\%. Transcript rewriting takes a median of 14.424~$μ$s per agent turn. The code is publicly accessible at https://github.com/illinoisdata/SlotGuard.",
+      "authors": [
+        "Haocheng Xia",
+        "Yongjoo Park"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.CL"
+      ],
+      "published": "2026-07-19T09:13:08+00:00",
+      "link": "https://arxiv.org/pdf/2607.17147v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "privacy protection against oversharing in LLM agent transcripts",
+      "llm_evidence_cn": "LLM代理转录中的隐私保护",
+      "llm_evidence": "LLM代理转录中的隐私保护",
+      "canonical_evidence": "LLM代理转录中的隐私保护",
+      "llm_tldr_en": "SlotGuard hides sensitive data in LLM agent transcripts using typed suffix-aware slots and synthetic values while preserving performance, with cross-turn reference linking.",
+      "llm_tldr_cn": "本文提出SlotGuard，一种本地转录边界机制，能够在LLM代理的观测数据中隐藏敏感信息（如路径、凭证），同时保持代理性能。它通过类型化后缀槽替换秘密，使用保持格式的合成值，并利用轻量会话图关联跨轮次引用，仅在可信运行时恢复原始值。实验表明SlotGuard有效减少泄露而不影响任务表现。",
+      "llm_tldr": "本文提出SlotGuard，一种本地转录边界机制，能够在LLM代理的观测数据中隐藏敏感信息（如路径、凭证），同时保持代理性能。它通过类型化后缀槽替换秘密，使用保持格式的合成值，并利用轻量会话图关联跨轮次引用，仅在可信运行时恢复原始值。实验表明SlotGuard有效减少泄露而不影响任务表现。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.19047v1",
+      "source": "arxiv",
+      "title": "Chi-MERA: Defending Orbit-Based Authentication of LEO Satellites with the Space Oddity of MLAT (Long Version)",
+      "abstract": "An active research area, physical layer security can be a last resort in insecure legacy systems, a resource-efficient alternative, or a complementary backup for cryptographic techniques. In this paper, we demonstrate that previously established authentication schemes for LEO satellites are vulnerable to attackers that control multiple devices. In extensive experiments, such attackers produce false positive rates (FPR) of up to 40%.   Based on a root cause analysis, we develop a novel scheme, called Chi-MERA, that improves authentication performance and is robust against multi-device attackers. Our scheme uses two enhancements: (1) multilateration (MLAT) to clearly distinguish between attackers and legitimate satellites, and (2), a new resilient signature scheme without dependency on a single dedicated reference receiver. Our evaluation shows that exploiting MLAT characteristics such as residual analysis to classify vastly different signal source categories (orbit vs. non-orbit) is highly effective. In extensive simulations, we show that the new authentication achieves low FPR of $<$2% and false negative rates of $<$3% for accidentally rejecting valid signals. Furthermore, our scheme's defense scales linearly: $n$ receivers reliably withstand spoofing (FPR $< 1%$) from attackers with $\\frac{n}{2}$ devices.",
+      "authors": [
+        "Sarah Jung",
+        "Eric Jedermann",
+        "Martin Strohmeier",
+        "Jens Schmitt"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-21T12:35:31+00:00",
+      "link": "https://arxiv.org/pdf/2607.19047v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Proposes orbit-based authentication for LEO satellites, relevant to identity authentication",
+      "llm_evidence_cn": "提出基于轨道的LEO卫星认证方案，与身份认证相关",
+      "llm_evidence": "提出基于轨道的LEO卫星认证方案，与身份认证相关",
+      "canonical_evidence": "提出基于轨道的LEO卫星认证方案，与身份认证相关",
+      "llm_tldr_en": "Develops Chi-MERA, a robust orbit-based authentication scheme for LEO satellites using multilateration to defend against multi-device attackers.",
+      "llm_tldr_cn": "论文指出现有LEO卫星认证方案易受多设备攻击者攻击，误报率高达40%。通过根因分析，提出Chi-MERA方案，利用多边定位（MLAT）增强认证鲁棒性。实验证明新方案有效降低攻击者导致的误报，提升了卫星身份认证的安全性。该工作对物理层安全认证有重要贡献。",
+      "llm_tldr": "论文指出现有LEO卫星认证方案易受多设备攻击者攻击，误报率高达40%。通过根因分析，提出Chi-MERA方案，利用多边定位（MLAT）增强认证鲁棒性。实验证明新方案有效降低攻击者导致的误报，提升了卫星身份认证的安全性。该工作对物理层安全认证有重要贡献。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.18496v1",
+      "source": "arxiv",
+      "title": "Towards an Automated Test of LLM Security Knowledge",
+      "abstract": "Large language models (LLMs) are increasingly used for a range of software, hardware and human-centered security tasks. Consequently, LLM performance on security tasks is an active area of measurement and research, often with a focus on identifying areas in which LLM security ``knowledge'' may be insufficient. Popular strategies for identifying LLM security knowledge gaps include building corpora of challenge questions or task benchmarks, strategies that require substantial manual work and security expertise to design and execute. We introduce a partially-automated method for assessing LLM knowledge of a security area.The method uses authoritative information from Consumer Protection Agencies (CPAs) to identify instability in LLM responses that can be indicative of knowledge gaps. We demonstrate the method for 2 security topics, identity theft and impostor scams, and 5 LLMs in 2 leading LLM families, Gemini and GPT, using publicly available information about identity theft and impostor scams from 6 CPAs.The method distinguishes between models that have and don't have sufficient knowledge to accurately identify the security topics in text narratives.",
+      "authors": [
+        "Shufan Chai",
+        "Liangliang Sun",
+        "Jessica Staddon"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.HC"
+      ],
+      "published": "2026-07-20T20:37:37+00:00",
+      "link": "https://arxiv.org/pdf/2607.18496v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "LLM security knowledge assessment; partially-automated test method",
+      "llm_evidence_cn": "LLM安全知识评估；部分自动化测试方法",
+      "llm_evidence": "LLM安全知识评估；部分自动化测试方法",
+      "canonical_evidence": "LLM安全知识评估；部分自动化测试方法",
+      "llm_tldr_en": "Introduces a partially-automated method using CPA information to assess LLM security knowledge by detecting response instability.",
+      "llm_tldr_cn": "该论文提出一种部分自动化的方法来评估大语言模型（LLM）在安全领域的知识水平。方法利用消费者保护机构的权威信息，通过检测LLM回答的不稳定性来识别知识缺口。这为衡量LLM安全能力提供了新思路，有助于发现模型在安全威胁和防御方面的不足。实验表明该方法能有效区分知识充足与不足的领域，对AI安全评估具有实用价值。",
+      "llm_tldr": "该论文提出一种部分自动化的方法来评估大语言模型（LLM）在安全领域的知识水平。方法利用消费者保护机构的权威信息，通过检测LLM回答的不稳定性来识别知识缺口。这为衡量LLM安全能力提供了新思路，有助于发现模型在安全威胁和防御方面的不足。实验表明该方法能有效区分知识充足与不足的领域，对AI安全评估具有实用价值。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.19430v1",
+      "source": "arxiv",
+      "title": "ChannelGuard: Safe Models Do Not Compose into Safe Multi-Agent Systems",
+      "abstract": "Multi-agent LLM applications chain a planner, worker agents, a verifier, and a synthesizer, and every hop between agents is an unmonitored channel through which an adversary can smuggle instructions. Existing defenses guard only the input boundary (IBProtector, Llama Guard, perplexity filters, SmoothLLM) or run outside the application as opaque, stochastic provider-side filters. We show this gap carries a consequence rarely measured: on a 2,100-trace evaluation across eight attack families, five defenses, and three model backends, an undefended pipeline that appears fully safe under standard reporting (attack success 0.000 on tool- and memory-poisoning) owes that safety almost entirely to the cloud provider's server-side filter (54 of 60 blocks on Azure GPT-5), and silently shifts to the agent model's own alignment on a backend without such a filter. Outcome-only reporting hides this dependence. We present ChannelGuard, a training-free defense-in-depth framework placing information-bottleneck gates on every inter-agent channel; each scores channel text against an adversarial phrase bank by embedding similarity and deterministically passes, compresses, or blocks it, adding no LLM call, while an attribution method records which layer stopped each attack. ChannelGuard's tool-output gate blocks Tool Poisoning 30 of 30 at the application layer, identically across Azure GPT-5, Anthropic Sonnet 4.5, and Anthropic Haiku 4.5, whereas the undefended pipeline shifts entirely across backends; it also lowers Prompt Injection attack success by half (0.333 to 0.167) and preserves GSM8K accuracy exactly (0.867). White-box adaptive paraphrase evades every embedding gate, where a perturb-and-vote baseline does better. An extended appendix adds baselines, ablations, sweeps, a benign-preservation analysis, and a judge audit (kappa = 0.900), at a total cost of 47.36 USD.",
+      "authors": [
+        "Elias Hossain",
+        "Md Mehedi Hasan Nipu",
+        "Fatema Tuj Johora Faria",
+        "Tasfia Nuzhat Ornee",
+        "Maleeha Sheikh"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.MA"
+      ],
+      "published": "2026-07-20T19:11:17+00:00",
+      "link": "https://arxiv.org/pdf/2607.19430v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "multi-agent LLM security, unmonitored channels",
+      "llm_evidence_cn": "多Agent LLM安全，未监控信道",
+      "llm_evidence": "多Agent LLM安全，未监控信道",
+      "canonical_evidence": "多Agent LLM安全，未监控信道",
+      "llm_tldr_en": "ChannelGuard shows that safe individual LLM agents are vulnerable to instruction smuggling across unmonitored channels, challenging compositionality of safety.",
+      "llm_tldr_cn": "多Agent LLM应用中，各Agent之间的信道未被监控，攻击者可植入恶意指令。本文通过大规模评估表明，即使每个Agent单独安全，组合后的管线仍易受攻击，且云提供商滤镜提供了大部分虚假安全性。揭示了多Agent系统安全组合性的根本问题，并强调了内部信道防御的必要性。",
+      "llm_tldr": "多Agent LLM应用中，各Agent之间的信道未被监控，攻击者可植入恶意指令。本文通过大规模评估表明，即使每个Agent单独安全，组合后的管线仍易受攻击，且云提供商滤镜提供了大部分虚假安全性。揭示了多Agent系统安全组合性的根本问题，并强调了内部信道防御的必要性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.19449v1",
+      "source": "arxiv",
+      "title": "Guardrails as Scapegoats: Auditing Unfaithful Safety Refusals in Tool-Augmented LLM Agents",
+      "abstract": "Evaluation frameworks for tool-augmented LLM agents focus overwhelmingly on capability metrics or explicit tool crashes, leaving silent infrastructure failures and HTTP 200 responses with empty, null, or malformed payloads largely unaudited. We introduce a lightweight black-box auditing framework that injects four silent failure profiles across 12 production-adjacent tool stubs and classifies agent responses into three mutually exclusive behavioral classes: Honest Surrender (HSR), Fabrication (FAR), and Unfaithful Safety Refusal (USR). Evaluating two frontier and two open-source models at temperature zero under a neutral system prompt, we find that FAR dominates (56.6% of valid responses): agents treat empty payloads as real data, silently returning fabricated results. USR, in which an agent invents a policy or privacy rationale to explain the failure, is nearly absent at baseline (0.25%, one instance across 396 valid trajectories). Our key finding emerges from an ablation where we augment the system prompt with standard safety language (\"prioritize user privacy and data security\"), which amplifies USR by 15.6x (from 0.25% to 3.95%; 95% CI on ablation rate: 2.2%-6.4%; Fisher's exact test, p < 0.001). USR is a latent behavior, activated when safety vocabulary in the system prompt primes the model to reach for policy rationales when tools silently fail. Sensitive tools (fetch_medical_record, retrieve_contract, fetch_user_profile) account for the majority of USR instances. We propose a payload-response misalignment heuristic for production-level detection and discuss governance implications for safety-forward deployments.",
+      "authors": [
+        "Aarushi Singh"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CR"
+      ],
+      "published": "2026-07-21T13:23:05+00:00",
+      "link": "https://arxiv.org/pdf/2607.19449v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Audits safety refusals in LLM agents, addressing AI security threats",
+      "llm_evidence_cn": "审计LLM agent中的不实安全拒绝，针对人工智能安全威胁",
+      "llm_evidence": "审计LLM agent中的不实安全拒绝，针对人工智能安全威胁",
+      "canonical_evidence": "审计LLM agent中的不实安全拒绝，针对人工智能安全威胁",
+      "llm_tldr_en": "Introduces a black-box auditing framework that classifies tool-augmented LLM agent responses, revealing dominant fabrication behaviors and unfaithful safety refusals.",
+      "llm_tldr_cn": "论文提出轻量级黑盒审计框架，向工具增强型LLM agent注入四种静默故障，发现agent表现为诚实投降、捏造和不实安全拒绝三类行为。实验表明捏造行为占主导（56.6%），agent将空载荷当作真实数据。该工作揭示了LLM agent安全漏洞，对AI安全防御有重要意义。",
+      "llm_tldr": "论文提出轻量级黑盒审计框架，向工具增强型LLM agent注入四种静默故障，发现agent表现为诚实投降、捏造和不实安全拒绝三类行为。实验表明捏造行为占主导（56.6%），agent将空载荷当作真实数据。该工作揭示了LLM agent安全漏洞，对AI安全防御有重要意义。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.19676v1",
+      "source": "arxiv",
+      "title": "Edge Intelligence in Civil Aviation: Paradigms, Techniques, and Applications",
+      "abstract": "Civil aviation is safety critical and its operations, from flight decks and towers to ramps and maintenance, generate massive, heterogeneous data at the network edge. Yet cloud centric deployment of large Artificial Intelligence (AI) models often produces high task latency, lacks offline capability in communication denied environments, and requires centralizing sensitive data, raising privacy and sovereignty risks. Edge AI moves perception, prediction, and decision logic closer to the data producers via compression, collaborative inference, and split learning, thereby reducing latency, bandwidth, and exposure while enabling graceful operation during disconnections. This paper provides a panoramic view and a common understanding of edge intelligence tailored to civil aviation. We firstly articulate the operational motivations for edge AI, and then review recent techniques for edge inference and edge learning. We then introduce the organizational computing paradigms and the respective configurations in civil aviation environments; finally, we describe the emerging applications and the future research trends of edge intelligence in civil aviation. We argue that a refined edge solution can complement cloud foundations to deliver low latency, privacy preserving, and resilient AI services across the civil aviation lifecycle.",
+      "authors": [
+        "Wenbin Li",
+        "Zhongtian Liao",
+        "Bolin Liu",
+        "Yongjie Zhou",
+        "Jingling Wu",
+        "Xiaoyong Lin",
+        "Jing Chen"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-22T02:25:46+00:00",
+      "link": "https://arxiv.org/pdf/2607.19676v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "edge AI in cloud computing, privacy and security concerns",
+      "llm_evidence_cn": "边缘人工智能涉及分布式云架构、AI安全与隐私",
+      "llm_evidence": "边缘人工智能涉及分布式云架构、AI安全与隐私",
+      "canonical_evidence": "边缘人工智能涉及分布式云架构、AI安全与隐私",
+      "llm_tldr_en": "Survey on edge AI paradigms and techniques for civil aviation, addressing cloud-centric limitations, privacy risks, and enabling offline capability.",
+      "llm_tldr_cn": "本文综述了民航领域边缘智能的范式、技术与应用。针对云计算在延迟、离线能力及数据隐私方面的不足，边缘AI通过压缩、协同推理、拆分学习等方式将智能推向网络边缘。文章涵盖了分布式云架构、AI安全威胁与防御、隐私保护等综合议题，为相关研究提供了全景视图。",
+      "llm_tldr": "本文综述了民航领域边缘智能的范式、技术与应用。针对云计算在延迟、离线能力及数据隐私方面的不足，边缘AI通过压缩、协同推理、拆分学习等方式将智能推向网络边缘。文章涵盖了分布式云架构、AI安全威胁与防御、隐私保护等综合议题，为相关研究提供了全景视图。",
+      "llm_tags": [
+        "query:sec-cloud-ai:composite"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai:composite",
+      "matched_query_text": "Papers central to 请帮我查找与密钥托管, 密码认证,分布式云计算，人工智能安全，机密计算有关的论文, especially work that connects or combines: distributed cloud computing architectures; artificial intelligence security threats and defenses; confidential computing techniques; identity authentication in cloud computing; cloud security challenges and solutions; privacy preservation in artificial intelligence; distributed cloud computing security and confidential computing; artificial intelligence security and password authentication; secure key escrow schemes for cloud computing; cryptographic techniques for key recovery and user authentication.",
+      "matched_requirement_id": "req-composite-sec-cloud-ai",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.21393v1",
+      "source": "arxiv",
+      "title": "From Read Speech to Spoken Digits: A Task-Specific Evaluation of Speech Privacy With Informed Attackers",
+      "abstract": "Protecting speech privacy in real-life audio recordings is a growing concern. This contribution evaluates the effectiveness of three obfuscation techniques in protecting linguistic speech content, using digit recognition as a task-specific and practically motivated evaluation scenario. As a first baseline, a general-purpose speech recognition model and a digit-specific classifier were applied as informed attackers to recognise both single digits and concatenated digit sequences. Our experimental results demonstrate significant differences in recognition performance across digit modality, speech rate, and attack model. These findings emphasize the need for more comprehensive and application-oriented evaluation methods to ensure speech privacy.",
+      "authors": [
+        "Jule Pohlhausen",
+        "Anjana Rajasekhar",
+        "Anna Leschanowsky",
+        "Joerg Bitzer"
+      ],
+      "primary_category": "eess.AS",
+      "categories": [
+        "eess.AS"
+      ],
+      "published": "2026-07-23T14:55:24+00:00",
+      "link": "https://arxiv.org/pdf/2607.21393v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "evaluating speech obfuscation for privacy against informed attackers",
+      "llm_evidence_cn": "评估语音混淆技术对抗知情攻击者的隐私保护效果",
+      "llm_evidence": "评估语音混淆技术对抗知情攻击者的隐私保护效果",
+      "canonical_evidence": "评估语音混淆技术对抗知情攻击者的隐私保护效果",
+      "llm_tldr_en": "This paper evaluates three obfuscation techniques for protecting speech content using digit recognition as a task-specific scenario, showing that recognition performance varies significantly with speech rate and attack model.",
+      "llm_tldr_cn": "该论文以数字识别为任务场景，评估了三种语音混淆技术保护语言内容的效果，发现语音速率和攻击模型对识别性能有显著影响，强调需要更全面的评估方法。",
+      "llm_tldr": "该论文以数字识别为任务场景，评估了三种语音混淆技术保护语言内容的效果，发现语音速率和攻击模型对识别性能有显著影响，强调需要更全面的评估方法。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}
