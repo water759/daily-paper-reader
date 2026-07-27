@@ -1,0 +1,4711 @@
+Title: Robust Berrut-Approximated Coded Computing via Discrete Cosine Transforms
+
+URL Source: https://arxiv.org/pdf/2607.22427v1
+
+Published Time: Mon, 27 Jul 2026 00:54:42 GMT
+
+Number of Pages: 49
+
+Markdown Content:
+> 1
+
+# Robust Berrut-Approximated Coded Computing via Discrete Cosine Transforms 
+
+Rimpi Borah and J. Harshan Department of Electrical Engineering, Indian Institute of Technology Delhi, India 
+
+Abstract 
+
+Coded computing is a reliable and fault-tolerant paradigm for executing large-scale computational tasks over distributed worker nodes. Among existing coded computing frameworks, Berrut Approximated Coded Computing (BACC) enables distributed computation of arbitrary non-polynomial functions through rational interpolation. Although BACC provides provable approximation guarantees and resilience against straggling workers, its robustness against Byzantine workers remains largely unexplored. To fill this research gap, we propose Robust Berrut Approximated Coded Computing (RBACC), which establishes a coding-theoretic framework for BACC by enabling error localization and error correction in the presence of Byzantine workers. In particular, RBACC introduces a new choice of evaluation points that establishes a connection between Berrut interpolation and Discrete Cosine Transform (DCT) codes, thereby enabling error localization and error correction under finite-precision arithmetic. We derive analytical upper bounds on the approximation error of RBACC under multiple operating scenarios, including straggler-only systems and systems with Byzantine workers under finite-precision arithmetic. Building upon this analysis, we formulate several optimization problems for selecting the DCT code dimension and for assigning encoded evaluations to unreliable workers. We show that these are previously unexplored design parameters that can be systematically optimized to improve the reconstruction accuracy. Experimental results demonstrate that the proposed RBACC framework effectively mitigates stragglers and Byzantine workers while offering improved reconstruction accuracy over the baselines. 
+
+Index Terms 
+
+Coded Computing, Approximate Coded Computing, Berrut Rational Interpolation, Stragglers, Numerical Stability, Byzantine Workers, Discrete Cosine Transform Codes 
+
+I. I NTRODUCTION 
+
+Coded computing is an efficient and fault-tolerant framework comprising a master server and a set of multiple workers for performing large-scale computations in a distributed manner. Originally introduced to mitigate the impact of slow or failed workers (popularly known as stragglers) [ 1], [ 2], coded computing incorporates redundancy into distributed computation such that the desired result can be recovered from only a subset of worker responses. Consequently, the master server is not required to wait for all the workers to complete their computations, thereby reducing the impact of stragglers. Subsequent research in this field has revealed that distributed computing systems are also vulnerable to various adversarial threats. In particular, there may be the so-called Byzantine workers among the worker nodes, which return erroneous computations. Also, there may be honest-but-curious workers, which may collude to infer sensitive information about the underlying datasets. Interestingly, the redundancy introduced by coded computing is also known to facilitate privacy preservation as well as 
+
+This work was presented in part at the 2025 IEEE Information Theory Workshop (ITW), Sydney, Australia, September 2025 [ 25 ]. arXiv:2607.22427v1 [cs.IT] 24 Jul 2026 2
+
+robustness against erroneous computations, leading to a unified framework that simultaneously addresses straggler mitigation, Byzantine robustness, and data privacy. Over the last decade, coded computing has been successfully applied to a variety of distributed computing problems, particularly distributed matrix multiplication and distributed polynomial computation. Representative examples include codes for distributed matrix multiplication [ 3], Polynomial Codes and Entangled Polynomial Codes [ 4], [ 5], Lagrange Coded Computing (LCC) [ 6], Generalized LCC [ 7], Numerically Stable LCC (NSLCC) [ 8], Folded Lagrange Coded Computing (FLCC) [ 9], and verifiable LCC for distributed computation of multiple functions [ 10 ]. Among these, LCC and its analog counterpart, namely Analog Lagrange Coded Computing (ALCC) [ 11 ], have attracted significant attention for distributed polynomial function computation since they offer resilience against stragglers, robustness against Byzantine workers [ 12 ], [ 13 ], and support privacy-preserving computation [ 14 ], [ 15 ]. Since the developments presented in this work are along the lines of LCC and ALCC, we briefly review the underlying coded computing framework along with the representative polynomial and rational coded computing schemes. We restrict our discussion to straggler resilience and Byzantine robustness, as privacy preservation is beyond the scope of this work. 
+
+TABLE I: Comparison of representative coded computing frameworks in terms of the encoding function, encoding and evaluation points, reconstruction method, and resilience against stragglers and Byzantine workers.                                    
+
+> Scheme
+> Encoding Function
+> γk(z)
+> Encoding Points
+> αk
+> Evaluation Points
+> zi
+> Reconstruction / Decoding Method Straggler Resilience
+> Byzantine Resilience
+> LCC [ 6]Lagrange Distinct field elements Distinct field elements Polynomial interpolation using Vandermonde matrix inversion XRS code
+> ALCC [ 11 ]Lagrange Roots of unity Roots of unity Polynomial interpolation using Vandermonde matrix inversion XDFT code
+> NSLCC [ 8]Lagrange Chebyshev nodes of the first kind
+> Chebyshev nodes of the first kind
+> Polynomial interpolation using Chebyshev Vandermonde matrix inversion
+> XNot known
+> BACC [ 16 ]Rational (Berrut) Chebyshev points of the first kind
+> Chebyshev points of the second kind
+> Berrut interpolation XNot known
+> RBACC (This Work) Rational (Berrut) Chebyshev points of the first kind
+> Chebyshev points of the first kind
+> Berrut rational interpolation XDCT code
+
+A. Overview of Coded Computing Frameworks 
+
+Consider a distributed computing setup in which a master server intends to evaluate a target function f : Rm×n → Rm×n on multiple datasets {X0, X1, . . . , XK−1}, where Xj ∈ Rm×n for each j ∈ [K], with [K] , {0, 1, . . . , K − 1}. In such a setting, the master first constructs an encoding function u(z) = ∑K−1 
+
+> j=0
+
+γj (z)Xj , where the cardinal basis functions {γj (z)} satisfy 
+
+γj (αk) = δjk over a set of encoding points {αk}K−1 
+
+> k=0
+
+, with δjk denoting the Kronecker delta. The master then evaluates u(z)
+
+at a collection of evaluation points {zi}Ni=1 and distributes the encoded data {u(zi)} to the workers. Each worker computes 
+
+f (u(zi)) and returns the result to the master. Upon receiving the worker computations, the master reconstructs the composite function f (u(z)) using a suitable reconstruction method and subsequently recovers the desired outputs {f (Xj )} by evaluating the reconstructed function at the encoding points {αj }K−1 
+
+> j=0
+
+. While the above framework is generic, the specific characteristics of a coded computing framework are determined by the choice of the basis functions, the encoding points, the worker evaluation points, and the corresponding reconstruction or decoding method employed at the master. Most existing coded computing frameworks assume that the target function f (·) is polynomial. Under this assumption, if u(z) is chosen as a finite-degree polynomial, then f (u(z)) also remains a finite-degree polynomial. Therefore, f (u(z)) 3
+
+can be reconstructed from only a subset of worker computations through polynomial interpolation using Vandermonde matrix inversion. Consequently, resilience against stragglers is achieved as long as the effective degree of f (u(z)) is much less than the total number of workers [ 6], [ 11 ]. Furthermore, the finite-dimensional nature of the composite polynomial f (u(z)) along with an appropriate choice of the worker evaluation points {zi} are known to induce an algebraic error-correcting code structure on the computations returned by the workers. As a result, erroneous computations introduced by a bounded number of Byzantine workers can be detected and corrected through suitable decoding algorithms. In short, while the encoding function governs the recovery threshold against stragglers through the degree of the composite function f (u(z)) , the choice of the worker evaluation points influences the numerical stability and reconstruction accuracy in the presence of stragglers and Byzantine workers. This principle underlies several influential frameworks, including LCC [ 6], NSLCC [ 8], and Robust ALCC [ 12 ] where different choices of worker evaluation points lead to distinct tradeoffs in numerical stability and coding-theoretic robustness.       
+
+> f(u(αi))
+> u(α)
+> u(α1)u(α2)· · · u(αN)
+> True function
+> Berrut Approximation
+> Fig. 1: Depicting function approximation and reconstruction in BACC
+
+Extending polynomial coded computing frameworks to arbitrary non-polynomial target functions typically requires high-degree polynomial approximations. As the approximation degree increases, the degree of the composite function f (u(z)) also increases, thereby requiring a large number of worker nodes for successful reconstruction. Consequently, these frameworks are inherently unsuitable in small-to-medium sized distributed systems for many machine learning, deep learning, and signal pro-cessing applications involving non-polynomial functions. To address these limitations, Berrut Approximated Coded Computing (BACC) was proposed in [ 16 ]. The key idea of BACC is to replace the polynomial interpolants used in conventional coded computing schemes with Berrut rational interpolants. In particular, BACC employs Berrut rational interpolants as the encoding functions {γi(z)|1 ≤ i ≤ K}, Chebyshev points of the first kind as the encoding points {αj |1 ≤ j ≤ K}, and Chebyshev points of the second kind as the evaluation points {zi|1 ≤ i ≤ N }. Under this construction, BACC is known to enable numerically stable approximate distributed computation of arbitrary functions while retaining resilience against stragglers. For illustration, Fig. 1 shows how the worker evaluations {f (u(zi)) }Ni=1 are used to reconstruct an approximation of the composite function f (u(z)) via Berrut rational interpolation, using which the approximate values of the desired outputs {f (u(αj )) }Kj=1 
+
+are subsequently recovered. Owing to these attractive approximation and numerical-stability properties, the BACC framework has inspired several subsequent extensions [ 17 ]–[ 20 ]. Overall, Table I summarizes some representative coded computing frameworks in terms of their encoding basis functions, encoding points, worker evaluation points, reconstruction methods, and resilience against stragglers and Byzantine workers. 
+
+B. Motivation and Problem Statement 
+
+Despite its ability to approximately compute arbitrary functions with provable accuracy guarantees, the development of coding-theoretic techniques for mitigating Byzantine workers in the BACC framework remains largely unexplored. In contrast 4
+
+to LCC, ALCC, and their robust variants [ 6], [ 12 ], where the worker computations naturally form codewords of well-understood algebraic codes due to the finite-dimensional polynomial structure of the composite function f (u(z)) , the target function in BACC is generally non-polynomial. Consequently, the corresponding worker computations are not naturally confined to a finite-dimensional polynomial subspace, and therefore do not inherently satisfy the algebraic constraints required to form a classical error-correcting code. Furthermore, the choice of the worker evaluation points plays a fundamental role in determining the algebraic structure of the induced linear code, including its generator and parity-check matrices. This in turn determines whether the code possesses desirable properties such as the Maximum Distance Separable (MDS) property and supports efficient syndrome-based error detection and correction. Since BACC employs Chebyshev points of the second kind as worker evaluation points, it is not immediately clear whether the resulting worker computations admit such an algebraic code structure. Consequently, it remains an open question whether coding-theoretic tools developed for polynomial coded computing can be directly extended to the BACC framework. Thus, towards closing these research gaps, we pose the following research question: How can we develop a coding-theoretic framework for BACC in order to provide robustness against Byzantine workers for distributed computation of arbitrary non-polynomial functions? Specifically, can we develop a coding-theoretic framework that 1) admits an underlying algebraic code structure that enables efficient syndrome-based error detection and correction? 2) preserves the approximation accuracy and straggler resilience of BACC while retaining its capability to compute arbitrary non-polynomial functions? 3) provides robustness against a few Byzantine workers through coding-theoretic error localization and correction? and 4) admits rigorous theoretical guarantees through analytical characterizations under finite-precision computations in the presence of both stragglers and Byzantine workers?  
+
+> Computation Stage
+> Customized Distribution of Shares
+> W1
+> W2
+> WN−1
+> WN
+
+...
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .     
+
+> .......... . .
+> u×h
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .     
+
+> .......... . .
+> u×h
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .      
+
+> .......... . .
+> u×h
+> ++
+> E1
+> E2
+> R1
+> R2
+> RN−1
+
+...         
+
+> f(Uψ−1(1) )
+> f(Uψ−1(2) )
+> f(Uψ−1(N−1) )
+> f(Uψ−1(N))
+> Uψ−1(1)
+> Uψ−1(2)
+> Uψ−1(N−1)
+> Uψ−1(N)
+> Trusted Worker Node Worker Node Byzantine
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .     
+
+> .......... . .
+> u×h
+> RN
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .     
+
+> .......... . .
+> u×h
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .                    
+
+> .......... . .
+> u×h
+> Permutation Block
+> ψ: [ N]→[N]
+> Ui→Wψ(i)
+> s.t.
+> Ui=u(αi),
+> αi=cos (2 i+1) π
+> 2N,i∈[N].
+> Encoding Block
+
+Master Node    
+
+> {X1,X2, . . . , XK}
+
+(a) 
+
+> Modi fi ed Reconstruction Stage
+
+DCT Decoder     
+
+> f(X1), f (X2), . . . , f (XK)
+> Approximate Reconstruction
+
+Master Node 
+
+> (b)
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .     
+
+> .......... . .
+> u×h
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .   
+
+> .......... . .
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .       
+
+> .......... . .
+> u×h
+> u×h
+
+... 
+
+> R1
+> R2
+> RN−1
+> RN
+
+· · ·. . . 
+
+· · ·. . . 
+
+· · ·. . .      
+
+> .......... . .
+> u×h
+> W1
+> W2
+> WN−1
+> WN
+
+...
+
+(b) 
+
+Fig. 2: Robust BACC framework involving Byzantine workers: (a) captures the stage of encoding at the master server and distributed computation at the workers where Byzantine workers inject noise into their computations. (b) depicts the reconstruction stage at the master server wherein DCT decoder is used to nullify the noise introduced by the Byzantine workers. 
+
+C. Our Contributions 
+
+In this work, we answer the above questions affirmatively. We first investigate whether the computations returned by the workers in the original BACC framework constitute codewords of an underlying linear code possessing the Maximum Distance Separable (MDS) property. To this end, we analyze the linear code when the Chebyshev points of the second kind are used as the worker evaluation points in BACC. We establish that the corresponding generator matrix neither admits a 5
+
+Bose–Chaudhuri–Hocquenghem (BCH)-like algebraic characterization nor is amenable to efficient minimum-distance charac-terization through existing low-complexity decoding techniques (see Section II ). Consequently, the algebraic framework for the underlying syndrome-based error detection and correction in polynomial coded computing cannot be directly extended to the original BACC construction. Motivated by this observation, we replace the worker evaluation points with Chebyshev points of the first kind and establish a previously unexplored connection between Berrut approximated coded computing and Discrete Cosine Transform (DCT) codes [ 21 ], [ 22 ]. We show that the resulting worker computations can be decomposed into a DCT-codeword component and a residual approximation component, thereby enabling DCT decoding algorithms to perform both error detection and error correction while preserving the accuracy benefits of BACC. Our specific contributions in this line are listed below:  
+
+> •
+
+Framework: Building upon the proposed coding-theoretic framework, we develop Robust Berrut Approximate Coded Computing (RBACC) by suitably modifying the worker evaluation points of the original BACC framework. The proposed construction induces a DCT code structure on the worker computations, thereby enabling syndrome-based DCT decoding for Byzantine error localization and correction while retaining the Berrut interpolation framework. Furthermore, under infinite-precision arithmetic, the proposed DCT decoding framework can estimate the number of Byzantine workers with high accuracy, a capability unavailable in existing Berrut-based coded computing frameworks (See Section III ).  
+
+> •
+
+Numerical Stability: We prove that the Lebesgue constant associated with the proposed worker evaluation points exhibits the same logarithmic growth as that of the original BACC framework. Consequently, RBACC preserves the numerical stability, approximation accuracy, and straggler resilience of BACC despite incorporating robustness against Byzantine workers (See Section IV ).  
+
+> •
+
+Performance analysis and optimization: We establish rigorous theoretical guarantees for RBACC, including analyt-ical bounds on the approximation accuracy, DCT error-localization performance under finite-precision arithmetic, and reconstruction error in the presence of both stragglers and Byzantine workers. Since the target function is generally non-polynomial and not confined to a finite-dimensional function space, the DCT code dimension becomes a fundamental design parameter. To characterize this tradeoff, we introduce the effective variance of the DCT decoder, which jointly captures the effects of finite-precision noise and truncation error, and formulate an optimization problem for selecting the optimal DCT code dimension. Numerical results demonstrate that the theoretically optimal value of the DCT code dimension closely matches the empirically obtained solutions. Furthermore, both theoretical analysis and experimental results show that RBACC achieves the same approximation accuracy, numerical stability, and straggler resilience as the original BACC framework while significantly outperforming existing Berrut-based coded computing schemes, including ApproxIFER [ 17 ], by correcting erroneous computations rather than discarding them (See Section V and Section VI ).  
+
+> •
+
+Reliability-aware worker assignment: Finally, we propose a profile-aware worker assignment strategy that exploits information on the workers’ trust profile in order to improve Byzantine localization and overall reconstruction accuracy. Based on the derived approximation error bounds, we formulate a reliability-aware evaluation-point assignment problem for allocating encoded data shares to unreliable workers. Numerical results demonstrate that the proposed strategy consistently outperforms random and contiguous assignment schemes, while achieving performance close to the empirically optimal assignment obtained through exhaustive search (See Section VII ). The overall architecture of the proposed RBACC framework is illustrated in Fig. 2. Specifically, Fig. 2(a) depicts the encoding stage, customized share assignment based on worker reliability, and distributed computation in the presence of 6 
+
+> TABLE II: Summary of key novelties of the proposed RBACC framework relative to existing coded computing approaches.
+
+Feature Polynomial Coded Computing 
+
+Approximated Coded Computing Based on Berrut Rational Interpolation 
+
+LCC NSLCC ALCC Robust ALCC BACC ApproxIFER PBACC RBACC 
+
+[6] [8] [11 ] [12 ] [16 ] [17 ] [18 ] This Work 
+
+Handles arbitrary non-polynomial functions 
+
+✗ ✗ ✗ ✗ ✓ ✓ ✓ ✓
+
+Straggler resilience ✓ ✓ ✓ ✓ ✓ ✓ —- ✓
+
+Numerically stable computation under straggler 
+
+✗ ✓ ✗ ✗ ✓ —- ✓ ✓
+
+Privacy-preserving computation ✓ ✗ ✓ ✓ ✗ ✗ ✓ ✗
+
+Byzantine error localization ✓ ✗ ✗ ✓ ✗ ✓ ✗ ✓
+
+Byzantine error correction ✓ ✗ ✗ ✓ ✗ ✗ ✗ ✓
+
+Coding-theoretic robustness for arbitrary functions 
+
+✗ ✗ ✗ ✗ ✗ ✗ ✗ ✓
+
+DCT-code interpretation ✗ ✗ ✗ ✗ ✗ ✗ ✗ ✓
+
+Localization error analysis un-der finite precision and bounds 
+
+✗ ✗ ✗ ✓ ✗ ✗ ✗ ✓
+
+Reconstruction error bounds with Stragglers 
+
+✗ ✗ ✓ ✗ ✓ ✗ ✗ ✓
+
+Reconstruction error bounds with Byzantine workers 
+
+✗ ✗ ✗ ✗ ✗ ✗ ✗ ✓
+
+Optimal code-dimension selec-tion 
+
+✗ ✗ ✗ ✗ ✗ ✗ ✗ ✓
+
+Reliability-aware evaluation-point assignment for minimizing overall reconstruction error 
+
+✗ ✗ ✗ ✗ ✗ ✗ ✗ ✓
+
+Byzantine workers, while Fig. 2(b) illustrates the proposed DCT-decoder-assisted reconstruction at the master server, where erroneous computations introduced by Byzantine workers are detected and corrected prior to Berrut rational interpolation. 
+
+D. Related Work and Novelty 
+
+As highlighted in Section I-B , our work develops a coding-theoretic framework to address the limitations of BACC when handling Byzantine workers. In Table II , we capture the main differences between the key features of the proposed RBACC framework and the representative existing coded computing frameworks. Among the various related works captured in Table II ,ApproxIFER [ 17 ] is the closest to our work, which leveraged the BACC framework to develop a model-agnostic resilient prediction-serving system for distributed machine learning inference. By exploiting the numerical stability and approximation capability of Berrut rational interpolation, it enables reliable distributed inference for arbitrary non-polynomial machine learning models while identifying Byzantine workers through an algebraic error-localization procedure. However, it neither establishes an underlying algebraic code structure for the worker computations nor enables syndrome-based error detection and correction. Consequently, the number of Byzantine workers must be known a priori , and the detected erroneous evaluations are discarded rather than corrected before reconstruction, thereby reducing the number of evaluations available for Berrut interpolation. Furthermore, although ApproxIFER establishes correctness guarantees for its algebraic error-localization procedure and validates its performance experimentally, it does not analytically characterize the finite-precision localization performance of the error-localization procedure as a function of the number of Byzantine workers and the precision noise. Nor does it derive analytical reconstruction-error bounds that characterize how Byzantine workers and finite-precision arithmetic affect the approximation accuracy of Berrut-based coded computing. 7 
+
+> TABLE III: Frequently used notations.
+
+Notation Description 
+
+N , M Number of worker nodes and non-straggling workers. 
+
+K, K1 Number of data points and DCT code dimension. 
+
+X , Xj Dataset and its j-th data point. 
+
+S, A Number of stragglers and Byzantine workers. 
+
+τ , μ Number of reliable and unreliable workers. 
+
+W, Wrel , Wunrel Set of workers, reliable workers, and unreliable workers. 
+
+A, F Set of Byzantine workers and stragglers. 
+
+φ Evaluation-point assignment mapping. 
+
+f (·) Target function. 
+
+Yj Approximate output corresponding to Xj .
+
+u(z) Berrut rational encoding function. 
+
+αj , zi Encoding point and worker evaluation point. 
+
+Ui, Vi Encoded share and corresponding computation at worker i.
+
+Ri, Ci Received and corrected computations. 
+
+Ei, Pi Byzantine error and floating-point precision noise matrices. 
+
+rBerrut ,f (z) Berrut rational reconstruction function. 
+
+G, H Generator and parity-check matrices of the DCT code. 
+
+Y Generator matrix induced by worker evaluation points. 
+
+ΛM Lebesgue constant associated with the M non-straggling evaluation points. 
+
+σ2 
+
+> P
+
+, σ2 
+
+> r
+
+Precision-noise and truncation-noise variances. 
+
+Prob( ELoc ) Probability of localization error. 
+
+For other contributions that are remotely related to our work, we refer the readers to [ 18 ], [ 23 ], [ 24 ]. Among these, Privacy-aware BACC (PBACC) [ 18 ] introduces privacy-preserving computation over the vanilla BACC framework, whereas Basis-spline assisted coded computing [ 23 ] employs cubic B-spline interpolation to improve the approximation accuracy of smooth non-polynomial functions. As an alternate approach to execute coded computing, a learning-theoretic framework has been proposed in [ 24 ] to design the encoding and decoding functions for arbitrary target functions. These existing works do not address robustness against Byzantine workers, and therefore are not directly comparable to our work. To the best of our knowledge, this is the first work to establish a coding-theoretic connection between BACC and DCT codes, thereby enabling syndrome-based Byzantine error detection and correction for approximate coded computing. We presented preliminary aspects of this framework in the conference proceedings [ 25 ], wherein we proposed a new choice of worker evaluation points that establishes the connection between the BACC and the DCT codes. This work substantially extends [ 25 ] by providing rigorous proofs of the main theoretical results. In particular, all the theoretical results presented in Section IV , Section V, Section VI and Section 
+
+VII of this work are not available in our preliminary work [ 25 ]. 
+
+Organization: Section II reviews the BACC framework and discusses its limitations in handling Byzantine workers. Section 
+
+III presents the proposed RBACC framework and its coding-theoretic error detection and correction mechanism. Section IV 
+
+establishes the well-spaced property of the proposed evaluation points, derives an upper bound on the corresponding Lebesgue constant, and analyzes the approximation error of RBACC in the presence of stragglers. Section V derives approximation error bounds for RBACC in the presence of Byzantine workers and analyses the same in the presence of finite-precision noise. Section 
+
+VI investigates the optimization problem for finding optimal dimension of DCT code which minimizes the approximation error of RBACC. Section VII studies reliability-aware evaluation-point assignment for approximation error minimization. Finally, Section VIII summarizes this work along with some interesting directions for future research. 8
+
+II. OVERVIEW OF BERRUT APPROXIMATED CODED COMPUTING AND ITS LIMITATION 
+
+We consider the BACC based distributed computing scheme [ 16 ] comprising a master server, which is connected to N
+
+workers, denoted by the set W = {W 0, W1, . . . , WN −1} via dedicated links. This implies that the master communicates directly with each worker Wi, for i ∈ [N ], where [N ] , {0, 1, 2, . . . , N − 1}, however, there is no direct communication among the workers themselves. Let the dataset held by the master, on which the computations are performed, be denoted by 
+
+X = ( X0, . . . , XK−1), where Xj ∈ Rm×n for each j ∈ [K], such that [K] , {0, 1, 2, . . . , K − 1}. The objective of BACC scheme is to approximately evaluate an “ arbitrary function ” f : Rm×n → Rm×n over the matrices in X in a decentralized fashion 1. More specifically, given that f (·) can be a non-polynomial function, the aim of BACC is to ensure distributed computation of the function f (·) on Xj for j ∈ [K] in a numerically stable manner with bounded errors. Denoting Yj as the result of the distributed computation of the function f (·) on Xj , the objective of BACC is to approximately compute 
+
+Yj ≈ f (Xj ) for j ∈ [K] with tolerable accuracy loss, i.e., ‖Yj − f (Xj )‖ ≤ ǫ, for some ǫ > 0, where ‖ · ‖ denotes the Frobenius norm. Although the BACC scheme in [ 16 ] enables distributed computation with bounded accuracy loss, wherein the loss is a function of the number of stragglers, it does not address scenarios involving untrusted workers, i.e., Byzantine workers that may return incorrect results to the master. In practice, a subset of workers in W may behave in a Byzantine manner, intentionally or unintentionally returning incorrect computation results to the master. Consequently, such adversarial behavior can degrade the accuracy of the distributed framework if it is not designed to be robust against Byzantine workers. In this direction, we show that the scheme in [ 16 ] is not inherently robust against such an adversarial behavior. In this context, the next subsection revisits the BACC-based distributed computation framework [ 16 ] for computing Yj ≈ f (Xj ), j ∈ [K], in the presence of S
+
+stragglers and A Byzantine workers among the non-straggling workers 2.
+
+A. Encoding in BACC 
+
+This section describes the encoding method of BACC framework, specifically highlighting how the data set X is encoded in order to distribute the shares among the N workers. Using Berrut’s rational interpolant [ 16 ], the master constructs a rational function u(z) in the indeterminate z, as 
+
+u(z) = 
+
+> K−1
+
+∑
+
+> j=0 (−1) j
+> z−αj
+
+∑K−1
+
+> k=0 (−1) k
+> z−αk
+
+Xj ,
+
+where αj ’s are the Chebyshev points of the first kind, defined as, αj = cos 
+
+( (2 j+1) π
+
+> 2K
+
+)
+
+. Note that, by construction, the Berrut’s interpolant satisfies u(αj ) = Xj , for j ∈ [K].
+
+B. Distribution of Shares among the Workers 
+
+Upon constructing u(z), the master computes its evaluation at zi ∈ R, and shares the matrix Ui = u(zi) with the worker node Wi for i ∈ [N ]. In the BACC scheme, zi’s are chosen from the Chebyshev points of the second kind, indicated by 
+
+zi = cos 
+
+( iπ 
+
+N
+
+)
+
+, i ∈ [N ]. (1)   
+
+> 1The mapping is written over identical domain and co-domain for simplicity, however the framework applies to functions between arbitrary matrix spaces.
+> 2Privacy of the dataset against honest-but-curious workers is another attribute typically considered in distributed computation frameworks and can also be incorporated. However, it is not the focus of this work. 9
+
+C. Computation at the Workers 
+
+After receiving its share Ui from the master, the worker Wi intends to compute Vi = f (Ui) for i ∈ [N ] and return the same to the master. Among the N workers, let F ⊂ [N ] denote the indices of the stragglers that do not return their computations to the master. As a result, we will only focus on the computations at the non-straggler workers with indices represented by the set [N ] \ F such that, |[N ] \ F| = M . Furthermore, among the non-straggling workers in the set [N ] \ F , some may act as Byzantine and can send corrupted computations to the master. To formally characterize this, let A = {i1, i 2, . . . , i A} ⊂ [N ] \ F 
+
+denote the indices of the Byzantine workers among the non-straggling workers. Each Byzantine worker Wia , where ia ∈ A for 
+
+a ∈ { 1, 2, . . . , A }, returns a corrupted computation Via + Eia instead of the true result Via = f (Uia ), where Eia ∈ Rm×n
+
+denotes the noise matrix injected by worker Wia .3 The adversarial noise Eia is typically assumed to be arbitrary and independent across workers, representing malicious manipulations in the computation. Furthermore, owing to the precision noise added due to floating point operations at the worker Wia , for ia ∈ A , the end results returned by the Byzantine workers to the master are denoted by Via + Eia + Pia , i a ∈ [N ] \ F , where Pia ∈ Rm×n captures the precision noise introduced by the worker 
+
+Wia . Formally, using Ri to denote the computations received at the master from the worker Wi, we have 
+
+Ri =
+
+
+
+Vi + Ei + Pi, i ∈ A ,
+
+Vi + Pi, i / ∈ A ∪ F ,
+
+∈ Rm×n. (2) 
+
+D. Function Reconstruction in BACC 
+
+If the master is either unaware of the presence of Byzantine workers or does not have a strategy to detect Byzantine workers, it directly uses the received computations {Rli }i∈[M] given in ( 2), where {l1, l 2, . . . , l M } denote the indices of the non-straggling workers. The master then applies Berrut interpolation to these values to obtain an approximation of f (u(z)) 
+
+given by 
+
+rBerrut ,f (z) = 
+
+> M−1
+
+∑
+
+> r=0 (−1) r
+> z−¯zr
+
+∑Mk=0 (−1) k
+
+> z−¯zk
+
+Rlr+1 , (3) where ¯zr = zlr+1 , such that zlr+1 = cos 
+
+( (lr+1 )π
+
+> N
+
+)
+
+. Finally, to recover Yj , for j ∈ [K], the master obtains an approximate version of f (Xj ) as Yj = rBerrut ,f (αj ), for j ∈ [K].In the absence of Byzantine workers, the BACC framework does not impose a strict recovery threshold or a minimum number of worker responses. Instead, the master utilizes all the available results from non-straggling workers to compute the final output. As the number of received computations increases, the approximation accuracy improves. Consequently, the BACC framework enables approximate computation even in the presence of up to S stragglers, where S < N − 2.In the presence of Byzantine workers, additional noise components are introduced through the matrices Eia , for a ∈ [A], as indicated in ( 2), thereby corrupting the corresponding computations. Consequently, the recovered result at the master becomes a noisy approximation of the true output f (Uia ), leading to degradation in reconstruction accuracy. To capture the effects of errors introduced by Byzantine workers in the BACC scheme [ 16 ], let Y′ 
+
+> j
+
+denote an estimate of f (Xj ) obtained using BACC in the presence of stragglers, Byzantine workers, and floating-point errors. Here, f (Xj ) denotes the centralized computation  
+
+> 3Although the nature of errors introduced by the Byzantine workers can be arbitrary, we use the additive noise model in this work to study their impact on BACC. We further assume that the Byzantine workers do not collude. Since this is the first study of Byzantine resilience in the BACC framework, we focus on this simple yet practically meaningful threat model as an important first step. 10
+
+performed locally at the master without using BACC. As a result, the relative error introduced by BACC with respect to the centralized computation at the master is computed as, 
+
+e(j) 
+
+> rel
+
+, ‖f (Xj ) − Y′ 
+
+> j
+
+‖
+
+‖f (Xj )‖ , ∀j ∈ [K], (4) where ‖ · ‖ denotes the ℓ2-norm.         
+
+> 12345
+> No. of Adversaries
+> -2.5 -2 -1.5 -1 -0.5 00.5 1
+> Relative Error
+> 12345
+> No. of Adversaries
+> -3.5 -3 -2.5 -2 -1.5 -1 -0.5 00.5 1
+> Relative Error
+
+Fig. 3: Average relative error (in log 10 scale) for BACC as a function of A with parameters N = 53 , K = 4 , S = 0 . Here the entries of 
+
+{Eia } are i.i.d. as N (0 , 10 4).
+
+To demonstrate the impact of errors introduced by Byzantine workers in BACC, we conduct experiments in the presence of Byzantine workers with no stragglers, i.e., S = 0 , for computing f (X) = X sin( X) and f (X) = 1 
+
+> 1−e−X
+
+, where X ∈ R20 ×5.The parameters used are N = 53 and K = 4 . Specifically, we compute the average relative error of the BACC framework [ 16 ]using ( 4) in a 64-bit floating-point environment while varying the number of Byzantine workers over 1000 iterations. In each iteration, the Byzantine workers are selected uniformly at random from the N workers. The results are presented in Fig. 3.The plots in Fig. 3 show that the relative error of BACC increases significantly in the presence of Byzantine workers, thereby confirming that the BACC framework in [ 16 ] is not inherently resilient to the presence of Byzantine workers. 
+
+E. Possibility of Error Detection and Correction in BACC 
+
+In this section, we discuss the possibility of applying a coding-theoretic approach to detect the presence of Byzantine workers in the BACC scheme. In particular, we investigate whether the resulting computation vectors satisfy the structural conditions required for BCH-like decoding. In this context, in the presence of stragglers, i.e., when S > 0, the master collects the computation results, as indicated in ( 16 ), from the set of non-straggling workers whose indices are given by 
+
+[N ] \ F = {l1, l 2, . . . , l M }. In particular, the corresponding set of computations are denoted by {Rl1 , Rl2 , . . . , RlM }.Note that, for every g ∈ { 1, 2, . . . , m }, h ∈ { 1, 2, . . . , n }, let rg,h = [ Rl1 (g, h ) Rl2 (g, h ) . . . RlM (g, h )] represent a vector constructed from the (g, h )-th entry of each Rli ∈ Rm×n for li ∈ [N ] \ F . In total, the master receives L = m × n such vectors from the workers, which can be arranged into the matrix Ref f ∈ RL×M and can be represented as 11                                                
+
+> Ref f =
+> 
+> Rl1(1 ,1) Rl2(1 ,1) . . . RlM(1 ,1)
+> Rl1(1 ,2) Rl2(1 ,2) . . . RlM(1 ,2)
+> ............
+> Rl1(1 , h )Rl2(1 , h ). . . RlM(1 , h )
+> Rl1(2 ,1) Rl2(2 ,1) . . . RlM(2 ,1)
+> ............
+> Rl1(g, h )Rl2(g, h ). . . RlM(g, h )
+> 
+> ,(5)
+
+where each row captures a received vector rg,h of length M . Further, in the presence of Byzantine workers and precision noise, i.e., when A > 0 and σ2 
+
+> P
+
+> 0, let vg,h , eg,h , and pg,h denote the vectors corresponding to the (g, h )-th entries of Vi, Ei,and Pi, respectively. Accordingly, each received vector rg,h can be expressed as a noisy version of the vector vg,h . To enable error detection and correction through tools from coding theory, each received vector must correspond to a noisy version of a valid codeword from an error-correcting code. Considering that f is a polynomial of degree D and u(z) is a Berrut rational interpolant, the composite function f (u(z)) is generally a rational function. Nevertheless, let us suppose that its evaluations at the points zk = cos ( kπ 
+
+> N
+
+), for k ∈ [N ], can be approximated using a finite-dimensional polynomial representation of dimension 
+
+K1, where K1 depends on the degree D of the function f . Consequently, the vector vg,h can be represented approximately as 
+
+vg,h ≈ mg,h Y,
+
+where mg,h ∈ R1×K1 denotes the corresponding coefficient vector and Y ∈ RK1×M is the generator matrix whose k-th column is given by [1 , z k, z 2
+
+> k
+
+, . . . , z K1−1 
+
+> k
+
+]⊤. Therefore, each received vector rg,h can be interpreted as a noisy approximation of the corresponding codeword generated by Y. Since the evaluation points {zk}N −1 
+
+> k=0
+
+are distinct, the matrix Y has full row rank for K1 ≤ M , and therefore defines a valid linear block code of dimension K1. In particular, each row of Ref f can be interpreted as a noisy codeword from the resulting linear block code. To investigate whether the BCH-like decoding framework developed in [ 21 ], [ 22 ] can be directly applied to this code, we establish the following proposition. 
+
+Proposition 1. Let Y denote the generator matrix constructed using the evaluation points zk = cos ( kπ 
+
+> N
+
+), k = 0 , 1, . . . , N − 1,corresponding to the Chebyshev points of the second kind. Let H denote a parity-check matrix of the linear code generated by 
+
+Y, and let HT denote its transpose. Then, HT does not directly admit the square nonsingular monomial Vandermonde-based factorization employed in the BCH-like characterization of [ 21 ], [ 22 ]. Proof: We refer the reader to Appendix A for the proof. 
+
+Proposition 1 shows that, when Y is used as the generator matrix together with the corresponding parity-check matrix H,the derivation employed in [ 21 ] does not directly yield a factorization of the form HT = ATW , where A ∈ Rd×d is a square nonsingular coefficient matrix, T ∈ Rd×N is a monomial Vandermonde matrix, and W ∈ RN ×N is a diagonal matrix, as required by the BCH-like characterization in [ 21 ]. Instead, by expressing the Chebyshev polynomials in the monomial basis, the parity-check matrix admits the factorization HT = ˜A ˜TW , where ˜A ∈ Rd×(d+1) is the coefficient matrix corresponding to the monomial expansions of the Chebyshev polynomials and ˜T ∈ R(d+1) ×N is the corresponding monomial Vandermonde matrix. Since this representation necessarily involves d + 1 monomial basis functions, the resulting coefficient matrix is rectangular rather than square. Consequently, the BCH-like syndrome-decoding framework developed in [ 21 ] is not obtained directly from the present construction. Therefore, the decoding algorithms of [ 21 ], [ 22 ] cannot be applied directly to the linear code generated by Y without additional algebraic transformations or structural modifications. 12 
+
+To overcome these limitations of the existing BACC scheme [ 16 ], we propose a more robust and generic framework, 
+
+Robust Berrut Approximated Coded Computing (RBACC) . The RBACC framework explicitly incorporates both stragglers and Byzantine workers into the system model. Furthermore, we demonstrate that, by suitably modifying the evaluation points used for distributing the shares among the workers, the RBACC framework achieves resilience to stragglers and robustness against a certain number of Byzantine workers under certain conditions. III. R OBUST BERRUT APPROXIMATED CODED COMPUTING 
+
+The Robust BACC-based distributed computing setup, as illustrated in Fig. 2(a) comprises a master connected to the set of N workers W, via dedicated links. Similar to BACC, in RBACC, the primary objective of the master is to distribute a computational task f (·) on an underlying dataset among the workers in W, and subsequently aggregate their computed results, leveraging their collective computing power. In contrast to BACC, RBACC assumes a more generic worker model in which the set of workers W is partitioned into two groups: (i) reliable workers, denoted by Wrel , and (ii) unreliable workers, denoted by Wunrel . Let τ and μ denote the number of reliable and unreliable workers, respectively, such that τ + μ = N . In this context, reliable workers are those that are proven to be honest and accurate in providing the intended computation results to the master. In contrast, unreliable workers are those that have not been proven honest, and may return incorrect computation results to the master. In this context, we assume that the set of A Byzantine workers, denoted by A, is a subset of the unreliable workers, i.e., A ⊆ W unrel . Further, we assume that the master knows the identity of each worker belonging to the sets Wrel 
+
+and Wunrel , however, it does not know the identities of the Byzantine workers within Wunrel . In contrast, the S stragglers can belong to W irrespective of whether they are reliable or unreliable. The objective of RBACC is similar to that of BACC, that is to approximately evaluate “an arbitrary function” f : Rm×n →
+
+Rm×n over the matrices X = ( X0, . . . , XK−1), where Xj ∈ Rm×n for each j ∈ [K] in a distributed fashion under the assumption that f (·) is known to all N the workers. More specifically, given that f (·) can be a non-polynomial function, the aim of RBACC is to ensure distributed computation of the function f (·) on Xj for j ∈ [K] while ensuring bounded approximation errors even in the presence of stragglers and Byzantine workers. In the following subsections, we provide further details by describing the various steps involved in RBACC. 
+
+A. Encoding in RBACC 
+
+This section presents a scheme to encode the dataset X to generate the encoded shares among the N workers. Similar to BACC, we employ Berrut’s rational interpolant, to construct a rational encoding function u(z) in the indeterminate z, defined as 
+
+u(z) = 
+
+> K−1
+
+∑
+
+> j=0 (−1) j
+> z−αj
+
+∑K−1
+
+> k=0 (−1) k
+> z−αk
+
+Xj ,
+
+where αj are the Chebyshev points of the first kind, given by αj = cos 
+
+( (2 j+1) π
+
+> 2K
+
+)
+
+, j ∈ [K]. By definition of Berrut’s interpolant, it holds that, u(αj ) = Xj , for j ∈ [K].
+
+B. Distribution of Shares among the Workers 
+
+In contrast to [ 16 ], when sharing the evaluations of the rational encoding function u(z), we choose the evaluation points zi
+
+as N Chebyshev points of the first kind, indicated by 
+
+zi = cos 
+
+( (2 i + 1) π
+
+2N
+
+)
+
+, i ∈ [N ]. (6) 13 
+
+Specifically, after constructing u(z), the master computes its evaluations using zi ∈ R indicated in ( 6), and distributes the share 
+
+Ui = u(zi) to worker Wi.
+
+Remark 1. Unlike in (6), we highlight that in the BACC scheme in [ 16 ], zi’s are chosen from Chebyshev points of the second kind, indicated by zi = cos ( iπ 
+
+> N
+
+), for i ∈ [N ].
+
+In the subsequent sections, we will justify the alternative choice of evaluation points zi = cos ( iπ 
+
+> N
+
+), and discuss the benefits of this selection in terms of resilience against a certain number of Byzantine workers. Further, to distribute the shares {Ui | i ∈ [N ]}
+
+in the presence of unreliable workers Wunrel , we define a one-to-one mapping φ : [ N ] → [N ], such that the i-th evaluation 
+
+Ui is assigned to the worker node Wφ(i) for i ∈ [N ], as illustrated by the permutation block in Fig. 2(a). In this context, when all workers are considered to be reliable, i.e., W = Wrel as in the case of BACC [ 16 ], an identity mapping may be used, wherein φ(i) = i for all i ∈ [N ]. However, in the presence of unreliable workers, i.e., when Wunrel is not a nullset, we show in a subsequent section that a customized assignment can be provided by suitably choosing the mapping φ. This allows master to allocate the shares in a manner that minimizes the approximation error of the RBACC framework. 
+
+C. Computation at the Workers 
+
+After receiving its share Ui from the master, the worker Wφ(i) intends to compute Vi = f (Ui) ∈ Rm×n and return the same to the master. As discussed in Section II-C , in the presence of stragglers, the master only receives results from the non-straggling workers with indices in [N ]/F. Furthermore, in the presence of A Byzantine workers with indices in the set 
+
+A, the computations received by the master from the non-straggling workers can be expressed as in ( 2) under finite-precision arithmetic. 
+
+D. Error Correction in RBACC 
+
+In this section, we show that coding-theoretic methods for error detection and error correction can be used to make RBACC resilient to the presence of a certain number of Byzantine adversaries. Formally, as discussed in Section II-E , to detect and correct the errors introduced by Byzantine workers, the set of computations received represented as Ri indicated in ( 2) must represent a set of valid codewords of an underlying error-correcting code. In the BACC setting, the use of Chebyshev points of the second kind, as indicated in ( 1), prevents a BCH-like decomposition of the parity-check matrix, and therefore BCH-like error correction algorithms cannot be applied directly. In contrast, in this section, we show that with the modified evaluation points zi defined in ( 6), a BCH-like characterization of the underlying parity-check matrix is possible, enabling the use of BCH-like error detection and correction algorithms to identify and correct the errors from a certain number of Byzantine workers. In this context, as discussed in Section II-E , during the reconstruction stage of RBACC, for every g ∈ { 1, 2, . . . , m }
+
+and h ∈ { 1, 2, . . . , n }, we construct the vector rg,h = [ Rl1 (g, h ) Rl2 (g, h ) . . . RlN (g, h ) ] , which collects the (g, h )-th entries of the received matrices Rli for all li ∈ [N ]. In total, L = m × n such vectors are formed, and these vectors constitute the matrix Ref f as shown in ( 5), with the distinction that each entry now corresponds to a noisy evaluation of f (u(z)) at Chebyshev points of the first kind specified in ( 6). Given that rg,h is a noisy version of vg,h , the master aims to eliminate the erroneous computations introduced by Byzantine workers in each rg,h . It is important to note that, in RBACC, due to the use of Chebyshev points of the first kind defined as 
+
+zi = cos 
+
+( (2 i+1) π
+
+> 2N
+
+)
+
+for i ∈ [N ], the computations received at the master can be viewed as a noisy codeword of a Discrete 14 
+
+Cosine Transform (DCT) code [ 21 ]. To understand this connection, we revisit some fundamental properties of DCT codes [21 ], [ 22 ]. Let Θ ∈ RN ×N denote the DCT matrix, whose (θ1 + 1 , θ 2 + 1) -th entry is given by 
+
+Θ( θ1 + 1 , θ 2 + 1) = 
+
+√ 2
+
+N β(θ1) cos 
+
+( (2 θ2 + 1) θ1π
+
+2N
+
+)
+
+,
+
+for 0 ≤ θ1, θ 2 ≤ N − 1, where 
+
+β(θ1) = 
+
+
+
+1
+
+√2 , θ1 = 0 ,
+
+1, otherwise .
+
+Proposition 2. The following results with respect to the DCT matrix Θ are well known [ 21 ], [ 22 ]. For any K1 such that 
+
+1 ≤ K1 < N : 
+
+> •
+
+The first K1 rows of the DCT matrix, denoted by G ∈ RK1×N , can be used as a generator matrix of a real linear code. Such an (N, K 1) code is referred to as the DCT code.  
+
+> •
+
+The remaining N − K1 rows of the DCT matrix, denoted by H ∈ RN −K1×N , serve as the parity check matrix of the DCT code.  
+
+> •
+
+DCT codes satisfy the MDS property in R, akin to Reed-Solomon codes in the parallel world of finite fields.  
+
+> •
+
+Since DCT codes satisfy the MDS property, the minimum distance of an (N, K 1) DCT code is dmin = N − K1 + 1 .
+
+Consequently, the code can correct up to ⌊ N −K1
+
+> 2
+
+⌋ errors. 
+
+Using the above properties, we present our first result. 
+
+Proposition 3. Let the function f (·) be such that f (u(z)) has a Taylor series expansion. Then, for any K1 ∈ N satisfying 
+
+1 < K 1 < M , the vector rg,h ∈ RM , ∀g, h , can be represented as a noisy codeword of a K1-dimensional DCT code of blocklength M . In other words, rg,h can be viewed as the sum of a codeword from a K1-dimensional DCT code and an arbitrary vector in RM .Proof: We present the proof for M = N , and subsequently generalize it to any M < N . Note that, when A = 0 , and 
+
+M = N , the set of vectors {rgh } represents noisy codewords from a K1 dimensional DCT code with blocklength N . To justify this claim, recall the encoding stage of RBACC, where the encoded rational matrix function u(z) = a(z) 
+
+> b(z)
+
+∈ Rm×n[z]
+
+is evaluated at the N Chebyshev points of first kind, denoted as zi = cos 
+
+( (2 i+1) π
+
+> 2N
+
+)
+
+, i ∈ [N ] in order to distribute the set of evaluations {u(zi) ∈ Rm×n | i ∈ [N ]} among N workers. Subsequently, each worker node computes the target function 
+
+f : Rm×n → Rm×n, and returns the result f (u(zi)) ∈ Rm×n to the master. Since the target function f (·) is arbitrary function (generally non-polynomial), applying it on each share u(zi) ∈ Rm×n, produces evaluations of the composite matrix-valued function f (u(zi)) ∈ Rm×n of the matrix rational function f (u(z)) ∈ Rm×n, whose effective degree is unbounded. Suppose that f (u(·)) is infinitely differentiable, such that it has Taylor series expansion at its evaluations {u(zi), i ∈ [N ]}. In that case, the components of the vector vg,h have Taylor series expansion, and therefore, vg,h can be written as 
+
+vg,h = tg,h + qg,h , (7) where tg,h denotes the sum of the first K1 term of the Taylor series, for some K1 ∈ N and qg,h denotes the sum of the higher-order terms of the expansion. In the rest of the proof, we show that tg,h is a codeword of a (N, K 1) DCT code, which in turn implies that vg,h is a noisy DCT codeword due to ( 7), and so is rg,h since it is an additive noisy version of tg,h .Henceforth, suppose that tg,h is represented as an N -length row vector. Since the evaluation points {zi, i ∈ [N ]} are the 15 
+
+Chebyshev points of first kind, we can write tg,h as tg,h = mg,h Y, where Y ∈ RK1 ×N can be expressed as 
+
+Y =
+
+
+
+1 1 · · · 1cos π 
+
+> 2N
+
+cos 3π 
+
+> 2N
+
+· · · cos (2 N−1) π
+
+> 2N
+
+cos 2 π 
+
+> 2N
+
+cos 2 3π 
+
+> 2N
+
+· · · cos 2 (2 N−1) π
+
+> 2N
+
+... ... ... ...
+
+cos K1−1 π 
+
+> 2N
+
+cos K1 −1 3π 
+
+> 2N
+
+· · · cos K1 −1 (2 N−1) π
+
+> 2N
+
+
+
+(8) 
+
+and mg,h ∈ R1×K1 is a vector representing the coefficients of the first K1 terms of the Taylor series expansion. Furthermore, in order to proof tg,h is a codeword of a (N, K 1) DCT code, it is essential to show that Y represents the generator matrix of (N, K 1) DCT code. In this context, from [ 21 ], it is well known that the generator matrix G of a DCT code and the Vandermonde matrix Y in ( 8) satisfy the relation G = BYZ , where B is a K1 × K1 full-rank lower triangular matrix and 
+
+Z is an N × N full-rank diagonal matrix. Using the above decomposition, we can further represent tg,h = ¯mg,hBY , where 
+
+¯mg,h = mg,h B−1. Since G = BYZ , the vector ¯mg,hBY is indeed a codeword of DCT code rotated by the diagonal matrix 
+
+Z. Therefore, the distance properties of the linear code with generator matrix BY remains identical to that of the linear code generated by G. Therefore, when M = N , the rg,h represents a corrupted codeword of an (N, K 1) DCT code. In general, when M < N , tg,h can be seen as a punctured codeword of a DCT codeword of block-length N . This completes the proof. 
+
+From the Proposition 4, given that rg,h is a noisy DCT codeword, the following result shows that the erroneous computations returned by the Byzantine workers can be compensated under some conditions. 
+
+Proposition 4. Let the RBACC setting be such that the composite function f (u(·)) is a polynomial of degree D − 1. Under such a scenario, the erroneous computations returned by the A Byzantine workers can be accurately nullified as long as 
+
+A ≤ ⌊ M−D 
+
+> 2
+
+⌋ and the precision noise is zero. Proof: When A > 0, i.e., in the presence of A Byzantine workers, where 0 < A < ⌊ M−D
+
+> 2
+
+⌋, the vector rg,h at the master represents a codeword of an (M, K 1) DCT code with K1 = D, perturbed by additive noise eg,h of Hamming weight A. In other words, since the Taylor series of f (u(·)) has D number of terms and the precision noise is zero, we have rg,h = vg,h + eg,h 
+
+such that vg,h = tg,h and tg,h is a DCT codeword of dimension K1 = D. For the generator matrix G of the DCT code, the corresponding parity-check matrix H can also be written as H = ATW such that T is an (M − K1) × M Vandermonde matrix, A is an (M − K1) × (M − K1) full-rank lower triangular matrix, and W is an M × M full-rank diagonal matrix. As a result, the modified parity-check matrix TW can be applied to rg,h to obtain the syndrome vector, and subsequently the BCH decoding algorithm can be used for error localization and error correction in the presence of Byzantine workers. Given that the (M, K 1) DCT code has the MDS property and has error-correction capability of at most ⌊ M−K1
+
+> 2
+
+⌋ [21 ], [ 22 ], the corresponding error-correction algorithms can be applied to each noisy codeword rg,h as long as A ≤ ⌊ M−K1
+
+> 2
+
+⌋. This implies that the error vector eg,h of Hamming weight A can be accurately nullified as long as A ≤ ⌊ M−D
+
+> 2
+
+⌋ and the precision noise is zero. 
+
+In the context of this work, the composite function f (u(·)) is not a finite degree polynomial, and moreover, rg,h is perturbed by precision noise along with the noise added by the Byzantine workers. Under such a scenario, for any K1, such that 1 < K 1 < M ,the received vector rg,h can be treated as a noisy codeword of a K1-dimensional DCT code, i.e., a codeword corrupted by precision noise, Byzantine noise, and the residual noise resulting from the truncation of the Taylor series. Subsequently, a 16 
+
+suitable syndrome based BCH decoding method can be applied to nullify the error vector eg,h . More specifically, to implement these ideas in precision noise scenarios, various coding theoretic-based and subspaced-based approaches are available [ 26 ], [27 ], [ 28 ], [ 29 ], [ 30 ], [ 31 ]. Their implementation involves: (i) computation of the syndrome vector, (ii) estimation of the number of errors, (iii) identifying the location of errors, and (iv) estimation of error. 
+
+Remark 2. The choice of K1 determines the error-correcting capability of the DCT code, and consequently, influences the accuracy with which the DCT decoder can detect and correct errors. In Section VI , we provide further details on how the DCT error detection and correction algorithms are employed, and show how the choice of K1 affects the error detection and correction capability of the underlying code. 
+
+Once K1 is chosen, the master applies the DCT-based error-correction algorithm to the received computations {Rl1 , Rl2 , . . . , 
+
+RlM }, the master recovers {Cl1 , Cl2 , . . . , ClM }, where Cli = Rli − ˆEli , ∀i such that ˆEli is the estimate of Eli introduced by error correction mechanism. Thus, we have 
+
+Ci =
+
+
+
+Vi + Pi + Ei − ˆEi, i ∈ A ,
+
+Vi + Pi − ˆEi, i / ∈ A ∪ F .
+
+(9) 
+
+E. Function Reconstruction in RBACC 
+
+After applying the DCT-based error-correction algorithm on the set of computations {Rl1 , Rl2 , . . . , RlM } returned by the non-straggling workers, the master obtains a set of recovered computation results denoted by {Cli }i∈[M], as defined in ( 9). These recovered values are then used for function reconstruction. In particular, the master employs Berrut’s rational interpolation to construct an approximation of f (u(z)) using the set {Cli }i∈[M].
+
+rBerrut ,f (z) = 
+
+> M−1
+
+∑
+
+> r=0 (−1) r
+> z−¯zr
+
+∑Mr=0 (−1) r
+
+> z−¯zr
+
+Clr+1 , (10) where ¯zr = zlr+1 , such that zlr+1 = cos 
+
+( (2 lr+1 +1) π
+
+> 2N
+
+)
+
+. Finally, to recover Yj , for j ∈ [K], the master obtains an approximate version of f (Xj ) as Yj = rBerrut ,f (αj ), for j ∈ [K].
+
+Remark 3. As a special case, when A = 0 and σ2 
+
+> p
+
+= 0 , and when the evaluation points zi of RBACC are replaced by the Chebyshev points of the second kind i.e., zi = cos ( iπ 
+
+> N
+
+) , i ∈ [N ], we highlight that the reconstruction in (10 ) collapses to the reconstruction in [ 16 ]. 
+
+Remark 4. Similar to the existing BACC scheme, in RBACC there is no requirement on the minimum number of worker nodes to return their computations for reconstruction. 
+
+Instead of measuring the error directly between the recovered matrices Yj and the target matrices f (Xj ), the error is measured between the reconstructed function rBerrut ,f (z) and the original composite function f (u(z)) in the absence of Byzantine workers and precision noise. This captures the approximation error at any point in the interpolation domain of z.However, in the presence of Byzantine workers and precision noise, i.e., when A > 0 and σ2 
+
+> p
+
+> 0, the reconstruction error of RBACC is ideally averaged over all possible sets of Byzantine workers, stragglers, the noise matrices added by the Byzantine workers as well as the precision noise. For analytical convenience, we fix a set of Byzantine workers A and a set of stragglers 17 
+
+F, and analyze the corresponding average reconstruction error in the presence of Byzantine errors Ei and precision noise Pi,defined as 
+
+E{Pi },{Ei} ‖rBerrut ,f (z) − f (u(z)) ‖ , (11) where the expectation is taken with respect to the precision noise matrices {Pi} and adversarial error matrices {Ei}, and 
+
+rBerrut ,f (z) is defined in ( 10 ). Note that the average approximation error defined in ( 11 ) depends on several system parameters, i.e., M , A, K1, and σ2 
+
+> P
+
+. In the subsequent sections, we analyze the approximation error under two settings. Section IV considers the case of stragglers ( S > 0) without Byzantine workers ( A = 0 ), whereas Section V considers the case of Byzantine workers (A > 0) without stragglers ( S = 0 ). IV. E RROR BOUNDS ON RBACC WITH STRAGGLERS 
+
+Recall that the RBACC framework uses Chebyshev points of the first kind as evaluation points for distributing the encoded shares among the workers. Specifically, the evaluation points are chosen as zi = cos 
+
+( (2 i+1) π
+
+> 2N
+
+)
+
+for i ∈ [N ]. This modification enables error detection and correction through DCT codes under suitable conditions, as established in Proposition 3 and Proposition 4. It is worth noting that the approximation error bounds for the BACC framework have been studied and derived in [ 16 , Theorem 9] as a function of the number of stragglers S. However, those results do not directly apply in the present setting. This is because the BACC framework in [ 16 ] uses Chebyshev points of the second kind, whereas the RBACC framework employs a different set of evaluation points as indicated in ( 6). Therefore, before analyzing the approximation error bound in ( 11 ) in the presence of Byzantine workers, stragglers, and precision noise, we first consider a simpler setting where the approximation error is analyzed only as a function of stragglers. In particular, we consider a variant of the RBACC framework in which all workers are reliable, i.e., τ = 0 and W = Wrel , corresponding to the case when A = 0 and 0 < S < N − 2.Since there are no unreliable workers in this setting, the identity mapping used in the BACC framework [ 16 ], i.e., φ(i) = i,can be directly used for distributing the encoded shares of u(z). Under this setting, the expectation in ( 11 ) reduces to the deterministic approximation error ‖rBerrut ,f (z) − f (u(z)) ‖, which captures the error arising solely due to the presence of S
+
+stragglers. Thus, in the results of this section, we analyze the approximation error bounds of RBACC for the proposed set of evaluation points only as a function of stragglers. It is well known that the approximation error in Berrut interpolation depends critically on the choice of evaluation points through the associated Lebesgue constant. Therefore, we next provide the definition of the Lebesgue constant associated with the evaluation points. 
+
+Definition 1 (Lebesgue Constant [ 32 ]) . Let XN = {xj }N −1 
+
+> j=0
+
+denote a set of N distinct evaluation points in the interval [a, b ],such that x0 < x 1 < · · · < x N −1, and let {ℓj (x)}N −1 
+
+> j=0
+
+denote the corresponding interpolation basis functions. The Lebesgue constant associated with XN is defined as 
+
+ΛN = max  
+
+> x∈[a,b ]
+> N−1
+
+∑
+
+> j=0
+
+|ℓj (x)|. (12) 
+
+The function 
+
+ΛN (x) =  
+
+> N−1
+
+∑
+
+> j=0
+
+|ℓj (x)| (13) 
+
+is called the Lebesgue function. 18 
+
+According to the above definition, evaluation points associated with smaller Lebesgue constants generally provide improved accuracy and numerical stability. Therefore, to quantify the approximation error of the RBACC framework and its dependence on the number of stragglers S, we first characterize the Lebesgue constant corresponding to the proposed set of evaluation points. The following lemma provides an upper bound on the Lebesgue constant of the RBACC framework in terms of the number of stragglers S.
+
+Lemma 1. Let XM = {xk}M−1 
+
+> k=0
+
+be an ordered set of M distinct interpolation points chosen from the set XN = {xk}N −1 
+
+> k=0
+
+such that x0 < x 1 < · · · < x M−1, where M = N − S and xk = cos 
+
+( (2 k+1) π
+
+> 2N
+
+)
+
+, k ∈ [N ]. Then, the family X = {X M }M∈N is well spaced for 2 ≤ M < N , with constants R = (S+1)( S+4) π2 
+
+> 8
+
+and C = π2 (S+1)  
+
+> 2
+
+. Therefore, the Lebesgue constant for Berrut’s rational interpolant associated with XM is upper bounded by 
+
+ΛM ≤
+
+( (S + 1)( S + 4) π2
+
+8 + 1 
+
+) (1 + π2(S + 1) ln( N − S)).
+
+Proof: First, we show that the Chebyshev points of the first kind used for evaluation in RBACC, as defined in ( 6), form a family of well-spaced points, i.e., they satisfy the conditions in [ 32 , Definition 2] for some constants C, R ≥ 1. To this end, we explicitly determine the corresponding constants C and R, which are subsequently used to derive a new upper bound on the Lebesgue constant for the proposed set of evaluation points in terms of the number of stragglers S. We refer the reader to Appendix B for the detailed derivations of the constants C and R.
+
+Remark 5. Lemma 1 shows that, similar to the straggler-resilient BACC scheme in [ 16 ], the Lebesgue ΛM constant for the straggler-resilient RBACC scheme is also bounded by c ln (N − S) for some constant c > 0. This logarithmic growth rate implies that RBACC remains numerically stable even in the presence of stragglers.                    
+
+> -1 -0.5 00.5 1
+> x
+> 11.5 22.5 33.5
+> Lebesgue function  (x)
+> N=27, S=0
+> First Kind ( N= 3.0708)
+> Second Kind ( N= 3.079)
+> -1 -0.5 00.5 1
+> x
+> 11.5 22.5 33.5
+> Lebesgue function  (x)
+> N=53, S=0
+> First Kind ( N= 3.492)
+> Second Kind ( N= 3.495)
+> -0.5 00.5 1
+> x
+> 23456789
+> Lebesgue function  (x)
+> N=9, S=3
+> -1 -0.5 00.5 1
+> x
+> 1234567
+> Lebesgue function  (x)
+> N=27, S=4
+
+Fig. 4: Comparison of the Lebesgue function Λ( x) corresponding to Chebyshev points of the first and second kinds for different numbers of worker nodes N and different sets of straggling workers. 
+
+To further validate our results in Lemma 1, we experimentally compute the Lebesgue functions ΛN (x) defined in ( 13 )corresponding to the proposed set of evaluation points defined in ( 6) while varying both the number of workers and the straggler sets F. In particular, we compare the behavior of the Lebesgue functions corresponding to Chebyshev points of the first kind used in RBACC and Chebyshev points of the second kind used in the BACC framework of [ 16 ]. The results for 
+
+N = 9 and N = 27 are illustrated in Fig. 4. From the plots, it is evident that the Lebesgue constants associated with the proposed evaluation points are approximately the same as those corresponding to the nodes used in [ 16 ]. Further, this empirical observation is consistent with the theoretical bound established in Lemma 1, confirming that the Lebesgue constant for RBACC exhibits the same logarithmic growth behavior as in [ 16 ]. The above results show that the proposed set of evaluation points used in the RBACC framework preserves numerical stability comparable to that of the existing BACC framework, while also satisfying the logarithmic growth behavior of the Lebesgue constant. Building on these results, we next derive an upper bound on the approximation error of the RBACC in 19 
+
+terms of the number of stragglers S. In this context, the following theorem provides an upper bound on ‖rBerrut ,f (z) − f (u(z)) ‖
+
+for RBACC framework when using the proposed set of evaluation points. 
+
+Theorem 1. Let rBerrut ,f (z) be defined by (11 ) and g(z) = f (u(z)) have a continuous second derivative on [−1, 1] . For RBACC with N workers and S stragglers, where S < N − 2, when A = 0 and σ2 
+
+> P
+
+= 0 , the approximation error defined in 
+
+(11 ) is upper bounded as, 
+
+‖rBerrut ,f (z) − g(z)‖ ≤ 2∆(1 + R) sin 
+
+( (S + 1) π
+
+2N
+
+)
+
+,
+
+where, ∆ = ‖g′′ (z)‖, if N − S is odd and ∆ = ( ‖g′′ (z)‖ + ‖g′(z)‖), when N − S is even and R = (S+1)( S+4) π2 
+
+> 8
+
+.Proof: We refer the reader to Appendix C for the proof. 
+
+Remark 6. Theorem 1 shows that, similar to the BACC scheme in [ 21 ], the approximation error of the RBACC decreases as the number of stragglers decreases for a fixed total number of workers N . Therefore, the RBACC scheme does not admit a strict recovery threshold. Instead, the approximation error decreases monotonically as the number of available worker responses increases. 
+
+Remark 7. Similar to [ 16 , Lemma 6], the worst-case interpolation scenario in RBACC occurs when the S straggling workers correspond to consecutive evaluation points in XN = {xi}N −1 
+
+> i=0
+
+. The proof follows the same arguments as in [ 16 , Lemma 6] and is therefore omitted. A. Experimental Results on the Approximation Accuracy of RBACC in the Presence of Stragglers 
+
+To validate the theoretical results established in Lemma 1 and Theorem 1, we experimentally compare the approximation errors of RBACC and BACC in the absence of Byzantine workers and precision noise, i.e., when A = 0 and σ2 
+
+> P
+
+= 0 . We implement both RBACC and BACC for computing several non-polynomial functions. Here, Xi ∈ R5×5 for i ∈ [K], where the entries of Xi are drawn independently from a uniform distribution. Let Y′ 
+
+> j
+
+≈ f (Xj ) denote the approximate computation obtained using RBACC or BACC in the presence of stragglers for j ∈ [K], and let f (Xj ) denote the corresponding centralized computation performed at the master without using RBACC or BACC. We compute the relative error of both frameworks using (4), and subsequently evaluate the average relative error over 1000 iterations. The results are presented in Fig. 5 when varying the number of stragglers S. In each iteration, the straggler set F is selected uniformly at random from the set of N workers. The parameters used in the experiments are N = 53 , K = 4 , and A = 0 . The plots confirm that RBACC and BACC exhibit comparable resilience against stragglers. In the next section, we study the robustness of the RBACC scheme in the presence of Byzantine workers, and in the absence of stragglers. Subsequently, we derive bounds on the approximation error in the presence of Byzantine workers and precision noise, i.e., when A > 0 and σ2 
+
+> P
+
+> 0.V. E RROR BOUNDS ON RBACC WITH BYZANTINE WORKERS 
+
+In this section, we analyze the average approximation error of the RBACC scheme, defined in ( 11 ), in the presence of Byzantine workers and precision noise, i.e., for the case when A > 0 and σ2 
+
+> P
+
+> 0. To focus specifically on the effect of Byzantine workers, we assume the absence of stragglers, i.e., S = 0 , although the presented results can be extended to the case when S > 0. Recall the reconstruction expression in ( 10 ). Since S = 0 , all N worker responses are available at the 20          
+
+> 0510 15 20 25 30 35 40 45
+> No. of Stragglers
+> -3.2 -3 -2.8 -2.6 -2.4 -2.2 -2 -1.8 -1.6 -1.4
+> Relative Error
+
+Fig. 5: Average relative approximation error (in log 10 scale) of BACC and RBACC for various target functions with parameters N = 53 ,
+
+K = 4 , and A = 0 under 64-bit floating-point precision.                                                                                         
+
+> E{eg,h },{pg,h }|rBerrut,f,g,h (z)−gg,h (z)|2≤
+> [
+> 2∆ ′(1 + R) sin
+> (π
+> 2N
+> )] 2
+> ︸︷︷ ︸
+> T1
+> +C1N σ 2
+> P
+> ︸︷︷ ︸
+> T2
+> +C2(1 −Prob( ELoc )) σ2
+> P(A+A2) + CwProb( ELoc )
+> [
+> σ2
+> A‖SA−SˆA∗PˆA∗,A‖22+σ2
+> P‖SˆA∗(HT
+> ˆA∗)†‖22
+> ]
+> (2 A+ 4 A2)
+> ︸︷︷ ︸
+> T3
+> + 2 σP
+> √C1NΨ
+> ︸︷︷ ︸
+> T4
+> ,(16) where Ψ = ≤C2(1 −Prob( ELoc )) σ2
+> P(A+A2) + CwProb( ELoc )
+> [
+> σ2
+> A‖SA−SˆA∗PˆA∗,A‖22+σ2
+> P‖SˆA∗(HT
+> ˆA∗)†‖22
+> ]
+> (2 A+ 4 A2).
+> Here PˆA,A= ( HT
+> ˆA)†HT
+> A,where SA=II(: ,A),and SˆA=II(: ,ˆA).
+
+master, i.e., M = N . Therefore, substituting the recovered computations from ( 9) into ( 10 ), the reconstruction expression can be written as 
+
+rBerrut ,f (z) =  
+
+> N−1
+
+∑
+
+> r=0
+
+wr (z)
+
+(
+
+Vr+1 + Pr+1 + Er+1 − ˆEr+1 
+
+)
+
+, (14) where the Berrut rational weights wr (z) are given by 
+
+wr (z) = (−1) r
+
+z − zr 
+
+> N−1
+
+∑
+
+> t=0
+
+(−1) t
+
+z − zt
+
+. (15) Here, Vr+1 = f (u(zr)) denotes the true function evaluation at the evaluation point zr, while Pr+1 denotes the precision noise component associated with the evaluation point zr, for r ∈ [N ]. Further, the residual adversarial error captured by the term Er+1 − ˆEr+1 arises due to imperfect cancellation of adversarial errors after DCT-based decoding under finite-precision arithmetic. In particular, when the precision noise variance is non-zero, i.e., σ2 
+
+> P
+
+> 0, imperfect error localization may occur in the DCT decoder, which influences imperfect error cancellation. Moreover, even when there is perfect error localization, finite-precision arithmetic may prevent exact cancellation of the adversarial error magnitudes. In this context, let Prob( ELoc )
+
+denote the probability of imperfect error localization, and let 1 − Prob( ELoc ) denote the probability of perfect localization in the DCT decoder. Consequently, under perfect localization, the residual adversarial error term Er+1 − ˆEr+1 contains at most 
+
+A non-zero components due to imperfect cancellation of errors, whereas under imperfect localization, the residual adversarial error may affect up to 2A interpolation nodes due to both imperfect detection and imperfect cancellation of errors. 21 
+
+For a given N and a fixed Byzantine worker set A, the Berrut weights wr (z) defined in ( 15 ) are deterministic functions of the evaluation point z. Consequently, the randomness in the reconstruction arises only from the precision noise matrices {Pi}
+
+and adversarial perturbations {Ei} for i ∈ [N ]. Therefore, the approximation error in ( 11 ) reduces to 
+
+E{Pi },{Ei}
+
+∥∥∥rBerrut ,v (z) + rBerrut ,p (z) + rBerrut ,e (z) − f (u(z)) 
+
+∥∥∥, (17) where rBerrut ,v (z), rBerrut ,p (z), and rBerrut ,e (z) denote the contributions corresponding to the true computation vectors {Vi},precision noise {Pi}, and residual adversarial components {Ei − ˆEi}, respectively. Further, note that the overall reconstruction error is measured using the Frobenius norm. However, for analytical convenience, we analyze the reconstruction error corre-sponding to an arbitrary (g, h )-th entry of the reconstructed matrix, where g ∈ [m] and h ∈ [n]. Under this formulation, the following theorem provides an upper bound on E{eg,h },{pg,h } |rBerrut,f,g,h (z) − gg,h (z)|2 for a fixed set of Byzantine workers 
+
+A.
+
+Theorem 2. Consider the RBACC scheme with N workers and no stragglers, i.e., S = 0 , such that M = N . Let K1 > 0
+
+and A > 0 satisfy A ≤ ⌊ N −K1
+
+> 2
+
+⌋, and assume that σ2 
+
+> P
+
+> 0 and σ2 
+
+> A
+
+> 0. For fixed N and Byzantine worker set A, the Berrut weights are deterministic functions of z. When σ2 
+
+> P
+
+> 0, imperfect localization may occur i.e., ˆA 6 = A with probability 
+
+Prob( ELoc ) > 0. Then, the approximation error bound in (17 ) can be expressed entry-wise as in (16 ). Here ∆′ is 
+
+∆′ =
+
+
+
+‖g′′ 
+
+> g,h
+
+(z)‖, if N is odd ,
+
+‖g′′ 
+
+> g,h
+
+(z)‖ + ‖g′
+
+> g,h
+
+(z)‖, if N is even ,
+
+where g(z) = f (u(z)) , and gg,h (z) denotes the (g, h )-th entry of f (u(z)) . Here, ˆA∗ = arg max ˆA6 =A E( ˆA), where E( ˆA)
+
+denotes the error due to incorrect localization, and the constants C1, C 2, C w depend only on z, A. Further, I ⊆ [N ] denote the set of evaluation points that contribute to the reconstruction error due to imperfect localization, where A + 1 ≤ |I| ≤ 2A. 
+
+Proof: We refer the reader to Appendix D for the proof. 
+
+Note that the above bound is derived for an arbitrary (g, h )-th entry of the components in ( 17 ), however, the bound on the expected squared Frobenius norm follows by summing the corresponding entry-wise bounds over all (g, h )-th entries, for 
+
+g ∈ [m] and h ∈ [n].
+
+Remark 8. Note that in the absence of adversaries and precision noise i.e., when A = 0 , and σ2 
+
+> P
+
+= 0 , the bound in (16 )
+
+collapses to the bound stated in Theorem 1.
+
+Remark 9. Note that in the absence of adversaries, i.e., when A = 0 , and σ2 
+
+> P
+
+> 0 the bound in (16 ) reduces to 
+
+E{eg,h },{pg,h } |rBerrut,f,g,h (z) − gg,h (z)|2 ≤ T1 + T2, (18) 
+
+where T1 and T2 denote the first and second terms, respectively, on the right-hand side of (16 ).
+
+Corollary 1. For fixed N , A, the error bound in (16 ) increases with σ2 
+
+> P
+
+. In particular, the second term T2, and the third term 
+
+T3 grows linearly with σ2 
+
+> P
+
+, and the cross term T4 grows as √σ2 
+
+> P
+
+.
+
+Corollary 2. For fixed N , σ2 
+
+> P
+
+, and Prob( ELoc ), the error bound in (16 ) increases linearly with the number of adversaries A.Specifically, the residual term T3 grows as O(A2) due to the factors (A + A2) and (2 A + 4 A2), and the term T4 increases with √T3.22         
+
+> 12345
+> No. of Adversaries
+> -2.5 -2 -1.5 -1 -0.5 00.5 1
+> Relative Error
+> 12345
+> No. of Adversaries
+> -2.5 -2 -1.5 -1 -0.5 0
+> Relative Error
+> (a)
+> 10 -6
+> 10 -5
+> 10 -4
+> 10 -3
+> 10 -2
+> -3 -2.5 -2 -1.5 -1 -0.5 00.5 1
+> (b)
+
+Fig. 6: Average relative error (in log 10 scale) under Byzantine workers and precision noise. Fig. a compares the average relative error of BACC, ApproxIFER, and RBACC as a function of A with parameters N = 53 , K = 4 , S = 0 , K1 = 31 . Fig. b shows the average relative error of RBACC as a function of the precision noise variance σ2 
+
+> P
+
+for a fixed number of adversaries, i.e., A = 2 , with the same parameters as in Fig. a. Here, the entries of {Eia } are i.i.d. according to N (0 , 10 4).
+
+The above corollaries show that the approximation error bound derived for RBACC in ( 16 ) is an increasing function of both the precision noise variance σ2 
+
+> P
+
+and the number of Byzantine workers A. Next, we present simulation results to demonstrate the effectiveness of the proposed coding-theoretic approach and to experimentally validate these theoretical observations. 
+
+A. Experimental Results on Approximation Accuracy of RBACC in the Presence of Byzantine Workers 
+
+We now present simulation results evaluating the average approximation error of the RBACC framework in the presence of Byzantine workers, i.e., when A > 0. To demonstrate the effectiveness of the proposed approach, we first compare RBACC with the existing BACC framework in the presence of Byzantine workers. We additionally compare RBACC with ApproxIFER [ 17 ], which provides a method for identifying Byzantine workers but does not explicitly perform error correction and instead removes the detected Byzantine nodes prior to reconstruction. In contrast, the proposed RBACC framework incorporates explicit error-detection and correction capability through DCT-code-based decoding. To demonstrate the approximation accuracy advantages of RBACC over BACC and ApproxIFER in the presence of Byzantine workers, we compare the average relative error of all three schemes over 1000 iterations, as shown in Fig. 6a for different functions. The experimental parameters are chosen as 
+
+N = 53 , K = 4 , S = 0 , K1 = 43 . In each iteration, the indices of the Byzantine workers are selected uniformly at random from the set of N workers. For the experiments in Fig. 6a , precision errors arise only due to finite-precision 64-bit floating-point operations, and no additional precision noise is added. In contrast, for the experiments in Fig. 6b , additional precision noise with variance σ2 
+
+> P
+
+is introduced to evaluate its impact on the approximation accuracy of RBACC. The results in Fig. 6a show that the accuracy of the BACC framework degrades significantly in the presence of Byzantine workers, whereas RBACC achieves improved performance compared to both BACC and ApproxIFER due to its error-detection and correction capability. Furthermore, the results show that the average relative error increases with the number of Byzantine workers A, which is consistent with the theoretical behavior presented in Corollary 2. Further, The plots in Fig. 6b show that the relative error of RBACC is an increasing function of the precision noise variance σ2 
+
+> P
+
+, which further validates Corollary 1.Note that, for these experiments, the value of K1 is selected only for experimental purposes and is not optimized. In the next section, we formulate and solve an optimization problem to determine the optimal DCT code dimension K1. Furthermore, for a fair comparison with ApproxIFER [ 17 ], we assume that the number of Byzantine workers is known at the decoder. Unlike 23 
+
+ApproxIFER, the RBACC framework employs syndrome-based DCT decoding, through which the number of Byzantine workers can be estimated accurately prior to the error-localization step under infinite-precision arithmetic by determining the rank of the corresponding syndrome matrix Sg,h for each entry (g, h ) [28 ]. Further, the approximation error bound derived in ( 16 ) depends explicitly on the DCT code dimension K1 through the localization error probability Prob( ELoc ). Specifically, increasing K1 reduces the truncation error associated with the Taylor series approximation of f (u(z)) , but simultaneously decreases the redundancy available to the DCT decoder, thereby degrading its error-localization capability. Conversely, decreasing K1 improves the error-localization performance at the expense of increased truncation error. This observation highlights the fundamental tradeoff between approximation accuracy and error-localization capability governed by the choice of K1.Motivated by this observation, in the next subsection, we investigate the dependence of the approximation error of RBACC on the DCT code dimension K1 through both theoretical and experimental analysis. Based on the approximation error bound in (16 ), we then formulate and solve an optimization problem for selecting the optimal value of K1 that minimize the approximation error of RBACC. VI. O N THE CHOICE OF THE DIMENSION OF THE DCT C ODE 
+
+Recall that, in the RBACC setting, a DCT decoder of dimension K1 can be used to detect and correct adversarial errors, as presented in Proposition 4. In this context, the choice of K1 determines the error-correcting capability of the DCT code and therefore affects the accuracy with which the DCT decoder can detect and correct the errors introduced by Byzantine workers. Hence, we have the flexibility to choose K1 based on prior knowledge of the maximum number of adversarial errors that the system may experience. Suppose the RBACC scheme is required to tolerate at most A adversarial errors. The DCT code dimension K1 must therefore be selected such that the decoder can correct at least A errors. For a given choice of K1,the syndrome vector has length N − K1. By the error-correction capability of the DCT code, the decoder can correct up to 
+
+⌊ N −K1
+
+> 2
+
+⌋ errors under infinite-precision arithmetic. Thus, feasible choice of K1 is 1 ≤ K1 ≤ N − 2A. In the next section, we provide an overview of the DCT decoder as the next stage of the RBACC framework after the worker computation stage. In particular, after receiving the computation results from the workers, we show how the master employs the DCT decoder to detect and correct the errors introduced by Byzantine workers in their computations. 
+
+A. DCT based Error Detection and Correction 
+
+Towards detecting and correcting errors in RBACC, note that, in the absence of stragglers and in the presence of adversaries, i.e., when S = 0 and A > 0, the input to the DCT decoder is the received vector rg,h , which can be expressed as 
+
+rg,h = vg,h + eg,h + pg,h , (19) where vg,h denotes the N -dimensional vector corresponding to the (g, h )-th entry of the noiseless computation f (u(z)) ∈ Rm×n
+
+evaluated on the encoded shares by the workers, for g ∈ [m] and h ∈ [n], eg,h represents an N -length vector with at most A
+
+non-zero entries corresponding to adversarial errors, and pg,h denotes the vector of precision noise. Further, due to the Taylor approximation of f (u(z)) , from ( 7), we have 
+
+vg,h = tg,h + qg,h , (20) where tg,h denotes the sum of the first K1 terms of the Taylor series expansion for some K1 ∈ N, and qg,h denotes the sum of the higher-order terms of the expansion. Further, recall Proposition 3, which states that tg,h is a codeword of a (N, K 1)24 
+
+DCT code. This implies that tg,h is a DCT codeword, whereas vg,h can be viewed as a perturbed version of the corresponding DCT codeword due to the truncation term qg,h . Consequently, rg,h is also a noisy DCT codeword since it is an additive noisy version of tg,h , as presented in ( 19 ), corresponding to the generator matrix defined in ( 8) of dimension K1 × N . Therefore, once the parameter K1 is fixed, the structure of the DCT code and hence its generator matrix is completely determined as defined in ( 8), which in turn determines the corresponding parity check matrix H of dimension (N − K1) × N . Accordingly, the modified syndrome vector is computed as 
+
+¯zg,h = rg,h HT = eg,h HT
+
+︸ ︷︷ ︸
+
+> zg,h
+
++ ( pg,h + qg,h )HT
+
+︸ ︷︷ ︸
+
+> wg,h
+
+. (21) Here, the first term zg,h corresponds to the syndrome component due to the adversarial error vector eg,h , while the second term wg,h represents the aggregate perturbation in the syndrome due to precision noise and truncation error. From ( 21 ), it follows that the perturbation wg,h arises from two sources. The first source is the precision noise pg,h 
+
+introduced by finite-precision arithmetic. The second source is the residual error qg,h resulting from truncating the Taylor series expansion of f (u(z)) to a finite order K1, as shown in ( 20 ). For a fixed function f (·), truncation order K1, and input dataset, the residual error is deterministic. However, in the RBACC framework, the input matrices are treated as random, and consequently the encoded evaluations u(z), and hence the truncation error, also vary across different realizations. Furthermore, Since the evaluation points corresponding to different workers are distinct, the corresponding truncation-error contributions arise from different function evaluations. Therefore, for analytical tractability, we model the truncation-error contributions as independent zero-mean random variables with variance σ2 
+
+> r
+
+, independent of the precision noise. Accordingly, the aggregate perturbation term wg,h in ( 21 ) is modeled as a zero-mean random variable with effective variance σ2 
+
+> ef f
+
+= σ2 
+
+> P
+
++ σ2 
+
+> r
+
+.
+
+Under infinite-precision arithmetic and in the absence of truncation error, i.e., when wg,h = 0 , the modified syndrome vector 
+
+¯zg,h reduces to the exact syndrome vector zg,h , which is solely due to the adversarial error vector eg,h . In this case, the DCT decoder can exactly estimate both the number of errors and the coefficients of the corresponding error-locator polynomial. Consequently, the roots of the error-locator polynomial accurately identify the true error locations. However, when wg,h 6 = 0 ,the syndrome vector is perturbed by the aggregate noise term. As a result, the decoder may incorrectly estimate the number of errors and the coefficients of the error-locator polynomial, which can lead to erroneous error localization. In this context, using the noisy syndrome vector ¯zg,h , given in ( 21 ), the decoder estimates the number and locations of adversarial errors. Since the RBACC scheme is designed to tolerate at most A adversarial errors, with A ≤ v, the decoder subsequently computes the coefficients of the corresponding error-locator polynomial of degree A. In particular, these coefficients satisfy 
+
+¯zg,h (i)λA + ¯ zg,h (i + 1) λA−1 + · · · + ¯ zg,h (i + A − 1) λ1 = ¯ zg,h (i + A), (22) for i = 1 , 2, . . . , (N − K1) − A. Writing this system compactly as Sg,h λg,h = yg,h , where λg,h = [ λ1, λ 2, . . . , λ A]T denotes the coefficient vector of the error-locator polynomial, and Sg,h and yg,h are constructed from the entries of ¯zg,h [28 ]. Note that, under finite-precision arithmetic both Sg,h and yg,h are perturbed due to precision noise and truncation error. Consequently, the linear system is no longer exact, and the coefficients of the error-locator polynomial are estimated using the least-squares (LS) solution [ 31 ]
+
+¯λg,h = ( STg,h Sg,h )−1STg,h yg,h ,
+
+where ¯λg,h = [ ¯λ1, ¯λ2, . . . , ¯λA]T denotes the estimated coefficient vector of the error-locator polynomial. Using the estimated 25 
+
+coefficient vector ¯λg,h , the corresponding estimated error-locator polynomial is denoted by ¯Λg,h (z). Further, the estimated error-locator polynomial can be expressed as ¯Λg,h (z) = Λ g,h (z) + ∆Λ g,h (z), where Λg,h (z) denotes the error-locator polynomial obtained from the noiseless syndrome vector, and ∆Λ g,h (z) denotes the perturbation induced by the aggregate syndrome noise 
+
+wg,h , which includes the effects of both precision noise and truncation error. Under infinite-precision arithmetic, the roots of 
+
+Λg,h (z) directly correspond to the true adversarial locations. Specifically, if Xq = cos 
+
+( (2 q+1) π
+
+> 2N
+
+)
+
+, for q ∈ [N ], is a root of 
+
+Λg,h (z), then the corresponding index q identifies an adversarial location. However, under finite-precision arithmetic, instead of directly identifying the roots of the error-locator polynomial, the decoder evaluates ‖ ¯Λg,h (Xq )‖2, for all q ∈ [N ], and arranges these values in ascending order as ‖ ¯Λg,h (Xˆi1 )‖2 ≤ ‖ ¯Λg,h (Xˆi2 )‖2 ≤ · · · ≤ ‖ ¯Λg,h (XˆiN )‖2. The indices corresponding to the 
+
+A smallest evaluations form the detected adversarial set ˆA = {ˆi1,ˆi2, . . . , ˆiA}. After identifying the detected error locations, the next step is to compute the error vector eg,h for each noisy codeword rg,h by solving the linear system specified in ( 21 ). Once the error vector for a noisy codeword is determined, these values are subtracted from the corresponding error locations to correct those errors. The corrected codewords are then used for the subsequent reconstruction stage. The perturbation ∆Λ g,h (z) arises from the error in estimating the coefficient vector λg,h from the noisy syndrome vector. Since the coefficient vector is obtained through an LS solution, the variance of the coefficient estimation error depends on both the aggregate variance σ2 
+
+> e
+
+and the number of available syndrome equations (N − K1) − A. Throughout the subsequent analysis, we denote the resulting variance of the estimated error-locator polynomial coefficients by σ2 
+
+> ef f
+
+and refer to it as the effective variance. As discussed above, under the perturbation ∆Λ g,h (z), the coefficients of the estimated error-locator polynomial are no longer exact. Consequently, the DCT decoder may incorrectly localize the adversarial locations. Therefore, in the next section, we characterize the localization error probability of the DCT decoder as a function of the effective variance 
+
+σ2 
+
+> ef f
+
+.
+
+B. Bounds on Localization Error Rate 
+
+We now analyze the error-localization block of the DCT decoder under the combined effects of precision noise and the truncation error arising from the Taylor series approximation of f (u(z)) , and thereby study the impact of the effective noise variance σ2 
+
+> ef f
+
+on the error-locator coefficients. In this context, let the true error locations be denoted by A = {i1, i 2, . . . , i A},and let the detected error locations obtained from the estimated error-locator polynomial ¯Λgh (x) be ˆA = {ˆi1,ˆi2, . . . , ˆiA}. The localization step is said to be in error if ˆA 6 = A. Conditioned on a given error vector e affecting the received codeword rg,h ,the probability of localization error due to precision and truncation effects is defined as 
+
+Prob( ELoc ) = Prob( ˆA 6 = A) = Prob 
+
+( A⋃
+
+> a=1
+
+ia /∈ ˆA
+
+)
+
+. (23) For a given true error location ia ∈ A to be excluded from ˆA, there must exist an index jb ∈ V , [N ] \ A , where 
+
+b ∈ { 1, 2, . . . , N − A}, such that ‖ ¯Λg,h (Xjb )‖2 ≤ ‖ ¯Λg,h (Xia )‖2. Letting V = {j1, j 2, . . . , j N −A} and applying the union bound yields 
+
+Prob( ELoc ) ≤ 
+
+> N−A
+
+∑
+
+> b=1
+> A
+
+∑
+
+> a=1
+
+Prob (‖ ¯Λ( Xjb )‖2 ≤ ‖ ¯Λ( Xia )‖2) . (24) Defining the pairwise error probability P EP corresponding to any two pair (jb, i a) as 
+
+P EP jb ,i a = Prob (‖ ¯Λ( Xjb )‖2 ≤ ‖ ¯Λ( Xia )‖2) , (25) 26 
+
+we obtain 
+
+Prob( ELoc ) ≤ 
+
+> N−A
+
+∑
+
+> b=1
+> A
+
+∑
+
+> a=1
+
+P EP jb ,i a . (26) Since a closed-form expression for P EP jb ,i a is intractable to obtain, we use a similar approach to that in [ 13 , Theorem 1] and characterize the pairwise error probability through the analytical expression presented in the following theorem. 
+
+Theorem 3. For given N , A, σ2 
+
+> P
+
+> 0, 1 ≤ K1 ≤ N −2A, such that A ≤ ⌊ N −K1
+
+> 2
+
+⌋, and A = {i1, i 2, . . . , i A}, the pairwise error probability corresponding to any two pair (jb, i a), i.e., P EP jb ,i a in (26 ) where b ∈ { 1, 2, . . . , N − A} and a ∈ { 1, 2, . . . , A },can be expressed as 
+
+P EP jb ,i a ≥
+
+√ κba 
+
+1 + κba 
+
+exp 
+
+(
+
+− ηC 2 
+
+> I
+
+κba 
+
+8σ2 
+
+> ef f
+
+(1 + κba )
+
+)
+
+, (27) 
+
+where C2 
+
+> I
+
+=
+
+∣∣∣∏Aa=1 
+
+(
+
+cos 
+
+( (2 jb +1) π
+
+> 2N
+
+)
+
+− cos 
+
+( (2 ia+1) π
+
+> 2N
+
+))∣ ∣∣2
+
+, and κba = 4 
+
+> η∑Ak=1
+
+(cos k θjb −cos k θia )2 . Here θjb = (2 jb +1) π 
+
+> 2N
+
+, θia =  
+
+> (2 ia+1) π
+> 2N
+
+, η is the lower bound constant. Proof: Proof is along the lines of [ 13 , Theorem 1]. 
+
+Therefore, for a given set of parameters N , A, K1, σ2 
+
+> P
+
+, and A, Theorem 3 provides a computable lower bound on the pairwise error probability P EP jb ,i a for all b, a . Further, from ( 26 ), Prob( ELoc ) ≤ ∑N −Ab=1 
+
+∑Aa=1 P EP jb ,i a . Since P EP jb ,i a ≤
+
+max b,a P EP jb ,i a for all a and b, it follows that 
+
+Prob( ELoc ) ≤ A(N − A) max  
+
+> b,a
+
+P EP jb ,i a . (28) Using the lower bound on the pairwise error probability presented in Theorem 3, we define the following analytically tractable surrogate for the localization error probability Prob( ELoc )
+
+˜Prob( ELoc ) , A(N − A) exp 
+
+(
+
+− ηf min γmax 
+
+8σ2eff 
+
+)
+
+, (29) where fmin = min jb g(A, j b), g (A, j b) ,
+
+∣∣∣∏Aa=1 
+
+(
+
+cos 
+
+( (2 jb +1) π
+
+> 2N
+
+)
+
+− cos 
+
+( (2 ia +1) π
+
+> 2N
+
+))∣ ∣∣2
+
+, and γmin ≤ κba  
+
+> 1+ κba
+
+≤ γmax for all b, a .The surrogate localization error probability ˜Prob( ELoc ) explicitly characterizes the dependence of the localization performance on the effective variance σ2 
+
+> ef f
+
+.
+
+Corollary 3. The lower bound on the pairwise error probability P EP jb ,i a in Theorem 3 is a non-decreasing function of the effective variance σ2 
+
+> ef f
+
+. Consequently, the corresponding upper bound on Prob( ELoc ) in (28 ) is also a non-decreasing function of σ2 
+
+> ef f
+
+.
+
+The above corollary implies that, for given N , A, and A, the localization error probability is governed by the effective variance σ2 
+
+> ef f
+
+. We next characterize σ2 
+
+> ef f
+
+as a function of the DCT code dimension K1, and subsequently study the resulting impact on the localization error probability and the approximation error of the RBACC framework. 
+
+C. Relation Between the Dimension of the DCT Code and Probability of Localization Error 
+
+We now characterize the dependence of the effective variance σ2 
+
+> ef f
+
+on the DCT code dimension K1. Recall that, for a fixed tolerable number of adversarial errors A, the DCT code dimension must satisfy 1 ≤ K1 ≤ N − 2A, so that the decoder can correct at least A adversarial errors. Further, recall from the previous subsection that the coefficients of the error-locator polynomial are estimated using the least-squares (LS) solution ¯λg,h = ( STg,h Sg,h )−1STg,h yg,h . For a given choice of K1, the 27 
+
+syndrome vector has length N − K1, and hence the number of syndrome equations available for estimating the coefficient vector ¯λg,h is (N − K1) − A. Consequently, the choice of K1 determines the number of syndrome equations and the amount of redundancy available to the LS decoder and therefore influences the accuracy with which the coefficients of the error-locator polynomial are estimated. To quantify this dependence further, we first characterize the contribution of the truncation error arising from the Taylor series approximation of f (u(z)) to the effective noise variance σ2 
+
+> ef f
+
+. In particular, we recall the following result, which provides a bound on the truncation error and hence characterizes σ2 
+
+> r
+
+as a function of K1.
+
+Proposition 5. Let f : R → R be (K1 + 1) -times differentiable with |f (K1+1) (z)| ≤ MK1+1 for all |z| ≤ γ, where 
+
+1 ≤ K1 ≤ N − 2A. Let fK1 (u(z)) ∈ Rm×n denote the truncated Taylor approximation of order K1 obtained by truncating the Taylor series expansion of f (u(z)) about the origin. Assume that each entry of the matrix-valued function u(z) satisfies 
+
+|ug,h (z)| ≤ γ, for all (g, h ) and all z ∈ [−1, 1] . For each (g, h ), let tg,h (z) and qg,h (z) denote the (g, h )-th entries of 
+
+fK1 (u(z)) and the remainder term f (u(z)) − fK1 (u(z)) , respectively, such that vg,h (z) = tg,h (z) + qg,h (z). Then, by Taylor’s theorem with the Lagrange remainder, 
+
+|qg,h (z)|2 ≤
+
+( MK1+1 
+
+(K1 + 1)! γK1+1 
+
+)2
+
+. (30) 
+
+Proof: The result follows directly from Taylor’s theorem with the Lagrange remainder applied to the Taylor series expansion of f (u(z)) about the origin [ 33 , Theorem 1.1]. This completes the proof. 
+
+Therefore, we define a variance proxy for the truncation error as a function of K1 as 
+
+σ2 
+
+> r
+
+,
+
+( MK1+1 
+
+(K1 + 1)! γK1+1 
+
+)2
+
+. (31) Recall that the effective variance σ2 
+
+> ef f
+
+of the estimated error-locator polynomial coefficients is influenced by both the precision-noise variance σ2 
+
+> P
+
+and the truncation-error variance proxy σ2 
+
+> r
+
+as defined in ( 31 ), as discussed in Section VI-A .Combining these effects provides the following characterization of σ2 
+
+> ef f
+
+.
+
+Theorem 4. For fixed N and A, the effective variance σ2 
+
+> ef f
+
+of the estimated error-locator coefficients in the LS-based DCT decoder can be approximated as                 
+
+> σ2
+> ef f ≈σ2
+> P
+> (N−K1)−A+1
+> (N−K1)−A
+> (MK1 +1
+> (K1+ 1)! γK1+1
+> )2
+> ,(32)
+
+where σ2 
+
+> P
+
+denotes the precision-noise variance and MK1+1 is the bound on the (K1 + 1) -th derivative of the target function. Proof: Let ˜λg,h = ¯λg,h −λg,h , where λg,h denotes the true coefficient vector of the error-locator polynomial, ¯λg,h denotes the corresponding estimate obtained from the noisy syndrome vector, and ˜λg,h denotes the resulting estimation error vector. Since the perturbations arise from the noisy syndrome vector, we model their combined effect as additive noise with variance 
+
+σ2 
+
+> e
+
+, as discussed above. Under this model, the covariance of the LS estimation error can be approximated as Cov( ˜λg,h ) ≈
+
+σ2 
+
+> e
+
+(STg,h Sg,h )−1. Consequently, each component of the estimation error vector satisfies 
+
+Var( ˜λg,h,i ) ≤ σ2
+
+> e
+
+λmin (STg,h Sg,h ) , i ∈ [A]. (33) To understand the dependence of the coefficient estimation variance on the DCT code dimension K1, we next study the behavior of the quantity λmin (STg,h Sg,h ) appearing in ( 33 ). Let M = ( N − K1) − A denote the number of available syndrome equations, i.e., the number of linear relations obtained from the syndrome samples. Recall that the coefficients of the error-locator polynomial are estimated using the LS solution. Let sTk denote the k-th row of the syndrome matrix Sg,h .28 
+
+Then, STg,h Sg,h = ∑Mk=1 sksTk . Therefore, if one additional syndrome equation is available, the corresponding Gram matrix becomes STM+1 SM+1 = STM SM + sM+1 sTM+1 . Since sM+1 sTM+1 is positive semidefinite, each additional syndrome equation contributes a positive semidefinite term to the Gram matrix. Consequently, λmin (STg,h Sg,h ) is a non-decreasing function of M . It therefore follows from ( 33 ) that increasing the number of available syndrome equations decreases the variance of the estimated error-locator polynomial coefficients. Hence, increasing the number of available syndrome equations generally improves the conditioning of the LS problem and reduces the estimation variance of the error-locator polynomial coefficients [ 31 ]. Therefore, for fixed noise variance, the effective variance after LS decoding decreases as the number of syndrome equations increases. Since M = ( N − K1) − A, we approximate this dependence as 
+
+σ2 
+
+> ef f
+
+≈ σ2
+
+> e
+
+(N − K1) − A = σ2 
+
+> P
+
++ σ2
+
+> r
+
+(N − K1) − A . (34) Since c is independent of K1, it can be absorbed into the approximation constant. Therefore, σ2 
+
+> ef f
+
+≈ σ2   
+
+> P+σ2
+> r
+> (N−K1)−A
+
+. Further, substituting the truncation-error proxy from ( 31 ) into the above expression yields ( 32 ). This completes the proof. 
+
+Proposition 6. For fixed N and A, decreasing K1 increases the number of syndrome equations available to the LS decoder and reduces the effective variance σ2 
+
+> ef f
+
+of the estimated error-locator polynomial coefficients. Proof: Note that, for a fixed tolerable number of adversarial errors A, the DCT code dimension K1 can be selected over the feasible range 1 ≤ K1 ≤ N − 2A. Since the syndrome length is N − K1, smaller values of K1 produce a longer syndrome vector and hence provide more syndrome equations for error localization. In the LS-based decoding step, for A ≤ v , ⌊ N −K1
+
+> 2
+
+⌋,the decoder can exploit up to 2v − A syndrome samples, which is approximately (N − K1) − A equations to estimate A
+
+unknown coefficients. Thus, for fixed A, decreasing K1 increases the redundancy available to the LS decoder, allowing it to average precision noise across more observations and thereby reducing the variance of the estimated error-locator coefficients. In contrast, increasing K1 reduces the number of available equations and weakens this averaging effect. Unlike the classical Peterson decoding method, which uses only 2A syndromes to correct A errors, the LS decoder utilizes all remaining redundant syndrome equations beyond this minimum requirement, thereby improving estimation accuracy whenever K1 < N − 2A [31 ]. Letting M = ( N − K1) − A, the effective coefficient variance scales according to ( 34 ) as σ2 
+
+> ef f
+
+≈ σ2 
+
+> e
+> c M
+
+, for some constant 
+
+c > 0. Hence, for fixed A, decreasing K1 increases M and suppresses the effect of precision noise through stronger averaging in the LS decoder. This completes the proof. 
+
+Corollary 4. For fixed N and A, the DCT code dimension K1 affects the effective variance σ2 
+
+> ef f
+
+through two factors 
+
+1) By Proposition 5, increasing K1 improves the approximation of f (u(z)) and thereby reduces the truncation-error contribution to σ2 
+
+> ef f
+
+.
+
+2) By Proposition 6, increasing K1 reduces the redundancy available to the LS decoder, thereby increasing the effective variance σ2 
+
+> ef f
+
+through the reduction in the number of available syndrome equations (N − K1) − A.
+
+The above corollary can also be observed directly from ( 32 ). In particular, increasing K1 improves the approximation of 
+
+f (u(·)) and reduces the truncation-error contribution to σ2 
+
+> ef f
+
+. However, by Proposition 6, increasing K1 simultaneously reduces the redundancy available to the LS decoder, thereby weakening its ability to average precision noise. Hence, smaller values of 
+
+K1 favor error detection and correction, whereas larger values of K1 favor approximation accuracy. 
+
+Corollary 5. For fixed N , A, and A, the localization error probability Prob( ELoc ) depends on the DCT code dimension K1
+
+through the effective variance σ2 
+
+> ef f
+
+.29 
+
+The above corollary follows directly from Corollary 3 and Theorem 4. Further, equation ( 32 ) explicitly shows the dependence of σ2 
+
+> ef f
+
+on K1.Moreover, for fixed N , A, σ2 
+
+> P
+
+, and N1, the first two terms of the approximation error bound in ( 16 ) are independent of K1, whereas the remaining terms depend on K1 only through the localization error probability Prob( ELoc ). Therefore, by Corollary 5, the dependence of the approximation error bound on K1 is captured through the effective variance σ2 
+
+> ef f
+
+.Furthermore, Corollary 4 shows that the choice of K1 affects both the truncation-error contribution and the error-localization capability of the DCT decoder. Consequently, these observations suggest the existence of an optimal value of K1 for minimizing the approximation error of the RBACC framework. Therefore, selecting the optimal value of K1 can be formulated as the following optimization problem. Since the localization error probability is a non-decreasing function of σ2 
+
+> ef f
+
+, minimizing σ2
+
+> ef f
+
+provides a surrogate criterion for selecting K1. Hence, instead of directly minimizing the approximation error bound in ( 16 ), we determine the optimal value of K1 by solving 
+
+Problem 1. Given an RBACC scheme with N workers, K, A > 0, σ2 
+
+> P
+
+> 0, and σ2 
+
+> r
+
+> 0, determine the optimal value of 
+
+K1 satisfying A ≤ ⌊ N −K1
+
+> 2
+
+⌋ by solving 
+
+K⋆ 
+
+> 1
+
+= arg min 
+
+> K1∈K
+
+σ2
+
+> P
+
+(N − K1) − A + 1
+
+(N − K1) − A
+
+( MK1+1 
+
+(K1 + 1)! γK1+1 
+
+)2
+
+, (35) 
+
+where the feasible set is K = {K1 ∈ N : 2 ≤ K1 ≤ N − 2A} .
+
+After computing K⋆ 
+
+> 1
+
+by solving the above optimization problem, we subsequently use K⋆ 
+
+> 1
+
+and proceed with error localization, error correction, and final reconstruction. 
+
+D. Experimental Results 
+
+To demonstrate the effectiveness of the proposed optimization framework for selecting the DCT code dimension K1, we compare the value of K1 obtained by solving Problem 1, denoted by K⋆ 
+
+> 1
+
+, with an empirical baseline, denoted by K⋆
+
+> 1,E
+
+. The empirical baseline is obtained by directly minimizing the average relative error of the RBACC scheme through Monte Carlo simulations. Specifically, for each feasible value of K1 satisfying 2 ≤ K1 ≤ N − 2A, the average relative error is computed over 10 3 independent Monte Carlo trials, where, in each trial, the set of A Byzantine workers is selected uniformly at random from the N workers. The value of K1 yielding the minimum average relative error is selected as K⋆
+
+> 1,E
+
+. In contrast, K⋆ 
+
+> 1
+
+is obtained by minimizing the effective noise variance bound in Problem 1. The values of K⋆ 
+
+> 1,E
+
+and K⋆ 
+
+> 1
+
+for different precision noise variances are presented in Table IV . The system parameters used for the experiments are N = 15 , K = 4 , η = 10 2,
+
+σ2 
+
+> A
+
+= 10 4, A = 2 , and f (X) = X sin( X). The optimization is performed over the feasible range 2 ≤ K1 ≤ N − 2A, i.e., 
+
+2 ≤ K1 ≤ 11 .From Table IV , both K⋆ 
+
+> 1,E
+
+and K⋆ 
+
+> 1
+
+vary with the precision noise variance σ2 
+
+> P
+
+. For relatively large values of σ2 
+
+> P
+
+, smaller values of K1 are preferred because they provide additional syndrome equations, thereby improving the error-localization capability of the DCT decoder, consistent with Proposition 6. As σ2 
+
+> P
+
+decreases, larger values of K1 become preferable because the truncation error becomes the dominant source of approximation error, consistent with Proposition 5. Furthermore, the close agreement between K⋆ 
+
+> 1
+
+and the empirical baseline K⋆ 
+
+> 1,E
+
+demonstrates the effectiveness of the proposed surrogate optimization framework. To further demonstrate the effectiveness of the proposed surrogate optimization framework, we compare the average relative error of the RBACC scheme obtained using the DCT code dimensions K⋆ 
+
+> 1,E
+
+and K⋆ 
+
+> 1
+
+. The results are shown in Fig. 7. It 30                                
+
+> TABLE IV
+> Experimental and theoretical optimal values of K⋆
+> 1under different precision noise variances. The parameters used are N= 15 ,K= 4 ,
+> η= 10 2,σ2
+> A= 10 4,A= 2 , and f(x) = Xsin( X). The range of K1
+> considered is 2≤K1≤11 .
+> Precision Noise Variance K⋆
+> 1,EK⋆
+> 1
+> 10 −224
+> 10 −345
+> 10 −446
+> 10 −546
+> 10 -5
+> 10 -4
+> 10 -3
+> 10 -2
+> -1.4 -1.2 -1 -0.8 -0.6 -0.4
+
+Fig. 7: Comparison of the average relative error of the RBACC framework obtained using K⋆ 
+
+> 1,E
+
+and K⋆ 
+
+> 1
+
+as presented in Table IV for different precision noise variances. 
+
+can be observed that the average relative error obtained using K⋆ 
+
+> 1
+
+closely matches that obtained using the empirical baseline 
+
+K⋆
+
+> 1,E
+
+. Note that the empirical baseline is obtained by exhaustively evaluating the RBACC scheme for every feasible value of K1 through Monte Carlo simulations, whereas the proposed approach requires only solving Problem 1. Therefore, the proposed surrogate optimization framework eliminates the need for exhaustive Monte Carlo simulations while providing a computationally efficient approach for selecting the DCT code dimension with performance close to the empirical baseline. VII. P LACEMENT OF RELIABLE AND UNRELIABLE WORKERS IN RBACC In this section, we consider the RBACC framework presented in Section III , wherein both reliable and unreliable workers are present, such that the set of unreliable workers Wunrel is non-empty. For this setting, we highlight that the encoding strategy remains identical to that described in Section III . However, since the set of unreliable workers is non-empty, we argue that the manner in which the encoded evaluations are assigned to the unreliable workers plays a crucial role in determining the reconstruction accuracy. Towards this direction, we first recall the assignment mapping introduced in Section III . In this context, let U = {u1, u 2, . . . , u μ} ⊆ [N ] denote the indices of the unreliable workers known to the master, and let 
+
+Q = {iu1 , i u2 , . . . , i uμ } ⊆ [N ] denote the set of μ distinct evaluation indices assigned to these unreliable workers, where iuk
+
+denotes the evaluation index assigned to worker Wuk . Recall that each evaluation index i ∈ [N ] is associated with an encoded evaluation Ui. Under the assignment mapping φ : [ N ] → [N ] introduced in Section III , the evaluation indices assigned to the unreliable workers satisfy φ(iuk ) = uk, for k = 1 , 2, . . . , μ. The remaining encoded evaluations {Ui : i / ∈ Q} may be assigned arbitrarily among the reliable workers. 
+
+Remark 10. Although we assume that master knows the identities of the unreliable workers, excluding them from the computation may degrade the approximation accuracy of the RBACC by reducing the number of computations. Therefore, we instead investigate the design of the assignment mapping φ(·).
+
+In particular, since the master has prior knowledge of the identities of the unreliable workers, we propose an assignment strategy for allocating the encoded shares Ui ∈ [N ] to the unreliable workers during the encoding stage. The assignment 31 
+
+mapping φ(·) is designed based on the approximation error bound of the RBACC framework, with the objective of minimizing the upper bound on the approximation error given in ( 16 ). More specifically, we highlight that using the identity mapping 
+
+φ(i) = i, as in the case μ = 0 when all workers are reliable, may not be an optimal choice when μ > 0. Instead, a customized assignment of evaluation indices to the unreliable workers can be employed to reduce the approximation error bound in ( 16 ). To motivate such an assignment strategy, it is first necessary to understand how the assignment mapping φ(·) influences the approximation error of the RBACC framework. Towards this direction, we first establish the effect of the assignment mapping on the DCT error-localization block and the approximation error bound through the following propositions. 
+
+Proposition 7. The localization error probability Prob( ELoc ) of the DCT decoder is a function of the mapping φ(·).Proof: Under the assumption that all Byzantine workers belong to the unreliable worker set, i.e., A ⊆ U , the error-localization block of the DCT decoder can be modified accordingly. Recall that, in the absence of unreliable workers, i.e., when 
+
+μ = 0 , the roots of the noisy error locator polynomial ¯Λgh (x) are identified by evaluating ¯Λgh (x) at the nodes Xq = cos (2 q+1) π 
+
+> 2N
+
+,
+
+for q ∈ [N ], and arranging the evaluations in ascending order as ‖ ¯Λ( Xˆi1 )‖2 ≤ ‖ ¯Λ( Xˆi2 )‖2 ≤ · · · ≤ ‖ ¯Λ( XˆiN )‖2, where 
+
+{ˆi1,ˆi2, . . . , ˆiN } denotes the ordered set of indices. The A smallest evaluations and their corresponding indices then form the detected error set ˆA = {ˆi1,ˆi2, . . . , ˆiA}. However, when μ > 0, the localization block of the DCT decoder can exploit the prior knowledge that all Byzantine workers belong to the unreliable worker set Wunrel . Let Q = {iu1 , i u2 , . . . , i uμ } denote the set of evaluation indices assigned to the unreliable workers through the mapping φ(·), where iuk denotes the evaluation index assigned to worker uk ∈ U . In this case, the noisy error locator polynomial is evaluated only at the nodes corresponding to the evaluation indices in Q, i.e., Xq = cos (2 q+1) π 
+
+> 2N
+
+, q ∈ Q . The resulting evaluations are arranged in ascending order as ‖ ¯Λ( Xiu(1) )‖2 ≤ ‖ ¯Λ( Xiu(2) )‖2 ≤ · · · ≤ ‖ ¯Λ( Xiu(μ) )‖2, where iu(1) , i u(2) , . . . , i u(μ) denote the ordered evaluation indices in 
+
+Q. The workers associated with the A smallest evaluations are identified as adversarial by the decoder, yielding the detected adversarial set ˆA ⊆ U .Since all Byzantine workers belong to the unreliable worker set, the true adversarial set satisfies A ⊆ U , while the detected adversarial set satisfies ˆA ⊆ U . Consequently, the DCT error-localization block operates only on the evaluation points corresponding to the evaluation indices assigned to the workers in U. These evaluation indices are determined by the set Q and the assignment mapping φ(·). Therefore, the localization error probability Prob( ELoc ) depends on the choice of evaluation indices assigned to the unreliable workers, and hence on the assignment mapping φ(·). Furthermore, the evaluation points used in RBACC are chosen as the Chebyshev points of the first kind, zi = cos 
+
+( (2 i+1) π
+
+> 2N
+
+)
+
+, for i ∈ [N ]. Hence, different choices of the evaluation index set Q result in different geometric separation of the evaluation points assigned to the workers in the sets A and U \ A . In particular, from Theorem 3, the pairwise error probability between an adversarial evaluation index 
+
+ia and a non-adversarial evaluation index jb depends on the factor C2 
+
+> I
+
+=
+
+∣∣∣∏Aℓ=1 
+
+(
+
+cos 
+
+( (2 jb +1) π
+
+> 2N
+
+)
+
+− cos 
+
+( (2 iℓ +1) π
+
+> 2N
+
+))∣ ∣∣2
+
+, which is determined by the relative separation of the corresponding Chebyshev points associated with the evaluation indices jb and 
+
+{i1, . . . , i A}. Since the localization error probability is upper bounded by a sum of pairwise error probabilities, as given in ( 26 ), different choices of the evaluation index set Q lead to different values of C2 
+
+> I
+
+, and consequently different values of the pairwise error probabilities. Therefore, different assignment mappings φ(·) gives different localization error probabilities Prob( ELoc ).Hence, the assignment mapping φ(·) affects the localization error probability Prob( ELoc ). This completes the proof. 
+
+Proposition 8. The conditioning of the matrices HA and H ˆA depends on the assignment mapping φ(·) used to assign evaluation indices to the unreliable worker set U.32 
+
+Proof: Since all Byzantine workers belong to the unreliable worker set, the true adversarial set satisfies A ⊆ U , while the detected adversarial set satisfies ˆA ⊆ U . Recall that the unreliable workers in U are assigned evaluation indices from the set Q through the mapping φ(·). Consequently, the evaluation indices associated with the workers in the sets A and ˆA
+
+are determined by the assignment mapping φ(·). The matrices HA and H ˆA are formed by selecting columns of the parity-check matrix corresponding to these evaluation indices. Therefore, different choices of the assignment mapping φ(·) result in different column subsets, and hence different matrices HA and H ˆA. Since the singular values of HA and H ˆA depend on the selected columns, different assignments result in different minimum and maximum singular values of these matrices, and consequently different condition numbers. Therefore, the conditioning of HA and H ˆA depends on the assignment mapping 
+
+φ(·). This completes the proof. 
+
+Corollary 6. The assignment mapping φ(·) affects the approximation error bound in (16 ) through the terms T3 and T4. In particular, φ(·) influences the localization error probability Prob( ELoc ) and the conditioning of the matrices HA and H ˆA,which appear in the localization-dependent terms T3 and T4.
+
+The above corollary follows directly from Propositions 7 and 8. In particular, Proposition 7 establishes that the assignment mapping φ(·) affects the localization error probability Prob( ELoc ), while Proposition 8 establishes that φ(·) affects the conditioning of the matrices HA and H ˆA. Consequently, the unreliable workers, which include the Byzantine workers, affect the approximation error primarily through the error-localization block of the DCT decoder. From the approximation error bound in ( 16 ), the assignment-dependent terms are T3 and T4. Specifically, T3 consists of components corresponding to correct and incorrect localization events. The correct-localization component depends on the localization error probability Prob( ELoc ),whereas the incorrect-localization component depends not only on Prob( ELoc ) but also on the conditioning of the matrices 
+
+HA and H ˆA. Furthermore, T4 depends on the localization error performance of DCT decoder through its dependence on 
+
+T3, as shown in ( 16 ). In contrast, the terms T1 and T2 depend only on the system parameters N , S, σ2 
+
+> P
+
+, and are therefore independent of the assignment mapping φ(·). Consequently, the effect of the assignment mapping on the approximation error bound is captured entirely through the terms T3 and T4. Hence, the effect of the assignment mapping φ(·) on the approximation error bound is captured entirely through the terms T3 and T4. Consequently, minimizing the approximation error bound in ( 16 )is equivalent to minimizing the combined terms T3 + T4.In this context, since the master has (Nμ
+
+) possible choices for selecting the set of evaluation indices Q to be assigned to the unreliable worker set U, the objective is to identify the optimal set of evaluation indices, denoted by Q⋆, for assignment to the workers in U. Specifically, Q⋆ is chosen to minimize the contribution of the terms T3 and T4, and consequently the approximation error bound in ( 16 ). Moreover, since the true adversarial set satisfies A ⊆ U , the approximation error depends on all possible subsets of adversarial locations A ⊆ U satisfying |A| = A. Therefore, rather than optimizing the approximation error bound for a particular adversarial set, we consider the average approximation error over all subsets A ⊆ U satisfying 
+
+|A| = A. This leads to the following optimization problem for determining the optimal assignment of evaluation indices to the unreliable worker set U.
+
+Problem 2. For the RBACC system with N workers, for given K1, μ > 0, τ > 0, A > 0, and σ2 
+
+> P
+
+> 0, solve 
+
+Q⋆ = arg min  
+
+> Q⊆ [N]
+> |Q| =μ
+
+E A⊆U |A| =A
+
+[T3 + T4] , (36) 
+
+where T3 and T4 are defined in (16 ).33 
+
+Note that solving the above problem is not analytically tractable, since the localization error probability Prob( ELoc ) does not admit a closed-form expression. Therefore, to solve Problem 2, we derive a computationally tractable surrogate for Prob( ELoc )
+
+by characterizing the localization error event in terms of pairwise error events. Towards this end, we first upper bound 
+
+Prob( ELoc ) using a union bound over pairwise error events and subsequently use the lower bound on the pairwise error probability presented in Theorem 3. This leads to the following proposition. 
+
+Proposition 9. For the RBACC scheme with parameters N, μ > 0, A > 0, τ > 0, η and unreliable worker set U, a computationally tractable surrogate for the localization error probability Prob( ELoc ) is given by 
+
+PLoc = Ejb
+
+[
+
+exp 
+
+(
+
+− ηg (A, j b)γb
+
+8σ2
+
+> ef f
+
+)] 
+
+, (37) 
+
+where the expectation is taken uniformly over all evaluation indices jb assigned to the workers in U \ A .Proof: Since Prob( ELoc ) does not admit a closed-form expression, we upper bound it using a union bound over pairwise error events, resulting in an analytically tractable expression involving pairwise error probabilities. Using the union bound, the localization error probability satisfies 
+
+Prob( ELoc ) ≤
+
+> μ−A
+
+∑
+
+> b=1
+> A
+
+∑
+
+> a=1
+
+P EP jb ,i a , (38) where P EP jb ,i a denotes the pairwise error probability between the evaluation index jb assigned to a non-adversarial worker and the evaluation index ia assigned to an adversarial worker. Therefore, ( 38 ) provides a tractable upper bound on Prob( ELoc ).Since the Byzantine workers are selected from the unreliable worker set U, the localization error probability depends on all possible adversarial subsets A ⊆ U satisfying |A| = A. Therefore, for given μ > 0, τ > 0, and A, an upper bound on the average localization error probability based on pairwise error probabilities is given by 
+
+E A⊆U |A| =A
+
+[ μ−A
+
+∑
+
+> b=1
+> A
+
+∑
+
+> a=1
+
+Prob 
+
+(
+
+|¯Λgh (Xjb )|2 ≤ | ¯Λgh (Xia )|2)]
+
+. (39) 
+
+Using the analytical expression for the pairwise error probability from Theorem 3, we define the following computationally tractable surrogate metric          
+
+> EA⊆U |A| =A
+> [μ−A∑
+> b=1
+> A∑
+> a=1
+> √κba
+> 1 + κba
+> exp
+> (
+> −ηg (A, j b)κba
+> 8σ2
+> ef f (1 + κba )
+> ) ]
+> .(40)
+
+Since κba corresponds to the pairwise geometric separation between a non-adversarial evaluation index jb and an adversarial evaluation index ia, to obtain a computationally tractable metric, we aggregate the pairwise geometric separations associated with a non-adversarial index jb through the average quantity κb = 1
+
+> A
+
+∑Aa=1 κba , where κba = 4   
+
+> η∑Ak=1
+> (
+> zkia −zkjb
+> )2
+
+. Further, defining γb = κb 
+
+> 1+ κb
+
+, we obtain the computationally tractable surrogate PLoc given in ( 37 ). This completes the proof. 
+
+Note that, in the approximation error bound in ( 16 ), the incorrect-localization component in the term T3 depends on the worst-case detected adversarial set ˆA∗, which maximizes the corresponding reconstruction error term over all incorrect detected sets. However, instead of optimizing with respect to the worst-case detected set ˆA∗, we replace the corresponding term by its average over all candidate detected sets ˆA ⊆ U satisfying | ˆA| = A and ˆA 6 = A for our optimization framework. Moreover, since the true adversarial set and the detected adversarial set satisfy A ⊆ U and ˆA ⊆ U , respectively, the localization error probability and the conditioning of the corresponding submatrices depend on the evaluation indices assigned to the workers in 
+
+U, and hence on the assignment mapping φ(·). Therefore, by replacing Prob( ELoc ) with the surrogate PLoc defined in ( 37 ), and replacing the worst-case detected set ˆA∗ by its average over all candidate detected sets, we obtain the surrogate terms ˜T3
+
+and ˜T4 corresponding to T3 and T4 in ( 16 ). This leads to the following surrogate optimization problem for assigning evaluation 34 
+
+indices to the unreliable worker set U. The solution of this problem is denoted by Z⋆.
+
+Problem 3. For the RBACC system with N workers, for given K1, μ > 0, τ > 0, A > 0, and σ2 
+
+> P
+
+> 0, solve                                        
+
+> Z⋆= arg min
+> Q⊆ [N]
+> |Q| =μ
+> EA⊆U |A| =A
+> [˜T3+ ˜T4
+> ]
+> ,(41)
+> where ˜T3=C2(1 −PLoc )σ2
+> P(A+A2) + CwPLoc EˆA⊆U| ˆA| =A, ˆA6 =A
+> (
+> σ2
+> A‖SA−SˆA(HˆA)†HA‖22+σ2
+> P‖SˆA(HˆA)†‖22
+> )
+> (2 A+ 4 A2),(42)
+
+and ˜T4 = 2 σP
+
+√C1N1 ˜T3, and PLoc is defined in (37 ).
+
+The solution Z⋆ obtained by solving the above problem represents the optimal set of evaluation indices assigned to the unreliable workers based on the surrogate approximation error bound for RBACC presented in ( 16 ). Since the set of unreliable workers U ⊆ [N ] is known to the master, the evaluation indices in Z⋆ are assigned to the workers in U through the mapping 
+
+φ(·). In particular, for each worker index j ∈ U , there exists a unique evaluation index i ∈ Z ⋆ such that φ(i) = j, ensuring that the encoded evaluation Ui is assigned to the worker indexed by j. In the next section, we present the experimental results in terms of the average relative error of the RBACC framework using the assignment set obtained by solving Problem 3, and compare its performance with that of the empirical baseline and two naive assignment strategies. 
+
+A. Experimental Results 
+
+In order to demonstrate the effectiveness of the proposed customized assignment strategy, we compare the average relative error of the RBACC framework using the set of evaluation indices assigned to the unreliable workers obtained from the surrogate optimization problem in Problem 3 with an empirical baseline. As a baseline, we consider the set of evaluation indices obtained by directly minimizing the average relative error of the RBACC framework through Monte Carlo simulations. Specifically, for a given N and μ, we consider each candidate set of evaluation indices among the (Nμ
+
+) possible assignments to the unreliable workers. For each candidate set, we run the complete RBACC framework over 10 3 independent Monte Carlo iterations and compute the corresponding average relative error. The candidate set achieving the minimum average relative error is denoted by R⋆. On the other hand, the proposed approach determines the set for assignment by solving the surrogate optimization problem in Problem 3, and the resulting set of evaluation indices is denoted by Z⋆. The sets R⋆ and Z⋆ obtained at different precision noise variances are reported in Table V. In addition to these two assignments, we also consider two naive assignment strategies for the unreliable workers in order to share the evaluation of encoded shares. In the first strategy, the unreliable workers are assigned contiguous evaluation indices, and in the second strategy, the unreliable workers are assigned evaluation indices selected uniformly at random from the N evaluation indices. Further, we compute the average relative error of the RBACC framework using the index sets obtained from both methods at their corresponding precision noise variances reported in Table V. Specifically, we compute the average relative error at different precision noise variances while evaluating the function f (X) = X sin( X), X ∈ R20 ×5. The average relative error is computed over 10 3 iterations. For each assignment strategy, a set of A Byzantine workers is selected uniformly at random from the corresponding set of μ unreliable workers in each iteration. The parameters used in the experiments are 
+
+N = 11 , K = 4 , μ = 6 , τ = 5 , A = 2 , K 1 = 7 , N 1 = N, η = 10 3. The non-zero entries of the adversarial noise matrices {Eia }
+
+are generated independently according to N (10 , 10 4).Based on the experiments, the average relative error results are presented in Fig. 8. As illustrated in Fig. 8, the proposed assignment strategy consistently outperforms both naive assignment strategies, contiguous and random assignment, by achieving 35 
+
+> 10 -6
+> 10 -5
+> 10 -4
+> 10 -3
+> 10 -2
+> -2 -1.5 -1 -0.5 00.5
+
+Fig. 8: Average relative error (in log 10 scale) when the evaluation indices assigned to the unreliable workers are obtained by: (i) empirically minimizing the average relative error of the framework, (ii) solving Problem 3, (iii) using random indices, and (iv) using contiguous indices. 
+
+a significantly lower average relative error. Furthermore, although the proposed assignment strategy exhibits a slight performance degradation compared to the empirical baseline, it achieves an average relative error that remains very close to that of the empirical baseline. It is important to highlight that the empirical baseline is obtained by exhaustively searching over all (Nμ
+
+)
+
+possible assignments of the evaluation indices to the unreliable workers and selecting the assignment that minimizes the average relative error through Monte Carlo simulations. Consequently, the empirical baseline is computationally expensive and impractical to implement in real distributed systems. In contrast, the proposed assignment strategy is obtained by solving the analytical surrogate optimization problem in Problem 3, which relies only on the derived approximation error bound. Since the proposed method is based on analytical expressions rather than exhaustive simulations, it is significantly easier to compute, and implement in practice, while achieving performance that remains close to the empirical baseline. 
+
+Precision Noise Variance R∗ Z∗
+
+10 −2 3, 4, 5, 7, 8, 9 1, 4 ,5, 7, 8, 11 
+
+10 −3 3, 4, 5, 7, 8, 9 2, 4 ,5, 7, 8, 10 
+
+10 −4 3, 4, 5, 7, 8, 9 2, 4 ,5, 7, 8, 10 
+
+10 −6 3, 4, 5, 7, 8, 9 2, 4 ,5, 7, 8, 10 
+
+TABLE V: Comparison of the unreliable worker index sets obtained by empirically minimizing the average relative error of the RBACC framework, denoted by R⋆, and by solving Problem 3, denoted by Q⋆, for different precision noise variances. The parameters used in the experiments are N = 11 , K = 4 , μ = 6 , A = 2 , η = 10 3, K1 = 7 , N1 = N , and f (X) = X sin( X).
+
+Remark 11. As observed in Table V, the optimal index sets are concentrated around the middle evaluation indices, consistent with Proposition 7. This is because the Chebyshev points of the first kind are more widely spaced near the center of the interval, leading to better-separated evaluation points assigned to the unreliable workers, which improves the error-localization performance of the DCT decoder and consequently reduces the reconstruction error. 
+
+VIII. S UMMARY AND FUTURE WORK 
+
+In this work, we developed a coding-theoretic framework for providing robustness against Byzantine workers in Berrut-Approximated Coded Computing (BACC). We first investigated whether the worker computations generated by the original BACC framework admit the algebraic structure required by existing BCH-like decoding algorithms. By analyzing the linear code induced by the Chebyshev points of the second kind, we showed that it does not directly admit the algebraic structure 36 
+
+required by existing BCH-like syndrome-decoding frameworks. Consequently, the original BACC construction cannot directly leverage efficient syndrome-based error detection and correction techniques. Motivated by this observation, we proposed the Robust Berrut-Approximate Coded Computing (RBACC) framework by employing Chebyshev points of the first kind, thereby establishing a coding-theoretic connection between Berrut rational interpolation and DCT codes. This connection enables syndrome-based error localization, estimation of the number of Byzantine workers, and error correction, while preserving the bounded approximation error guarantees of the original BACC framework. We then established rigorous theoretical guarantees for the proposed framework. In particular, we proved that RBACC preserves the logarithmic growth of the Lebesgue constant and the bounded approximation error guarantees of BACC in the presence of stragglers. Furthermore, we derived analytical bounds on the reconstruction error in the presence of Byzantine workers by explicitly incorporating the localization error probability of the DCT decoder under finite-precision computations. Our analysis also revealed a fundamental tradeoff between approximation accuracy and error-localization capability through the choice of the DCT code dimension, leading to an optimization framework for selecting the optimal code dimension. Finally, we considered a practical RBACC framework comprising reliable and unreliable workers and proposed a reliability-aware evaluation-point assignment strategy for minimizing the approximation error of the framework. To this end, we formulated an optimization problem based on the theoretically derived approximation error bound and subsequently developed a reliability-aware encoding strategy by appropriately assigning evaluation points to workers according to their reliability profiles. Finally, both theoretical analysis and numerical results demonstrate that the proposed RBACC framework consistently outperforms ex-isting framework BACC, ApproxIFER, while preserving the numerical stability, straggler resilience, and bounded approximation error guarantees of the original BACC framework. Future work includes applying the proposed RBACC framework to distributed learning problems in the presence of Byzantine workers. Another promising direction is the development of robust algorithms for RBACC that leverage DCT code methods to improve error-localization performance in the presence of finite-precision noise. REFERENCES [1] Q. Yu, M. A. Maddah-Ali, and A. S. Avestimehr, “Straggler mitigation in distributed matrix multiplication: Fundamental limits and optimal coding,” in                    
+
+> IEEE Transactions on Information Theory , vol. 66, no. 3, pp. 1920–1933, Mar. 2020. [2] A. Ramamoorthy, A. B. Das, and L. Tang, “Straggler-resistant distributed matrix computation via coding theory: Removing a bottleneck in large-scale data processing,” in IEEE Signal Processing Magazine , vol. 37, no. 3, pp. 136–145, May 2020. [3] K. Lee, M. Lam, R. Pedarsani, D. Papailiopoulos, and K. Ramchandran, “Speeding up distributed machine learning using codes,” in IEEE Transactions on Information Theory , vol. 64, no. 3, pp. 1514–1529, Mar. 2018. [4] Q. Yu, M. A. Maddah-Ali, and A. S. Avestimehr, “Polynomial codes: An optimal design for high-dimensional coded matrix multiplication,” in Advances in Neural Information Processing Systems (NeurIPS) , vol. 30, 2017. [5] Q. Yu and A. S. Avestimehr, “Entangled polynomial codes for secure, private, and batch distributed matrix multiplication: Breaking the cubic barrier,” in IEEE Transactions on Information Theory , vol. 67, no. 4, pp. 2458–2480, Apr. 2021. [6] Q. Yu, S. Li, N. Raviv, S. M. M. Kalan, M. Soltanolkotabi, and S. A. Avestimehr, “Lagrange coded computing: Optimal design for resiliency, security, and privacy,” in 22nd International Conference on Artificial Intelligence and Statistics , 2019, pp. 1215–1225. [7] J. Zhu and S. Li, “Generalized Lagrange coded computing: A flexible computation-communication tradeoff,” in IEEE International Symposium on Information Theory (ISIT) , Finland, 2022, pp. 832–837. [8] M. Fahim and V. R. Cadambe, “Numerically Stable Polynomially Coded Computing,” in IEEE Transactions on Information Theory , vol. 67, no. 5, pp. 2758-2785, May 2021. [9] M. Soleymani et al. , “List-decodable coded computing: Breaking the adversarial toleration barrier,” in IEEE Journal on Selected Areas in Information Theory , vol. 2, no. 3, pp. 867–878, 2021. [10] W. Kim, S. Kruglik, and H. M. Kiah, “Verifiable coded computation of multiple functions,” IEEE Transactions on Information Forensics and Security ,vol. 19, pp. 8009–8022, 2024.ed 37
+
+[11] M. Soleymani, H. Mahdavifar, and A. S. Avestimehr, “Analog Lagrange coded computing,” in IEEE Journal on Selected Areas in Information Theory ,vol. 2, no. 1, pp. 283–295, Mar. 2021. [12] R. Borah and J. Harshan, “Robust Analog Lagrange coded computing: Theory and algorithms via Discrete Fourier Transforms,” arXiv preprint arXiv:2510.20379 , 2025. [13] R. Borah and J. Harshan, “On securing analog Lagrange coded computing from colluding adversaries,” in 2024 IEEE International Symposium on Information Theory (ISIT) , Athens, Greece, 2024. [14] M. Soleymani, H. Mahdavifar and A. S. Avestimehr, “Analog Privacy-Preserving Coded Computing,” in IEEE International Symposium on Information Theory (ISIT) , Melbourne, Australia, 2021. [15] M. Soleymani, H. Mahdavifar, and A. S. Avestimehr, “Privacy-preserving distributed learning in the analog domain,” arXiv preprint arXiv:2007.08803 ,2020. [16] T. Jahani-Nezhad and M. A. Maddah-Ali, “Berrut approximated coded computing: Straggler resistance beyond polynomial computing,” in IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 45, no. 1, pp. 111–122, Jan. 2023. [17] M. Soleymani et al. , “ApproxIFER: A model-agnostic approach to resilient and robust prediction serving systems,” in Proceedings of the AAAI Conference on Artificial Intelligence , vol. 36, no. 8, 2022. [18] X. Mart´ ınez-Lua˜ na, M. Fern´ andez-Veiga, and R. P. D´ ıaz-Redondo, “Privacy-aware Berrut approximated coded computing applied to federated learning,” in 2024 IEEE International Workshop on Information Forensics and Security (WIFS) , Rome, Italy, 2024. [19] L. Wang, Y. Hu, Z. Duan, M. Li, C. Yao, F. Liu, X. Li, L. Qin, and D. Feng, “SpotCC: Facilitating coded computation for prediction serving systems on spot instances,” in Proc. IEEE International Symposium on High Performance Computer Architecture (HPCA) , 2026, pp. 1600–1615. [20] H. Qiu, K. Zhu, D. Niyato, N. C. Luong, C. Yi, and C. Dai, “Barycentric coded distributed computing with flexible recovery threshold for collaborative mobile edge computing,” IEEE Transactions on Mobile Computing , vol. 24, no. 11, pp. 1–14, Nov. 2025. [21] G. Rath and C. Guillemot, “Characterization of a class of error correcting frames for robust signal transmission over wireless communication channels,” in EURASIP Journal on Applied Signal Processing , pp. 229–214, 2005. [22] J.-L. Wu and J. Shiu, “Real-valued error control coding by using DCT,” in IEE Proceedings I: Communications, Speech and Vision , vol. 139, no. 2, pp. 133–139, 1992. [23] R. Borah, J. Harshan, and V. Lalitha, “Basis-Spline Assisted Coded Computing: Strategies and Error Bounds,” to appear in the Proceedings of the IEEE International Symposium on Information Theory (ISIT) , Guangzhou, China, 2026. [24] P. Moradi, B. Tahmasebi, and M. Maddah-Ali, “Coded computing for resilient distributed computing: A learning-theoretic framework,” in Advances in Neural Information Processing Systems , vol. 37, pp. 111923–111964, 2024. [25] R. Borah and J. Harshan, “On securing Berrut approximated coded computing through discrete cosine transforms,” in IEEE Information Theory Workshop (ITW) , Sydney, Australia, 2025 [26] A. Gabay, P. Duhamel, and O. Rioul, “Real BCH codes as joint source channel codes for satellite images coding,” in IEEE Global Telecommunications Conference (GLOBECOM) , vol. 2, pp. 820–824, 2000. [27] G. Rath and C. Guillemot, “Subspace-based error and erasure correction with DFT codes for wireless channels,” in IEEE Transactions on Signal Processing , vol. 52, no. 11, pp. 3241–3252, Nov. 2004. [28] G. Takos and C. N. Hadjicostis, “Determination of the number of errors in DFT codes subject to low-level quantization noise,” in IEEE Transactions on Signal Processing , vol. 56, pp. 1043–1054, Mar. 2008. [29] M. Vaezi and F. Labeau, “Generalized and extended subspace algorithms for error correction with quantized DFT codes,” in IEEE Transactions on Communications , vol. 62, no. 2, pp. 410–422, Feb. 2014. [30] G. Rath and C. Guillemot, “ESPRIT-like error localization algorithm for a class of real number codes,” in GLOBECOM ’03. IEEE Global Telecommunications Conference , San Francisco, CA, USA, 2003, pp. 2203–2207. [31] M. Vaezi and F. Labeau, “Least squares solution for error correction on the real field using quantized DFT codes,” in 20th European Signal Processing Conference (EUSIPCO) , Bucharest, Romania, 2012, pp. 2561–2565. [32] L. P. Bos, S. De Marchi, K. Hormann, and J. Sidon, “Bounding the Lebesgue constant for Berrut’s rational interpolant at general nodes,” in Journal of Approximation Theory , vol. 169, pp. 7–22, 2013. [33] K. Conrad, “The Remainder in Taylor Series,” lecture notes, Univ. of Connecticut. [Online]. Available: https://kconrad.math.uconn.edu/blurbs/analysis/taylorremainder.pdf 38 
+
+APPENDIX 
+
+A. Proof of Proposition 1
+
+Following the BCH-like characterization of DCT codes in [ 21 ], [ 22 ], we investigate whether an analogous BCH-like factorization can be obtained when the evaluation points are the Chebyshev points of the second kind, i.e., zj = cos ( jπ 
+
+> N
+
+) ,
+
+for j = 0 , 1, . . . , N − 1, which are used in the BACC scheme [ 16 ] as the worker evaluation points for the encoding rational function u(z). Following the DCT-code construction in [ 21 ], for a given N , K1, let d = N − K1. For the evaluation points 
+
+zj = cos ( jπ 
+
+> N
+
+) , for j = 0 , 1, . . . , N − 1, corresponding to the Chebyshev points of the second kind, the parity-check matrix obtained by selecting the highest d cosine frequencies is given by                       
+
+> HT=
+> 
+> 1cos
+> ((N−d)π
+> N
+> )
+> · · · cos
+> ((N−d)( N−1) π
+> N
+> )
+> ....... . ....
+> 1cos
+> ((N−2) π
+> N
+> )
+> · · · cos
+> ((N−2)( N−1) π
+> N
+> )
+> 1cos
+> ((N−1) π
+> N
+> )
+> · · · cos
+> ((N−1)( N−1) π
+> N
+> )
+> .
+
+Reversing the order of the rows so that the frequency indices become r = 1 , 2, . . . , d , and using the identity cos 
+
+( (N −r)jπ 
+
+> N
+
+)
+
+=cos (jπ − rjπ 
+
+> N
+
+) = ( −1) j cos ( rjπ 
+
+> N
+
+) , the above parity-check matrix can be rewritten as                                     
+
+> HT=
+> 
+> 1−cos π
+> Ncos 2π
+> N· · · (−1) N−1cos (N−1) π
+> N
+> 1−cos 2π
+> Ncos 4π
+> N· · · (−1) N−1cos 2( N−1) π
+> N
+> .......... . ....
+> 1−cos dπ
+> Ncos 2dπ
+> N· · · (−1) N−1cos d(N−1) π
+> N
+> 
+> .
+
+Using the trigonometric identity 
+
+cos( nβ ) = 1
+
+2
+
+{
+
+(2 cos β)n − n(2 cos β)n−2 + n
+
+2
+
+(n − 31
+
+)
+
+(2 cos β)n−4 − · · · 
+
+}
+
+, (43) each term cos( nβ ), for n = 1 , 2, . . . , d , appearing in the rows of HT can be expressed as a polynomial in cos β. Using the identity Tn(z) = cos( n arccos z), we obtain Tn(zj ) = Tn
+
+(cos ( jπ 
+
+> N
+
+)) = cos ( njπ 
+
+> N
+
+) . Therefore, the rows of HT correspond to evaluations of the Chebyshev polynomial sequence T1(z), T 2(z), . . . , T d(z), where T1(z) = z, T2(z) = 2 z2 − 1, T3(z) = 4z3 − 3z. The first few polynomial expansions can be written as 
+
+
+
+T1(z)
+
+T2(z)
+
+T3(z)
+
+ =
+
+
+
+0 1 0 0
+
+−1 0 2 00 −3 0 4
+
+
+
+1
+
+zz2
+
+z3
+
+
+
+.
+
+Using ( 43 ) and substituting z = cos β, we obtain Tr(z) = cos( rβ ) = 1
+
+> 2
+
+{
+
+(2 z)r − r(2 z)r−2 + · · · 
+
+}
+
+. Therefore, Tr(z) = 2r−1zr + ∑r−2 
+
+> k=0
+
+cr,k zk, which shows that Tr(z) is a polynomial of degree r whose leading coefficient is 2r−1. Consequently, the parity-check matrix admits the representation HT = ˜A ˜TW , where 
+
+˜T =
+
+
+
+1 1 · · · 1
+
+z0 z1 · · · zN −1
+
+z20 z21 · · · z2 
+
+> N−1
+
+... ... . . . ...
+
+zd 
+
+> 0
+
+zd 
+
+> 1
+
+· · · zdN −1
+
+
+
+> (d+1) ×N
+
+,39 
+
+and ˜A ∈ Rd×(d+1) contains the coefficients arising from the Chebyshev-polynomial expansions, and W = diag(( −1) 0, (−1) 1,. . . , (−1) N −1). In the BCH-like characterization of DCT codes in [ 21 ], one seeks a factorization of the form HT = ATW ,
+
+where T ∈ Rd×N is a monomial Vandermonde matrix and A ∈ Rd×d is square and nonsingular. In contrast, the factorization obtained above necessarily involves the monomial basis {1, z, z 2, . . . , z d}, which consists of d+1 basis functions. The constant basis function is indispensable since T2(z) = 2 z2 − 1 contains a nonzero constant term. Moreover, for every r ≥ 1, the Chebyshev polynomial Tr(z) = 2 r−1zr + ∑r−2 
+
+> k=0
+
+cr,k zk has leading coefficient 2r−1 6 = 0 . Therefore, Tr(z) has degree r, and the monomial zr cannot be generated by any linear combination of lower-degree monomials. Consequently, representing the Chebyshev polynomial sequence T1(z), T 2(z), . . . , T d(z) in the standard monomial basis necessarily requires all d + 1 basis functions {1, z, . . . , z d}. Hence, the corresponding coefficient matrix necessarily has dimension d × (d + 1) .Therefore, the construction based on the Chebyshev points of the second kind does not directly yield the square nonsingular monomial Vandermonde-based factorization required in the BCH-like characterization of [ 21 ]. Consequently, the BCH-like syndrome-decoding derivation developed in [ 21 ], [ 22 ], which relies on such a square nonsingular factorization, is not obtained directly for the linear code generated by Y. Therefore, those decoding algorithms cannot be invoked directly for the linear code generated using Y without additional algebraic transformations or structural modifications. This completes the proof. 
+
+B. Proof for Lemma 1
+
+Let XM = {xk}M−1 
+
+> k=0
+
+be an ordered set of distinct interpolation nodes chosen from the set XN = {xk}N −1 
+
+> k=0
+
+, where M =
+
+N − S. The nodes are defined as xk = cos 
+
+( (2 k+1) π
+
+> 2N
+
+)
+
+, k = 0 , 1, . . . , N − 1, which correspond to the Chebyshev points of the first kind. Without loss of generality, we assume that the nodes in XM are ordered increasingly, i.e., x0 < x 1 < · · · < x M−1.
+
+Before proving Theorem 1, we first determine constants C, R ≥ 1 such that the three conditions in [ 16 , Definition 7] are satisfied for all xk ∈ X M , where k = 0 , 1, . . . , M − 1. These constants will be used to bound the Lebesgue constant for the proposed RBACC scheme. Following [ 16 , Definition 7] and [ 32 , Definition 2.1], the family X = {X M }M∈N is said to be well-spaced if there exist constants C, R ≥ 1, independent of M , such that the following conditions hold                                                
+
+> (i) xk+1 −xk
+> xk+1 −xj
+> ≤C
+> k+ 1 −j ,j= 0 , . . . , k, k= 0 , . . . , M −2.(44) (ii) xk+1 −xk
+> xj−xk
+> ≤C
+> j−k ,j=k+ 1 , . . . , M −1, k = 0 , . . . , M −2.(45) (iii) 1
+> R≤xk+1 −xk
+> xk−xk−1
+> ≤R, k= 1 , . . . , M −2.(46)
+
+1) Finding C ≥ 1: First, we determine the constant parameter C and verify the first condition. Let N = M +S, and suppose that for each k ∈ { 0, 1, . . . , M − 1}, there exists an index αk ∈ { 0, 1, . . . , N − 1} such that xk = ¯ xαk = cos 
+
+( (2 αk +1) π
+
+> 2N
+
+)
+
+.
+
+Since the nodes are ordered increasingly, i.e., x0 < x 1 < · · · < x M−1, it follows that α0 < α 1 < · · · < α M−1. For j ≤ k,where j = 0 , . . . , k and k = 0 , . . . , M − 2, we have 
+
+xk+1 − xk
+
+xk+1 − xj
+
+=
+
+− cos 
+
+( (2 αk+1 +1) π
+
+> 2N
+
+)
+
++ cos 
+
+( (2 αk +1) π
+
+> 2N
+
+)
+
+− cos 
+
+( (2 αk+1 +1) π
+
+> 2N
+
+)
+
++ cos 
+
+( (2 αj +1) π
+
+> 2N
+
+) .40 
+
+Using standard trigonometric identities, we obtain 
+
+xk+1 − xk
+
+xk+1 − xj
+
+=sin 
+
+( (αk+1 +αk +1) π
+
+> 2N
+
+)
+
+sin 
+
+( (αk+1 −αk )π
+
+> 2N
+
+)
+
+sin 
+
+( (αk+1 +αj +1) π
+
+> 2N
+
+)
+
+sin 
+
+( (αk+1 −αj )π
+
+> 2N
+
+) .
+
+Since αk+1 > α k, let αk+1 = αk + β for some integer 1 ≤ β ≤ S + 1 . Then, 
+
+xk+1 − xk
+
+xk+1 − xj
+
+=sin 
+
+( (2 αk +β+1) π
+
+> 2N
+
+)
+
+sin 
+
+( βπ 
+
+> 2N
+
+)
+
+sin 
+
+( (αk +αj +β+1) π
+
+> 2N
+
+)
+
+sin 
+
+( (αk −αj +β)π
+
+> 2N
+
+) .
+
+From the ranges of k, j, and β, we have 0 < βπ  
+
+> 2N
+
+≤ π 
+
+> 2
+
+, and 0 < (αk −αj +β)π 
+
+> 2N
+
+≤ π 
+
+> 2
+
+, and therefore Jordan’s inequality can be applied to these two sine terms. The remaining sine terms are analyzed separately in the following two cases, wherein the angle (2 αk +β+1) π 
+
+> 2N
+
+lies in [0, π
+
+> 2
+
+] and [ π 
+
+> 2
+
+, π ], respectively. 
+
+Case (i): Suppose (2 αk +β+1) π 
+
+> 2N
+
+≤ π 
+
+> 2
+
+. Since αj < α k, we have αk +αj +β +1 < 2αk +β +1 , which implies (αk +αj +β+1) π 
+
+> 2N
+
+≤ 
+
+> π
+> 2
+
+. Applying Jordan’s inequality 2θ 
+
+> π
+
+≤ sin θ ≤ θ for θ ∈ [0 , π 
+
+> 2
+
+], we obtain 
+
+xk+1 − xk
+
+xk+1 − xj
+
+≤  
+
+> (2 αk+β+1) π
+> 2N
+
+· βπ    
+
+> 2N
+> 2
+> π
+> (αk+αj+β+1) π
+> 2N
+
+· 2  
+
+> π
+> (αk−αj+β)π
+> 2N
+
+.
+
+Simplifying, we get 
+
+xk+1 − xk
+
+xk+1 − xj
+
+≤ π2β(2 αk + β + 1) 
+
+4( αk + αj + β + 1)( αk − αj + β) .
+
+Since 2αk +β+1    
+
+> αk+αj+β+1
+
+≤ 2, we obtain xk+1 −xk 
+
+> xk+1 −xj
+
+≤ π2β   
+
+> 2( αk−αj+β)
+
+. Using β ≤ S + 1 and αk − αj + β ≥ αk − αj + 1 , we obtain 
+
+xk+1 − xk
+
+xk+1 − xj
+
+≤ π2(S + 1) 
+
+21
+
+αk − αj + 1 . (47) Since αk − αj ≥ k − j, it follows that αk − αj + 1 ≥ k + 1 − j, and therefore 1   
+
+> αk−αj+1
+
+≤ 1 
+
+> k+1 −j
+
+. Hence, 
+
+xk+1 − xk
+
+xk+1 − xj
+
+≤ π2(S + 1) 
+
+2( k + 1 − j) . (48) 
+
+Case (ii): Suppose (2 αk +β+1) π 
+
+> 2N
+
+> π 
+
+> 2
+
+. Then, 
+
+xk+1 − xk
+
+xk+1 − xj
+
+≤
+
+sin 
+
+( (2 αk +β+1) π
+
+> 2N
+
+)
+
+· βπ 
+
+> 2N
+
+sin 
+
+( (αk +αj +β+1) π
+
+> 2N
+
+)
+
+· 2  
+
+> π
+> (αk−αj+β)π
+> 2N
+
+.
+
+We now consider the following two subcases. Suppose (αk +αj +β+1) π 
+
+> 2N
+
+≥ π 
+
+> 2
+
+. Since αj < α k, we have 2αk + β + 1 >αk + αj + β + 1 . Moreover, both angles lie in [ π 
+
+> 2
+
+, π ], where the sine function is decreasing. Hence, sin       
+
+> ((2 αk+β+1) π
+> 2N
+> )
+> sin
+> ((αk+αj+β+1) π
+> 2N
+> )
+
+≤ 1.
+
+Thus, xk+1 −xk 
+
+> xk+1 −xj
+
+≤ πβ    
+
+> 2( αk−αj+β)
+
+. Using β ≤ S + 1 and αk − αj ≥ k − j, we obtain 
+
+xk+1 − xk
+
+xk+1 − xj
+
+≤ π(S + 1) 
+
+2( k + 1 − j) . (49) On the other hand, if (αk +αj +β+1) π 
+
+> 2N
+
+≤ π 
+
+> 2
+
+, then, since (2 αk +β+1) π 
+
+> 2N
+
+≥ π 
+
+> 2
+
+, we use the inequalities sin θ ≤ 2θ 
+
+> π
+
+, θ ∈ [ π 
+
+> 2
+
+, π ] , and Jordan’s inequality sin θ ≥ 2θ 
+
+> π
+
+, θ ∈ [0, π
+
+> 2
+
+] . Hence, 
+
+xk+1 − xk
+
+xk+1 − xj
+
+≤  
+
+> 2
+> π
+> (2 αk+β+1) π
+> 2N
+
+· βπ    
+
+> 2N
+> 2
+> π
+> (αk+αj+β+1) π
+> 2N
+
+· 2  
+
+> π
+> (αk−αj+β)π
+> 2N
+
+= πβ (2 αk + β + 1) 
+
+2( αk + αj + β + 1)( αk − αj + β) .41 
+
+Since 2αk +β+1    
+
+> αk+αj+β+1
+
+≤ 2, we obtain xk+1 −xk 
+
+> xk+1 −xj
+
+≤ πβ    
+
+> αk−αj+β
+
+. Using β ≤ S + 1 and αk − αj + β ≥ αk − αj + 1 ≥ k + 1 − j, we have xk+1 −xk 
+
+> xk+1 −xj
+
+≤ π(S+1)  
+
+> k+1 −j
+
+. Since π ≤ π2 
+
+> 2
+
+, it follows that 
+
+xk+1 − xk
+
+xk+1 − xj
+
+≤ π2(S + 1) 
+
+2( k + 1 − j) . (50) Therefore, combining the bounds obtained in ( 48 ), ( 49 ), and ( 50 ), condition (i) in ( 44 ) holds with C = π2 (S+1)  
+
+> 2
+
+.
+
+The proof of condition (ii) in (45 ) follows along the same lines as that of condition (i) in ( 44 ). Consequently, xk+1 −xk  
+
+> xj−xk
+
+≤ 
+
+> C
+> j−k
+
+, for j = k + 1 , . . . , M, k = 0 , . . . , M − 1.
+
+In the next subsection, we determine the constant R ≥ 1 such that the third condition given in ( 46 ) is satisfied. Specifically, we show that 1 
+
+> R
+
+≤ xk+1 −xk  
+
+> xk−xk−1
+
+≤ R, for k = 1 , . . . , M − 2.
+
+2) Finding R ≥ 1: In order to find the constant R, let XM = {xk}M−1 
+
+> k=0
+
+be a subset of XN = {˜xk}N −1 
+
+> k=0
+
+with M elements such that x0 < x 1 < · · · < x M−1, where M = N − S, and ˜xk, k ∈ [0 , N − 1] are the Chebyshev points of the first kind, i.e., ˜xk = cos 
+
+( (2 k+1) π
+
+> 2N
+
+)
+
+, k ∈ [0 , N − 1] , and S is a constant number independent of N . To find the constant parameter 
+
+R, we consider the worst-case interpolation scenario which occurs when the Lebesgue function associated with Berrut’s interpolant on XM = {xk}M−1 
+
+> k=0
+
+attains its maximum if there exists ¯k such that xj = ˜ xj = cos 
+
+( (2 j+1) π
+
+> 2N
+
+)
+
+for j ∈ [0 , ¯k], and 
+
+xj = ˜ xj+S = cos 
+
+( (2( j+S)+1) π
+
+> 2N
+
+)
+
+, for j ∈ [¯k + 1 , M − 1] , i.e., all S elements not included in XM are ordered consecutively in XN . Note that the proof of this statement follows a similar approach to that used in the proof of [ 16 , Lemma 6]. 
+
+Case (i): k = ¯kx¯k+1 − x¯k
+
+x¯k − x¯k−1
+
+=cos 
+
+( (2( ¯k+S+1)+1) π
+
+> 2N
+
+)
+
+− cos 
+
+( (2 ¯k+1) π
+
+> 2N
+
+)
+
+cos 
+
+( (2 ¯k+1) π
+
+> 2N
+
+)
+
+− cos 
+
+( (2( ¯k−1)+1) π
+
+> 2N
+
+) .
+
+Using the trigonometric identity cos u − cos v = −2 sin ( u+v
+
+> 2
+
+) sin ( u−v
+
+> 2
+
+) ,we obtain 
+
+x¯k+1 − x¯k
+
+x¯k − x¯k−1
+
+=sin 
+
+( (2 ¯k+S+2) π
+
+> 2N
+
+)
+
+sin 
+
+( (S+1) π
+
+> 2N
+
+)
+
+sin 
+
+( ¯kπ 
+
+> N
+
+)
+
+sin ( π
+
+> 2N
+
+) .
+
+Let θ = ¯kπ  
+
+> N
+
+. Then, θ ∈
+
+[ π 
+
+> N
+
+, π − (S+3) π
+
+> N
+
+]
+
+. Therefore, x¯k+1 −x¯k
+
+> x¯k−x¯k−1
+
+= sin (θ+ (S+2) π 
+
+> 2N
+
+) sin ( (S+1) π 
+
+> 2N
+
+)  
+
+> sin θsin
+
+( π 
+
+> 2N
+
+) . Further, it is clear that (S+1) π 
+
+> 2N
+
+, π 
+
+> 2N
+
+≤ 
+
+> π
+> 2
+
+. Therefore, using Jordan’s inequality 2θ 
+
+> π
+
+≤ sin θ ≤ θ for θ ∈ [0 , π 
+
+> 2
+
+], we obtain 
+
+x¯k+1 − x¯k
+
+x¯k − x¯k−1
+
+≤ (S + 1) π
+
+2sin 
+
+(
+
+θ + (S+2) π
+
+> 2N
+
+)
+
+sin θ ,
+
+which can be further expressed as            
+
+> x¯k+1 −x¯k
+> x¯k−x¯k−1
+> ≤(S+ 1) π
+> 2
+> (
+> cos (S+ 2) π
+> 2N+ sin (S+ 2) π
+> 2Ncot θ
+> )
+> .
+
+According to the range of θ, we have cot θ ≤ cot π 
+
+> N
+
+. Therefore,            
+
+> x¯k+1 −x¯k
+> x¯k−x¯k−1
+> ≤(S+ 1) π
+> 2
+> (
+> cos (S+ 2) π
+> 2N+ sin (S+ 2) π
+> 2Ncot π
+> N
+> )
+> .
+
+Further simplifying, we obtain 
+
+x¯k+1 − x¯k
+
+x¯k − x¯k−1
+
+= (S + 1) π
+
+2sin 
+
+( (S+4) π
+
+> 2N
+
+)
+
+sin ( π
+
+> N
+
+) ≤ (S + 1)( S + 4) π2
+
+8 . (51) 42 
+
+On the other hand, to derive a lower bound, we similarly obtain 
+
+x¯k+1 − x¯k
+
+x¯k − x¯k−1
+
+≥ 2( S + 1) 
+
+π
+
+( cos (S + 2) π
+
+2N + sin (S + 3) π
+
+N cot (π − (S + 3) π
+
+N
+
+)) .
+
+Using the identity cot( π − θ) = − cot θ, we obtain 
+
+x¯k+1 − x¯k
+
+x¯k − x¯k−1
+
+= 2( S + 1) 
+
+π
+
+sin 
+
+( (S+3) π
+
+N − (S+2) π
+
+2N
+
+)
+
+sin (S+3) π
+
+N
+
+= 2( S + 1) 
+
+π
+
+sin (S+4) π
+
+2N
+
+sin (S+3) π
+
+N
+
+≥ (S + 1) 
+
+π , (52) if (S+3) π
+
+N ≤ π
+
+2 . Otherwise, if (S+3) π
+
+N ≥ π
+
+2 , then π
+
+4 < (S+3) π
+
+2N ≤ π
+
+2 + π
+
+2N . Therefore, x¯k+1 −x¯k
+
+x¯k −x¯k−1
+
+≥ 2( S+1) 
+
+π
+
+sin (S+3) π
+
+> 2N
+
+sin (S+3) π
+
+> N
+
+. Since 
+
+π
+
+4 < (S+3) π
+
+2N , it follows that 
+
+x¯k+1 − x¯k
+
+x¯k − x¯k−1
+
+≥ 2( S + 1) 
+
+π
+
+sin π
+
+4
+
+1 =
+
+√2( S + 1) 
+
+π . (53) 
+
+Case (ii): k = ¯k + 1 
+
+x¯k+2 − x¯k+1 
+
+x¯k+1 − x¯k
+
+=cos 
+
+( (2( ¯k+S+2)+1) π
+
+2N
+
+)
+
+− cos 
+
+( (2( ¯k+S+1)+1) π
+
+2N
+
+)
+
+cos 
+
+( (2( ¯k+S+1)+1) π
+
+2N
+
+)
+
+− cos 
+
+( (2 ¯k+1) π
+
+2N
+
+) .
+
+Using standard trigonometric identities, we obtain 
+
+x¯k+2 − x¯k+1 
+
+x¯k+1 − x¯k
+
+=sin 
+
+( (2 ¯k+2 S+4) π
+
+2N
+
+)
+
+sin ( π
+
+2N
+
+)
+
+sin 
+
+( (2 ¯k+S+2) π
+
+2N
+
+)
+
+sin 
+
+( (S+1) π
+
+2N
+
+) .
+
+Further, it is clear that (S+1) π
+
+2N , π
+
+2N ≤ π
+
+2 . Therefore, applying Jordan’s inequality 2θ
+
+π ≤ sin θ ≤ θ for θ ∈ [0 , π
+
+2 ], we obtain 
+
+x¯k+2 − x¯k+1 
+
+x¯k+1 − x¯k
+
+≤ π
+
+2( S + 1) sin 
+
+( (2 ¯k+2 S+4) π
+
+2N
+
+)
+
+sin 
+
+( (2 ¯k+S+2) π
+
+2N
+
+) .
+
+We define ¯θ , (2 ¯k+S+2) π
+
+2N . Since ¯θ ∈
+
+[ (S+4) π
+
+2N , π − (S+4) π
+
+2N
+
+]
+
+, we can write x¯k+2 −x¯k+1 
+
+x¯k+1 −x¯k
+
+≤ π
+
+2( S+1) sin (¯θ+ (S+2) π 
+
+> 2N
+
+)
+
+sin ¯θ , which can be further expressed as 
+
+x¯k+2 − x¯k+1 
+
+x¯k+1 − x¯k
+
+≤ π
+
+2( S + 1) 
+
+(
+
+cos (S + 2) π
+
+2N + sin (S + 2) π
+
+2N cot ¯θ
+
+)
+
+.
+
+Since ¯θ ≥ (S+4) π
+
+2N , it follows that cot ¯θ ≤ cot (S+4) π
+
+2N . Hence, 
+
+x¯k+2 − x¯k+1 
+
+x¯k+1 − x¯k
+
+≤ π
+
+2( S + 1) 
+
+(
+
+cos (S + 2) π
+
+2N + sin (S + 2) π
+
+2N cot (S + 4) π
+
+2N
+
+)
+
+= π
+
+2( S + 1) sin 
+
+( (2 S+6) π
+
+> 2N
+
+)
+
+sin 
+
+( (S+4) π
+
+> 2N
+
+) = π
+
+2( S + 1) sin 
+
+( (S+3) π
+
+> N
+
+)
+
+sin 
+
+( (S+4) π
+
+> 2N
+
+) ≤ π
+
+S + 1 . (54) 
+
+On the other hand, applying Jordan’s inequality 2θ
+
+π ≤ sin θ ≤ θ for θ ∈ [0 , π
+
+2 ], we obtain 
+
+x¯k+2 − x¯k+1 
+
+x¯k+1 − x¯k
+
+≥ 2
+
+(S + 1) π
+
+sin 
+
+( (2 ¯k+2 S+4) π
+
+2N
+
+)
+
+sin 
+
+( (2 ¯k+S+2) π
+
+2N
+
+) .
+
+Using ¯θ = (2 ¯k+S+2) π
+
+2N , we have x¯k+2 −x¯k+1 
+
+x¯k+1 −x¯k
+
+≥ 2
+
+(S+1) π
+
+sin (¯θ+ (S+2) π 
+
+> 2N
+
+)
+
+sin ¯θ , which can be further expressed as 
+
+x¯k+2 − x¯k+1 
+
+x¯k+1 − x¯k
+
+≥ 2
+
+(S + 1) π
+
+(
+
+cos (S + 2) π
+
+2N + sin (S + 2) π
+
+2N cot ¯θ
+
+)
+
+.
+
+Since ¯θ ≤ π − (S+4) π
+
+2N , it follows that cot ¯θ ≥ − cot (S+4) π
+
+2N . Hence, 43                 
+
+> x¯k+2 −x¯k+1
+> x¯k+1 −x¯k
+> ≥2
+> (S+ 1) π
+> (
+> cos (S+ 2) π
+> 2N−sin (S+ 2) π
+> 2Ncot (S+ 4) π
+> 2N
+> )
+> =2
+> (S+ 1) π
+> sin π
+> N
+> sin (S+4) π
+> 2N
+> .
+
+Applying Jordan’s inequality once again yields 
+
+x¯k+2 − x¯k+1 
+
+x¯k+1 − x¯k
+
+≥ 2
+
+(S + 1) π
+
+> 2
+> N
+> (S+4) π
+> 2N
+
+S = 8
+
+(S + 1)( S + 4) π2 . (55) Therefore, according to these cases, from equation ( 51 ), ( 52 ), ( 53 ), ( 54 ), ( 55 ), R = (S+1)( S+4) π2 
+
+> 8
+
+which satisfy the condition (iii) in ( 46 ) i.e., 1 
+
+> R
+
+≤ xk+1 −xk  
+
+> xk−xk−1
+
+≤ R.Now, with the derived constant parameters C = π2(S+1)  
+
+> 2
+
+and R = (S+1)( S+4) π2 
+
+> 8
+
+, X = ( XM )M∈N represents a family of well-spaced points. Therefore, if Berrut’s interpolant in [ 32 ] is used to interpolate a function f (·) at the points XM , then by [32 , Theorem 2.2], the Lebesgue constant satisfies ΛM ≤ (R + 1)(1 + 2 C ln M ). Substituting the values of R and C derived above, and using M = N − S, we obtain 
+
+ΛM ≤
+
+( (S + 1)( S + 4) π2
+
+8 + 1 
+
+) (1 + π2(S + 1) ln( N − S)) .
+
+Hence, the Lebesgue constant for the proposed RBACC scheme grows logarithmically with the number of interpolation points, i.e., ΛM is bounded by c ln (N − S) for some constant c > 0, and given S. This completes the proof. 
+
+C. Proof for Theorem 1
+
+In order to derive the approximation bound defined in Theorem 1, we invoke [ 16 , Theorem 5]. Therefore, it remains to determine the parameters h and λ for the ordered set of interpolation nodes. In this context, we first find the parameter h for the proposed set of evaluation points. 
+
+1) Finding h: Let X = ( XM )M∈N be a family of ordered distinct interpolation points chosen from the Chebyshev points of the first kind XN = {˜xα}N −1 
+
+> α=0
+
+, where xk = ˜xαk = cos 
+
+( (2 αk +1) π
+
+> 2N
+
+)
+
+. Here, N = M + S and αk ≥ k. We define 
+
+h(k) = xk+1 − xk. Then h(k) = cos 
+
+( (2 αk+1 +1) π
+
+> 2N
+
+)
+
+− cos 
+
+( (2 αk +1) π
+
+> 2N
+
+)
+
+. Since αk+1 > α k, there exists an integer 1 ≤ β ≤ S + 1 
+
+such that αk+1 = αk + β. Substituting αk+1 = αk + β into h(k), we obtain h(k) = cos 
+
+( (2( αk +β)+1) π
+
+> 2N
+
+)
+
+− cos 
+
+( (2 αk +1) π
+
+> 2N
+
+)
+
+.
+
+Applying the trigonometric identity, gives 
+
+h(k) = 2 sin 
+
+( (2 αk + β + 1) π
+
+2N
+
+)
+
+sin 
+
+( βπ 
+
+2N
+
+)
+
+. (56) Since sin 
+
+( (2 αk +β+1) π
+
+> 2N
+
+)
+
+≤ 1, the quantity h(k) attains its maximum when sin 
+
+( (2 αk +β+1) π
+
+> 2N
+
+)
+
+= 1 . Therefore, h = max 0≤k≤M−2
+
+(xk+1 − xk) = 2 sin 
+
+( βπ 
+
+> 2N
+
+)
+
+. Since 1 ≤ β ≤ S + 1 and sin( x) is increasing on [0 , π/ 2] , it follows that 
+
+h = 2 sin 
+
+( βπ 
+
+2N
+
+)
+
+≤ 2 sin 
+
+( (S + 1) π
+
+2N
+
+)
+
+.
+
+2) Finding local mesh ratio λ: According to the max-min inequality, the local mesh ratio satisfies 
+
+λ ≤ min 
+
+{
+
+max 
+
+> 1≤i≤M−2
+
+xi+1 − xi
+
+xi − xi−1
+
+, max 
+
+> 1≤i≤M−2
+
+xi+1 − xi
+
+xi+2 − xi+1 
+
+}
+
+.
+
+From condition (iii), we have already shown that 1 
+
+> R
+
+≤ xi+1 −xi 
+
+> xi−xi−1
+
+≤ R, i = 1 , . . . , M − 1. Replacing i by i + 1 , we obtain  
+
+> 1
+> R
+
+≤ xi+2 −xi+1  
+
+> xi+1 −xi
+
+≤ R, i = 0 , . . . , M − 2. Since all mesh widths are positive, taking reciprocals yields 1 
+
+> R
+
+≤ xi+1 −xi 
+
+> xi+2 −xi+1
+
+≤
+
+R, i = 0 , . . . , M − 2. Therefore, max 1≤i≤M−2 xi+1 −xi 
+
+> xi−xi−1
+
+≤ R, and max 1≤i≤M−2 xi+1 −xi 
+
+> xi+2 −xi+1
+
+≤ R. 44 
+
+Substituting these bounds into the max-min inequality, we obtain λ ≤ R. Hence, the local mesh ratio associated with the node set XM = {xk}M−1 
+
+> k=0
+
+is bounded by R. Subsequently, we substitute the value of h and λ on the upper bounds provided in [ 16 ,Theorem 5] to obtain the approximation error bounds provided in the theorem statement 1. This completes the proof. 
+
+D. Proof of Theorem 2
+
+In the absence of stragglers, i.e., when S = 0 and M = N , after error correction by the DCT decoder using the responses from all N workers, the master reconstructs the computation using all N corrected evaluations. Let ¯zi = cos 
+
+( (2 i+1) π
+
+> 2N
+
+)
+
+, for i =0, 1, . . . , N − 1, denote the N Chebyshev points of the first kind used for encoding and evaluation while distributing the shares among the N workers. During reconstruction, the master uses all the interpolation nodes {¯z0, ¯z1, . . . , ¯zN −1} corresponding to the N corrected evaluations. Further, let the A Byzantine workers among the N workers be fixed and denoted by the set 
+
+A = {i1, i 2, . . . , i A}, where |A| = A. Therefore, for the fixed interpolation nodes and adversarial set A, the Berrut weights 
+
+wr (z), defined in ( 15 ), are deterministic functions of z. Hence, after DCT-based error correction, the reconstruction function using all N corrected evaluations can be decomposed component-wise as rBerrut ,f (z) = rBerrut ,v (z)+ rBerrut ,p (z)+ rBerrut ,e (z),
+
+where 
+
+rBerrut ,v (z) =  
+
+> N−1
+
+∑
+
+> r=0
+
+wr (z)Vr+1 , rBerrut ,p (z) =  
+
+> N−1
+
+∑
+
+> r=0
+
+wr (z)Pr+1 , rBerrut ,e (z) =  
+
+> N−1
+
+∑
+
+> r=0
+
+wr (z)(Er+1 − ˆEr+1 
+
+). (57) Hence, the reconstruction error can be written as 
+
+rBerrut ,f (z) − f (u(z)) = rBerrut ,v (z) − f (u(z)) + rBerrut ,p (z) + rBerrut ,e (z).
+
+For a given N and adversarial set A, we take the squared norm and expectation over the randomness of {Ei} and {Pi}, i.e., 
+
+E{Ei },{Pi} ‖rBerrut ,v (z) − g(z) + rBerrut ,p (z) + rBerrut ,e (z)‖2 ,
+
+and expanding the squared norm gives 
+
+E{Ei },{Pi}‖rBerrut ,v (z) − g(z)‖2 + E{Ei },{Pi}‖rBerrut ,p (z)‖2 + E{Ei},{Pi}‖rBerrut ,e (z)‖2
+
++ 2 E{Ei},{Pi}〈rBerrut ,v (z) − g(z), r Berrut ,p (z)〉 + 2 E{Ei},{Pi}〈rBerrut ,v (z) − g(z), r Berrut ,e (z)〉
+
++ 2 E{Ei},{Pi}〈rBerrut ,p (z), r Berrut ,e (z)〉 , (58) where we denote g(z) = f (u(z)) . We assume that the components of Pi and Ei are statistically independent zero-mean Gaus-sian random variables with variances σ2 
+
+> P
+
+and σ2
+
+> A
+
+, respectively, and are independent across workers, such that E[rBerrut ,p (z)] = 
+
+0, E[rBerrut ,e (z)] = 0. Since rBerrut ,v (z) − g(z) is deterministic for the fixed interpolation nodes, therefore, E〈rBerrut ,v (z) −
+
+g(z), r Berrut ,p (z)〉 = 0 , and E〈rBerrut ,v (z) − g(z), r Berrut ,e (z)〉 = 0 . Therefore, ( 58 ) reduces to 
+
+E{Ei},{Pi}‖rBerrut ,f (z) − g(z)‖2 = ‖rBerrut ,v (z) − g(z)‖2 + E{Ei },{Pi}‖rBerrut ,p (z)‖2 + E{Ei },{Pi}‖rBerrut ,e (z)‖2
+
++ 2 E{Ei},{Pi}〈rBerrut ,p (z), r Berrut ,e (z)〉 . (59) Note that rBerrut ,f (z), rBerrut ,v (z), rBerrut ,p (z), and rBerrut ,e (z) are m × n matrix-valued rational functions of z, as defined in ( 57 ), whose entries are scalar rational functions obtained using Berrut interpolation. Note that, the overall reconstruction error is computed using the Frobenius norm, however, for the ease of our analysis, we consider for an arbitrary (g, h )-th entry of each matrix, where g ∈ [m] and h ∈ [n]. Fixing (g, h ) converts the worker outputs into vectors formed from the (g, h )-th 45 
+
+components across the workers. For instance, eg,h ∈ RN and pg,h ∈ RN denote vectors formed from the (g, h )-th entries of the adversarial error matrices {Ei} and precision noise matrices {Pi}, respectively. Since the precision noise and adversarial errors are independent across workers and matrix entries, the error contributions from different entries are independent. Therefore, it suffices to analyze an arbitrary (g, h )-th entry of the matrices, and the resulting bound extends directly to all m × n such entries. Therefore, ( 59 ) for the (g, h )-th entry can be rewritten as                          
+
+> E{eg,h },{pg,h }|rBerrut ,f,g,h (z)−gg,h (z)|2=|rBerrut ,v,g,h (z)−gg,h (z)|2+E{eg,h },{pg,h }|rBerrut ,p,g,h (z)|2+E{eg,h },{pg,h }|rBerrut ,e,g,h (z)|2
+> + 2 E{eg,h },{pg,h }
+> [
+> rBerrut ,p,g,h (z)rBerrut ,e,g,h (z)
+> ]
+> .(60)
+
+where rBerrut ,f,g,h (z), rBerrut ,v,g,h (z), rBerrut ,p,g,h (z), and rBerrut ,e,g,h (z) denote the (g, h )-th entries of rBerrut ,f (z), rBerrut ,v (z),
+
+rBerrut ,p (z), and rBerrut ,e (z), respectively, for g ∈ [m] and h ∈ [n]. Now, we bound each right hand side term of ( 60 ) in terms of system parameters. Since rBerrut ,v,g,h (z) is the Berrut interpolant of g(z) at (g, h ) entry, which is a deterministic quantity, therefore, interpolation error depends only on the parameters N , S. In the absence of stragglers, i.e., when S = 0 and M = N ,when N computations are available using the RBACC approximation error bound from Theorem 1, substituting S = 0 , and further squaring both sides and applying the bound entry-wise to the (g, h ) component, we get         
+
+> |rBerrut ,v,g,h (z)−gg,h (z)|2≤
+> [
+> 2∆(1 + R) sin
+> (π
+> 2N
+> )] 2
+> ,(61)
+
+where ∆ = ‖g′′ 
+
+> g,h
+
+(z)‖ if N is odd, and ∆ = ‖g′′ 
+
+> g,h
+
+(z)‖ + ‖g′
+
+> g,h
+
+(z)‖ if N is even. Therefore, ( 61 ) provides an upper bound for the first term on the right-hand side of ( 60 ). The second term of ( 60 ), i.e., E{eg,h },{pg,h } |rBerrut ,p,g,h (z)|2, arises from the underlying precision noise of the system, originating from the set {Pi}. This term affects all N interpolation nodes used for reconstruction. In order to analyze the effect of rBerrut ,p,g,h (z) due to Pi, we consider the (g, h )-th entry of each Pi, for i = 1 , 2 . . . , N , which can be written as 
+
+rBerrut ,p,g,h (z) =  
+
+> N−1
+
+∑
+
+> r=0 (−1) r
+> z−¯zr
+
+∑N −1
+
+> k=0 (−1) k
+> z−¯zk
+
+Pr+1 ,g,h . (62) We assume that the noise matrices {Pi} are statistically independent across workers and that their entries are independent and identically distributed as N (0 , σ 2 
+
+> P
+
+). Consequently, 
+
+E{eg,h },{pg,h } [Pr+1 ,g,h Pr′ +1 ,g,h ] = 
+
+
+
+σ2 
+
+> P
+
+, r = r′,
+
+0, r 6 = r′.
+
+(63) Since rBerrut ,p,g,h (z) depends only on the precision noise {pg,h } and is independent of the adversarial noise {eg,h }, we obtain 
+
+E{pg,h },{eg,h } |rBerrut ,p,g,h (z)|2 = E{pg,h } |rBerrut ,p,g,h (z)|2 . Therefore, E{pg,h } |rBerrut ,p,g,h (z)|2 = σ2
+
+> P
+
+∑N −1  
+
+> r=0
+> 1
+> |z−¯zr |2
+> ∣∣∣∑N−1
+> k=0 (−1) k
+> z−¯zk
+> ∣∣∣2
+
+,
+
+which can be upper bounded as 
+
+E{pg,h } |rBerrut ,p,g,h (z)|2 ≤ N σ 2 
+
+> P
+
+max   
+
+> r∈[N]1
+> |z−¯zr|2
+
+∣∣∣∑N −1
+
+> k=0 (−1) k
+> z−¯zk
+
+∣∣∣2 . (64) For the fixed interpolation nodes, we bound max r∈[N ]  
+
+> 1
+> |z−¯zr |2
+> ∣∣∣∑N−1
+> k=0 (−1) k
+> z−¯zk
+> ∣∣∣2
+
+≤ C1, where C1 > 0 is a constant. Hence, 
+
+E{pg,h } |rBerrut ,p,g,h (z)|2 ≤ C1N σ 2 
+
+> P
+
+. (65) 46 
+
+Therefore, ( 65 ) provides an upper bound for the second term on the right-hand side of ( 60 ). Further, note that the third term of ( 59 ), i.e., E{Ei },{Pi}‖rBerrut ,e (z)‖2 arises due to residual errors {Ei − ˆEi} i.e., when 
+
+ˆEi 6 = Ei. Note that, this can happen either due to imperfect localization or perfect localization of errors by DCT decoder, as perfect localization does not always mean perfect error correction. For the fixed interpolation nodes and the fixed Byzantine worker set A, the Berrut interpolation weights are deterministic. The residual component depends on both the adversarial noise {Ei} and the precision noise {Pi}. Hence, the randomness in this term are due to adversarial noise, precision noise, and the success or failure of error localization. Let ELoc denote the event that the DCT decoder fails to correctly localize the adversarial workers. In this context, the events of correct localization and localization failure are mutually exclusive, and hence by the law of total expectation, we express 
+
+E{Ei },{Pi}‖rBerrut ,e (z)‖2 = (1 − Prob( ELoc )) E‖rBerrut ,e 1 (z)‖2 + Prob( ELoc )E‖rBerrut ,e 2 (z)‖2 , (66) where rBerrut ,e 1 (z) and rBerrut ,e 2 (z) correspond to the contributions when the DCT decoder perfectly and imperfectly localizes the location of the adversaries, respectively. The probabilities of the corresponding events are denoted by 1 − Prob (ELoc ) and Prob (ELoc ).Note that, when there is perfect localization by the DCT decoder i.e., ˆA = A, it does not give the guarantee of perfect cancellation of error magnitudes i.e., ˆEi 6 = Ei, in the scenario, when σ2 
+
+> P
+
+> 0, and therefore Ei − ˆEi 6 = 0 , and let this residual noise due to imperfect cancellation of error magnitude be denoted as ˜Ei, such that ˜Ei = Ei − ˆEi for i ∈ A , therefore it has atmost A non-zero positions. More specifically, even when the adversarial locations are correctly identified, finite-precision arithmetic prevents exact cancellation of the error magnitudes. Consequently, a small residual cancellation error remains at those A error locations. Further, rBerrut ,e 1 (z) is m × n matrix-valued rational functions of z, therefore, to quantify the residual error due to imperfect cancellation of errors by DCT decoder under perfect localization, we analyze it for first any (g, h )-th entry of rBerrut ,e 1 (z), however, this can be generalized to every entry of rBerrut ,e 1 (z), where g ∈ [m], h ∈ [n]. In this context, let rg,h ∈ RN , eg,h ∈ RN , pg,h ∈ RN denote vectors curved from the (g, h )-th entries of {Ri}, {Ei}, and {Pi}, respectively. The received vector satisfies rg,h = vg,h + eg,h + pg,h , such that pg,h ∼ N (0, σ 2 
+
+> P
+
+I), and the non-zero entries of eg,h are distributed as eg,h ∼ N (0, σ 2
+
+> A
+
+I). Then we use the system of linear equations to find the estimate of the error magnitude as 
+
+zg,h = rg,h HT = eg,h HT + pg,h HT . (67) where zg,h denote the syndrome vector corresponding to (g, h ) entry of the received computation matrix Ri, for i ∈ [N ].In order to estimate the error magnitude ˜eA,g,h corresponding to (g, h ) entry of ˜Ei, for i ∈ A , such that ˜eA,g,h = eA,g,h −
+
+ˆeA,g,h , where A denote the correctly detected error locations by the DCT decoder and HA represents the matrix taking the corresponding columns of H, we use least square method. The least squares estimate of the error magnitudes is ˆeA,g,h =
+
+zg,h 
+
+((HT
+
+> A
+
+)†)T , where † denotes the pseudo inverse operator. Under correct localization, eg,h HT = eA,g,h HT
+
+> A
+
+, and yields 
+
+ˆeA,g,h = eA,g,h + pg,h HT ((HT
+
+> A
+
+)†)T , as (HT
+
+> A
+
+)†(HT
+
+> A
+
+) = I. Hence, the residual error after cancellation of vector eg,h is 
+
+˜eA,g,h = −pg,h HT ((HT
+
+> A
+
+)†)T . Since the rows of DCT matrix is orthogonal, therefore, pg,h HT ∼ N (0, σ 2 
+
+> P
+
+I), which follows from HT H = I and therefore the vector ˜eA,g,h is zero-mean Gaussian with covariance Σe = σ2
+
+> P
+
+((HT
+
+> A
+
+)†)T (HT
+
+> A
+
+)†. Hence, the residual error contribution to the (g, h )-th entry due to imperfect cancellation at the locations corresponding to the Byzantine worker set A can be expressed as 
+
+rBerrut ,e 1 ,g,h (z) = ∑
+
+> i∈A
+
+wi(z) ˜ ei,g,h , (68) 47 
+
+where wi(z) denotes the Berrut weight defined in ( 15 ). Note that, for i ∈ A ∩ ˆA, ˜ei,g,h is the corresponding component of 
+
+˜eA,g,h . Taking the magnitude square of the above expression in ( 68 ) and expectation over {eg,h }, {pg,h }, and finally expanding component-wise, we obtain 
+
+E{eg,h },{pg,h }|rBerrut ,e 1 ,g,h (z)|2 = ∑
+
+> i∈A
+
+w2 
+
+> i
+
+Var(˜ ei) + ∑
+
+> i6=j
+
+wiwj Cov(˜ ei, ˜ej ). (69) Since ˜eA,g,h ∼ N (0, Σe) with Σe = σ2
+
+> P
+
+((HT
+
+> A
+
+)†)T (HT
+
+> A
+
+)†, further we bound the entries of the covariance matrix Σe as 
+
+|Σe,i,j | ≤ ‖ Σe‖2. Moreover, ‖Σe‖2 = σ2
+
+> P
+
+∥∥(HT
+
+> A
+
+)†∥∥22 . Therefore, Var(˜ ei), |Cov(˜ ei, ˜ej )| ≤ σ2
+
+> P
+
+∥∥(HT
+
+> A
+
+)†∥∥22 . Substituting these bounds into ( 69 ) gives 
+
+E{eg,h },{pg,h }|rBerrut ,e 1 ,g,h (z)|2 ≤ σ2
+
+> P
+
+∥∥(HT
+
+> A
+
+)†∥∥22
+
+∑
+
+> i∈A
+
+|wi|2 + ∑
+
+> i6=j
+
+|wiwj |
+
+ . (70) Further, for fixed set of interpolation nodes and evaluation point z, we define a constant, such that Cw = max r∈[N ] |wr (z)|2.Since |A| = A, ∑
+
+> i∈A
+
+|wi|2 ≤ AC w , and ∑
+
+> i6=j
+
+|wiwj | ≤ A(A − 1) Cw ≤ A2Cw . (71) Thus, E{eg,h },{pg,h }|rBerrut ,e 1 ,g,h |2 ≤ σ2
+
+> P
+
+∥∥(HT
+
+> A
+
+)†∥∥22 Cw (A + A2). Defining C2 = ∥∥(HT
+
+> A
+
+)†∥∥22 Cw , we obtain 
+
+E{eg,h },{pg,h }|rBerrut ,e 1 ,g,h |2 ≤ C2σ2 
+
+> P
+
+(A + A2). (72) Therefore, ( 72 ) provides a bound on E{pg,h }|rBerrut ,e 1,g,h (z)|2 conditioned on perfect localization of the adversarial workers, i.e., when ˆA = A.Further, when localization errors occur, i.e., when the event ELoc occurs with probability Prob( ELoc ) > 0, the decoder may incorrectly identify the locations of adversarial errors, leading to ˆA 6 = A. In this case, some adversarial nodes may remain uncorrected due to missed detections, while erroneous cancellations may be applied at nodes i / ∈ A for which Ei = 0 . Thus, under imperfect localization, three types of residual noise may arise during reconstruction: (i) missed adversarial nodes, where adversarial errors remain uncorrected, (ii) correctly detected adversarial nodes, where imperfect cancellation leaves residual noise due to finite-precision error estimation, and (iii) false detections, where erroneous cancellations are applied at nodes for which Ei = 0 .Suppose that m adversarial locations are misdetected by the decoder. In this case, m adversarial nodes remain uncorrected, and up to m non-adversarial nodes may be falsely detected and incorrectly corrected. Consequently, the total number of interpolation nodes contributing residual error becomes A + m. Since 1 ≤ m ≤ A, the number of affected nodes lies between 
+
+A + 1 and 2A. Let I ⊆ [N ] denote the set of interpolation nodes that contribute to the reconstruction error due to imperfect localization. This set includes nodes corresponding to missed detections, correctly detected adversarial nodes with imperfect cancellation, and falsely detected non-adversarial nodes. Hence, |I| = A + m, and in the worst case, when all A adversarial nodes are misdetected and replaced by non-adversarial nodes, we have |I| = 2 A. Therefore, A + 1 ≤ |I| ≤ 2A. When localization is imperfect, i.e., ˆA 6 = A, the decoder estimates the adversarial error using the incorrect set ˆA and subtracts it from the received computation. In this context, due to incorrect localization and the presence of precision noise, this subtraction does not perfectly cancel the error, resulting in a non-zero residual error at the affected locations. Consequently, the reconstruction 48 
+
+error arising from imperfect localization and cancellation for the (g, h )-th entry can be expressed as 
+
+rBerrut ,e 2,g,h (z) = ∑
+
+> i∈I
+
+wi(z) ǫi,g,h . (73) To characterize this residual noise, we use the relation rg,h = vg,h + eg,h + pg,h , and compute the corresponding syndrome vector as zg,h = eg,h HT + pg,h HT . Since the error is supported on A, we have zg,h = eA,g,h HT 
+
+> A
+
++ pg,h HT . Due to localization error, i.e., ˆA 6 = A, for a given detected location ˆA, the decoder computes ˆe ˆA,g,h = zg,h 
+
+(
+
+(HT
+
+> ˆA
+
+)†
+
+)T
+
+. Substituting the expression for zg,h , we obtain ˆe ˆA,g,h = (eA,g,h HT 
+
+> A
+
++ pg,h HT ) (
+
+(HT
+
+> ˆA
+
+)†
+
+)T
+
+. Expanding the above expression gives ˆe ˆA,g,h =
+
+eA,g,h HT
+
+> A
+
+(
+
+(HT
+
+> ˆA
+
+)†
+
+)T
+
++ pg,h HT
+
+(
+
+(HT
+
+> ˆA
+
+)†
+
+)T
+
+. The residual error is defined on the common index set I = A ∪ ˆA. To ensure dimensional consistency, both the true and estimated error vectors are embedded into the space indexed by I using selection matrices SA, and S ˆA. In this context, let II denote the identity matrix of size |I| × |I| , and define SA = II (: , A), and 
+
+S ˆA = II (: , ˆA). These matrices embed vectors supported on A and ˆA into I by placing their entries at the corresponding indices and zeros elsewhere. Then, ǫI,g,h = eA,g,h ST 
+
+> A
+
+− ˆe ˆA,g,h ST
+
+> ˆA
+
+. Substituting, 
+
+ǫI,g,h = eA,g,h ST 
+
+> A
+
+− (eA,g,h HT 
+
+> A
+
++ pg,h HT ) ( (HT
+
+> ˆA
+
+)†)T ST 
+
+> ˆA
+
+= eA,g,h 
+
+(
+
+ST 
+
+> A
+
+− HT
+
+> A
+
+((HT
+
+> ˆA
+
+)†)T ST
+
+> ˆA
+
+)
+
+− pg,h HT ((HT
+
+> ˆA
+
+)†)T ST
+
+> ˆA
+
+.
+
+We define A = SA − S ˆAP ˆA,A, where P ˆA,A = ( HT
+
+> ˆA
+
+)†HT
+
+> A
+
+, and B = S ˆA(HT
+
+> ˆA
+
+)†. Thus, ǫI,g,h = eA,g,h AT − pg,h HT BT .
+
+Hence, Σǫ = σ2
+
+> A
+
+AA T + σ2 
+
+> P
+
+BB T . Therefore, 
+
+Var( ǫi), |Cov( ǫi, ǫ j )| ≤ ‖ Σǫ‖2, (74) where 
+
+‖Σǫ‖2 ≤ σ2
+
+> A
+
+‖A‖22 + σ2 
+
+> P
+
+‖B‖22. (75) Taking the squared magnitude of ( 73 ) gives |rBerrut ,e 2,g,h (z)|2 = ∣∣∑ 
+
+> i∈I
+
+wi(z)ǫi,g,h 
+
+∣∣2 . Expanding the square component wise gives |rBerrut ,e 2 ,g,h (z)|2 = ∑ 
+
+> i∈I
+
+|wi|2ǫ2 
+
+> i
+
++ ∑ 
+
+> i6=j
+
+wiwj ǫiǫj . Taking expectation over {eg,h } and {pg,h } we obtain         
+
+> E{eg,h },{pg,h }|rBerrut ,e 2,g,h (z)|2=∑
+> i∈I
+> |wi|2Var( ǫi) + ∑
+> i6=j
+> wiwjCov( ǫi, ǫ j).(76)
+
+To obtain an upper bound, we apply the triangle inequality to the cross term. Therefore, using the relation from ( 74 ), we express |wiwj Cov( ǫi, ǫ j )| ≤ | wiwj | ‖ Σǫ‖2. Hence, 
+
+∣∣∣∑ 
+
+> i6=j
+
+wiwj Cov( ǫi, ǫ j )
+
+∣∣∣ ≤ ‖ Σǫ‖2
+
+∑ 
+
+> i6=j
+
+|wiwj |. Similarly, for the diagonal terms, |wi|2Var( ǫi) ≤ | wi|2‖Σǫ‖2. Hence,           
+
+> E{eg,h },{pg,h }|rBerrut ,e 2,g,h (z)|2≤ ‖ Σǫ‖2
+> ∑
+> i∈I
+> |wi|2+∑
+> i6=j
+> |wiwj|
+> .(77)
+
+Finally, using the bound in ( 75 ), we express the above bound for a given ˆA as                    
+
+> E{eg,h },{pg,h }|rBerrut ,e 2,g,h (z)|2≤
+> (
+> σ2
+> A‖SA−SˆAPˆA,A‖22+σ2
+> P‖SˆA(HT
+> ˆA)†‖22
+> ) ∑
+> i∈I
+> |wi|2+∑
+> i6=j
+> |wiwj|
+> ,(78)
+
+where P ˆA,A = ( HT
+
+> ˆA
+
+)†HT
+
+> A
+
+. Note that the detected set ˆA depends on the localization outcome. Each possible localization outcome produces a different detected set ˆA, which determines both the decoding matrix (HT
+
+> ˆA
+
+)† and hence the covariance matrix of the residual noise i.e., Σǫ and thereby ‖Σǫ‖2. Consequently, the reconstruction error bound varies across different localization outcomes. Let E( ˆA) denote the reconstruction error bound corresponding to a given detected set ˆA as defined in ( 78 ), and let 
+
+Pr( ˆA) denote the probability that the decoder outputs ˆA. Then, E{eg,h },{pg,h }|rBerrut ,e 2 ,g,h (z)|2 = ∑ ˆA Pr( ˆA) E( ˆA).49 
+
+Since the above expression is a convex combination, it follows that E{eg,h },{pg,h }|rBerrut ,e 2 ,g,h (z)|2 ≤ max ˆA E( ˆA). Let 
+
+ˆA∗ denote the worst-case detected set, defined as ˆA∗ = arg max ˆA6 =A E( ˆA). Thus, E{eg,h },{pg,h }|rBerrut ,e 2 ,g,h (z)|2 ≤ E( ˆA∗).
+
+Evaluating the bound in ( 78 ) at ˆA∗, we obtain E( ˆA∗) ≤ ‖ Σǫ( ˆA∗)‖2
+
+(∑ 
+
+> i∈I
+
+|wi|2 + ∑ 
+
+> i6=j
+
+|wiwj |
+
+)
+
+, where ‖Σǫ( ˆA∗)‖2 ≤
+
+σ2
+
+> A
+
+‖SA − S ˆA∗ P ˆA∗ ,A‖22 + σ2 
+
+> P
+
+‖S ˆA∗ (HT 
+
+> ˆA∗
+
+)†‖22. Since |I| ≤ 2A, we have ∑ 
+
+> i∈I
+
+|wi|2 ≤ 2AC w and ∑ 
+
+> i6=j
+
+|wiwj | ≤ 4A2Cw .Thus, 
+
+E( ˆA∗) ≤ Cw
+
+[
+
+σ2
+
+> A
+
+‖SA − S ˆA∗ P ˆA∗ ,A‖22 + σ2 
+
+> P
+
+‖S ˆA∗ (HT 
+
+> ˆA∗
+
+)†‖22
+
+]
+
+(2 A + 4 A2). (79) Finally, we obtain 
+
+E{eg,h },{pg,h }|rBerrut ,e 2,g,h (z)|2 ≤ Cw
+
+[
+
+σ2
+
+> A
+
+‖SA − S ˆA∗ P ˆA∗ ,A‖22 + σ2 
+
+> P
+
+‖S ˆA∗ (HT 
+
+> ˆA∗
+
+)†‖22
+
+]
+
+(2 A + 4 A2). (80) Therefore, by substituting ( 72 ) and ( 80 ) into ( 66 ), we obtain an upper bound on the third term on the right-hand side of ( 60 )for the (g, h )-th entry. Finally, the fourth term on the right-hand side of ( 59 ) is 2 E{Pi},{Ei}〈rBerrut ,p (z), r Berrut ,e (z)〉 . Since the inner product may take either positive or negative values, we upper bound it by its magnitude. Using Jensen’s inequality, we obtain 
+
+∣∣E{Pi},{Ei }〈rBerrut ,p (z), r Berrut ,e (z)〉∣∣ ≤ E{Pi},{Ei} |〈 rBerrut ,p (z), r Berrut ,e (z)〉| . (81) Applying Holder’s inequality with p = q = 2 in the right-hand side of ( 81 ) gives        
+
+> E{Pi},{Ei}|〈 rBerrut ,p (z), r Berrut ,e (z)〉| ≤
+> √
+> E{Pi},{Ei}‖rBerrut ,p (z)‖2
+> √
+> E{Pi},{Ei}‖rBerrut ,e (z)‖2.(82)
+
+Further, for any (g, h )-th entry, applying Jensen’s inequality followed by the Holders inequality to the scalar random variables 
+
+rBerrut ,p,g,h (z) and rBerrut ,e,g,h (z) gives          
+
+> ∣∣∣E{pg,h },{eg,h }[rBerrut ,p,g,h (z)rBerrut ,e,g,h (z)]
+> ∣∣∣≤
+> √
+> E{pg,h }|rBerrut ,p,g,h (z)|2
+> √
+> E{pg,h },{eg,h }|rBerrut ,e,g,h (z)|2.(83)
+
+Thus, ( 83 ) provides an upper bound for the (g, h )-th entry of the fourth term in ( 59 ). Using ( 65 ), we upper bound the first term on the right-hand side of ( 83 ) i.e., E{pg,h }|rBerrut ,p,g,h (z)|2, as 
+
+E{pg,h } |rBerrut ,p,g,h (z)|2 ≤ C1N σ 2 
+
+> P
+
+. (84) Further, we upper bound the second term on the right-hand side of ( 83 ), E{pg,h },{eg,h }|rBerrut ,e,g,h (z)|2, by substituting the bounds in ( 72 ) and ( 80 ) into the law of total expectation in ( 66 ), yielding                          
+
+> E{pg,h },{eg,h }|rBerrut ,e,g,h (z)|2≤C2(1 −Prob( ELoc )) σ2
+> P(A+A2) + Prob( ELoc )Cw
+> [
+> σ2
+> A‖SA−SˆA∗PˆA∗,A‖22+σ2
+> P‖SˆA∗(HT
+> ˆA∗)†‖22
+> ]
+> (2 A+ 4 A2).
+> (85)
+
+Let Ψ denote the right-hand side of ( 85 ). Substituting ( 84 ) and ( 85 ) into ( 83 ), we obtain 
+
+∣∣E{pg,h },{eg,h } [rBerrut ,p,g,h (z)rBerrut ,e,g,h (z)] ∣∣ ≤ σP
+
+√ΨC1N . 
+
+Finally, the fourth term on the right-hand side of ( 59 ) can be bounded as 
+
+2 E{eg,h },{pg,h }
+
+[
+
+rBerrut ,p,g,h (z) rBerrut ,e,g,h (z)
+
+]
+
+≤ 2 ∣∣E{pg,h },{eg,h } [rBerrut ,p,g,h (z) rBerrut ,e,g,h (z)] ∣∣ ≤ 2σP
+
+√ΨC1N. (86) Now combining all the terms in ( 61 ), ( 65 ), ( 72 ), ( 80 ), and ( 86 ) we can finally upper bound ( 60 ) as shown in ( 16 ). This completes the proof.

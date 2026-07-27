@@ -1,0 +1,579 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-27T21:13:06.113270+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 6,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 9,
+    "quick_skim_target": 11,
+    "quick_selected": 9
+  },
+  "deep_dive": [
+    {
+      "id": "2607.21865v1",
+      "source": "arxiv",
+      "title": "Decentralized Compute on Untrusted Hardware Using Intel TDX and Encrypted CVMs",
+      "abstract": "The rapid growth of artificial intelligence workloads has generated an unprecedented demand for secure and scalable compute resources. However, centralized cloud providers continue to dominate both pricing and security models. In an increasingly competitive AI landscape, where the compromise of training data or model weights can confer a significant advantage, there is a critical need for a computing infrastructure that safeguards data at rest, in transit, and in use, while remaining affordable and broadly accessible. Furthermore, existing GPU cluster offerings (e.g., 8xH100s, 8xH200s, 8xB200s) create financial barriers that limit access for organizations, startups, and independent researchers seeking secure, high-performance computing environments.   This paper introduces a decentralized, confidential computing platform that leverages Intel Trust Domain Extensions (TDX), Intel Trust Authority (ITA) and NVIDIA Confidential Computing (CC) to establish a distributed ecosystem of fully encrypted Confidential Virtual Machines (CVMs). The proposed architecture incentivizes hardware providers to contribute Intel TDX capable compute resources. Each participating provider is provisioned with a freshly instantiated, uniquely encrypted Ubuntu 24.04 CVM, providing data protection across all stages, at rest, in transit, and in use.   By decentralizing the confidential computing stack and leveraging confidential computing across independently operated nodes, this work demonstrates a viable alternative to traditional cloud-based infrastructures. The proposed system offers enhanced security assurances, transparent cost structures, and democratized access to enterprise-grade secure compute capabilities, paving the way for a more open, secure, and equitable foundation for next-generation AI development.",
+      "authors": [
+        "Venish Patidar",
+        "Dhruv Bindra",
+        "Ahmed Darwich",
+        "Josh Brown",
+        "Haidong Xia",
+        "Sathi Nair"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.DC"
+      ],
+      "published": "2026-07-23T23:44:27+00:00",
+      "link": "https://arxiv.org/pdf/2607.21865v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "uses Intel TDX and encrypted CVMs for secure distributed compute",
+      "llm_evidence_cn": "使用Intel TDX和加密虚拟机实现安全分布式计算",
+      "llm_evidence": "使用Intel TDX和加密虚拟机实现安全分布式计算",
+      "canonical_evidence": "使用Intel TDX和加密虚拟机实现安全分布式计算",
+      "llm_tldr_en": "Proposes a decentralized compute infrastructure using Intel TDX and encrypted CVMs to protect data throughout lifecycle, addressing AI workload security and affordability.",
+      "llm_tldr_cn": "针对AI工作负载对安全可扩展计算的需求，提出基于Intel TDX和加密虚拟机的去中心化计算架构，保护数据静态、传输和使用中的安全，同时降低计算成本，打破云供应商垄断。",
+      "llm_tldr": "针对AI工作负载对安全可扩展计算的需求，提出基于Intel TDX和加密虚拟机的去中心化计算架构，保护数据静态、传输和使用中的安全，同时降低计算成本，打破云供应商垄断。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.21647v1",
+      "source": "arxiv",
+      "title": "A Drift Stable Quantum Federated Learning for Intelligent Services",
+      "abstract": "Quantum federated learning enables distributed clients to train quantum neural networks without sharing local data, making it promising for privacy-aware intelligent services. Intelligent services in this context refer to privacy-sensitive distributed decision systems, such as fraud detection and genomic classification, where reliable and fair client-level learning is as important as the accuracy of the aggregate model. However, heterogeneous client data and noisy quantum optimization often cause unstable local updates, client drift, and unfair performance between clients. This paper proposes DUQFL-Prox, a drift-stable quantum federated learning framework based on deep-unfolded local optimization. Instead of using a fixed local optimizer, each client performs adaptive unfolded SPSA updates, while a proximal term keeps the local model close to the global model. A lightweight controller learns step-specific optimization parameters to improve post-aggregation performance. Experiments on financial fraud and genomic classification tasks show that DUQFL-Prox improves stability, generalization, and client fairness compared with standard QFL baselines. The results suggest that deep-unfolded quantum federated learning can support more reliable and fair intelligent services in heterogeneous distributed environments.",
+      "authors": [
+        "Shanika Iroshi Nanayakkara",
+        "Shiva Raj Pokhrel"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-07-22T01:44:00+00:00",
+      "link": "https://arxiv.org/pdf/2607.21647v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Quantum federated learning for privacy-preserving distributed learning",
+      "llm_evidence_cn": "量子联邦学习用于隐私保护分布式学习",
+      "llm_evidence": "量子联邦学习用于隐私保护分布式学习",
+      "canonical_evidence": "量子联邦学习用于隐私保护分布式学习",
+      "llm_tldr_en": "Proposes DUQFL-Prox, a drift-stable quantum federated learning framework using deep-unfolded local optimization to handle heterogeneous data and noisy quantum optimization for privacy-aware intelligent services.",
+      "llm_tldr_cn": "量子联邦学习允许客户端本地训练量子神经网络而不共享数据，但异构数据和噪声导致不收敛。本文提出DUQFL-Prox框架，使用深度展开本地优化替代固定优化器，稳定局部更新，消除客户端漂移，实现公平且精确的聚合模型，适用于欺诈检测等隐私敏感场景。",
+      "llm_tldr": "量子联邦学习允许客户端本地训练量子神经网络而不共享数据，但异构数据和噪声导致不收敛。本文提出DUQFL-Prox框架，使用深度展开本地优化替代固定优化器，稳定局部更新，消除客户端漂移，实现公平且精确的聚合模型，适用于欺诈检测等隐私敏感场景。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.21824v1",
+      "source": "arxiv",
+      "title": "Protocol-Level Attacks on Agentic Commerce Platforms: A Cross-Platform Taxonomy, AIP-Bench, and Unified Defense",
+      "abstract": "Agentic commerce platforms let AI agents autonomously discover services, move payments, and wield user credentials on their users' behalf, and they already handle real money. Their security has so far been studied almost entirely at the level of the AI model, through prompt injection and misalignment. We show that the more consequential risks lie one layer down, in the protocol between agents and commerce services. There, vulnerabilities are structural : exploitation is deterministic and ndependent of which model an agent runs, so no model improvement removes them. Across three leading platforms we identify 33 such vulnerabilities, each succeeding deterministically regardless of the deployed model, at a 100% attack-success rate (ASR) wherever live-measured. The same failure modes recur across independently built codebases, a systemic pattern rather than isolated bugs. Three of them chain into an end-to-end payment hijack. We contribute a taxonomy separating these structural attacks from model-dependent semantic ones. We also build two artifacts: AIP-Bench (Agent Interaction Protocol Benchmark), to our knowledge the first deterministic benchmark for agentic commerce security, and PCAT (Protocol-level Commerce Agent Trust), a platform-agnostic defense that drives the structural attack-success rate to zero for four of the five structural classes (RC-1, RC-2, RC-4, RC-5), with RC-3 (observable credential channels) reduced to warn-only, without modifying any platform. Agentic commerce must be secured at the protocol layer, not only the model.",
+      "authors": [
+        "Yedidel Louck"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-23T21:21:01+00:00",
+      "link": "https://arxiv.org/pdf/2607.21824v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "AI agent security protocol attacks",
+      "llm_evidence_cn": "AI代理安全协议攻击",
+      "llm_evidence": "AI代理安全协议攻击",
+      "canonical_evidence": "AI代理安全协议攻击",
+      "llm_tldr_en": "Identifies 33 deterministic protocol-level vulnerabilities in agentic commerce platforms, independent of the AI model, and proposes a unified defense taxonomy and benchmark (AIP-Bench).",
+      "llm_tldr_cn": "现有AI代理安全研究集中在模型层面的提示注入，但本文发现协议层存在结构性漏洞，利用可确定，不受模型影响。通过分析三个主流平台，识别出33个缺陷，并提供了跨平台分类法和基准测试AIP-Bench，提出统一防御策略。",
+      "llm_tldr": "现有AI代理安全研究集中在模型层面的提示注入，但本文发现协议层存在结构性漏洞，利用可确定，不受模型影响。通过分析三个主流平台，识别出33个缺陷，并提供了跨平台分类法和基准测试AIP-Bench，提出统一防御策略。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.21835v1",
+      "source": "arxiv",
+      "title": "ToolGuardian: Declarative Security for AI Agent-Tool Interactions",
+      "abstract": "LLM agents increasingly rely on external tools, expanding capability while creating a new security boundary: third-party tools may appear benign at the interface level while embedding unsafe behavior in implementation. Existing defenses rely on weak metadata, collapse characterization and policy judgment into a single decision, or use heuristic/LLM enforcement that lacks deterministic, auditable reasoning over task context and multi-tool composition.   This paper presents ToolGuardian, a policy-driven framework for securing agent-tool interactions through pre-admission vetting and task-aware runtime authorization. ToolGuardian uses progressive characterization to convert evidence into structured facts: descriptions capture declared intent, system-call traces expose coarse behavior, mock execution reveals observed effects, and source analysis identifies latent behavior. ToolGuardian's core contribution is an Answer Set Programming (ASP)-based declarative policy layer that reasons explicitly over capabilities, effects, task context, and composition. We compare ASP against heuristic and LLM-based policy realizations using identical inputs and output contracts.   We evaluate ToolGuardian on 16 MCP-style tools, including 8 malicious variants derived from real open-source tools, and 20 runtime scenarios. For vetting, ASP reaches a deny-class F1 of 0.86 and 88% accuracy using description, syscall, and observed-effect evidence. For runtime authorization, fully specified realizations classify all scenarios correctly, while ablations show that removing compositional and conformance rules substantially degrades performance.",
+      "authors": [
+        "Arun Ravindran",
+        "Saurabh Deochake"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-23T21:53:34+00:00",
+      "link": "https://arxiv.org/pdf/2607.21835v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "policy-driven security framework for AI agent-tool interactions",
+      "llm_evidence_cn": "面向AI代理-工具交互的策略驱动安全框架",
+      "llm_evidence": "面向AI代理-工具交互的策略驱动安全框架",
+      "canonical_evidence": "面向AI代理-工具交互的策略驱动安全框架",
+      "llm_tldr_en": "Proposes ToolGuardian, a policy-driven framework for securing agent-tool interactions through progressive characterization and task-aware runtime authorization.",
+      "llm_tldr_cn": "本文提出ToolGuardian，一种策略驱动的安全框架，通过渐进特征化将证据转换为结构化事实，并在运行时进行任务感知授权。该方法提供了确定性、可审计的安全决策，解决了现有启发式或LLM-based防御的不确定性问题。",
+      "llm_tldr": "本文提出ToolGuardian，一种策略驱动的安全框架，通过渐进特征化将证据转换为结构化事实，并在运行时进行任务感知授权。该方法提供了确定性、可审计的安全决策，解决了现有启发式或LLM-based防御的不确定性问题。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.21895v1",
+      "source": "arxiv",
+      "title": "PrivDNN: A Secure Multi-Party Computation Framework for Deep Learning using Partial DNN Encryption",
+      "abstract": "In the past decade, we have witnessed an exponential growth of deep learning models, platforms, and applications. While existing DL applications and Machine Learning as a service (MLaaS) frameworks assume fully trusted models, the need for privacy-preserving DNN evaluation arises. In a secure multi-party computation scenario, both the model and the data are considered proprietary, i.e., the model owner does not want to reveal the highly valuable DL model to the user, while the user does not wish to disclose their private data samples either. Conventional privacy-preserving deep learning solutions ask the users to send encrypted samples to the model owners, who must handle the heavy lifting of ciphertext-domain computation with homomorphic encryption. In this paper, we present a novel solution, namely, PrivDNN, which (1) offloads the computation to the user side by sharing an encrypted deep learning model with them, (2) significantly improves the efficiency of DNN evaluation using partial DNN encryption, (3) ensures model accuracy and model privacy using a core neuron selection and encryption scheme. Experimental results show that PrivDNN reduces privacy-preserving DNN inference time and memory requirement by up to 97% while maintaining model performance and privacy. Codes can be found at https://github.com/LiangqinRen/PrivDNN",
+      "authors": [
+        "Liangqin Ren",
+        "Zeyan Liu",
+        "Fengjun Li",
+        "Kaitai Liang",
+        "Zhu Li",
+        "Bo Luo"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-24T01:52:18+00:00",
+      "link": "https://arxiv.org/pdf/2607.21895v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "secure multi-party computation for privacy-preserving deep learning",
+      "llm_evidence_cn": "面向隐私保护深度学习的安全多方计算",
+      "llm_evidence": "面向隐私保护深度学习的安全多方计算",
+      "canonical_evidence": "面向隐私保护深度学习的安全多方计算",
+      "llm_tldr_en": "Presents PrivDNN, an MPC framework with partial DNN encryption for privacy-preserving deep learning, protecting both model and data.",
+      "llm_tldr_cn": "深度学习的隐私保护需求日益迫切，传统方案要求用户加密数据样本，导致模型所有者需处理密文计算。本文提出PrivDNN，一种部分DNN加密的安全多方计算框架，允许模型和用户在不泄露各自私有资产的情况下进行推理。通过优化加密协议，显著降低了计算开销，为MLaaS中的隐私保护提供了实用方案。",
+      "llm_tldr": "深度学习的隐私保护需求日益迫切，传统方案要求用户加密数据样本，导致模型所有者需处理密文计算。本文提出PrivDNN，一种部分DNN加密的安全多方计算框架，允许模型和用户在不泄露各自私有资产的情况下进行推理。通过优化加密协议，显著降低了计算开销，为MLaaS中的隐私保护提供了实用方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.22065v1",
+      "source": "arxiv",
+      "title": "BioZKFHE: Scalable Encrypted Biometric Identification via Verifiable Homomorphic Similarity Evaluation",
+      "abstract": "Large-scale biometric identification in outsourced settings requires two properties simultaneously: biometric templates and queries must remain protected during computation, and the encrypted similarity outputs produced by an untrusted compute node must be verifiably correct before any application result is released. Existing FHE-based biometric systems primarily address confidentiality, while practical verifiability introduces two bottlenecks in the underlying encrypted 1:N matching layer: rotation- and bandwidth-heavy similarity evaluation and the high cost of proving repeated homomorphic similarity traces. We present BioZKFHE, a framework for scalable encrypted biometric identification via verifiable homomorphic similarity evaluation that combines BGV homomorphic computation with committee-mediated proof opening/decryption and smart-contract verification of opened proof batches. To reduce encrypted storage and avoid rotation-heavy encrypted 1:N matching, we propose Single-Coefficient Multi-Value (SCMV) packing, which binds multiple quantized embedding values into each plaintext entry through base-T expansion. To make proof generation practical, we propose Parallelizable and Verifiable Similarity Computation (PVSC), which exploits the Double-CRT execution structure of BGV to decompose each blockwise similarity trace into parallel proof instances that are opened and checked before result release. Under standard lattice assumptions and explicit committee/verifier assumptions, we analyze recoverability, noise growth, confidentiality, encrypted-output integrity, and finalized-result integrity. Experiments on FaceNet and MobileFaceNet show near-lossless biometric utility, up to 67 percent encrypted-storage reduction, and about 22 to 44 seconds end-to-end proof-verified runtime for 10k to 40k templates.",
+      "authors": [
+        "Rundong Xin",
+        "Taotao Wang",
+        "Xiaoxiao Wu",
+        "Weizhi Meng",
+        "Shengli Zhang",
+        "Shui Yu"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-24T08:08:54+00:00",
+      "link": "https://arxiv.org/pdf/2607.22065v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "encrypted biometric identification for cloud authentication with verifiable homomorphic similarity",
+      "llm_evidence_cn": "基于同态加密的可验证生物特征识别，用于云身份认证",
+      "llm_evidence": "基于同态加密的可验证生物特征识别，用于云身份认证",
+      "canonical_evidence": "基于同态加密的可验证生物特征识别，用于云身份认证",
+      "llm_tldr_en": "BioZKFHE enables scalable encrypted biometric identification in outsourced settings by leveraging verifiable homomorphic similarity evaluation, ensuring both confidentiality and verifiability.",
+      "llm_tldr_cn": "现有基于全同态加密的生物识别系统主要关注机密性，但缺乏可验证性。BioZKFHE提出一种可验证的同态相似性评估框架，通过优化旋转和带宽开销，实现了大规模加密生物特征识别，同时保证输出结果的正确性。实验表明，该方案在保持高安全性的同时显著提升了性能。",
+      "llm_tldr": "现有基于全同态加密的生物识别系统主要关注机密性，但缺乏可验证性。BioZKFHE提出一种可验证的同态相似性评估框架，通过优化旋转和带宽开销，实现了大规模加密生物特征识别，同时保证输出结果的正确性。实验表明，该方案在保持高安全性的同时显著提升了性能。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.18108v1",
+      "source": "arxiv",
+      "title": "GARAGE: Characterizing the Automation Boundary in LLM-based Attack Graph Generation",
+      "abstract": "While modern vehicle security depends on effective Cyber Threat Intelligence (CTI) synthesis, current automated tools struggle with unstructured data and automotive-specific architectural nuances. To bridge this gap, we introduce GARAGE, a RAG-powered framework that converts fragmented CTI into an actionable, domain-specific knowledge base for automated attack graph generation. GARAGE synthesizes a dataset of 12,786 CVEs and 140 incident reports into a STIX 2.1 and Auto-ISAC ATM-compliant knowledge base. By formalizing tactical-pattern-level scenarios through granular kill chain analysis, GARAGE achieves threat generation capabilities. Our 320 Leave-One-Out experiments reveal that the framework can accurately transfer security knowledge to entirely unseen vehicle architectures. Furthermore, we position GARAGE as a scalable TARA support tool within human-in-the-loop workflows, offering a comprehensive cost-performance analysis to guide its deployment across various LLM tiers.",
+      "authors": [
+        "Daekwon Pi",
+        "Sangho Lee",
+        "Young Hun Lee",
+        "Huy Kang Kim"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-20T16:08:23+00:00",
+      "link": "https://arxiv.org/pdf/2607.18108v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "LLM-based attack graph generation for cyber threat intelligence",
+      "llm_evidence_cn": "基于LLM的攻击图生成用于网络威胁情报",
+      "llm_evidence": "基于LLM的攻击图生成用于网络威胁情报",
+      "canonical_evidence": "基于LLM的攻击图生成用于网络威胁情报",
+      "llm_tldr_en": "GARAGE uses RAG to convert fragmented CTI into a structured knowledge base for automated attack graph generation, achieving high accuracy in security knowledge transfer.",
+      "llm_tldr_cn": "针对当前自动化工具难以处理非结构化威胁情报的问题，本文提出GARAGE框架。它利用检索增强生成（RAG）将分散的CTI转化为领域知识库，自动生成合规的攻击图。通过320次留一实验验证，框架能准确转移安全知识，生成战术级攻击模式，为AI安全防御提供了自动化分析工具。",
+      "llm_tldr": "针对当前自动化工具难以处理非结构化威胁情报的问题，本文提出GARAGE框架。它利用检索增强生成（RAG）将分散的CTI转化为领域知识库，自动生成合规的攻击图。通过320次留一实验验证，框架能准确转移安全知识，生成战术级攻击模式，为AI安全防御提供了自动化分析工具。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.19795v1",
+      "source": "arxiv",
+      "title": "Towards Automated Formal Verification of zkEVMs Using LLM-Guided Constraint Synthesis",
+      "abstract": "Zero-Knowledge Ethereum Virtual Machines (zkEVMs) secure Ethereum rollups by generating zero-knowledge proofs that guarantee off-chain execution correctness. However, subtle implementation bugs (e.g., incorrect gas accounting) can lead to valid proofs certifying semantically faulty states, thereby silently defeating cryptographic guarantees. Formal verification via SMT solvers can prevent this, but is bottlenecked by specification: current zkEVM development practice lacks automated methods to translate Rust opcode handlers into verification models. Current practices rely on unsustainable manual specifications, while LLM-based approaches suffer from hallucination and lack formal guarantees. To address this, we propose VeriSynth, a framework that synthesizes executable Python/Z3 verification models from Rust zkEVM code. VeriSynth enforces a hybrid paradigm: an LLM acts strictly as a formalization frontend to translate code into symbolic constraints, while an SMT solver serves as the correctness arbiter. To handle complex multi-component state transitions, VeriSynth integrates semantic decomposition, retrieval-grounded prompting, and verification-guided auto-repair into a closed-loop pipeline. We evaluate VeriSynth on the first source-level zkEVM verification benchmark, encompassing both correct and faulty opcode implementations. VeriSynth achieves a bug detection rate of over 90%, substantially outperforming direct and conversational LLM baselines, as well as a production-grade handwritten mutation-testing suite. Ablation studies confirm that each pipeline component is critical to the framework's overall effectiveness.",
+      "authors": [
+        "Shichen Huang",
+        "Zhenghe Jiang",
+        "Yi Jiang",
+        "Ling-I Wu",
+        "Jingyang Li",
+        "Guoqiang Li"
+      ],
+      "primary_category": "cs.SE",
+      "categories": [
+        "cs.SE"
+      ],
+      "published": "2026-07-22T06:20:36+00:00",
+      "link": "https://arxiv.org/pdf/2607.19795v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "applies LLM-guided constraint synthesis for formal verification of zkEVMs, touching AI security and confidential computing",
+      "llm_evidence_cn": "采用LLM引导约束合成进行zkEVM形式化验证，涉及AI安全与机密计算",
+      "llm_evidence": "采用LLM引导约束合成进行zkEVM形式化验证，涉及AI安全与机密计算",
+      "canonical_evidence": "采用LLM引导约束合成进行zkEVM形式化验证，涉及AI安全与机密计算",
+      "llm_tldr_en": "Proposes VeriSynth, an LLM-guided framework to automatically synthesize verification constraints for zkEVM implementations, enhancing security of zero-knowledge rollups.",
+      "llm_tldr_cn": "针对zkEVM实现中的微妙bug（如gas计算错误）可能导致零知识证明验证错误状态的问题，提出VeriSynth框架，利用LLM引导约束合成自动将Rust操作码处理器转换为验证模型，减少人工规范工作，提升验证效率。",
+      "llm_tldr": "针对zkEVM实现中的微妙bug（如gas计算错误）可能导致零知识证明验证错误状态的问题，提出VeriSynth框架，利用LLM引导约束合成自动将Rust操作码处理器转换为验证模型，减少人工规范工作，提升验证效率。",
+      "llm_tags": [
+        "query:sec-cloud-ai:composite"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai:composite",
+      "matched_query_text": "Papers central to 请帮我查找与密钥托管, 密码认证,分布式云计算，人工智能安全，机密计算有关的论文, especially work that connects or combines: distributed cloud computing architectures; artificial intelligence security threats and defenses; confidential computing techniques; identity authentication in cloud computing; cloud security challenges and solutions; privacy preservation in artificial intelligence; distributed cloud computing security and confidential computing; artificial intelligence security and password authentication; secure key escrow schemes for cloud computing; cryptographic techniques for key recovery and user authentication.",
+      "matched_requirement_id": "req-composite-sec-cloud-ai",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.21839v1",
+      "source": "arxiv",
+      "title": "Certified in Theory, Broken in Practice: Assumption Gaps in Cryptographic Model Certification",
+      "abstract": "Privacy-preserving machine learning auditing protocols allow auditors to assess models for properties such as accuracy or fairness, without revealing their internals or training data. This makes them especially attractive for auditing models deployed in sensitive domains such as healthcare or finance. For these protocols to be meaningful in real-world audit settings, though, their guarantees must reflect how the model will behave once deployed, rather than merely certifying its behavior during an audit. Existing security definitions often miss this mark: most certify model behavior only on a fixed audit dataset, without ensuring that the same guarantees generalize to other datasets drawn from the same distribution.   As we show, this gap allows a model provider to attack many cryptographic model certification (CMC) schemes built on secure zero knowledge proofs (ZKP) by carefully engineering training data, resulting in models that exhibit benign behavior during an audit, but pathological behavior in practice. For example, we empirically demonstrate that an attacker can certify that a model achieves over 99% accuracy on an audit dataset, but less than 30% accuracy on fresh samples from the same distribution.   To address this gap, we formalize rigorous cryptographic security notions tailored to CMC frameworks, introduce a generic protocol template, and prove that it satisfies these requirements. Our results thus offer both cautionary evidence about existing approaches and constructive guidance for designing secure, privacy-preserving ML auditing protocols.",
+      "authors": [
+        "Carter Luck",
+        "Olive Franzese-McLaughlin",
+        "Elisaweta Masserova",
+        "Akira Takahashi",
+        "Antigoni Polychroniadou",
+        "Nicolas Papernot"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LG"
+      ],
+      "published": "2026-07-23T22:06:12+00:00",
+      "link": "https://arxiv.org/pdf/2607.21839v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "identifies assumption gaps in privacy-preserving ML auditing protocols",
+      "llm_evidence_cn": "识别隐私保护机器学习审计协议中的假设缺陷",
+      "llm_evidence": "识别隐私保护机器学习审计协议中的假设缺陷",
+      "canonical_evidence": "识别隐私保护机器学习审计协议中的假设缺陷",
+      "llm_tldr_en": "Reveals that existing privacy-preserving ML auditing protocols fail to guarantee model behavior generalization, undermining actual privacy protection.",
+      "llm_tldr_cn": "揭示现有隐私保护机器学习审计协议的安全定义存在缺陷：仅证明模型在固定审计数据集上的行为，不能泛化到真实分布，导致隐私保护承诺落空；提出更严格的安全要求。",
+      "llm_tldr": "揭示现有隐私保护机器学习审计协议的安全定义存在缺陷：仅证明模型在固定审计数据集上的行为，不能泛化到真实分布，导致隐私保护承诺落空；提出更严格的安全要求。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.20319v2",
+      "source": "arxiv",
+      "title": "Black-Box Performance Evaluation of Elastic Block Storage: Contract, Rate-Limiting Model, and Software Exploration",
+      "abstract": "Elastic block storage (EBS) with the storage-compute disaggregated architecture is a key component in modern cloud infrastructure. EBS offers users storage resources in the form of elastic solid-state drives (ESSDs). Nonetheless, despite recent efforts that have documented EBS architectures from the provider's perspective, how ESSDs perform differently from local SSDs and how host software should adapt accordingly have not been sufficiently studied.   In this paper, we conduct a user-centric, black-box performance characterization of ESSDs from Amazon AWS and Alibaba Cloud. We make three main contributions: (1) an ESSD contract that presents four behavioral observations and five actionable implications for software adaptation, (2) a refined I/O rate-limiting model combining bandwidth-IOPS dual limiting and fine-grained token refilling to suppress latency spikes, and (3) a case study on RocksDB that derives four guidelines on cache management, I/O regulation, storage budget utilization, and compression algorithms. Collectively, we hope these contributions can serve as a practical reference for EBS users to understand and exploit the distinctive performance properties of ESSDs.",
+      "authors": [
+        "Yingjia Wang",
+        "Ming-Chang Yang"
+      ],
+      "primary_category": "cs.PF",
+      "categories": [
+        "cs.PF"
+      ],
+      "published": "2026-07-22T16:04:28+00:00",
+      "link": "https://arxiv.org/pdf/2607.20319v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Black-box performance evaluation of elastic block storage in cloud",
+      "llm_evidence_cn": "云中弹性块存储的黑盒性能评估",
+      "llm_evidence": "云中弹性块存储的黑盒性能评估",
+      "canonical_evidence": "云中弹性块存储的黑盒性能评估",
+      "llm_tldr_en": "Presents a user-centric black-box performance characterization of elastic block storage from AWS and Alibaba Cloud, deriving an ESSD contract with behavioral observations and implications.",
+      "llm_tldr_cn": "该论文从用户视角对AWS和阿里云的弹性块存储进行黑盒性能评估，提出了ESSD合约，包含四种行为观察和五项可操作建议，为分布式云存储架构的性能优化提供了实证依据。",
+      "llm_tldr": "该论文从用户视角对AWS和阿里云的弹性块存储进行黑盒性能评估，提出了ESSD合约，包含四种行为观察和五项可操作建议，为分布式云存储架构的性能优化提供了实证依据。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.22033v1",
+      "source": "arxiv",
+      "title": "Exponentially Fewer-Server PIR from Sparser $S$-Decoding Polynomials",
+      "abstract": "We show that under a plausible number-theoretic conjecture, for any constant $s$ there exists an $s$-server private information retrieval (PIR) protocol that on an $n$-bit database requires communication $\\exp(O((\\log n)^{1/s} (\\log \\log n)^{1-1/s}))$. Previous constructions attaining the same communication required $2^{O(s)}$ servers. Our number-theoretic conjecture is implied by existing conjectures, namely the generalized repunit conjecture and Schinzel's hypothesis H (either one of these conjectures would suffice alone).   Our result builds on the ``matching vector family + $S$-decoding polynomials'' framework pioneered by Efremenko (STOC 2009) and recently refined by Ghasemi, Kopparty, and Sudan (STOC 2025). The main ingredient is a framework for constructing $S$-decoding polynomials with only $k+1$ nonzero coefficients modulo special products of $k$ primes, resolving an open problem posed by Ghasemi and Kopparty (ITCS 2026). By the lower bound shown by Ghasemi and Kopparty, this is the minimum achievable sparsity. We also empirically validate our construction and make our result unconditional for all $s \\leq 15$.   We also apply our techniques to regimes where $s$ grows with $n$, showing under a stronger variant of our number-theoretic conjecture that the communication complexity of $s$-server matching-vector PIR can be superpolynomially reduced from the previous state of the art for any $s \\leq \\exp(o(\\sqrt{\\log \\log n/\\log \\log \\log n}))$.   The main result for $s = O(1)$ and its proof were discovered in a GPT-5.5 Pro conversation prompted by the authors.",
+      "authors": [
+        "Aparna Gupte",
+        "Seyoon Ragavan"
+      ],
+      "primary_category": "cs.CC",
+      "categories": [
+        "cs.CC",
+        "cs.CR"
+      ],
+      "published": "2026-07-24T06:59:30+00:00",
+      "link": "https://arxiv.org/pdf/2607.22033v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "private information retrieval protocol with fewer servers, related to confidential computing",
+      "llm_evidence_cn": "少服务器私密信息检索协议，与机密计算数据保护相关",
+      "llm_evidence": "少服务器私密信息检索协议，与机密计算数据保护相关",
+      "canonical_evidence": "少服务器私密信息检索协议，与机密计算数据保护相关",
+      "llm_tldr_en": "Under a plausible conjecture, a constant-server PIR achieves communication exp(O((log n)^{1/s} (log log n)^{1-1/s})), drastically reducing server count compared to prior work.",
+      "llm_tldr_cn": "本文在数论猜想下提出一种常服务器私密信息检索（PIR）协议，通信复杂度与之前方案相当但服务器数量从指数级降至常数。通过改进匹配向量族和S-解码多项式框架，大幅减少了服务器需求。该成果对隐私保护数据查询有重要意义，为机密计算环境中的安全检索提供了更高效的基础。",
+      "llm_tldr": "本文在数论猜想下提出一种常服务器私密信息检索（PIR）协议，通信复杂度与之前方案相当但服务器数量从指数级降至常数。通过改进匹配向量族和S-解码多项式框架，大幅减少了服务器需求。该成果对隐私保护数据查询有重要意义，为机密计算环境中的安全检索提供了更高效的基础。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.22009v1",
+      "source": "arxiv",
+      "title": "Practical Graph Optimisation and AI-Driven Models for Active Directory Security Hardening",
+      "abstract": "Microsoft's Active Directory (AD) is a directory service that enables the IT admin to manage security permissions and control access within a Windows domain network. As a core management system in many of organisation, AD has become a primary target for adversaries. While many solutions for hardening attack graphs exist, these efforts fall short in addressing several key practical challenges specific to the AD attack graph. First, existing models often assume the graph is static, whereas a real-world AD environment is highly dynamic. Second, most proposed solutions are limited to the defensive measure of revoking vulnerabilities (edge removal), while more active defence mechanisms are largely unstudied. Third, because not all remediations are implementable, a practical end-to-end model must incorporate system admin feedback into the prioritisation process. This thesis aims to address these limitations by studying and proposing a number of game-theoretic and optimisation-based decision-making models. First, we propose a honeypot/decoy placement model based on the principle of minimising the number of shortest paths and the number of Domain Admin-reachable nodes. Second, building on this model, we introduce a defence strategy that considers the dynamic/temporal nature of the AD graph, where the objective is to find the location to deploy decoys that maximises the worst-case incident response time. Third, we introduce an adaptive prioritisation model that queries each high-risk attack path to the IT administrator for mediation. Finally, we introduce an end-to-end adaptive prioritisation model that minimises the approval effort of the system admin by finding a general adaptive edge-removal policy that generalises the system admin's decisions to edges with similar risk features. We show that the problems underlying all of the contributed models are computationally intractable.",
+      "authors": [
+        "Huy Q. Ngo"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-24T06:14:59+00:00",
+      "link": "https://arxiv.org/pdf/2607.22009v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "AI-driven models for Active Directory security hardening",
+      "llm_evidence_cn": "基于AI的Active Directory安全加固",
+      "llm_evidence": "基于AI的Active Directory安全加固",
+      "canonical_evidence": "基于AI的Active Directory安全加固",
+      "llm_tldr_en": "Proposes practical graph optimization and AI-driven models to address dynamic attack graphs in Active Directory, enabling active defense beyond edge removal.",
+      "llm_tldr_cn": "该论文针对Active Directory安全加固中攻击图动态变化和被动防御局限性的问题，提出了结合图优化与AI驱动模型的解决方案，实现了包括主动防御在内的多种加固措施，实验表明能有效减少攻击路径并提升整体安全性。",
+      "llm_tldr": "该论文针对Active Directory安全加固中攻击图动态变化和被动防御局限性的问题，提出了结合图优化与AI驱动模型的解决方案，实现了包括主动防御在内的多种加固措施，实验表明能有效减少攻击路径并提升整体安全性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.22427v1",
+      "source": "arxiv",
+      "title": "Robust Berrut-Approximated Coded Computing via Discrete Cosine Transforms",
+      "abstract": "Coded computing is a reliable and fault-tolerant paradigm for executing large-scale computational tasks over distributed worker nodes. Among existing coded computing frameworks, Berrut Approximated Coded Computing (BACC) enables distributed computation of arbitrary non-polynomial functions through rational interpolation. Although BACC provides provable approximation guarantees and resilience against straggling workers, its robustness against Byzantine workers remains largely unexplored. To fill this research gap, we propose Robust Berrut Approximated Coded Computing (RBACC), which establishes a coding-theoretic framework for BACC by enabling error localization and error correction in the presence of Byzantine workers. In particular, RBACC introduces a new choice of evaluation points that establishes a connection between Berrut interpolation and Discrete Cosine Transform (DCT) codes, thereby enabling error localization and error correction under finite-precision arithmetic. We derive analytical upper bounds on the approximation error of RBACC under multiple operating scenarios, including straggler-only systems and systems with Byzantine workers under finite-precision arithmetic. Building upon this analysis, we formulate several optimization problems for selecting the DCT code dimension and for assigning encoded evaluations to unreliable workers. We show that these are previously unexplored design parameters that can be systematically optimized to improve the reconstruction accuracy. Experimental results demonstrate that the proposed RBACC framework effectively mitigates stragglers and Byzantine workers while offering improved reconstruction accuracy over the baselines.",
+      "authors": [
+        "Rimpi Borah",
+        "J. Harshan"
+      ],
+      "primary_category": "cs.IT",
+      "categories": [
+        "cs.IT"
+      ],
+      "published": "2026-07-24T15:48:28+00:00",
+      "link": "https://arxiv.org/pdf/2607.22427v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "coded computing for distributed systems, enabling fault tolerance and security in distributed cloud architectures",
+      "llm_evidence_cn": "面向分布式系统的编码计算，提升分布式云架构的容错与安全性",
+      "llm_evidence": "面向分布式系统的编码计算，提升分布式云架构的容错与安全性",
+      "canonical_evidence": "面向分布式系统的编码计算，提升分布式云架构的容错与安全性",
+      "llm_tldr_en": "Proposes Robust Berrut Approximated Coded Computing (RBACC) to handle Byzantine workers in distributed computing via error localization and correction.",
+      "llm_tldr_cn": "针对分布式计算中的拜占庭节点问题，提出鲁棒Berrut近似编码计算（RBACC）。该方法基于有理插值，通过错误定位与纠正机制增强对恶意工作节点的鲁棒性。理论分析和仿真表明，RBACC在保持近似精度的同时能有效检测和纠正拜占庭错误，为分布式云计算的可靠性提供了新方案。",
+      "llm_tldr": "针对分布式计算中的拜占庭节点问题，提出鲁棒Berrut近似编码计算（RBACC）。该方法基于有理插值，通过错误定位与纠正机制增强对恶意工作节点的鲁棒性。理论分析和仿真表明，RBACC在保持近似精度的同时能有效检测和纠正拜占庭错误，为分布式云计算的可靠性提供了新方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.22450v1",
+      "source": "arxiv",
+      "title": "A Maximum Entropy Implementation of Differential Privacy Under Linear Invariants",
+      "abstract": "Differential privacy is the standard for ensuring data privacy and is widely used in major data publications, including reporting results from the U.S. decennial census. Common implementation of differential privacy uses independent Gaussian or Laplace noise addition to the database. However, there could be aggregate (linear) queries to the database that are excluded from the privacy budget, for example, state totals that can not be perturbed due to constitutional mandates. Any implementation of a differential privacy is required to honor these constraints, also referred to as invariants. Under aggregation constraints, the noise vector is no longer independent and the traditional differential privacy guarantees have to be re-evaluated. We propose a high entropy differential privacy implementation that maintains the aggregation invariants with probability one or exponentially close to one and derive the privacy guarantees for the implementation under the invariants. The theoretical proof covers a partial solution to an open question about the null space of correlation matrices. Moreover, the methodology has general use in the context of sampling from normal mixture models under linear equality constraints.",
+      "authors": [
+        "Ryan Lafferty",
+        "Anindya Roy"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "stat.ME"
+      ],
+      "published": "2026-07-24T16:13:07+00:00",
+      "link": "https://arxiv.org/pdf/2607.22450v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "differential privacy implementation for data privacy in AI",
+      "llm_evidence_cn": "差分隐私实现在AI数据隐私中的应用",
+      "llm_evidence": "差分隐私实现在AI数据隐私中的应用",
+      "canonical_evidence": "差分隐私实现在AI数据隐私中的应用",
+      "llm_tldr_en": "Proposes a maximum entropy implementation of differential privacy under linear invariants, enabling privacy guarantees when certain aggregate queries must be preserved.",
+      "llm_tldr_cn": "本文提出了一种线性不变量下差分隐私的最大熵实现，解决了在必须保留某些聚合查询时传统差分隐私噪声不再独立的挑战，确保了隐私预算的准确评估。通过最大熵方法，实现了对约束条件的精确建模，为数据发布中的隐私保护提供了新工具。",
+      "llm_tldr": "本文提出了一种线性不变量下差分隐私的最大熵实现，解决了在必须保留某些聚合查询时传统差分隐私噪声不再独立的挑战，确保了隐私预算的准确评估。通过最大熵方法，实现了对约束条件的精确建模，为数据发布中的隐私保护提供了新工具。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.22445v1",
+      "source": "arxiv",
+      "title": "Dynamic Capability Scoping for Enterprise AI Agents: A Synthetic Dataset and Three-Source Permission Architecture",
+      "abstract": "Enterprise AI agents are typically granted static credential sets at configuration time, holding every tool the role might need for every task they perform. This persistent over-privilege expands the attack surface. We argue that capability scoping must follow a dynamic least-privilege principle and be treated as a prevention mechanism before a detection one. A credential that does not exist in an agent's context cannot be misused regardless of the agent's reasoning or evasion sophistication. We outline a three-source architecture instantiating this principle: role-based ceilings, a task-context classifier, and policy-derived combination prohibitions creating a layered proactive defense against LLM agent misalignment and misuse cases. The architecture supports both enforcing and observe-only deployment; the latter records agent permission requests inconsistent with task context, producing a behavioral signal usable in misalignment research.   As a first step toward evaluating this architecture, we contribute a synthetic dataset of 600 enterprise task prompts grounded in a multi-department company policy, labeled with minimum required permissions across a 15-permission tool-based taxonomy that maps directly to deployable credentials or enforceable guardrails. The dataset is constructed via a two-pass pipeline that separates prompt generation from permission labeling to avoid circularity, and is validated against a 60-record/688 decisions human-reviewed sample (Cohen's $κ= 0.917$ pre-review and $κ= 0.967$ post-review). Iterating between dataset and policy reduced ceiling violations from 46 to 3, a 93% reduction. This shows that synthetic prompt generation can drive policy refinement when the two are developed together. The dataset, environment specification, and generation pipeline are released to support evaluation of dynamic scoping mechanisms.",
+      "authors": [
+        "Halil Burak Noyan"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CR"
+      ],
+      "published": "2026-07-24T16:08:03+00:00",
+      "link": "https://arxiv.org/pdf/2607.22445v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Dynamic capability scoping for enterprise AI agents",
+      "llm_evidence_cn": "企业AI代理的动态能力范围",
+      "llm_evidence": "企业AI代理的动态能力范围",
+      "canonical_evidence": "企业AI代理的动态能力范围",
+      "llm_tldr_en": "Proposes a dynamic least-privilege capability scoping architecture for enterprise AI agents, using role-based ceilings, task-context classifier, and policy-derived prohibitions to prevent over-privilege.",
+      "llm_tldr_cn": "企业AI代理通常被授予静态凭证集，导致权限过大。本文提出三源权限架构：基于角色的上限、任务上下文分类器和策略组合禁止，实现动态最小权限。未出现在上下文中的凭证无法被滥用，无论代理推理能力多强，从而提前阻止攻击。",
+      "llm_tldr": "企业AI代理通常被授予静态凭证集，导致权限过大。本文提出三源权限架构：基于角色的上限、任务上下文分类器和策略组合禁止，实现动态最小权限。未出现在上下文中的凭证无法被滥用，无论代理推理能力多强，从而提前阻止攻击。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

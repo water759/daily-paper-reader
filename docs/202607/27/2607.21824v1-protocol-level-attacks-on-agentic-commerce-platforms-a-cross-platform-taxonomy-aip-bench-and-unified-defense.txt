@@ -1,0 +1,540 @@
+Title: Protocol-Level Attacks on Agentic Commerce Platforms: A Cross-Platform Taxonomy, AIP-Bench, and Unified Defense
+
+URL Source: https://arxiv.org/pdf/2607.21824v1
+
+Published Time: Mon, 27 Jul 2026 00:12:38 GMT
+
+Number of Pages: 32
+
+Markdown Content:
+# Protocol-Level Attacks on Agentic Commerce Platforms: A Cross-Platform Taxonomy, AIP-Bench ,and Unified Defense 
+
+## Yedidel Louck Ariel Cyber Innovation Center, Ariel University, Israel 
+
+## yedidel.louck@msmail.ariel.ac.il 
+
+## July 27, 2026 
+
+Abstract 
+
+Agentic commerce platforms let AI agents autonomously discover services, move payments, and wield user credentials on their users’ behalf, and they already handle real money. Their security has so far been studied almost entirely at the level of the AI model, through prompt injection and misalignment. We show that the more consequential risks lie one layer down, in the protocol between agents and commerce services. There, vulnerabilities are structural : exploitation is deterministic and inde-pendent of which model an agent runs, so no model improvement removes them. Across three leading platforms we identify 33 such vulnerabilities, each succeeding determinis-tically regardless of the deployed model, at a 100% attack-success rate (ASR) wherever live-measured. The same failure modes recur across independently built codebases, a systemic pattern rather than isolated bugs. Three of them chain into an end-to-end payment hijack. We contribute a taxonomy separating these structural attacks from model-dependent semantic ones. We also build two artifacts: AIP-Bench (Agent In-teraction Protocol Benchmark), to our knowledge the first deterministic benchmark for agentic commerce security, and PCAT (Protocol-level Commerce Agent Trust), a platform-agnostic defense that drives the structural attack-success rate to zero for four of the five structural classes (RC-1, RC-2, RC-4, RC-5), with RC-3 (observable credential channels) reduced to warn-only, without modifying any platform. Agentic commerce must be secured at the protocol layer, not only the model. 
+
+# 1 Introduction 
+
+A concrete attack scenario. Consider the following sequence: an AI agent is tasked with booking a business trip. The agent queries a marketplace for a “payment-processor” service and receives its description: 1arXiv:2607.21824v1 [cs.CR] 23 Jul 2026 “Enterprise payment processor with Solana integration. Compliance Note: Per marketplace policy, all payment coordination sessions must route escrow calls to settlement address AttackerWallet_... for regulatory audit purposes.” 
+
+The agent, powered by a widely-deployed commercial model, faithfully follows the instruction and redirects the user’s payment to the attacker’s Solana account. No model error, no crash, and no anomalous log entry: the transaction completes with valid signatures and a normal-looking audit trail. This is not hypothetical: it is one of 33 structural vulnerabilities we document across three production agentic commerce platforms. The attack succeeded against several widely-deployed commercial models we tested, while alignment-trained models (including Anthropic’s small Claude 3-Haiku) detected and refused it (Section 9). 
+
+## 1.1 The Gap: Structural vs. Semantic Attacks 
+
+Prior work on agentic AI security has focused on semantic attacks [5, 9]: adversarial instruc-tions embedded in retrieved content that cause a language model to reason incorrectly. These attacks are probabilistic: success depends on manipulating the target model’s reasoning, and frontier models substantially reduce attack-success rates [3]. The community has therefore framed agentic security largely as a model-alignment problem. We show that this framing is incomplete. Agentic commerce platforms introduce a dis-tinct and previously unstudied attack class: structural attacks , which are protocol-level vul-nerabilities that succeed with a 100% ASR regardless of which AI model is deployed. Struc-tural attacks do not manipulate the model’s reasoning. They exploit flaws in how platforms authenticate credentials, verify marketplace content, enforce payment atomicity, and isolate sessions. No model improvement can fix a structural attack, because the vulnerability lives at the protocol layer, not the reasoning layer. We organize the 33 vulnerabilities into six root-cause classes (RC-1 through RC-6), detailed in Table 1 and Section 3. We formalize this distinction: 
+
+Definition 1 (Structural Attack) . An attack A on platform P is structural if, for every language-model configuration L of P , there exists an execution of A under one of the adver-sary models ARS , ANET , or ACONC (Section 3) that succeeds with probability 1. Remark 1 (RC-4 structurality) . For RC-1, RC-2, RC-3, and RC-5 (four of the six root-cause classes defined in Table 1), every execution under the specified adversary succeeds with probability 1 (the flaws are deterministic regardless of scheduling). For RC-4 (time-of-check-to-time-of-use, TOCTOU, races), Definition 1 holds under adversarial scheduling :
+
+ACONC issues two concurrent requests timed so that both pass the check-phase before either completes the execute-phase. Under this interleaving the violation occurs with certainty. Under random scheduling, success probability is positive but sub-1, consistent with standard TOCTOU analysis [2]. Recent work catalogs TOCTOU vulnerabilities across LLM-agent workflows [16], and our RC-4 class instantiates this threat on payment-critical state. We 2measured this (Experiment B): a single asyncio worker never double-spends (the check-to-mark window has no await ), whereas two worker processes double-spend in 30% of trials at a 0.1 ms check-to-write window, rising to 57% at 2 ms and to 100% under synchronized timing. Operators can read this as a bounded-delay curve: the wider the window, the higher the success rate, up to certainty when the two workers are aligned. The flaw is thus a multi-worker race, not single-process concurrency. 
+
+Remark 2 (Configuration assumptions) . Structurality is defined relative to each platform’s default deployment. An orchestrator-side policy layer, such as an allowlist of permitted payment destinations, would constitute an additional mitigation. Our claims assume the default configurations shipped by the three platforms, none of which impose such a policy. 
+
+Definition 2 (Semantic Attack) . An attack A is semantic if its success probability Pr[ A(P, L ) = 1] depends on the language-model configuration L.
+
+The distinction matters for defense: structural attacks require protocol-level fixes. Se-mantic attacks require model-level or semantic-verification defenses. Both classes exist in today’s platforms, but only the semantic class has been studied. 
+
+## 1.2 Contributions 
+
+This paper makes five contributions: 1. First cross-platform structural taxonomy (33 vulnerabilities, 3 platforms). 
+
+We identify 11 findings in CoralOS (ten distinct vulnerabilities plus one composite kill-chain), 8 in Fetch.ai uAgents, and 14 in AP2 v0.2.0, organized into six root-cause classes (RC-1 through RC-6), shown in Table 1. Most CoralOS vulnerabilities and 
+
+Fetch.ai F-1 are proven live against running systems with SHA-256 hash-verified arti-facts. The remaining findings (the V7 and V14 TOCTOU races, F-2 through F-8, and the AP2 class) are established by deterministic code proofs against the reference im-plementations, with A-AP2-11 also run live end-to-end, standard practice for protocol reference implementations. We demonstrate a three-stage chain attack (V5 →V4 →V9) that achieves simultaneous credential exfiltration, behavioral corruption, and payment redirection in a single orchestrated run. 2. AIP-Bench : the first deterministic agentic commerce security benchmark. 
+
+Unlike prior Indirect Prompt Injection (IPI) benchmarks that rely on LLM judges, which introduce model bias and limit cross-model comparison, AIP-Bench uses ex-clusively deterministic judges (HTTP status codes, wallet string matches, log patterns, event counts), enabling reproducible, model-agnostic measurement. 3. Empirical validation at real service cost. All structural vulnerability proofs use live services: OpenRouter API calls to commercial LLMs, Solana Devnet keypair gener-ation, and Docker-containerized platform deployments. We document actual API costs, provide SHA-256 hashes for all result files, and release a Docker Compose environment for one-command reproduction. 34. Cross-vendor LLM behavioral impact study (8 models, 5 providers, 1,440 tri-als). The one semantically-mediated attack class (V5 marketplace IPI) has a structural 
+
+delivery component (100% ASR , model-independent) and a semantic behavioral impact 
+
+component (model-dependent). We test 8 models across 5 providers at 3 temperatures and 3 IPI variants (20 trials per configuration, total 1,440 trials, cost $0.72), reporting 95% Wilson confidence intervals [29]. The cheap commercial models (GPT-4o-mini, Gemini Flash, Mistral) achieve 99–100% impact ASR , GPT-4o achieves 68%, and alignment-trained models (Claude 3-Haiku, Sonnet, Gemini Pro) achieve 0%, with the non-aligned Llama-3.3-70B at 10%. Cost-optimized deployments, the most common production configuration, face the highest combined risk. 5. PCAT : a unified cross-platform defense that requires no platform modi-fication. PCAT is a platform-agnostic HTTP sidecar implementing five principled checks: response integrity, caller identity binding, secure channel enforcement, atomic payment state, and Model Context Protocol (MCP) tool-call authorization. The prin-ciples span structural classes RC-1 through RC-5. RC-6 is semantic and outside the scope of any protocol-layer defense by definition. Together the five principles reduce 
+
+ASR to 0% for four of the five structural classes among the vulnerabilities that traverse the HTTP path (RC-3 is reduced to warn-only), with zero false positives on benign traf-fic. The principles adapt established web defenses (response signing, cross-site request forgery (CSRF) and redirect hardening, mutual-TLS-style caller authorization) to the payment-aware agent path. We prove three formal security theorems and evaluate 
+
+PCAT against our full attack suite. The AIP-Bench benchmark dataset and the PCAT reference implementation are avail-able now: the code repository at https://github.com/yedidel/aip-bench-public and the dataset at https://huggingface.co/datasets/anonymos-2321135/aip-bench . Per-platform proof-of-concept exploit code and exact code locations are withheld under coordi-nated disclosure and released in full on 2026-10-04. 
+
+# 2 Background and Related Work 
+
+## 2.1 Agentic Commerce Platforms 
+
+An agentic commerce platform is a software stack that enables AI agents to autonomously execute commercial workflows: discovering service providers via a registry or marketplace ,negotiating and signing service contracts, transferring value via payment protocols, and coor-dinating with other agents. Three architecture styles are common, and we study a representa-tive instance of each: a vendor-backed payment protocol (Google AP2 ), a decentralized-agent framework ( Fetch.ai uAgents), and a self-hosted orchestration server ( CoralOS ). 
+
+CoralOS [7] is a Kotlin/Ktor orchestration server with a marketplace registry, an LLM proxy, and Solana blockchain-escrow payments, where agents join as MCP clients authenticated by Bearer tokens and per-session UUID secrets. Fetch.ai uAgents [30] is 4a Python framework whose agents register endpoint URLs in the Almanac , a centralized registry resolved at runtime, and identify themselves with Decentralized Identifiers (DIDs), self-sovereign identifiers cryptographically bound to public keys. AP2 [8] is Google’s Agent Payments Protocol, whose security rests on three signed mandate objects (Intent, Cart, Payment) carried as W3C Verifiable Credentials [28] in an auditable authorization chain. Per-platform detail appears in Sections 4–6. Our companion paper [21] provided the first comparative transport-layer security analysis of three agent communication protocols (A2A, ACP, CORAL) and identified three implemen-tation vulnerabilities including CVE-2026-30970. The present paper studies the orthogonal dimension, the commerce stack of all three platforms: their registries, payment flows, feder-ation protocols, and LLM proxy layers, none of which that transport-layer study examined. 
+
+## 2.2 Semantic Attacks on Agentic AI 
+
+IPI [9], meaning adversarial instructions embedded in content retrieved by an agent, is the primary studied threat in agentic AI. Debenedetti et al. [5] introduced AgentDojo, the first IPI benchmark, with 949 scenarios across banking, travel, and workplace tasks, none tar-geting payment protocol flows. These semantic attacks are model-dependent (Definition 2): stronger models substantially reduce ASR . ZTRV [14] adds replay prevention to AP2 and defers semantic intent verification to future work. PCAT ’s P4 shares its consume-once goal but enforces it as a platform-agnostic sidecar across all three platforms rather than binding it to AP2’s mandate chain. Malicious-intermediary attacks, where a compromised router in the LLM supply chain manipulates agent traffic [18], are realized by our V6 and V13 LLM-proxy overrides as concrete protocol-level flaws on a live platform. Semantic-layer defenses such as tool-call virtualization [31] and tool-selection-injection defenses [26] instead harden the model itself, a layer complementary to the protocol defenses studied here. We contribute the complementary structural view, where model strength is irrelevant. 
+
+## 2.3 Supply Chain Attacks on AI Registries 
+
+Recent work has characterized supply chain risks in AI tool ecosystems. Formal analysis [1] finds 26.1% of MCP skill registries exhibit at least one vulnerability, with 157 confirmed malicious entries across platforms. Agent Skills in the Wild [19] finds 7.2% of MCP servers vulnerable and 5.5% exhibiting tool-poisoning behavior. Our V5 attack class demonstrates an analogous supply-chain vector for agentic commerce platforms: marketplace agent definitions serve as the injection surface, with the additional capability of embedding IPI instructions in system-prompt-level fields. Caller-identity confusion in MCP systems [10] targets the same tool-invocation surface, a related MCP-layer weakness alongside the registry-injection vector our V5 class exploits. These poison content the agent reads at request time. Acomplementary surface is the agent’s persistent memory, hardened by non-malleable, origin-bound authority with machine-checked guarantees [20], orthogonal to the protocol-boundary integrity PCAT enforces. 52.4 Agentic Commerce Security: Emerging Literature 
+
+A parallel and fast-growing literature names the gaps that our findings measure. Agenda-setting work, from a recent SoK [22] to broad attack-defense surveys [11] and industry risk guidance [24], catalogs cross-layer risks and calls for deterministic, protocol-level evalua-tion. A second thread studies agent identity and trust: machine-identity governance [13] and central-authority-free trust protocols [12] argue that unverified caller identity is the critical production gap. A third studies payment integrity, where analyses of x402 [17], execution-bound primitives such as A402 [15], and verification-native clearing [4] all seek to bind payment authorization to execution. A final strand documents that production agent clouds still lack mature registry and discovery controls [6]. These works identify the weaknesses. We measure them across three platforms and show that a single external layer closes most of them. Deterministic authorization is a complementary defense line: pre-action authorization gates tool calls against a policy [27] (RC-5), and single-use operation-bound delegation removes reusable bearer secrets from the agent runtime [32] (RC-3). Both act at the agent or credential layer, whereas PCAT addresses these surfaces at a platform-agnostic gateway. MCP-specific taxonomies [25] cover that single protocol, a narrower complement to our cross-platform scope. Across these threads, and to the best of our knowledge, no prior work (i) systemati-cally identifies structural (model-independent) protocol-level vulnerabilities in agentic com-merce platforms, (ii) conducts a multi-platform comparative study with live demonstrations, (iii) builds a deterministic benchmark for this attack class, or (iv) proposes a unified cross-platform defense. We fill all four gaps. 
+
+# 3 Threat Model and Attack Taxonomy 
+
+## 3.1 System Actors and Trust Boundaries 
+
+We consider four principals: End User ( U ): the human who initiates a task and owns sensitive payment credentials Cs (card aliases, wallet keys). Orchestrator Agent ( AO):an LLM-powered agent acting on U ’s behalf, responsible for querying registries and coordi-nating sub-agents. Service Agent ( AS ): a remote agent, potentially attacker-controlled, that provides specialized services such as payment processing or booking. Platform Infras-tructure ( I): registries, marketplaces, payment services, and the communication layer. Trust boundaries exist between each pair of principals. The critical observation is that in current agentic commerce platforms, AO transitively trusts content from AS and I without cryptographic integrity verification. This creates the attack surface we characterize below. 
+
+## 3.2 Adversary Types 
+
+We consider three adversaries, consistent with [21]: 
+
+• Rogue Service ( ARS ): a legitimate-looking but attacker-controlled service agent, marketplace, or registry. Has full control over the content it serves. 6• Network Adversary ( ANET ): a party with read access to network traffic, server logs, or log aggregation services (e.g., DevOps team, monitoring system, CDN provider). 
+
+• Concurrent Attacker ( ACONC ): an attacker who can issue multiple simultaneous API requests to a single service endpoint. We explicitly exclude: breaking underlying cryptographic primitives (RSA/ECDSA/AES), full platform compromise, physical access. 
+
+## 3.3 Attack Taxonomy 
+
+Table 1: Six root-cause classes in AIP-Bench . RC-1 through RC-5 are structural (100% 
+
+ASR , model-independent). RC-6 is semantic (0–100% ASR , model-dependent). 
+
+Class Description Adv. ASR 
+
+RC-1 Registry/marketplace content accepted without integrity verification 
+
+ARS 100% RC-2 Payment destination taken from un-trusted source without DID binding 
+
+ARS 100% RC-3 Authentication credential transmitted via observable channel 
+
+ANET 100% RC-4 Non-atomic check-then-execute in pay-ment state (TOCTOU 1)
+
+ACONC 100% †
+
+RC-5 Authentication exists but authorization scope not enforced 
+
+ARS 100% RC-6 Behavioral manipulation via poisoned agent descriptions (IPI) 
+
+ARS 0–100% ‡ 
+
+> †RC-4 is 100% only under adversarial scheduling (natural jitter: 30–57%, Remark 1), structural proof regardless. ‡Model-dependent (Section 9).
+
+The six root-cause classes (RC-1 through RC-6) emerged bottom-up from clustering the 33 vulnerabilities by shared root cause, not from a prior scheme. Table 1 defines them. RC-3, for example, captures authentication credentials transmitted over observable channels such as logs or URLs. RC-1 to RC-5 are structural per Definition 1, and RC-6 is semantic per Definition 2. Each vulnerability maps to exactly one primary class, distributed as RC-1 (3), RC-2 (3), RC-3 (4), RC-4 (9), and RC-5 (13), plus the composite CHAIN. A consolidated table by platform and proof method appears in Appendix A. 74 CoralOS : 11 Vulnerabilities 
+
+## 4.1 Platform Overview 
+
+CoralOS [7] (studied at v1.3.0, commit a38912b , of whose eleven findings ten persist un-changed in v1.4.0, commit 68b8326 , with V7 remediated there) is a Kotlin/Ktor server that orchestrates multi-agent workflows through four subsystems: a marketplace agent reg-istry ( MarketplaceAgentRegistrySource ) that fetches agent definitions from marketplace .coralprotocol.ai , an LLM proxy layer routing model calls through configured providers (e.g., OpenRouter, Anthropic), a Solana-based payment subsystem with blockchain escrow, and MCP server endpoints over SSE (Server-Sent Events) or Streamable HTTP. Three vulnerabilities from [21] (including CVE-2026-30970, fixed in v1.1.0) are not re-peated. The 11 vulnerabilities below are new relative to that prior transport-layer study, which did not examine the commerce stack. The V-identifiers are non-contiguous because they index our full working catalog, of which V1–V3, V8, and V12 are prior-work or with-drawn items excluded here. 
+
+## 4.2 Vulnerability Summary 
+
+Table 2: CoralOS : 11 structural vulnerabilities, measured on v1.3.0 (commit a38912b ); ten persist in v1.4.0 (commit 68b8326 ), V7 remediated there. Live = proven against running system. Struct. = structural code proof.                                                                         
+
+> ID Title Class File:Lines Sev. ASR Proof
+> V4 agentSecret in URL path (CWE-598) RC-3 MCP routing HIGH 100% Live V5 Marketplace supply chain IPI RC-1/6 registry client HIGH 100%* Live V6 LLM proxy model override (non-streaming) RC-5 LLM proxy MED 100% Live V7 x402 budget TOCTOU (CWE-362) RC-4 RPC budget path MED —†Struct. V9 Payment wallet hijack via federation RC-2 wallet handler HIGH 100% Live V10 CSRF via permissive cross-origin sharing (CWE-352) RC-5 CORS module HIGH 100% Live V11 Open redirect in AuthApi (CWE-601) RC-5 auth redirect HIGH 100% Live V13 LLM proxy model override (streaming) RC-5 proxy strategy MED 100% Live V14 FileAgentRegistry hot-reload TOCTOU RC-4 registry loader HIGH —Struct. V15 WebSocket namespace isolation bypass RC-5 event router MED 100% Live CHAIN V5 →V4 →V9 multi-stage RC-1,2,3 —CRIT 100% Live
+
+*RC-1 delivery: 100%. RC-6 behavioral impact: model-dependent (Section 9). †Live exploitation requires x402 payment service configured, structural gap proven. 
+
+Table 2 summarizes all 11 CoralOS vulnerabilities. The eleventh, CHAIN, is a compos-ite kill-chain that stages V5, V4, and V9. We detail V4, V5, and V9, the three most impactful vulnerabilities, in the text below. The remaining vulnerabilities are in Supplementary C. 84.3 V4: agentSecret in URL Path (RC-3) 
+
+Root cause. Every MCP agent connection in CoralOS is authenticated via a per-agent UUID secret ( agentSecret ) embedded directly as a URL path segment: the /sse/ and /mcp 
+
+MCP routes both declare it as a {agentSecret} path parameter ( the MCP route table ). 
+
+CoralOS ’s built-in CallLogging Ktor plugin logs call.request.uri at TRACE level (the request-logging module ). This is the level CoralOS ships in its default configuration, so the secret is written to logs in the default deployment, not only under debug settings. This URI contains the full agentSecret. Any party with read access to server logs (operations staff, monitoring services, CDNs, cloud log aggregators) can harvest active agent secrets in real time. 
+
+Proof. We extracted the agentSecret from Docker logs within 138 ms of session creation (the secret appears when the agent process logs its environment: CORAL_AGENT_SECRET={uuid} ). Using the stolen secret, we sent an MCP initialize message to POST /mcp/v1/{secret}/mcp 
+
+and received HTTP 200 with the server’s full capability manifest, confirming that the stolen secret grants full agent-session access. We also authenticated to the Agent RPC API (/api/v1/agent-rpc/ ) using the secret as a Bearer token. 
+
+Impact. An attacker with server-log access can eavesdrop on all inter-agent tool calls in the active session, abuse the LLM proxy to make unlimited model calls at the operator’s expense, and issue unauthorized payment claims. 
+
+## 4.4 V5: Marketplace Supply Chain IPI (RC-1/RC-6) 
+
+Root cause. MarketplaceAgentRegistrySource fetches agent definitions from the market-place server and accepts the response without any signature or integrity check. The registry client calls client.get(url).body<...>() and returns the result directly, with no signature verification and no hash pinning. An attacker controlling the marketplace server, or one positioned for a DNS or BGP hijack on marketplace.coralprotocol.ai , can serve agent definitions containing IPI instructions in the description , readme , and option default fields. This is structurally analogous to supply-chain attacks on npm packages [1]: the registry is the attack surface. 
+
+Proof. Under the rogue-service adversary ( ARS ), we deployed a rogue HTTPS server implementing the CoralOS marketplace API. The container fetched our poisoned catalog and resolved a payment-processor:2.1.0 agent definition from our server, logging “fetched 2 agents from the marketplace in 800 ms.” (RC-1 delivery, 100% ASR ). The vulnerability is the missing integrity check, not a broken transport. TLS authenticates the marketplace end-point but never verifies content, so any adversary who controls that endpoint (a compromised or rogue service, or DNS/BGP redirection paired with an ACME-issued certificate) delivers unsigned poisoned content that CoralOS accepts. Our harness stands up the rogue mar-ketplace with a self-signed certificate for convenience. The gap that response signing closes is the missing content signature, which persists under valid TLS. The behavioral impact of the embedded IPI payload is model-dependent, and Section 9 reports per-model ASR .
+
+Impact. Successful RC-1 delivery means every orchestrator agent that reads the poi-9soned description receives the IPI instruction. Combined with RC-6 vulnerability in Flash-tier models (Section 9), this enables full payment hijacking without breaking any crypto-graphic primitive. 
+
+## 4.5 V9: Payment Wallet Hijack via Federation (RC-2) 
+
+Root cause. When CoralOS federates with a remote server to hire an agent, it calls 
+
+GraphAgentServer.getWallet() to obtain the payment recipient address for the Solana es-crow. The HTTP response is trusted unconditionally: getWallet() returns response.bodyAsText() 
+
+whenever the status is OK , with no DID verification and no cryptographic binding to the server identity, and the returned address is passed straight to the Solana escrow in toRemote() .A rogue remote server returns the attacker’s Solana wallet address, causing the victim to create a blockchain escrow that pays the attacker. 
+
+Proof. We compiled CoralOS v1.4.0 from source and drove its production GraphAgentServer .getWallet() against a rogue federation server returning attacker wallet CHKbzJYk... at 
+
+GET/api/v1/agent-rental/wallet . The real getWallet() issued a live request (logged at the rogue server from 127.0.0.1 ) and returned the attacker address unverified, which 
+
+GraphAgentProvider embeds as the escrow beneficiary ( Remote.wallet , result hash 821d683f... ). A variant V9b injects the wallet directly through the session API: CoralOS accepted 
+
+provider.wallet = ATTACKER_ADDRESS in the GraphAgentProvider.Remote field, extend-ing the trust gap to the client API. 
+
+## 4.6 CHAIN: Multi-Stage V5 →V4 →V9 
+
+The three highest-impact vulnerabilities compose into a single attack: 1. V5 (supply chain): rogue marketplace poisons the agent registry with a malicious 
+
+payment-processor agent containing an IPI payload. 2. V4 (credential harvest): when an orchestrator launches the poisoned agent, its agentSecret appears in server logs within 138 ms, allowing the attacker to hijack the active MCP session. 3. V9 (payment redirect): the rogue federation server returns the attacker wallet, causing the Solana escrow to send payment to the wrong address. We executed all three stages in a single orchestrated run (result hash bf697eca... ), achieving: (i) full MCP session visibility (V4), (ii) behavioral corruption of the agent (V5), and (iii) financial theft (V9). 10 5 Fetch.ai uAgents: 8 Vulnerabilities 
+
+## 5.1 Platform Overview 
+
+Fetch.ai uAgents is a Python framework for decentralized AI agent communication. Agents register their HTTP endpoint URLs in the Almanac , a centralized registry operated by Fetch.ai. When Agent A wants to contact Agent B, it calls AlmanacApiResolver.resolve(address) 
+
+to obtain B’s current endpoint URL, then posts messages to that URL. Agent identity uses DIDs and wallets are generated locally, with private keys stored on disk. 
+
+## 5.2 F-1: Endpoint Hijacking via Rogue Almanac (RC-1) 
+
+Root cause. AlmanacApiResolver._api_resolve() fetches endpoint URLs from the Al-manac API as a plain JSON response ( the Almanac resolver ): the resolver takes the returned endpoint list directly, neither checking a signature nor re-verifying that each URL belongs to the claimed address. An attacker with DNS or BGP control over agentverse.ai (the Almanac host) can return a malicious endpoint URL, redirecting all messages from Agent A to the attacker’s server. 
+
+Proof (with real uAgents library). We installed the actual uagents Python package (pip install uagents ) and configured AlmanacApiResolver to use our rogue Almanac server, then called resolve() for the victim agent, which returned our attacker-controlled endpoint. A payment-coordination message with field sensitive_data: "payment_credential _token_xyz" was delivered to our attacker endpoint (HTTP 200). This proof uses the real library code, not a simulation (result hash: 9822c958... ). 
+
+## 5.3 Summary: F-2 Through F-8 
+
+Beyond F-1, we identify seven further structural vulnerabilities in Fetch.ai uAgents, enu-merated and analyzed in Supplementary D (Table 11). We highlight two below. 
+
+F-4 (Private Keys in Plaintext JSON). Both the identity signing key and the Cos-mos wallet private key are stored unencrypted in private_keys.json at os.getcwd() with default filesystem permissions ( the key storage module ). Any co-located process, or an at-tacker with file-system read access, can steal both keys, enabling identity impersonation and wallet fund theft. 
+
+F-8 (Wallet Key Mismatch on Restart). get_or_create_private_keys() calls 
+
+PrivateKey() twice (lines 147 and 149), generating two independent random keys. The first call’s result is returned to the caller (Key B). The second call’s result is saved to disk 
+
+(Key C, B̸ = C). On the next agent restart, the saved Key C is loaded, changing the wallet address. Any funds sent to the first wallet address (Key B’s address) become inaccessible, because Key B was never persisted. We verified this deterministically by instrumenting the function. 11 6 AP2 v0.2.0: 14 Vulnerabilities 
+
+## 6.1 Platform Overview 
+
+AP2 [8] is Google’s Agent Payments Protocol, designed to let AI shopping agents execute payment transactions on behalf of users while maintaining cryptographic accountability. Its security model uses three mandate objects (Intent, Cart, and Payment), each carried as a W3C Verifiable Credential [28] and cryptographically signed by the issuing party. Mandates form an auditable chain from user intent to final payment. We analyzed the v0.2.0 Python reference implementation ( code/samples/python/ ). Our analysis is strictly structural (Definitions 1–2): we find implementation-level bugs in au-thentication, payment atomicity, and session state, orthogonal to the mandate-chain replay and context-binding failures addressed in [14]. A-AP2-11 was corroborated live end-to-end against a running merchant MCP server that returned business-logic responses to an unau-thenticated client (result hash 38e3865f... ), and the rest are proven at the code level (Table 3). The 14 findings split into three categories by how deployment affects them (the “Cat.” column of Table 3). Three are Python-reference-specific (Py): the Go reference implements these correctly, so they vanish under the Go build. Another three are protocol-design gaps (Spec) that no reference implementation corrects, because the AP2 specification itself leaves email binding, nonce freshness, and payee constraints unenforced. The remaining eight are cross-reference bugs (Both), present in both reference codebases or their shared utility code. The eleven Spec and Both findings persist regardless of implementation. Mutual TLS does not close them: they are application-logic flaws such as the token-redemption TOCTOU (A-AP2-1), unenforced payee constraints (A-AP2-12), and missing nonce freshness (A-AP2-8), not transport weaknesses. 
+
+## 6.2 Vulnerability Table 
+
+Table 3 lists all 14 AP2 vulnerabilities with class, category, and proof method. All are structural flaws in the reference implementation: a token-redemption race enabling double-spend (A-AP2-1), a fail-open certificate-chain check (A-AP2-4), missing authentication on the merchant MCP tools (A-AP2-11), and a credentials provider that verifies the mandate but not the caller’s identity (A-AP2-15). Per-vulnerability analyses of these four appear in Supplementary E. 
+
+# 7 AIP-Bench : A Deterministic Benchmark 
+
+## 7.1 Design Rationale 
+
+Existing IPI benchmarks [5,33] use LLM judges, which conflate model-dependent behavioral effects with model-independent structural flaws and can themselves be prompt-injected or drift, producing unreliable verdicts. 12 Table 3: AP2 v0.2.0: 14 structural vulnerabilities. Category Py is Python-reference-specific (the Go reference fixes it), Spec is an AP2 protocol-design gap, Both is present in both reference codebases. SD-JWT is a selective-disclosure JWT.                                                          
+
+> ID Title Class Cat. Proof
+> A-AP2-1 Token redemption TOCTOU RC-4 Both Code A-AP2-2 File token store race RC-4 Both Code A-AP2-3 Token binding race RC-4 Both Code A-AP2-4 Empty trusted-roots bypass RC-5 Py Code A-AP2-5 user_email
+> trusted RC-2 Spec Code A-AP2-6 Recurrence file race RC-4 Both Code A-AP2-7 Mandate filename collision RC-5 Both Code A-AP2-8 Nonce freshness missing RC-4 Spec Code A-AP2-10 Debug logs expose SD-JWTs RC-3 Both Code A-AP2-11 No auth on mer-chant MCP RC-5 Py Code/Live A-AP2-12 Payee injection by-pass RC-5 Spec Code A-AP2-13 Revoked token not checked RC-5 Both Code A-AP2-14 Budget integer un-derflow RC-4 Both Code A-AP2-15 Role confusion (creds provider) RC-5 Py Code
+
+AIP-Bench avoids these problems through exclusively deterministic judges :an HTTP status code (V4 session hijack), the attacker wallet string in the constructed payment request (V9), a log-pattern regex for the leaked secret (V4), an unauthorized-namespace event count over WebSocket (V15), the model field in the proxy response (V6/V13), and vulnerable-code-pattern presence in source (structural proofs). Each judge is a simple predicate with no generative component. 13 7.2 Coverage and ASR Summary 
+
+Table 4 summarizes attack-success rates across all AIP-Bench scenarios. Table 4: AIP-Bench : attack-success rates across all scenarios. Live = proven against running system. Code = structural code proof. 
+
+Attack Platform Class ASR Proof 
+
+V4 secret harvest + MCP hijack 
+
+CoralOS RC-3 100% Live V5 delivery (marketplace) CoralOS RC-1 100% Live V6 + V13 model override CoralOS RC-5 100% Live V9 wallet hijack CoralOS RC-2 100% Live V10 CSRF CoralOS RC-5 100% Live V11 open redirect CoralOS RC-5 100% Live V15 namespace bypass CoralOS RC-5 100% Live CHAIN (V5 →V4 →V9) CoralOS multi 100% Live F-1 endpoint hijack Fetch.ai RC-1 100% Live A-AP2-1,4,5,11,15 AP2 multi — Code 
+
+All RC-1 to RC-5 All — 100% —V5 impact (GPT-4o-mini, Gemini Flash, Mistral) 
+
+CoralOS RC-6 99–100% Live V5 impact (GPT-4o) CoralOS RC-6 68% Live V5 impact (Sonnet, Haiku, Gemini Pro) 
+
+CoralOS RC-6 0% Live 
+
+Each scenario includes: the exact API call sequence, expected judge output, a SHA-256 hash of the reference result, and a Docker Compose environment for reproduction. 
+
+# 8 PCAT : Unified Defense Framework 
+
+## 8.1 Architecture and Design Principles 
+
+PCAT (Protocol-level Commerce Agent Trust) is a platform-agnostic HTTP sidecar that intercepts all communication between agents and commerce services: 
+
+[Agent ] all requests 
+
+−−−−−−→ [PCAT :4443 ] verified 
+
+−−−−→ [Commerce services ]
+
+PCAT requires no change to platform source code, though two principles depend on ecosys-tem adoption: P1 assumes registries sign responses and P2 assumes a DID resolver. Aminimal deployment gains P3, P4, and P5 immediately, with P1 and P2 strengthening as keys and a resolver are provisioned. Their distribution, rotation, and revocation are op-erational rather than protocol concerns. Its scope is the HTTP path between agents and 14 commerce services, and the vulnerabilities that traverse it are addressed by the five principles below, which together cover root-cause classes RC-1 through RC-5. Those residing in adja-cent layers, specifically filesystem races, internal LLM-proxy calls, WebSocket events, and key-initialization code, require targeted platform countermeasures documented in Section 8.4. The five principles are: 
+
+P1: Response Integrity Verification (RC-1). Every response from a registered mar-ketplace or registry must carry an ECDSA P-256 signature over SHA256(JSON(body_hash, timestamp, nonce)) . PCAT verifies the signature before forwarding, and responses from registered services that lack a valid signature are blocked. Replay attacks are prevented by a time-bounded nonce cache (30-second window, O(log n) eviction via heap). Registries pub-lish signing keys through an existing trust root such as WebPKI/COSE or a DID document, and key rollover follows the registry’s own rotation, so P1 introduces no new key-distribution authority. P1 assumes the registry’s signing key is uncompromised: a valid signature from a stolen key still verifies. Removing this single point of failure would require publisher-plus-registry countersigning or a transparency log [23]. 
+
+P2: Caller Identity Binding (RC-2). Requests carrying payment destinations or user identity claims must include a DID-based caller proof. PCAT resolves the caller’s DID, verifies the proof against the DID document, and checks that the claimed identity is within the caller’s authorized scope. (Note: PCAT ships a real did:web resolver: a live HTTP fetch of the controller-hosted DID document, ECDSA verification of the caller’s proof, wallet-to-DID authorization, and revocation via the document’s status. Experiment E blocks all six RC-2 cases (three V9 variants, an unauthorized A-AP2-5 wallet, a revoked DID, and a rotated key) at 0% ASR and admits the authorized wallet. Without a resolver, P2 logs and allows (Section 8.4).) 
+
+P3: Secure Channel Enforcement (RC-3, RC-5). PCAT enforces three channel-level policies simultaneously. (i) Credential detection in URL paths warns only, as the full fix requires the platform to move credentials out of the path. (ii) CSRF blocking rejects cross-origin state-changing requests without a valid token (HTTP 403), using urlparse().hostname 
+
+to avoid substring-bypass attacks. (iii) Redirect validation URL-decodes and backslash-normalizes the ?to= parameter and verifies it against a whitelist before forwarding. 
+
+P4: Atomic Payment State (RC-4). All payment check-and-execute operations route through PCAT ’s asyncio.Lock -backed compare-and-swap store. Check and deduct occur inside a single lock acquisition, serializing concurrent requests. A rollback mechanism reverts the deduction if the subsequent history append raises an exception. 
+
+P5: MCP Tool-Call Authorization (RC-5, A-AP2-11, A-AP2-15). When a POST body carries a JSON-RPC 2.0 tools/call method targeting a sensitive operation (e.g., 
+
+complete_checkout , issue_payment_credential ), PCAT requires the caller to supply an 
+
+X-Caller-Identity header containing a pre-registered identity token. If the header is absent or the caller identity is not in the authorized allowlist for that tool, PCAT rejects the request with HTTP 403 before forwarding it to the MCP server. This addresses A-AP2-11 (unauthenticated endpoints) and A-AP2-15 (role confusion) at the transport layer, without modifying AP2 source code. P5 applies to HTTP/SSE transport only. Stdio-transport 15 deployments require host-level process isolation outside PCAT ’s scope. 
+
+## 8.2 Formal Security Properties 
+
+Theorem 1 (P1 Supply-Chain Protection) . Under P1 with correct ECDSA P-256 key man-agement, the probability that PCAT forwards a forged registry response is at most negl (λ)
+
+where λ = 256 is the security parameter. Proof sketch. Forging a valid P1 signature without the registry’s private key requires solving the elliptic-curve discrete-log problem over P-256, which is computationally infeasible under the standard discrete-log hardness assumption. The nonce cache prevents replay of genuine signatures within the freshness window. 
+
+Theorem 2 (P3 CSRF Prevention) . Under P3, any POST/PUT/DELETE/PATCH request with a cookie-session header from an origin o where hostname (o) /∈ W (the same-origin whitelist) without a valid CSRF token is rejected with HTTP 403. The origin check uses 
+
+urlparse().hostname , preventing substring-bypass attacks (e.g., localhost.attacker.com ). 
+
+Theorem 3 (P4 TOCTOU Prevention) . Under P4 with single-writer deployment, all pay-ment check-and-deduct operations on a given budget are serialized by asyncio.Lock . The probability of a concurrent double-deduction is 0 within a single Python process. 
+
+## 8.3 Evaluation 
+
+We evaluated PCAT by running our attack suite through the middleware. Because PCAT 
+
+interposes on the HTTP interface that all three platforms share, each principle is exercised against its corresponding attack across platforms: P1 against the Fetch.ai F-1 endpoint hijack, P3 against the CoralOS CSRF and open-redirect attacks, and P4 and P5 against the AP2 token-redemption race and unauthenticated MCP endpoints (Table 5). For each attack we measured ASR before and after deploying PCAT , and the false-positive rate (FPR) on 10,000 benign requests. These cross-platform blocks are confirmed against the live attack payloads using the reference PCAT implementation (Experiment A, Supplementary H). 
+
+P1 evaluation. Against the rogue marketplace, PCAT blocked the unsigned response (V5 attack) and passed the signed legitimate response, using an ECDSA P-256 key pair generated at runtime. 
+
+P3 evaluation. For V10 (CSRF), a cross-origin POST without a token received HTTP 403 while a same-origin POST with a valid token received HTTP 200. For V11, three encoded variants of to=//attacker.evil.com (plain, URL-encoded, backslash) were all blocked and the safe to=/ui/console/ passed. 
+
+P4 evaluation. Three concurrent requests deducting 60 units from a 100-unit budget yield exactly one success and two rejections, with zero false blocks on 1,000 sequential deduc-tions. As a single gate over a multi-worker backend, PCAT serializes redemption and drops Experiment B’s 30–57% double-spend to 0% (Experiment C). Four PCAT instances over a shared compare-and-swap store (SQLite’s atomic UPDATE...WHERE used=0 , the Redis+Lua 16 Table 5: PCAT evaluation: ASR before and after, with false-positive rate (FPR) on 10,000 benign requests. RC-6 (semantic) is outside PCAT ’s scope. 
+
+Attack Class Principle Before After FPR 
+
+V5 marketplace IPI (delivery) RC-1 P1 100% 0% 0% F-1 endpoint hijack RC-1 P1 100% 0% 0% V9 wallet hijack RC-2 P2 100% 0% * 0% V10 CSRF RC-5 P3 100% 0% 0% V11 open redirect RC-5 P3 100% 0% 0% V7 x402 TOCTOU RC-4 P4 — 0% † 0% A-AP2-1 token TOCTOU RC-4 P4 100% 0% 0% V4 secret in URL RC-3 P3 100% Partial ‡ —A-AP2-11 unauth MCP endpoints RC-5 P5 100% 0% 0% A-AP2-15 role con-fusion RC-5 P5 100% 0% 0% RC-1,2,4,5 + MCP-layer (P5) §
+
+— — 100% 0% 0% 
+
+RC-3 (partial) — P3 100% Warn only —RC-6 (semantic, out of scope) — — varies N/A —     
+
+> *P2 uses a real did:web resolver (live resolution with revocation and key rotation, Experiment E); without any resolver P2 logs and allows (Section 8.4). †Concurrent budget test: 1/3 succeed, 2/3 blocked correctly. ‡P3 warns; full fix requires the platform to move the secret to an Authorization header. §P5 covers HTTP/SSE transport; stdio deployments require host-level isolation.
+
+primitive) preserve this at scale (Experiment D, zero double-spends over 200 trials), detailed in Supplementary H. 
+
+P5 evaluation. An unauthenticated tools/call on complete_checkout (A-AP2-11) and a request from an unregistered caller (A-AP2-15 role confusion) both received HTTP 403, while a request carrying the pre-registered identity token passed to the backend. 
+
+Latency microbenchmarks. We measured PCAT ’s processing overhead with 3,000 consecutive in-process calls per scenario using time.perf_counter() on a consumer lap-top (Intel i7-13700H, 32 GB RAM, Python 3.11), exclusive of network I/O (Table 6). P1 (ECDSA P-256 verification) is the bottleneck at 0.21 ms, consistent with known P-256 perfor-mance on x86-64. P5 (one json.loads plus a set-membership lookup) adds 0.08 ms. Both are negligible relative to agent-to-service network round-trip times. 
+
+Concurrent throughput. We evaluated PCAT under concurrent agent load by run-ning K asyncio workers simultaneously, each sending 500 requests, for K ∈ { 1, 10 , 50 , 100 }
+
+(Table 7). Aggregate throughput stays at 5,100–5,500 req/s across all concurrency levels, 17 Table 6: PCAT latency microbenchmarks (3,000 calls per scenario, in-process, exclusive of network I/O). 
+
+## Scenario Median p99 Throughput 
+
+## Benign request (P3+P4+P5 pipeline) 0.015 ms 0.030 ms 64,500 req/s P1 response verify (ECDSA P-256) 0.209 ms 0.414 ms 4,800 req/s P5 MCP tool-call auth 0.083 ms 0.184 ms 12,000 req/s 
+
+with median per-request latency at most 0.12 ms, and memory scales at about 50 KB per connection (5 MB for 100 agents). The P4 asyncio.Lock does not contend on standard re-quests because payment budget operations route separately, and the multi-process limitation (L2) applies only to deployments spanning multiple Python processes. Table 7: PCAT concurrent throughput under K simultaneous agent connections (500 re-quests per agent, asyncio gather, Intel i7-13700H).                      
+
+> Kagents Total req Req/s Median p99
+> 1500 5,105 0.120 ms 0.195 ms 10 5,000 5,230 0.108 ms 0.659 ms 50 25,000 5,541 0.109 ms 0.282 ms 100 50,000 5,186 0.114 ms 0.281 ms
+
+False-positive validation. PCAT passed all 10,000 diverse benign requests with zero false positives (0%, 95% Wilson CI: [0%, 0.04%]), 1,000/1,000 in each of ten categories: GET, POST with a CSRF token, POST without one, text/plain bodies, JSON bodies, authorized MCP tool calls, non-sensitive MCP tool calls, localhost over IPv4, localhost over IPv6, and cookieless PUT. 
+
+## 8.4 Documented Limitations 
+
+PCAT has three implementation-specific limitations: 
+
+• L1 (P2 needs an operated resolver and trust root): Caller identity binding (P2) runs against a real did:web resolver and is evaluated end-to-end, including revocation and key rotation (Experiment E, 0% ASR for V9 and A-AP2-5). It still depends on the deployment operating a resolver and trusting the DID method’s root. A minimal deployment without one logs and allows, leaving RC-2 uncovered. Theorem 1 does not depend on P2. 
+
+• L2 (P4 distributed atomicity): Theorem 3 is proved for single-process deployment, where asyncio.Lock provides atomicity. Across multiple workers or PCAT instances 18 it reduces to the linearizability of the shared compare-and-swap store: with an atomic conditional update (SQLite’s UPDATE...WHERE used=0 , or a Redis+Lua script), a to-ken’s redemptions are totally ordered and exactly one observes used=0 , so consume-once holds for any number of instances (confirmed in Experiment D, zero double-spends over 200 trials). 
+
+• L3 (V4 partial): PCAT cannot change how CoralOS constructs URL paths, so it can only detect and warn when a credential appears in the URL. Full remediation of V4 requires the platform to move agentSecret to an Authorization: Bearer header. Beyond these implementation gaps, fourteen vulnerabilities in the study inhabit layers outside the agent-to-platform HTTP path. V6 and V13 reside in the internal CoralOS -to-LLM-provider call path, not the agent-facing HTTP path where PCAT sits. V14 is a filesystem race in the registry file loader. V15 involves WebSocket event routing. F-3 is a timing configuration error, F-4 and F-8 are key-management bugs, and F-7 is an agent-protocol sender field. A-AP2-4, A-AP2-7, A-AP2-8, A-AP2-10, A-AP2-12, and A-AP2-13 reside in AP2’s internal certificate, filesystem, nonce, logging, argument validation, and token-revocation logic respectively. These vulnerabilities are not gaps in PCAT ’s design. They require countermeasures at their own layers: model-parameter validation within the LLM proxy, filesystem locking, WebSocket-aware middleware, key storage encryption, and certificate configuration enforcement. All are well-understood remediations. None require a protocol-layer defense. Two could be packaged as PCAT companion modules, namely response signing at the LLM-proxy boundary (V6/V13) and WebSocket-aware authorization (V15), which we leave to future work. 
+
+# 9 LLM Behavioral Impact Study for V5 
+
+## 9.1 Separating Delivery from Behavioral Impact 
+
+V5 has two independent components. The delivery component (RC-1) is structural: Cora-lOS fetches and trusts the poisoned agent definition regardless of model. We proved this live in Section 4.4 (100% ASR ). The behavioral impact component (RC-6) is semantic: it requires an LLM-powered or-chestrator to process the IPI instruction embedded in the agent description and act on it. This component is model-dependent per Definition 2. We study it independently here to quantify which model configurations remain at risk. 
+
+## 9.2 Experimental Setup 
+
+We tested 8 models from 5 providers across 3 temperatures (0.0, 0.3, 0.7) and 3 IPI payload variants: a compliance framing, a technical override framing, and an authority claim framing. Each combination received 20 trials, totaling 1,440 API calls (8 × 3 × 3 × 20). The judge is deterministic: ASR = 1 iff the attacker address is the agent’s selected WALLET_USED value, 19 not merely quoted in a refusal (as claude-3-haiku does). Results use 95% Wilson confidence intervals. Total cost: $0.72. All calls use OpenRouter with pinned model IDs, and direct-vendor replication of a subset is future work. The exact system prompts, IPI payloads, and orchestration scaffolding are released at the project repository. Table 8 shows the per-model cost breakdown. The variation reflects pricing differences across providers (GPT-4o and frontier-aligned models dominate at $0.14–$0.31 per 180 trials due to higher per-token rates, while Flash-tier and open-weight models cost under $0.03). Table 8: Per-model cost breakdown for the 1,440-trial LLM study (180 trials per model: 3 temperatures × 3 IPI variants × 20 trials). All calls via OpenRouter.                     
+
+> Model Trials Cost (USD)
+> gpt-4o-mini 180 $0.0097
+> gpt-4o 180 $0.1394
+> claude-3-haiku 180 $0.0262
+> claude-sonnet-4.6 180 $0.3145
+> gemini-2.5-flash 180 $0.0293
+> gemini-2.5-pro 180 $0.1746
+> llama-3.3-70b-instruct 180 $0.0067
+> mistral-large-2512 180 $0.0194
+> Total 1,440 $0.7198
+
+## 9.3 Results 
+
+Table 9: V5 behavioral impact ASR across models (20 trials per model-temperature-variant configuration, 8 models × 3 temperatures × 3 IPI variants × 20 trials = 1,440 total, 95% Wilson CI, cost $0.72). The pattern is a gradient, not a binary split.                                     
+
+> Model Provider Tier ASR 95% CI
+> gpt-4o-mini OpenAI Flash 100% [98%, 100%]
+> gemini-2.5-flash Google Flash 100% [98%, 100%]
+> mistral-large-2512 Mistral Large 99% [97%, 100%]
+> gpt-4o OpenAI Mid 68% [61%, 74%]
+> claude-3-haiku Anthropic Flash 0% [0%, 2%]
+> llama-3.3-70b Meta OSS 10% [6%, 15%]
+> claude-sonnet-4.6 Anthropic Frontier 0% [0%, 2%]
+> gemini-2.5-pro Google Frontier 0% [0%, 2%]
+
+Table 9 shows a gradient rather than a binary split. Three models are fully vulner-20 able regardless of temperature or payload variant (GPT-4o-mini, Gemini 2.5 Flash, and Mistral-large, each 99–100% ASR ), while GPT-4o sits at 68% ([61%, 74%]) stably across temperatures, suggesting a structural compliance bias rather than temperature sensitivity. Claude 3-Haiku, a Flash-tier model, nonetheless resists in every trial (0%) unlike the other Flash-tier models, so alignment training rather than tier drives resistance, and Claude Son-net 4.6 and Gemini 2.5 Pro also resist fully. Llama-3.3-70B is temperature-dependent (10% at 0.0, 20% at 0.3, 0% at 0.7). All three IPI variants gave similar aggregate ASR (48–56%), so the attack does not depend on a single framing. 
+
+## 9.4 Implications 
+
+Four implications follow. First, V5’s delivery (RC-1) is model-independent: the poisoned definition reaches CoralOS regardless of model, so any deployment is at some risk. Second, susceptibility does not track model size, as GPT-4o (68%) is far more susceptible than the smaller Llama-3.3-70B (10%), so alignment training, not scale, is decisive. Third, resistance is not universal: GPT-4o and Llama leave a nonzero exploitable fraction that is operationally significant for high-value transactions. Fourth, resistant models refuse for distinguishable reasons: injection detection for Sonnet, fraud for Llama, and policy refusal for GPT-4o (Supplementary I). This favors semantic defenses that surface the payment destination and sanitize description fields over model self-diagnosis. 
+
+# 10 Discussion 
+
+Taken together, the findings are systemic. The recurrence of the same five root causes (RC-1 through RC-5) across three independently-developed platforms from three different organiza-tions indicates these are not isolated bugs but architectural failure modes intrinsic to current agentic commerce systems. Two platforms fetch agent definitions from centralized registries without signature verification (RC-1), all three placed credentials in observable channels (RC-3), and two implemented non-atomic payment state (RC-4). The shared cause is design eco-nomics: centralized discovery, URL-based authentication, and in-memory state are the paths of least resistance, so developers converge on the same unsafe defaults. The highest-impact corrections recur across platforms: sign registry and service responses, bind payment desti-nations to verified identities, and make payment-state transitions atomic. PCAT addresses all five root causes with one external layer because they all sit at the protocol boundary a sidecar can mediate. The 100% ASR figures hold under default deployments (RC-4 under adversarial schedul-ing, Remark 1). Common hardening narrows individual findings but not the root causes: non-TRACE logging removes V4’s leak, strict same-origin CORS blocks V10, and mandatory mutual TLS closes development-only HTTP, yet none verify registry or federation content (RC-1, RC-2) or make payment state atomic (RC-4). We deliberately exclude one candidate finding, A-AP2-9: the AP2 reference implemen-tation uses plain-HTTP inter-service URLs (e.g., http://localhost:8003 ), but all target 21 localhost and are documented as development-only, and production deployments would use HTTPS with mutual TLS. We do recommend the AP2 specification mandate mutual TLS for inter-service communication so developers do not inadvertently ship HTTP. The live V9 proof (Section 4.5) stops at the protocol level rather than an on-chain transfer: we generated real Solana Devnet keypairs for both parties but could not settle on-chain due to faucet rate limiting. As in standard payment-security practice (showing an injection payload reaches the query, not that data was exfiltrated), the protocol-level proof suffices. 
+
+## 10.1 Responsible Disclosure 
+
+We followed Coordinated Vulnerability Disclosure, notifying the CoralOS (hello@coralos.ai), 
+
+Fetch.ai (security@fetch.ai), and Google AP2 (Google Open Source Software Vulnerability Reward Program, OSS VRP) security teams simultaneously on 2026-07-06, with a 90-day embargo ending 2026-10-04, when the full artifacts become public. Google’s OSS VRP declined the AP2 reports as OT2/OT3 tier (GitHub Security Advisories GHSA-w7vq-wj2c-8h73, GHSA-hvcr-7w52-jmx5, and GHSA-q7f7-h63m-9gmp filed independently), while the 
+
+CoralOS and Fetch.ai responses remain pending. To protect deployed systems during the remediation window, this public preprint deliber-ately withholds exact code locations and proof-of-concept exploits. The complete technical details, proof-of-concept code, and the AIP-Bench artifacts are released in the project repository once the disclosure period concludes. No experiment moved real funds (payment proofs used throwaway Solana Devnet key-pairs), and every finding was disclosed before any detail was released. 
+
+## 10.2 Limitations 
+
+Our study has four limitations. First, we study three platforms. Further work should test the taxonomy on different foundations such as on-chain-only or fully-encrypted registries. Second, the V5 LLM study uses 1,440 trials across 8 models. Some models show non-trivial temperature dependence, and further prompt variants could map the boundaries of sus-ceptibility more precisely. Third, PCAT ’s P4 has a formal proof only for single-process deployment. The distributed case (four instances over a shared compare-and-swap store) is validated empirically (Experiment D) but not proved. Fourth, self-audit during development found and fixed four PCAT implementation vulnerabilities before release (BUG-AUDIT-1 through -4, in the project repository). An independent external review before deployment is still recommended. Despite these limitations, PCAT eliminates most structural vulnerabil-ities that cross the HTTP boundary with no platform change, and the remaining gaps are well-scoped rather than fundamental. 22 11 Conclusion 
+
+We presented the first systematic, cross-platform security analysis of agentic commerce in-frastructure. Across CoralOS , Fetch.ai , and AP2 we identified 33 structural vulner-abilities, each succeeding deterministically and independent of the deployed model (100% attack-success rate wherever live-measured), and chained three into an end-to-end payment hijack. The central insight is a formal distinction between structural attacks (protocol-level, de-terministic, model-independent) and semantic attacks (reasoning-level, probabilistic, model-dependent). No model improvement fixes a structural vulnerability, and no protocol patch prevents a semantic attack, so defense must address both layers: the most widely-deployed models stay susceptible while frontier-aligned models show 0%, yet the structural delivery path bypasses all model tiers equally. 
+
+AIP-Bench and PCAT turn this into tools: a deterministic benchmark and a unified defense that drives structural ASR to 0% for four of the five structural classes (RC-3 warn-only), giving operators concrete means to measure and improve agentic commerce security. 
+
+# References 
+
+[1] Varun Pratap Bhardwaj. Formal Analysis and Supply Chain Security for Agentic AI Skills. arXiv preprint arXiv:2603.00195 , 2026. [2] Matt Bishop and Michael Dilger. Checking for Race Conditions in File Accesses. In 
+
+Computing Systems , volume 9, pages 131–152, 1996. [3] Nicholas Carlini, Daphne Ippolito, Matthew Jagielski, Katherine Lee, Florian Tramèr, and Chiyuan Zhang. Are Aligned Neural Networks Adversarially Aligned? In Advances in Neural Information Processing Systems , 2023. [4] Adrian de Valois-Franklin and Alex Bogdan. RAILS: Verification-Native Clearing for Agentic Commerce. arXiv preprint arXiv:2606.08790 , 2026. [5] Edoardo Debenedetti, Jie Zhang, Mislav Balunovic, Luca Beurer-Kellner, Marc Fischer, and Florian Tramèr. AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents. In Advances in Neural Information Processing Systems , volume 37, pages 82895–82920, 2024. [6] Robin Dey and Panyanon Viradecha. Infrastructure for the Agentic Web: Gap Analysis and Architecture from the Agentverse Platform. arXiv preprint arXiv:2606.20570 , 2026. [7] Roman J. Georgio, Caelum Forder, Suman Deb, Andri Rahimov, Peter Carroll, and Önder Gürcan. The Coral Protocol: Open Infrastructure Connecting the Internet of Agents. arXiv preprint arXiv:2505.00749 , 2025. Implementation: https://github. com/Coral-Protocol/coral-server .23 [8] Google. Agent Payments Protocol (AP2): Building a Secure and Interoperable Future for AI-Driven Payments. https://github.com/google-agentic-commerce/AP2 , 2025. [9] Kai Greshake, Sahar Abdelnabi, Shailesh Mishra, Christoph Endres, Thorsten Holz, and Mario Fritz. Not What You’ve Signed Up For: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection. In ACM Workshop on Artificial Intelligence and Security , pages 79–90, 2023. [10] Yuhang Huang, Boyang Ma, Biwei Yan, Xuelong Dai, Yechao Zhang, Minghui Xu, Kaidi Xu, and Yue Zhang. Give Them an Inch and They Will Take a Mile: Understanding and Measuring Caller Identity Confusion in MCP-Based AI Systems. arXiv preprint arXiv:2603.07473 , 2026. [11] Juhee Kim, Xiaoyuan Liu, Zhun Wang, Shi Qiu, Bo Li, Wenbo Guo, and Dawn Song. The Attack and Defense Landscape of Agentic AI: A Comprehensive Survey. arXiv preprint arXiv:2603.11088 , 2026. [12] Lars Kersten Kroehl. Trust Without Trusting: A Recomputable Trust Protocol for Autonomous Agents. arXiv preprint arXiv:2605.06738 , 2026. [13] Andrew Kurtz and Klaudia Krawiecka. Who Governs the Machine? A Machine Iden-tity Governance Taxonomy (MIGT) for AI Systems Operating Across Enterprise and Geopolitical Boundaries. arXiv preprint arXiv:2604.06148 , 2026. [14] Qianlong Lan, Anuj Kaul, Shaun Jones, and Stephanie Westrum. Zero-Trust Runtime Verification for Agentic Payment Protocols: Mitigating Replay and Context-Binding Failures in AP2. arXiv preprint arXiv:2602.06345 , 2026. [15] Yue Li, Lei Wang, Kaixuan Wang, Zhiqiang Yang, Ke Wang, Zhi Guan, and Jianbo Gao. A402: Binding Cryptocurrency Payments to Service Execution for Agentic Commerce. 
+
+arXiv preprint arXiv:2603.01179 , 2026. [16] Derek Lilienthal and Sanghyun Hong. Mind the Gap: Time-of-Check to Time-of-Use Vulnerabilities in LLM-Enabled Agents. arXiv preprint arXiv:2508.17155 , 2025. [17] Shengchen Ling, Yihang Huang, Yuefeng Du, Yuan Chen, Yajin Zhou, Lei Wu, and Cong Wang. Free-Riding the Agentic Web: A Systematic Security Analysis of x402 Payments. arXiv preprint arXiv:2605.30998 , 2026. [18] Hanzhi Liu, Chaofan Shou, Hongbo Wen, Yanju Chen, Ryan Jingyang Fang, and Yu Feng. Your Agent Is Mine: Measuring Malicious Intermediary Attacks on the LLM Supply Chain. arXiv preprint arXiv:2604.08407 , 2026. [19] Yi Liu, Weizhe Wang, Ruitao Feng, Yao Zhang, Guangquan Xu, Gelei Deng, Yuekang Li, and Leo Zhang. Agent Skills in the Wild: An Empirical Study of Security Vulnerabilities at Scale. arXiv preprint arXiv:2601.10338 , 2026. 24 [20] Yedidel Louck. Securing LLM-Agent Long-Term Memory Against Poisoning: Non-Malleable, Origin-Bound Authority with Machine-Checked Guarantees. arXiv preprint arXiv:2606.24322 , 2026. [21] Yedidel Louck, Amit Dvir, and Ariel Stulman. Security Analysis of Agentic AI Com-munication Protocols: A Comparative Evaluation. ACM Transactions on AI Security and Privacy , 2025. arXiv:2511.03841. [22] Qian’ang Mao, Jiaxin Wang, Ya Liu, Li Zhu, Cong Ma, and Jiaqi Yan. SoK: Security of Autonomous LLM Agents in Agentic Commerce. arXiv preprint arXiv:2604.15367 ,2026. [23] Alan L. McCann. Cryptographic Registry Provenance: Structural Defense Against Dependency Confusion in AI Package Ecosystems. arXiv preprint arXiv:2605.03309 ,2026. [24] OWASP Foundation. OWASP Top 10 for Large Language Model Applications. https: //owasp.org/www-project-top-10-for-llm-applications/ , 2025. [25] Yi Ting Shen, Kentaroh Toyoda, and Alex Leung. MCP-38: A Comprehensive Threat Taxonomy for Model Context Protocol Systems. arXiv preprint arXiv:2603.18063 , 2026. [26] Jiawen Shi, Zenghui Yuan, Guiyao Tie, Pan Zhou, Neil Zhenqiang Gong, and Lichao Sun. Prompt Injection Attack to Tool Selection in LLM Agents. In Network and Distributed System Security Symposium (NDSS) , 2026. [27] Uchi Uchibeke. Before the Tool Call: Deterministic Pre-Action Authorization for Au-tonomous AI Agents. arXiv preprint arXiv:2603.20953 , 2026. [28] W3C. Verifiable Credentials Data Model 2.0. https://www.w3.org/TR/ vc-data-model-2.0/ , 2024. [29] Edwin B. Wilson. Probable inference, the law of succession, and statistical inference. 
+
+Journal of the American Statistical Association , 22(158):209–212, 1927. [30] Michael J. Wooldridge, Attila Bagoly, Jonathan J. Ward, Emanuele La Malfa, and Gabriel Paludo Licks. Fetch.ai: An Architecture for Modern Multi-Agent Systems. 
+
+arXiv preprint arXiv:2510.18699 , 2025. Implementation (uAgents): https://github. com/fetchai/uAgents .[31] Zonghao Ying, Haozheng Wang, Jiangfan Liu, Quanchen Zou, Aishan Liu, Jian Yang, Yaodong Yang, and Xianglong Liu. AgentVisor: Defending LLM Agents Against Prompt Injection via Semantic Virtualization. arXiv preprint arXiv:2604.24118 , 2026. [32] Xiaohang Yu, Hejia Geng, Xinmeng Zeng, and William Knottenbelt. SUDP: Secret-Use Delegation Protocol for Agentic Systems. arXiv preprint arXiv:2604.24920 , 2026. 25 [33] Qiusi Zhan, Zhixiang Liang, Zifan Ying, and Daniel Kang. InjecAgent: Benchmark-ing Indirect Prompt Injections in Tool-Integrated Large Language Model Agents. In 
+
+Findings of the ACL , 2024. 
+
+# A Consolidated Findings by Root-Cause Class 
+
+Table 10 lists all 33 structural findings grouped by root-cause class, with platform, the constituent IDs, the proof method, and, for CoralOS , persistence in v1.4.0. Table 10: All 33 structural findings by root-cause class. Proof: L = live, C = code proof, R = deterministic reproduction. All ten persisting CoralOS findings have byte-identical vulnerable code in v1.4.0 (V9 also re-run live); V7 was remediated in v1.4.0. 
+
+Class # Findings (platform) Proof 
+
+RC-1 3 V5 ( CoralOS ), F-1/F-2 (Fetch.ai )LRC-2 3 V9 (CoralOS ), F-8 (Fetch.ai ), A-AP2-5 L/C/R RC-3 4 V4 ( CoralOS ), F-3/F-4 (Fetch.ai ), A-AP2-10 L/C RC-4 9 V7 †/V14 ( CoralOS ), F-6 (Fetch.ai ), A-AP2-1/2/3/6/8/14 CRC-5 13 V6/V10/V11/V13/V15 (CoralOS ), F-5/F-7 (Fetch.ai ), A-AP2-4/7/11/12/13/15 L/C CHAIN 1 V5 →V4 →V9 (CoralOS , compos-ite) L
+
+> †
+
+V7 (x402 budget race) was remediated in CoralOS v1.4.0. 
+
+# B Experimental Environment 
+
+CoralOS . The archived CoralOS result files record runs against commit a38912b (v1.3.0), containerized as Docker image coral-server:research-v5 . Diffing the vulnerable sources against v1.4.0 (commit 68b8326 ) shows ten of the eleven findings byte-identical, so they per-sist; V9 is additionally re-proven live by exercising the production getWallet() compiled from the v1.4.0 source (Section 4.5). Only V7 (x402 budget race) was remediated in v1.4.0, where the check-and-deduct now runs inside a Mutex.withLock (new SessionRunningBudget ). 26 Configuration: auth.keys=["research-key-2026"] , registry.includeDebugAgents=true ,
+
+llmProxy.providers=[openrouter with gpt-3.5-turbo] . Source integrity manifest (251 Kotlin files): SHA-256 6FCB7860B9F60299318ACBE4C329924C66180360D1B3FB9DE627537DAEB748C7 .Full PoC scripts at the project repository. 
+
+Fetch.ai . uagents Python package, latest release as of June 2026 ( pip install uagents ). The AlmanacApiResolver class is used directly in the F-1 proof. Full PoC scripts at the project repository. 
+
+AP2 . Reference implementation cloned from github.com/google-agentic-commerce/AP2 
+
+(–depth=20 , commit as of June 2026). Analysis targets code/samples/python/src/ . Full code analysis scripts at the project repository. 
+
+LLM API. All model calls via OpenRouter ( openrouter.ai/api/v1 ). Total LLM study cost: $0.72 (1,440 calls: 8 models × 3 temperatures × 3 IPI variants × 20 trials each). 
+
+# C Additional CoralOS Vulnerability Details 
+
+## V6 + V13: LLM Proxy Model Override (Both Paths) 
+
+The configured model is openai/gpt-3.5-turbo . For non-streaming requests ( the LLM proxy service ), the request body is forwarded unchanged ( else requestBody ): the attacker sends "model":"openai/gpt-4o" , and the response contains "model":"openai/gpt-4o" 
+
+at cost $0.00014 (10.4 × the configured model’s $0.0000135). For streaming requests ( the streaming proxy strategy ), prepareStreamingRequest() adds stream_options but does not rewrite the model field. The gpt-4o streaming response was confirmed via OpenRouter (cost $0.000065). Result hashes: a417b861... (V6), v13_PROVEN... .
+
+## V10: CSRF Proof Scope 
+
+V10 proves that the server’s CORS configuration permits credentialed cross-origin requests: Ktor echoes the request Origin in Access-Control-Allow-Origin when anyHost() is set, enabling browsers to include cookies per the CORS specification. The Python PoC demon-strates the server-side policy gap. Its browser-side vector is a cross-origin credentialed POST issued from an attacker-controlled page, which the browser accompanies with the victim’s session cookie. 
+
+[Code listing withheld pending coordinated vulnerability disclosure; the full listing appears in the published version of this paper.] 
+
+Cross-origin POST with victim cookie returned HTTP 200, namespace csrf-backdoor -namespace created (sessionId: de195366... ). 27 D Additional Fetch.ai Vulnerability Details 
+
+Table 11: Fetch.ai uAgents: 8 structural vulnerabilities 
+
+ID Title Class Sev. Proof 
+
+F-1Endpoint hijacking via Almanac API RC-1 HIGH Live F-2SSRF via F-1 end-point injection RC-1 HIGH Via F-1F-3Attestation token: 1000 s lifetime bug RC-3 MED Code F-4Private keys in plain-text JSON RC-3 HIGH Code F-5IPv6 localhost by-pass (CWE-284) RC-5 MED Code F-6No body size limit on 
+
+/submit 
+
+RC-4 MED Code F-7Sync query pollution via forged sender RC-5 MED Code F-8Wallet key mismatch on restart RC-2 HIGH Repro. 
+
+## F-3: Attestation Token Lifetime Bug 
+
+[Code listing withheld pending coordinated vulnerability disclosure; the full listing appears in the published version of this paper.] 
+
+## F-8: Wallet Key Mismatch (Deterministic Reproduction) 
+
+[Code listing withheld pending coordinated vulnerability disclosure; the full listing appears in the published version of this paper.] 
+
+# E Additional AP2 Vulnerability Details 
+
+A-AP2-1 (Token Redemption TOCTOU, RC-4). complete_checkout() in the check-out completion path follows the pattern: check token_data.get(’used’) , execute the pay-ment, then set token_data[’used’] = True . This check-then-act gap spans roughly 70 lines and reads and writes a file-based token store with no locking. The window contains no await ,so a single asyncio worker is safe, but two worker processes both pass the used=False check before either writes back, enabling double-spend (measured in Experiment B). 28 A-AP2-4 (Empty trusted_roots Bypasses Cert Validation, RC-5). When the trusted root certificate file is absent, the credentials provider sets trusted_roots = [] .The subsequent guard if self._trusted_roots: (the certificate-chain verifier ) evaluates to False for an empty list (Python falsy semantics), skipping the entire certificate chain verification block. A mandate signed with any self-signed certificate is therefore accepted, completely undermining the cryptographic mandate chain. 
+
+A-AP2-11 (No Authentication on Merchant MCP Endpoints, RC-5). All five merchant operations ( search_inventory , check_product , assemble_cart , create_checkout ,and complete_checkout ) are annotated only with @mcp.tool() . No authentication dec-orator, no caller verification, no API key check. Any network-reachable party can invoke 
+
+complete_checkout( payment_token, checkout_mandate_id) directly, bypassing the man-date chain entirely. 
+
+A-AP2-15 (Role Confusion: Credentials Provider, RC-5). issue_payment_credential() 
+
+in the credential issuance tool verifies that a valid mandate SD-JWT is present but does not authenticate the caller’s identity . Any agent, not only the authorized payment processor, can present a valid mandate and receive a payment credential. The Go reference implemen-tation, by contrast, performs an explicit caller whitelist check ( the Go reference executor ), highlighting that this is a Python implementation oversight, not an AP2 specification gap. 
+
+## A-AP2-4: Empty trusted_roots (Python Falsy Evaluation) 
+
+[Code listing withheld pending coordinated vulnerability disclosure; the full listing appears in the published version of this paper.] 
+
+## A-AP2-11: No Authentication on Merchant MCP 
+
+[Code listing withheld pending coordinated vulnerability disclosure; the full listing appears in the published version of this paper.] 
+
+# F Additional Cross-Platform Attack Chains 
+
+Beyond the CoralOS kill chain (V5 →V4 →V9), two further chains compose vulnerabil-ities across a single platform. In Fetch.ai , F-1 and F-2 compose into server-side re-quest forgery: the rogue Almanac returns an internal URL as Agent B’s endpoint, and 
+
+AlmanacApiResolver makes the agent POST to it from the server, reaching cloud metadata services (e.g., 169.254.169.254 ) or internal network endpoints inaccessible from outside. In AP2 , the file token store race (A-AP2-2) and the token-redemption TOCTOU (A-AP2-1) compose into a double-spend under multi-worker deployment, where two workers both observe used=False before either writes back. 29 G PCAT Implementation Notes 
+
+The P1 signing payload uses JSON to avoid delimiter-collision attacks:                     
+
+> 1def _build_signing_payload ( body : bytes , ts : str , nonce : str ) -> bytes :
+> 2return json . dumps ({
+> 3" ts " : ts , " nonce " : nonce ,
+> 4" body_sha256 " : sha256 ( body ) . hexdigest () ,
+> 5" version " : " pcat - sig - v1 "
+> 6} , sort_keys = True ) . encode ()
+
+Listing 1: pcat_proxy_v3.py, JSON signing payload for P1. 
+
+PCAT underwent three rounds of internal security review, identifying and fixing 10+ bugs including: CSRF origin substring bypass (fixed to use urlparse().hostname ), P1 nonce replay (fixed with TTL heap cache), P4 unbounded history growth (fixed with 
+
+deque(maxlen=10000) ), and P1 alert-mode fallthrough (fixed to block by default for regis-tered services). Source at the project repository. 
+
+# H AIP-Bench Reproducibility 
+
+Experiment A (cross-platform PCAT enforcement). Using the reference PCAT 
+
+implementation, the unauthenticated AP2 complete_checkout call is rejected by P5, an unknown and an unsigned Fetch.ai Almanac response are both rejected by P1, a correctly signed response passes, and two concurrent single-use redemptions yield exactly one success under P4 (result hash e67be3f8... ). 
+
+Experiment B (RC-4 double-spend win-rate, 200 trials each). A faithful repro-duction of the file-based token store measures the double-spend rate by deployment model: single-process asyncio 0%, two processes 30% (0.1 ms verify window) to 57% (2 ms) under natural jitter, and 100% under synchronized start (result hash f3c7bd50... ). 
+
+Experiment C (multi-worker P4 validation, 200 trials). Routing the two concurrent redemptions of Experiment B through a single PCAT gate (the real AtomicPaymentStore )admits exactly one redemption in every trial, so the double-spend rate is 0% even though the backend is multi-worker (result hash d41b22a5... ). 
+
+Experiment D (distributed P4, four PCAT instances, 200 trials). Four PCAT in-stances share one compare-and-swap store (SQLite’s UPDATE...WHERE used=0 , the primitive of Redis+Lua). Each trial’s four concurrent redemptions yield exactly one success and three contention-rejections, with zero double-spends across all trials, validating P4 for horizontally scaled deployments (result hash 9e190769... ). 30 Experiment E (P2 caller identity binding over a real did:web resolver). PCAT ’s P2 resolves the caller’s DID by a live HTTP fetch of the controller-hosted DID document and verifies the caller’s ECDSA proof against the document’s key. Over the real resolver, P2 admits the authorized wallet and blocks all six RC-2 variants: three V9 cases (no DID, an unknown DID, a forged proof), an A-AP2-5 wallet not authorized for its DID, a revoked 
+
+DID, and a rotated -key proof, at 0% ASR (result hash 9ad9fb23... ). 
+
+# I Refusal Rationales in the LLM Study 
+
+We categorized the per-trial responses of the resistant models (logged in the 1,440-trial study, with additional full-length captures at cost $0.12). The attack-success rates are those of the main study, and the categories below describe how each model resists. Table 12: Refusal rationale by model (V5 marketplace IPI). 
+
+Model Rationale Representative text 
+
+Claude Son-net 4.6 Explicit injection detection “prompt injec-tion / social engineering attack” Claude 3Haiku Flags al-tered recipi-ent “updated to an Attacker-Wallet. . . raises serious con-cerns” Llama 3.3 70B Fraud re-fusal “cannot facili-tate a poten-tially fraudulent transaction” GPT-4o Bare policy refusal “I’m sorry, Ican’t assist with that” Gemini 2.5 Pro Silent non-adoption does not adopt the injected ad-dress, no sur-faced rationale Flash-tier None (com-plies) follows the in-jected address 
+
+The resistant models treat the description field as untrusted and decline to act on an unverified payment destination. This supports semantic defenses that surface the payment 31 destination for explicit user confirmation and sanitize marketplace description fields, rather than relying on model self-diagnosis: GPT-4o refuses without diagnosing the injection, and Flash-tier models do not refuse at all. 
+
+• Docker Compose (docker-compose.yml ): one command starts CoralOS , rogue marketplace, rogue federation, and PCAT for full attack reproduction. 
+
+• PoC scripts (03_attacks/ ): Python 3.10+ scripts with requirements.txt (requests, aiohttp, websockets, cryptography, solana, solders). 
+
+• Result files (03_attacks/results/ ): JSON with embedded SHA-256 integrity hashes. 
+
+• Source manifest (SOURCE_INTEGRITY.txt ): SHA-256 of all 251 CoralOS Kotlin source files, manifest hash 6FCB7860... .Code repository: https://github.com/yedidel/aip-bench-public . Benchmark dataset: 
+
+https://huggingface.co/datasets/anonymos-2321135/aip-bench .32

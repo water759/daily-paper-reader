@@ -1,0 +1,1743 @@
+Title: Black-Box Performance Evaluation of Elastic Block Storage: Contract, Rate-Limiting Model, and Software Exploration
+
+URL Source: https://arxiv.org/pdf/2607.20319v2
+
+Published Time: Fri, 24 Jul 2026 00:22:57 GMT
+
+Number of Pages: 14
+
+Markdown Content:
+> IEEE TRANSACTIONS 1
+
+# Black-Box Performance Evaluation of Elastic Block Storage: Contract, Rate-Limiting Model, and Software Exploration 
+
+Yingjia Wang, Student Member, IEEE, and Ming-Chang Yang, Member, IEEE 
+
+Abstract —Elastic block storage (EBS) with the storage-compute disaggregated architecture is a key component in modern cloud infrastructure. EBS offers users storage resources in the form of elastic solid-state drives (ESSDs). Nonetheless, despite recent efforts that have documented EBS architectures from the provider’s perspective, how ESSDs perform differently from local SSDs and how host software should adapt accordingly have not been sufficiently studied. In this paper, we conduct a user-centric, black-box per-formance characterization of ESSDs from Amazon AWS and Alibaba Cloud. We make three main contributions: (1) an ESSD contract that presents four behavioral observations and five actionable implications for software adaptation, (2) a refined I/O rate-limiting model combining bandwidth-IOPS dual limiting and fine-grained token refilling to suppress latency spikes, and (3) a case study on RocksDB that derives four guidelines on cache management, I/O regulation, storage budget utilization, and compression algorithms. Collectively, we hope these contributions can serve as a practical reference for EBS users to understand and exploit the distinctive performance properties of ESSDs. 
+
+Index Terms —Elastic block storage (EBS), elastic solid-state drive (ESSD), performance evaluation. 
+
+I. I NTRODUCTION 
+
+Elastic block storage (EBS) serves as a foundational com-ponent in modern cloud infrastructures, meeting the high-performance storage requirements of diverse cloud applica-tions and services [2]–[7]. EBS commonly employs a disag-gregated architecture that separates compute and storage into distinct clusters, interconnected via high-speed data center net-works. Within this architecture, user virtual machines (VMs) run in the compute cluster, while data is persistently stored in the storage cluster. This separation not only improves the scalability and operational efficiency of the cloud infrastruc-ture but also provides users with flexible and pay-as-you-go pricing that enhances their cost-effectiveness. EBS provides storage to users through elastic solid-state drives (ESSDs) , which are virtual storage devices attached to user VMs. From the user’s perspective, an ESSD resembles a conventional local SSD, exposing a standard block interface and allowing existing filesystems and applications to operate without modifications. However, a key distinction of ESSDs is their ability to overcome the physical performance and capacity limits typical of local SSDs. This enables dynamic 
+
+This paper is extended from [1], which was published in the 62nd ACM/IEEE The Chips to Systems Conference (DAC), San Francisco, CA, USA, June 22-25, 2025. Yingjia Wang and Ming-Chang Yang are both with the Department of Computer Science and Engineering, The Chinese University of Hong Kong, Sha Tin, NT, Hong Kong. 
+
+adjustment of performance (e.g., in throughput and IOPS) and storage capacity, adapting seamlessly to evolving user needs. Additionally, ESSDs deliver high data availability and reliabil-ity by leveraging cloud-level replication and redundancy, along with advanced capabilities including the support of encryption and snapshotting. The expansion of cloud computing has accelerated the integration of ESSDs across a wide range of cloud services. However, although recent provider-side studies [4], [8] have documented the architectures and design rationales of EBS from the provider’s perspective, the performance character-istics from the users’ viewpoint have not been sufficiently evaluated. This gap is consequential, as the existing host software is extensively optimized under assumptions derived from local SSDs, yet ESSDs may violate these assumptions. It is particularly vital for users to understand ESSDs’ unique per-formance features, especially when compared to well-known local SSDs, and how to adapt their software accordingly. In this paper, we conduct a black-box performance evalua-tion of the world’s two major EBS service providers: Amazon AWS and Alibaba Cloud. Our first contribution is an ESSD 
+
+contract , structured around four observations and five impli-cations . Three of the observations capture unwritten behaviors of ESSDs related to latency, garbage collection (GC), and access pattern; they are undocumented and challenge our conventional understanding derived from local SSDs. The last observation experimentally validates the written performance budget, showing that bandwidth and IOPS are deterministic and contrast with the pattern-dependent peaks of local SSDs. Building on the observations, the implications offer five action-able recommendations to guide ESSD users in re-evaluating the architecture of their deployed software. Our second contribution in this paper is a refined I/O rate-limiting model for cloud software to obtain satisfactory latency. Zhou et al. [9] first point out that it is crucial for cloud software to limit I/O rates to ESSDs in accordance with the internal rate-limiting within EBS, since exceeding the IOPS budget per second regulated by the EBS provider can lead to substantial latency spikes. However, our experiments identify three additional factors that affect latency: bandwidth oversub-scription, provider-specific token-refill intervals, and latency spikes caused by non-instantaneous synchronization between cloud-software-side and EBS-side rate-limiting. Accordingly, our model combines bandwidth-IOPS dual limiting with fine-grained token refilling , avoiding both bandwidth and IOPS budget violations while mitigating latency spikes caused by arXiv:2607.20319v2 [cs.PF] 23 Jul 2026 IEEE TRANSACTIONS 2
+
+coarse-grained token refilling. Finally, our third contribution is an application-level explo-ration of the contract and the rate-limiting model through a case study on RocksDB [10], a widely deployed LSM-tree-based key-value store. We derive four actionable guidelines from our exploration. First, the high per-I/O cost of ESSDs makes cache miss minimization critical to meeting read SLAs, requiring more aggressive block cache provisioning than in local-SSD deployments. Second, by instantiating our refined rate-limiting model into RocksDB, we reduce the maximum latency by up to 97.8% compared with Calcspar’s one-second IOPS rate-limiting model [9] and consistently maintain it at tens of milliseconds across various YCSB benchmarks [11]. Third, the absence of user-visible GC-related degradation suggests that cloud databases may reconsider the conservative capacity and performance headroom inherited from local-SSD deployments. Finally, enabling aggressive compression with standard algorithms (e.g., ZSTD [12]) on ESSDs, compared to LZ4 [13], yields up to 67.2% higher write throughput and up to 49.3% smaller storage footprints, while read latency remains comparable on highly compressible data. Collectively, these results demonstrate the potential of ESSD-aware optimization in the evaluated RocksDB deployment without requiring any hardware change. In the remainder of this paper, Section II presents the background of (local) SSD, EBS, and ESSD. Sections III, IV, and V elaborate on the contract, the rate-limiting model, and the RocksDB case study, respectively. Section VI introduces the related work. Section VII concludes our work. II. B ACKGROUND 
+
+A. NAND Flash-based Solid-State Drive (SSD) 
+
+NAND flash-based solid-state drives (SSDs) have gained a significant and growing portion of the storage market, owing to their advantages in speed, power efficiency, and physical durability. SSDs organize storage into hierarchical tiers: channels, dies, planes, blocks, and pages. The flash die is the smallest unit for parallel operations, while the flash page represents the smallest unit that can be independently read or programmed. To improve firmware efficiency, flash blocks are aggregated into superblocks, each spanning multiple dies to maximize parallelism. Despite these internal tiers, SSDs typically expose a simple abstraction to the host: the block interface , which represents the storage medium as a sequence of logical blocks (e.g., 4KB) supporting random read and write operations. Although this straightforward abstraction has played a key role in the widespread use of SSDs, it necessitates a sophisticated flash translation layer (FTL) within the drive to accommodate the unique properties of NAND flash, such as the requirement to erase before writing. The core functions of the FTL include address mapping and garbage collection (GC). Address map-ping involves translating logical addresses provided by the host into physical locations within the flash storage, maintained via a fine-grained (e.g., page-level) mapping table. Garbage collection is performed at regular intervals to reclaim invalid space at the block level. The FTL relocates valid pages from Storage Cluster       
+
+> SSD SSD SSD SSD
+> SSD SSD SSD SSD
+
+User VM 
+
+> ESSD
+
+Compute Cluster  
+
+> ESSD ESSD
+> SSD
+> SSD
+
+datacenter network 
+
+Node   
+
+> Fig. 1. The disaggregated storage-compute architecture of elastic block storage (EBS). The ESSD is attached to the user’s virtual machine (VM) located within the compute cluster. Its physical storage is distributed and replicated across multiple nodes and SSDs in the storage cluster.
+
+selected blocks so they can be erased and reused. The FTL also handles other essential management tasks, including wear-leveling, error correction coding, and bad block management. The management overhead of the traditional FTL has be-come a key bottleneck for SSD performance and cost reduc-tion. New NVMe interface standards, including Zoned Names-pace (ZNS) [14] and Flexible Data Placement (FDP) [15], address this by enabling host-managed or host-guided data placement, which separates data by lifetime into distinct superblocks and minimizes device-side GC. FDP achieves these benefits while preserving backward compatibility with the conventional block interface. ZNS, in contrast, requires host software adaptation for zone management but further reduces address mapping overhead and lowers cost. 
+
+B. Elastic Block Storage (EBS) 
+
+As illustrated in Figure 1, elastic block storage (EBS) com-monly utilizes a disaggregated storage-compute architecture, where separate compute and storage clusters are deployed. These clusters are not physically co-located but are connected via a high-speed data center network. The compute cluster 
+
+operates users’ virtual machines (VMs) and relays their I/O requests to the storage cluster. Meanwhile, the storage cluster 
+
+is responsible for durably storing and retrieving data through a distributed filesystem. This separation of storage and compute offers several ad-vantages [2], [4], [6]. First, both types of resources can be provisioned and billed elastically based on user workload requirements. This leads to improved resource utilization and greater cost efficiency compared to general-purpose server offerings. Second, independent maintenance and scaling of compute and storage clusters become feasible, enhancing both maintainability and scalability. Third, migrating application services between compute servers is more straightforward and efficient, as their state can be consistently maintained in the remote storage servers. 
+
+C. Elastic Solid-State Drive (ESSD) 
+
+EBS offers storage resources to users through elastic solid-state drives (ESSDs) , which are virtual storage devices at-IEEE TRANSACTIONS 3                                    
+
+> TABLE I
+> THE CONFIGURATIONS OF EVALUATED STORAGE DEVICES (I.E., ESSD S AND SSD).
+> Provider and Type Max. BW (GB/s) Max. IOPS (K) Cap. (TB) VM Type Region
+> ESSD-AM1 Amazon AWS io2 (high-end) ∼3.1 ∼100 2m6in.xlarge Tokyo
+> ESSD-AM2 Amazon AWS gp3 (low-end) ∼0.13 ∼50.25 m6in.xlarge Tokyo
+> ESSD-AL1 Alibaba Cloud PL3 (high-end) ∼1.1 ∼105 2ecs.g5.4xlarge Shanghai
+> ESSD-AL2 Alibaba Cloud PL0 (low-end) ∼0.18 ∼50.25 ecs.g5.4xlarge Shanghai
+> SSD Samsung 970 Pro Seq. R/W
+> ∼3.6/ ∼2.6 Rand. R/W
+> ∼800/ ∼620 1//
+
+tached to user VMs. These ESSDs can be created, attached, detached, or deleted without interfering with the normal op-eration of the user’s VM. As depicted in Figure 1, each virtual ESSD maps to one or more physical SSDs. In practice, the physical storage of an ESSD is typically distributed and replicated (e.g., using three-way replication [4]) among differ-ent nodes and SSDs within the storage cluster. This strategy supports load balancing and enhances data availability. From the user’s perspective, an ESSD resembles a tradi-tional local SSD in that it also presents a block interface and allows random access within the storage space. This design ensures full compatibility with existing software ecosystems, enabling filesystems and applications to run on ESSDs without any modification. However, ESSDs provide several advantages over local SSDs [4], [16], [17]. First, as a virtualized device, an ESSD is not constrained by the physical limitations of a single SSD, allowing both performance (e.g., throughput and IOPS) and capacity to be scaled elastically according to dynamic user needs. Second, ESSDs offer high data availabil-ity and reliability by replicating data across multiple nodes, thereby avoiding single points of failure. Third, ESSDs support advanced functionalities including encryption and snapshot capabilities. Cloud storage providers commonly supply a range of ESSD types, designed for distinct performance tiers. These tiers come with differing provisioned volume limits in terms of maxi-mum throughput and IOPS, with higher performance levels generally offered at increased cost. For example, Amazon AWS [16] provides both general-purpose categories (such as gp2 and gp3) and provisioned-IOPS categories (including io1 and io2), among which io2 represents the highest performance option. Similarly, Alibaba Cloud [17] offers four graduated performance levels (i.e., PL0, PL1, PL2, and PL3), where a higher number corresponds to better performance. III. T HE CONTRACT OF ESSD S
+
+Despite the widespread adoption of ESSDs across various cloud platforms, their performance characteristics remain, to our knowledge, insufficiently studied. In this section, we present a contract of ESSDs. We first describe our experimen-tal setups in Section III-A, followed by a detailed presentation of the contract across Sections III-B to III-E. 
+
+A. Experimental Setups 
+
+To enhance the generalizability and thoroughness of our results, we evaluate four real-world ESSD instances from two major EBS providers: Amazon AWS [16] and Alibaba Cloud [17]. The ESSD types include Amazon AWS io2 (high-end), Alibaba Cloud PL3 (high-end), Amazon AWS gp3 (low-end), and Alibaba Cloud PL0 (low-end). Detailed configurations for these ESSDs are provided in Table I. For comparative analysis with local SSDs, we also include the Samsung 970 Pro [18], a widely-used model in research. Its specifications are likewise summarized in Table I. Testing for the Samsung 970 Pro is conducted on a server configured with four 24-core/48-thread Intel(R) Xeon(R) Platinum 8160 CPUs, running a Debian 5.10.223-1 operating system with Linux kernel version 5.10.0. We utilize the FIO benchmark tool [19] in conjunction with the io uring engine [20] to generate workloads with varied load conditions (e.g., different I/O sizes and queue depths) and access patterns (e.g., random/sequential reads and writes). The direct I/O mode is employed to bypass the page cache and the none scheduler is used to prevent request merging within the block layer. Further specifics regarding workload parameters are detailed in the corresponding subsections. In the follow-ing experiments, all metrics presented are averaged across 5 repeated runs, except for GC experiments in Section III-C. In GC experiments, similar trends are observed across 3 repeated runs, so we depict the data of one run. 
+
+B. Latency 
+
+Observation #1: Even with high-end ESSDs, their latency is tens of times higher (e.g., up to 39.3 × and 42.7 ×) than that of SSD when I/Os are not well scaled up. Here, “not well scaled up” is defined as workloads with small I/O sizes and/or low I/O queue depths. 
+
+Ideally, ESSDs should deliver performance comparable to local SSDs. However, our evaluation reveals that even high-end ESSDs (i.e., ESSD-AM1 from Amazon AWS and ESSD-AL1 from Alibaba Cloud) exhibit significantly higher latency when I/Os are not well scaled up, defined as workloads with small I/O sizes and/or low I/O queue depths. Figure 2 illustrates the average and 99.9th percentile (P99.9) latency of these two ESSDs across various access patterns (i.e., random write, sequential write, random read, and sequential read), with I/O sizes ranging from 4KB to 256KB and queue depths from 1 to 16. Of particular interest is the ratio of ESSD latency to local SSD latency (indicated above each pixel in the figure), where lower values reflect better performance. For clarity, we refer to this as the latency gap in this subsection. A clear trend emerges: the latency gap narrows as I/Os scale up in either size or queue depth, consistently across IEEE TRANSACTIONS 4I/O 4KB 16 64 256 
+
+Random Write 
+
+QD 1 
+
+QD 2 
+
+QD 4 
+
+QD 8 
+
+QD 16 
+
+> 22.7x
+> (335u)
+> 17.0x
+> (372u)
+> 11.3x
+> (474u)
+> 8.6x
+> (926u)
+> 22.0x
+> (317u)
+> 18.1x
+> (359u)
+> 9.1x
+> (462u)
+> 4.5x
+> (920u)
+> 19.6x
+> (307u)
+> 13.5x
+> (346u)
+> 4.4x
+> (449u)
+> 2.2x
+> (913u)
+> 9.8x
+> (301u)
+> 6.5x
+> (340u)
+> 2.1x
+> (441u)
+> 1.1x
+> (891u)
+> 5.2x
+> (299u)
+> 3.2x
+> (339u)
+> 1.1x
+> (443u)
+> 0.8x
+> (1.4m)
+
+4 16 64 256 
+
+Sequential Write 
+
+> 21.7x
+> (308u)
+> 16.2x
+> (353u)
+> 11.1x
+> (461u)
+> 8.5x
+> (916u)
+> 21.2x
+> (305u)
+> 17.5x
+> (355u)
+> 9.2x
+> (468u)
+> 4.6x
+> (941u)
+> 19.8x
+> (300u)
+> 13.9x
+> (350u)
+> 4.5x
+> (464u)
+> 2.3x
+> (945u)
+> 10.6x
+> (299u)
+> 6.8x
+> (345u)
+> 2.3x
+> (476u)
+> 1.1x
+> (942u)
+> 5.6x
+> (303u)
+> 3.4x
+> (352u)
+> 1.2x
+> (496u)
+> 0.8x
+> (1.4m)
+
+4 16 64 256 
+
+Random Read 
+
+> 5.7x
+> (363u)
+> 6.3x
+> (437u)
+> 6.0x
+> (647u)
+> 6.0x
+> (1.2m)
+> 5.1x
+> (349u)
+> 5.5x
+> (419u)
+> 5.2x
+> (626u)
+> 6.1x
+> (1.2m)
+> 5.1x
+> (339u)
+> 5.1x
+> (408u)
+> 4.3x
+> (612u)
+> 3.8x
+> (1.2m)
+> 4.9x
+> (333u)
+> 4.1x
+> (402u)
+> 3.2x
+> (601u)
+> 1.9x
+> (1.1m)
+> 4.4x
+> (330u)
+> 2.8x
+> (399u)
+> 1.9x
+> (598u)
+> 1.1x
+> (1.4m)
+
+4 16 64 256 
+
+Sequential Read 
+
+> 37.2x
+> (481u)
+> 35.3x
+> (603u)
+> 21.5x
+> (880u)
+> 13.9x
+> (1.4m)
+> 36.1x
+> (476u)
+> 33.1x
+> (596u)
+> 21.5x
+> (875u)
+> 9.2x
+> (1.4m)
+> 39.3x
+> (492u)
+> 23.7x
+> (629u)
+> 11.2x
+> (878u)
+> 4.7x
+> (1.4m)
+> 28.0x
+> (685u)
+> 12.7x
+> (698u)
+> 5.7x
+> (899u)
+> 2.4x
+> (1.4m)
+> 18.1x
+> (906u)
+> 7.2x
+> (766u)
+> 3.0x
+> (923u)
+> 1.2x
+> (1.5m)
+
+0
+
+5
+
+10 
+
+15 ESSD/SSD Latency 
+
+(a) Average Latency of ESSD-AM1 from Amazon AWS I/O 4KB 16 64 256 
+
+Random Write 
+
+QD 1 
+
+QD 2 
+
+QD 4 
+
+QD 8 
+
+QD 16 
+
+> 12.5x
+> (416u)
+> 9.7x
+> (457u)
+> 8.3x
+> (611u)
+> 5.6x
+> (1.5m)
+> 14.7x
+> (392u)
+> 13.3x
+> (437u)
+> 2.6x
+> (574u)
+> 1.8x
+> (1.2m)
+> 14.1x
+> (379u)
+> 3.0x
+> (423u)
+> 1.4x
+> (558u)
+> 0.8x
+> (1.2m)
+> 8.0x
+> (381u)
+> 1.7x
+> (416u)
+> 0.8x
+> (539u)
+> 0.4x
+> (1.2m)
+> 7.0x
+> (580u)
+> 1.0x
+> (423u)
+> 0.4x
+> (560u)
+> 0.3x
+> (1.7m)
+
+4 16 64 256 
+
+Sequential Write 
+
+> 12.7x
+> (410u)
+> 10.5x
+> (481u)
+> 7.6x
+> (569u)
+> 5.5x
+> (1.5m)
+> 14.9x
+> (405u)
+> 13.8x
+> (487u)
+> 2.6x
+> (591u)
+> 2.0x
+> (1.3m)
+> 13.3x
+> (395u)
+> 3.6x
+> (499u)
+> 1.5x
+> (580u)
+> 0.9x
+> (1.2m)
+> 9.1x
+> (386u)
+> 1.9x
+> (462u)
+> 0.9x
+> (622u)
+> 0.4x
+> (1.2m)
+> 6.6x
+> (489u)
+> 1.4x
+> (596u)
+> 0.4x
+> (664u)
+> 0.3x
+> (1.6m)
+
+4 16 64 256 
+
+Random Read 
+
+> 6.4x
+> (717u)
+> 7.2x
+> (849u)
+> 8.7x
+> (1.3m)
+> 7.8x
+> (1.9m)
+> 5.5x
+> (689u)
+> 5.9x
+> (807u)
+> 6.4x
+> (1.3m)
+> 6.3x
+> (1.9m)
+> 4.9x
+> (664u)
+> 4.7x
+> (801u)
+> 4.4x
+> (1.2m)
+> 3.5x
+> (1.9m)
+> 4.2x
+> (653u)
+> 3.3x
+> (837u)
+> 2.7x
+> (1.2m)
+> 2.1x
+> (1.9m)
+> 3.2x
+> (647u)
+> 1.9x
+> (874u)
+> 1.3x
+> (1.2m)
+> 1.5x
+> (2.3m)
+
+4 16 64 256 
+
+Sequential Read 
+
+> 31.3x
+> (801u)
+> 26.3x
+> (958u)
+> 18.1x
+> (1.3m)
+> 10.6x
+> (2.1m)
+> 32.2x
+> (818u)
+> 35.2x
+> (1.1m)
+> 8.6x
+> (1.4m)
+> 7.0x
+> (2.1m)
+> 36.4x
+> (924u)
+> 8.2x
+> (1.1m)
+> 6.8x
+> (1.4m)
+> 4.6x
+> (2.1m)
+> 33.3x
+> (1.3m)
+> 6.1x
+> (1.3m)
+> 4.7x
+> (1.5m)
+> 2.7x
+> (2.0m)
+> 32.0x
+> (2.2m)
+> 4.3x
+> (1.6m)
+> 3.2x
+> (1.5m)
+> 1.5x
+> (2.1m)
+
+0
+
+5
+
+10 
+
+15 ESSD/SSD Latency (b) P99.9 Latency of ESSD-AM1 from Amazon AWS I/O 4KB 16 64 256 
+
+Random Write 
+
+QD 1 
+
+QD 2 
+
+QD 4 
+
+QD 8 
+
+QD 16 
+
+> 14.3x
+> (211u)
+> 11.4x
+> (250u)
+> 10.4x
+> (433u)
+> 7.1x
+> (762u)
+> 14.3x
+> (206u)
+> 12.5x
+> (247u)
+> 8.4x
+> (428u)
+> 3.9x
+> (806u)
+> 13.3x
+> (208u)
+> 10.0x
+> (257u)
+> 4.4x
+> (446u)
+> 2.3x
+> (946u)
+> 7.3x
+> (226u)
+> 5.5x
+> (288u)
+> 2.5x
+> (523u)
+> 2.2x
+> (1.8m)
+> 4.7x
+> (273u)
+> 3.6x
+> (381u)
+> 2.1x
+> (877u)
+> 2.2x
+> (3.6m)
+
+4 16 64 256 
+
+Sequential Write 
+
+> 13.7x
+> (194u)
+> 11.0x
+> (239u)
+> 10.0x
+> (413u)
+> 7.1x
+> (762u)
+> 13.8x
+> (199u)
+> 12.2x
+> (247u)
+> 8.9x
+> (452u)
+> 3.8x
+> (771u)
+> 13.7x
+> (207u)
+> 11.6x
+> (293u)
+> 4.8x
+> (493u)
+> 2.3x
+> (928u)
+> 8.8x
+> (246u)
+> 7.8x
+> (401u)
+> 2.8x
+> (580u)
+> 2.2x
+> (1.8m)
+> 7.4x
+> (398u)
+> 5.0x
+> (516u)
+> 2.1x
+> (877u)
+> 2.2x
+> (3.7m)
+
+4 16 64 256 
+
+Random Read 
+
+> 4.8x
+> (305u)
+> 5.5x
+> (379u)
+> 5.3x
+> (566u)
+> 4.2x
+> (827u)
+> 4.4x
+> (299u)
+> 4.9x
+> (379u)
+> 4.7x
+> (562u)
+> 4.6x
+> (882u)
+> 4.5x
+> (298u)
+> 4.8x
+> (379u)
+> 4.0x
+> (563u)
+> 3.1x
+> (946u)
+> 4.4x
+> (300u)
+> 4.0x
+> (391u)
+> 3.2x
+> (588u)
+> 2.9x
+> (1.8m)
+> 4.3x
+> (323u)
+> 3.0x
+> (428u)
+> 2.9x
+> (877u)
+> 2.9x
+> (3.5m)
+
+4 16 64 256 
+
+Sequential Read 
+
+> 12.2x
+> (158u)
+> 10.8x
+> (184u)
+> 7.5x
+> (306u)
+> 8.0x
+> (823u)
+> 12.2x
+> (161u)
+> 10.8x
+> (194u)
+> 9.9x
+> (404u)
+> 5.5x
+> (856u)
+> 13.7x
+> (172u)
+> 8.7x
+> (231u)
+> 6.6x
+> (518u)
+> 3.0x
+> (937u)
+> 8.0x
+> (197u)
+> 7.0x
+> (386u)
+> 4.0x
+> (623u)
+> 2.9x
+> (1.8m)
+> 6.3x
+> (314u)
+> 4.8x
+> (512u)
+> 2.8x
+> (877u)
+> 2.9x
+> (3.5m)
+
+0
+
+5
+
+10 
+
+15 ESSD/SSD Latency 
+
+(c) Average Latency of ESSD-AL1 from Alibaba Cloud I/O 4KB 16 64 256 
+
+Random Write 
+
+QD 1 
+
+QD 2 
+
+QD 4 
+
+QD 8 
+
+QD 16 
+
+> 33.2x
+> (1.1m)
+> 23.6x
+> (1.1m)
+> 21.9x
+> (1.6m)
+> 8.1x
+> (2.1m)
+> 41.1x
+> (1.1m)
+> 33.8x
+> (1.1m)
+> 6.4x
+> (1.4m)
+> 3.1x
+> (2.1m)
+> 42.7x
+> (1.1m)
+> 8.7x
+> (1.2m)
+> 3.4x
+> (1.3m)
+> 1.6x
+> (2.3m)
+> 26.7x
+> (1.3m)
+> 5.5x
+> (1.4m)
+> 2.1x
+> (1.5m)
+> 1.6x
+> (4.5m)
+> 16.7x
+> (1.4m)
+> 3.9x
+> (1.6m)
+> 2.8x
+> (4.0m)
+> 1.3x
+> (6.5m)
+
+4 16 64 256 
+
+Sequential Write 
+
+> 26.7x
+> (866u)
+> 18.3x
+> (840u)
+> 20.2x
+> (1.5m)
+> 8.7x
+> (2.3m)
+> 30.9x
+> (840u)
+> 32.0x
+> (1.1m)
+> 7.1x
+> (1.6m)
+> 3.3x
+> (2.2m)
+> 33.9x
+> (1.0m)
+> 10.3x
+> (1.4m)
+> 4.9x
+> (1.9m)
+> 1.7x
+> (2.3m)
+> 30.4x
+> (1.3m)
+> 7.8x
+> (1.9m)
+> 2.8x
+> (2.0m)
+> 1.1x
+> (3.2m)
+> 27.2x
+> (2.0m)
+> 6.2x
+> (2.6m)
+> 3.5x
+> (5.2m)
+> 1.1x
+> (5.2m)
+
+4 16 64 256 
+
+Random Read 
+
+> 9.2x
+> (1.0m)
+> 10.4x
+> (1.2m)
+> 13.8x
+> (2.1m)
+> 15.7x
+> (3.8m)
+> 8.3x
+> (1.0m)
+> 9.5x
+> (1.3m)
+> 10.5x
+> (2.1m)
+> 12.9x
+> (3.8m)
+> 8.4x
+> (1.1m)
+> 7.4x
+> (1.3m)
+> 7.8x
+> (2.1m)
+> 7.1x
+> (3.8m)
+> 6.8x
+> (1.1m)
+> 6.7x
+> (1.7m)
+> 5.1x
+> (2.2m)
+> 9.2x
+> (8.2m)
+> 5.5x
+> (1.1m)
+> 3.8x
+> (1.7m)
+> 7.1x
+> (6.5m)
+> 7.0x
+> (10m)
+
+4 16 64 256 
+
+Sequential Read 
+
+> 23.5x
+> (603u)
+> 18.9x
+> (687u)
+> 17.1x
+> (1.3m)
+> 18.6x
+> (3.6m)
+> 22.8x
+> (577u)
+> 33.4x
+> (994u)
+> 11.2x
+> (1.9m)
+> 12.7x
+> (3.8m)
+> 29.8x
+> (756u)
+> 9.3x
+> (1.3m)
+> 11.3x
+> (2.4m)
+> 8.4x
+> (3.8m)
+> 25.3x
+> (986u)
+> 8.7x
+> (1.9m)
+> 8.3x
+> (2.6m)
+> 10.6x
+> (8.2m)
+> 21.5x
+> (1.5m)
+> 7.9x
+> (2.9m)
+> 14.0x
+> (6.6m)
+> 7.4x
+> (10m)
+
+0
+
+5
+
+10 
+
+15 ESSD/SSD Latency (d) P99.9 Latency of ESSD-AL1 from Alibaba Cloud Fig. 2. Latency of two high-end ESSDs under workloads with different access patterns (i.e., random write, sequential write, random read, sequential read), I/O sizes, and I/O queue depths (QD). The top of each pixel indicates the multiples the ESSD latency is divided by the SSD latency, with smaller numbers being better. The bottom of each pixel indicates the value of average or P99.9 latency of the ESSD (u: μs, m: ms). 
+
+both metrics, all four access patterns, and both providers. Under small I/O conditions, the average latency gap reaches 39.3 × and 14.3 × for the two ESSDs, with P99.9 gaps peaking at 36.4 × and 42.7 ×. With 256KB I/Os, these gaps shrink substantially (e.g., average gaps of 13.9 × and 8.0 ×), and similar reductions occur with higher queue depths. This high latency stems from two factors. First, network delays and software processing overhead in cloud storage infrastructure add a high cost to each I/O. For example, as disclosed in a white-box study [4], I/Os in Alibaba EBS traverse a two-hop network (from BlockClient to BlockServer, then to ChunkServer) and a multi-faceted software stack (BlockClient, BlockServer, and Pangu). Second, the lack of a carefully-coordinated rate-limiting mechanism further exac-erbates latency, as we will detail in Section IV. Furthermore, latency gaps are remarkably smaller in random read workloads compared to the other three types (i.e., random write, sequential write, and sequential read). For ESSD-AM1, the average and P99.9 latency gaps in random read reach only 6.3 × and 8.7 ×, whereas in the other workloads they climb as high as 22.7 × and 14.7 × (random write), 21.7 × and 14.9 ×
+
+(sequential write), and 39.3 × and 36.4 × (sequential read). This discrepancy arises because modern SSDs often use a DRAM-based write buffer to accelerate writes, and prefetching to improve sequential read performance [21]. As a result, random/sequential writes and sequential reads incur fewer actual flash accesses, making the cloud-inherent overhead more noticeable. Random reads, however, benefit less from prefetching and involve more flash operations, thereby reduc-ing the relative impact of network and software latency and resulting in a smaller gap. These findings indicate that, to avoid severe latency penal-ties in EBS environments, users should avoid small and out-standing I/Os on the critical path (Implication #1 ). Notably, when I/Os are adequately scaled in write-intensive workloads, ESSD-AM1 achieves up to 25% lower average latency and 3.3 × lower P99.9 latency than the local SSD, as shown in Figure 2b. 
+
+C. Garbage Collection (GC) 
+
+Observation #2: The user-visible performance degradation commonly associated with device-side GC is substantially delayed or not observed. 
+
+Device-side garbage collection (GC) is widely acknowl-edged as a major source of SSD performance degradation: the FTL periodically relocates valid data to reclaim space, and these extra writes compete with foreground I/Os. Contrary to these conventional expectations, however, our experiments reveal that the user-visible performance degradation commonly associated with device-side GC is substantially delayed or not observed. Figure 3 presents the runtime throughput of four ESSD instances (i.e., high-end ESSD-AM1 from Amazon AWS, high-end ESSD-AL1 from Alibaba Cloud, low-end ESSD-AM2 from Amazon AWS, and low-end ESSD-AL2 from Alibaba Cloud) along with a local SSD Samsung 970 Pro, under a random write workload with four concurrent I/O streams. The total amount of data written was set to three times the storage capacity of each device. As expected, the local SSD exhibits a sharp throughput drop after writing 0.9TB (90% of its capacity), where performance falls by 63% from 2.7GB/s to 1.0GB/s. The throughput con-tinues to decline with additional writes, eventually reaching as low as 149MB/s. This extended period of low performance highlights the vulnerability of local SSDs to garbage collection under sustained write pressure. In contrast, ESSDs maintain high throughput over signifi-cantly longer durations, even under intense write loads, even though the exact behavior varies by provider. Most ESSDs, in-cluding ESSD-AM2 and both Alibaba Cloud instances, sustain consistent performance until writes reach 3 × their capacity. Only ESSD-AM1 experiences a sudden throughput reduction IEEE TRANSACTIONS 50 2000 4000 6000 8000    
+
+> Time (s)
+> 0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> 3.5
+> Throughput (GB/s)
+> 0.9TB
+> 5.1TB
+> ESSD-AM1 (2TB)
+> ESSD-AL1 (2TB)
+> ESSD-AM2 (0.25TB)
+> ESSD-AL2 (0.25TB)
+> SSD (1TB)
+> Fig. 3. Runtime throughput of four ESSDs and SSD under a random write workload with four I/O streams until writing 3 ×storage capacity.
+> Thus, the write volume applied to each device is 3 ×its rated capacity, resulting in 6TB per high-end ESSD, 0.75TB per low-end ESSD, and 3TB for the local SSD. The markers indicate the time when the total write volume reaches a multiple of 1TB.
+
+after 5.1TB (2.55 × its capacity), eventually stabilizing around 305MB/s. We attribute this drop to the exhaustion of instance-level EBS burst credits rather than device-side GC [22]. At the measured throughput, writing 5.1TB takes approximately 27 minutes, closely matching the documented 30-minute burst window of m6in.xlarge ; the post-drop throughput is also close to its baseline EBS bandwidth [22]. Thus, none of the evaluated ESSDs exhibits the progressive throughput degradation observed on the local SSD. Since the EBS internals remain opaque, our results do not imply that backend GC is absent; rather, they show that its performance impact is not exposed at the user-visible block interface within the tested write volume. Extensive research focuses on mitigating GC effects in local SSDs through techniques such as bandwidth/space over-provisioning and I/O redirection [23]–[25]. However, our findings suggest that cloud software designers should re-evaluate whether existing GC-mitigation techniques used for local SSDs remain necessary on ESSDs (Implication #2 ), due to performance and/or cost trade-offs they have to entail. 
+
+D. Access Pattern 
+
+Observation #3: In high-end ESSDs, the throughput of random writes outperforms that of sequential writes, reach-ing a maximum of 1.24 × and 1.73 × in the two ESSDs, respectively. 
+
+Random writes have traditionally been viewed as detri-mental to SSD performance, primarily because they increase the interleaving of valid and invalid data within flash blocks, thereby raising the overhead of relocating valid data during garbage collection. Surprisingly, however, our experiments reveal that high-end ESSDs often achieve higher throughput under random writes compared to sequential writes, but this phenomenon is absent in low-end ESSDs. As illustrated in Figure 4, we examine the throughput advantage of ESSDs and a local SSD in random writes relative to sequential writes (represented by blue lines). For clarity, we refer to this measure as throughput gain throughout this subsection. The tests span I/O sizes from 4KB to 256KB and queue depths from 1 to 32. Note that the y-axis scales differ across subfigures for better visual comparison. A key observation is that two high-end ESSDs (i.e., ESSD-AM1 and ESSD-AL1) exhibit throughput gains of up to 1.24 × and 1.73 ×, respectively. In contrast, the local SSD shows negligible performance differences between random and sequential writes (when GC does not occur). This divergence may stem from the distributed storage architecture of ESSDs. Because data is striped and replicated across multiple nodes and physical SSDs (Section II-C), random writes can exploit aggregated bandwidth from multiple physical SSDs, thereby improving user-perceived throughput. Meanwhile, throughput gains for the two low-end ESSDs (i.e., ESSD-AM2 and ESSD-AL2) remain near 1, indicating no notable performance benefit from random writes. This is likely due to their constrained performance budgets: specifically, ESSD-AM2 offers only 4.2% of ESSD-AM1’s maximum bandwidth and 5% of its IOPS, while ESSD-AL2 provides 16.4% of ESSD-AL1’s maximum bandwidth and 4.8% of its IOPS (see Table I). Such limitations cause them to saturate the budget quickly, leaving little room for further gains. We also observe provider-specific variations in through-put gains. ESSD-AM1 from Amazon AWS shows moderate improvement, mainly under high queue depths and small-to-medium I/O sizes, for example, a 23.5% gain at 4KB and queue depth 32. ESSD-AL1 from Alibaba Cloud, however, demonstrates more substantial gains, reaching up to 72.8%, 43.8%, 38.8%, and 23.4% for I/O sizes of 4KB, 8KB, 16KB, and 32KB, respectively. Conventionally, transforming random writes into sequential writes through methods such as log-structuring [26] or copy-on-write [27] has been advocated to reduce GC overhead and improve SSD performance. However, given that ESSDs show considerable tolerance to GC and may even benefit from random writes, it is worth rethinking whether it is still worthwhile to convert random writes in random-write-based software into sequential writes and if it is beneficial to proactively trigger random writes in sequential-write-based software (Implication #3 ). 
+
+E. Performance Budget 
+
+Observation #4 (validating the written contract): The maximum bandwidth and IOPS guaranteed by the provider are experimentally validated to be deterministic and no longer sensitive to the access pattern. 
+
+Local SSD peak throughput varies considerably with access pattern due to asymmetric flash operation latencies (e.g., 3.5GB/s read vs. 2.7GB/s write in Samsung 970 Pro, see Table I). In contrast, subject to the active performance limits, the bandwidth and IOPS budgets observed for ESSDs remain consistent across access patterns. Figure 5 displays the throughput and IOPS of four ESSDs and one local SSD under mixed read/write workloads with write ratios ranging from 0% (pure random read) to 100% (pure random write). The throughput and IOPS experiments use 128KB and 4KB I/O sizes, respectively. Note that the IEEE TRANSACTIONS 64 8 16 32 64 128 256 
+
+> I/O Size (KB)
+> 0
+> 1
+> 2
+> 3
+> Throughput (GB/s)  ESSD-AM1
+> 1.24x
+> QD 1
+> QD 8
+> QD 2
+> QD 16
+> QD 4
+> QD 32
+> 0x
+> 1.0x
+> 1.5x
+> 2.0x
+> Rand./Seq. Throughput
+
+(a) 4 8 16 32 64 128 256  
+
+> I/O Size (KB)
+> 0
+> 1
+> 2
+> 3
+> Throughput (GB/s)  ESSD-AL1
+> 1.73x
+> QD 1
+> QD 8
+> QD 2
+> QD 16
+> QD 4
+> QD 32
+> 0x
+> 1.0x
+> 1.5x
+> 2.0x
+> Rand./Seq. Throughput
+
+(b) 4 8 16 32 64 128 256  
+
+> I/O Size (KB)
+> 0
+> 1
+> 2
+> 3
+> Throughput (GB/s)  SSD
+> QD 1
+> QD 8
+> QD 2
+> QD 16
+> QD 4
+> QD 32
+> 0x
+> 1.0x
+> 1.5x
+> 2.0x
+> Rand./Seq. Throughput
+
+(c) Fig. 4. Throughput of ESSDs and SSD under random write workloads and throughput gain of ESSDs and SSD in random writes over sequential writes. The I/O size varies from 4KB to 256KB, and the I/O queue depth (QD) varies from 1 to 32. Note that for clarity, different subfigures have different y-axis scales. 0    
+
+> 20
+> 40
+> 60
+> 80
+> 100 0
+> 1
+> 2
+> 3
+> 4
+> Throughput (GB/s)  ESSD-AM1
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100 0
+> 1
+> 2
+> 3
+> 4ESSD-AL1
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Write Ratio (%)
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4 ESSD-AM2
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4 ESSD-AL2
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100 0.0
+> 1.2
+> 2.4
+> 3.6
+> 4.8 SSD
+
+(a) Throughput 0     
+
+> 20
+> 40
+> 60
+> 80
+> 100 0
+> 30
+> 60
+> 90
+> 120
+> IOPS(K)
+> ESSD-AM1
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100 0
+> 30
+> 60
+> 90
+> 120 ESSD-AL1
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Write Ratio (%)
+> 0
+> 2
+> 4
+> 6
+> 8ESSD-AM2
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100 0
+> 2
+> 4
+> 6
+> 8ESSD-AL2
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100 0
+> 200
+> 400
+> 600
+> 800 SSD
+
+(b) IOPS Fig. 5. Throughput and IOPS of four ESSDs and SSD under mixed read/write workloads with different write ratios. The solid and dashed lines represent the total (i.e., read and write) throughput or IOPS and the write throughput or IOPS, respectively. Note that for clarity, different subfigures have different y-axis scales. 
+
+y-axis scales differ across subfigures for clear visualization. A clear trend emerges: for all four ESSDs, both throughput and IOPS remain stable and closely align with the values guaranteed by the provider, regardless of write ratio. Con-versely, the local SSD exhibits non-deterministic performance, with throughput fluctuating between 2.6GB/s and 4.6GB/s and IOPS varying from 620K to 800K. These findings reveal a fun-damental difference: unlike local SSDs that require complex performance tuning, ESSDs offer predictable, stable through-put boundaries, which yields two practical implications. First, since performance budgets directly influence cost (as noted in Section II-C), cloud software should smooth the read/write I/Os to be evenly distributed across the timeline and below the guaranteed performance budget (Implication #4 ). This is especially critical for burst-heavy applications where load variability complicates capacity planning. Second, cloud software should also re-examine I/O re-duction techniques (e.g., compression and deduplication) that were historically considered to impair performance 
+
+(Implication #5 ). For ESSDs, where network and software processing latencies dominate, the additional compute cost of these methods may no longer be the limiting factor. Thus, applying I/O reduction can not only lower costs by reducing the required performance budgets but also improve the overall performance. IV. T HE I/O R ATE -L IMITING MODEL FOR CLOUD 
+
+SOFTWARE USING ESSD S
+
+In this section, we investigate how to set up the I/O rate-limiting model for cloud software that employs ESSDs, aiming to achieve low latency without unanticipated spikes. We begin by introducing the current state-of-the-art I/O rate-limiting model and discussing its identified limitations in Section IV-A. Subsequently, we present our refined approach to I/O rate-limiting in Section IV-B. 
+
+A. The State-of-the-Art Work and Its Limitations 
+
+Zhou et al. first emphasize the importance of aligning I/O rates to ESSDs with the internal rate-limiting mechanisms of EBS, indicating that surpassing the provider-defined IOPS budget per second can lead to significant latency increases [9]. Their IOPS stabilizer uses the token bucket algorithm [28] to restrict the IOPS issued to EBS, with tokens refreshed every second according to the provisioned IOPS budget. The token bucket algorithm is a well-established technique for rate regulation and traffic shaping. The algorithm uses a bucket that holds tokens, each authorizing the processing of one unit of work, such as an I/O request in this context. Tokens are refilled at a consistent rate, and incoming tasks must acquire a token to be executed. If insufficient tokens are available, tasks are delayed until enough tokens accumulate. This mechanism helps maintain system stability while ensur-ing controlled performance. In practical implementations, the token bucket algorithm often incorporates support for multiple priority queues, al-lowing differentiated token distribution according to task criticality. Under this extended model, several queues, each associated with a priority, compete for tokens from a common bucket. A typical realization employs weighted fair queuing (WFQ) [29], which allocates more tokens to higher-priority queues to ensure timely processing of urgent tasks, while still guaranteeing a minimal share for lower-priority queues IEEE TRANSACTIONS 70  
+
+> 2
+> 4
+> 6
+> 8
+> Average Latency (ms)
+> Below BW
+> Budget
+> ESSD-AM1
+> ESSD-AM2
+> ESSD-AL1
+> ESSD-AL2
+> 0
+> 30
+> 60
+> 90
+> 120
+> P99.9 Latency (ms)
+> Below BW
+> Budget
+> (a) Bandwidth 0
+> 2
+> 4
+> 6
+> 8
+> Average Latency (ms)
+> Below IOPS
+> Budget
+> ESSD-AM1
+> ESSD-AM2
+> ESSD-AL1
+> ESSD-AL2
+> 0
+> 30
+> 60
+> 90
+> 120
+> P99.9 Latency (ms)
+> Below IOPS
+> Budget
+> (b) IOPS Fig. 6. Average latency and P99.9 latency of four ESSDs under write workloads with different bandwidth or IOPS intensities. Specifically, the groups to the left of the black dashed line indicate that their bandwidth or IOPS requirements are below that guaranteed by the provider, and the groups to the right indicate that they are above. The closer to the left, the group with a lower bandwidth/IOPS requirement. Note that for clarity, different subfigures have different y-axis scales.
+
+to prevent starvation. By incorporating task priority, the token bucket method becomes more adaptive to real-world system demands and enhances overall operational efficiency. Although representing an important step forward for cloud software development, our analysis identifies three major limitations in their I/O rate-limiting model. The first limi-tation relates to which type of rate should be limited (Sec-tion IV-A1). Specifically, we observe that restricting only IOPS is inadequate, as surpassing the allocated bandwidth budget can also lead to substantially increased latency. The second limitation involves the method used to enforce rate limits (Section IV-A2). In particular, our experimental results indicate that the token refilled interval for rate-limiting varies by provider, and overlooking this factor can prevent cloud software from achieving optimal latency. The third limitation is that a latency spike is observed due to non-instantaneous synchronization between cloud-software-side rate-limiting and EBS-side rate-limiting (Section IV-A3). We elaborate on each of these issues in the subsequent sections. 
+
+1) Limitation #1: Bandwidth Shortage Also Matters: Fig-ure 6 illustrates the average and 99.9th percentile (P99.9) latency of four ESSDs under write workloads with vary-ing bandwidth and IOPS intensities (specifically, whether these intensities exceed the allocated budgets). To generate these workloads, we also use the FIO benchmarking tool, adjusting bandwidth and IOPS levels by modifying (1) the number of I/O threads and (2) the number of I/Os issued per thread per token refilled interval (via thinktime and 
+
+thinktime_blocks parameters). The I/O sizes are set to 256KB and 4KB for bandwidth-related tests and IOPS-4000 2000 1000 500 100                 
+
+> Token Refilled Interval (ms)
+> 0
+> 2
+> 4
+> 6
+> Average Latency (ms)  ESSD-AM1 ESSD-AM2
+> 4000 2000 1000 500 100
+> Token Refilled Interval (ms)
+> 0
+> 4
+> 8
+> 12
+> P99.9 Latency (ms)
+> (a) Bandwidth 4000 2000 1000 500 100
+> Token Refilled Interval (ms)
+> 0
+> 2
+> 4
+> 6
+> Average Latency (ms)  ESSD-AM1 ESSD-AM2
+> 4000 2000 1000 500 100
+> Token Refilled Interval (ms)
+> 0
+> 4
+> 8
+> 12
+> P99.9 Latency (ms)
+> (b) IOPS Fig. 7. Average latency and P99.9 latency of Amazon AWS ESSDs under write workloads with different token refilled intervals. The bandwidth or IOPS intensities of the workloads are close but slightly lower than the budget of each type of ESSD. Note that for clarity, different subfigures have different y-axis scales.
+
+related experiments, respectively. The token refilled interval is configured to 1 second for Amazon AWS ESSDs and 20 milliseconds for Alibaba Cloud ESSDs, as further elaborated in Section IV-A3. The results indicate that latency metrics deteriorate markedly when workload demands exceed the provider-guaranteed bandwidth or IOPS budgets. In IOPS-related tests (Figure 6b), the two low-end ESSDs (i.e., ESSD-AM2 and ESSD-AL2) exhibit average latency increases of 6.9 × and 13.5 ×, and P99.9 latency increases of 15.1 × and 73.3 × under IOPS oversubscription. Even high-end ESSDs (i.e., ESSD-AM1 and ESSD-AL1) are affected, with average latency rising by 73.8% and 95.7%, and P99.9 latency increasing by 1.5 × and 5.7 ×. These findings underscore the necessity of controlling I/O counts per interval to achieve consistent latency, corroborating earlier observations in [9]. But notably, bandwidth constraints also have a substantial impact. As depicted in Figure 6a, low-end ESSDs (i.e., ESSD-AM2 and ESSD-AL2) experience average latency increases of 2.5 × and 5.6 ×, and P99.9 latency increases of 5.7 × and 22.4 ×
+
+when bandwidth budgets are exceeded. High-end devices (i.e., ESSD-AM1 and ESSD-AL1) are similarly impaired, showing average latency growth of 3.5 × and 7.3 ×, and P99.9 latency elevations of 2.9 × and 9.8 ×. These outcomes demonstrate that surpassing bandwidth limits considerably degrades per-formance, indicating that cloud software must regulate not only IOPS but also bandwidth. 2) Limitation #2: Token Refilled Interval is not Static: 
+
+Figures 7 and 8 show the average latency and P99.9 latency of ESSDs with different token refilled intervals from Amazon AWS and Alibaba Cloud, respectively. Specifically, the token IEEE TRANSACTIONS 81000 500 200 100 50 20 10 5                      
+
+> Token Refilled Interval (ms)
+> 0
+> 0.4
+> 0.8
+> 1.2
+> Average Latency (ms)  ESSD-AL1 ESSD-AL2
+> 1000 500 200 100 50 20 10 5
+> Token Refilled Interval (ms)
+> 0
+> 4
+> 8
+> 12
+> P99.9 Latency (ms)
+> (a) Bandwidth 1000 500 200 100 50 20 10 5
+> Token Refilled Interval (ms)
+> 0
+> 0.4
+> 0.8
+> 1.2
+> Average Latency (ms)  ESSD-AL1 ESSD-AL2
+> 1000 500 200 100 50 20 10 5
+> Token Refilled Interval (ms)
+> 0
+> 4
+> 8
+> 12
+> P99.9 Latency (ms)
+> (b) IOPS Fig. 8. Average latency and P99.9 latency of Alibaba Cloud ESSDs under write workloads with different token refilled intervals. The bandwidth or IOPS intensities of the workloads are close but slightly lower than the budget of each type of ESSD. Note that for clarity, different subfigures have different y-axis scales.
+
+refilled intervals are 4000ms, 2000ms, 1000ms, 500ms, and 100ms. We still use the FIO benchmark tool to generate work-loads, and the bandwidth or IOPS intensities are controlled to be close but slightly lower than the budget of each type of ESSD. For bandwidth- and IOPS-related experiments, the I/O size is still set to 256KB and 4KB, respectively. Results in Figure 7 indicate that latency stabilizes for Amazon AWS ESSDs once the token refilled interval is set to 1000ms (1 second) or shorter, a trend consistent across both bandwidth and IOPS experiments. Particularly, for bandwidth-related tests (Figure 7a), reducing the interval from 4000ms to 1000ms results in a 75.2% decrease in average latency and a 21.9% reduction in P99.9 latency for ESSD-AM1, while ESSD-AM2 showed improvements of 35.1% in average latency and 51.9% in P99.9 latency. Similarly, in IOPS-related experiments (Figure 7b), ESSD-AM1 exhibits a 50.0% drop in average latency and a 5.4% decrease in P99.9 latency, whereas ESSD-AM2 sees more substantial gains of 71.2% and 85.0%, respectively. These results can verify that the token refilled interval in Amazon AWS ESSDs is highly likely to be 1 second. As a result, configuring a one-second token refilled interval in the cloud software I/O rate-limiting model can yield good latency in Amazon AWS ESSDs. However, we found that the one-second token refilled inter-val fails to achieve the best performance on Alibaba Cloud ESSDs. Figure 8 shows the latency of two Alibaba Cloud ESSDs at token refilled intervals from 1000ms to as small as 5ms. We can see that both the average latency and P99.9 latency of the two ESSDs can be further improved if the token refilled interval is configured less than 1000ms. Specifically, regarding the high-end ESSD-AL1, the average latency in bandwidth-related experiments (Figure 8a) and both the av-erage latency and P99.9 latency in IOPS-related experiments (Figure 8b) become stable when the token refilled interval is decreased to 100ms. Similarly, for the low-end ESSD-AL2, the average or P99.9 latency in bandwidth- or IOPS-related experiments gets steady at the token refilled interval of 100ms. These results suggest that the token refilled interval within Alibaba Cloud EBS is likely to be 100ms, so configuring a one-second interval on the cloud software side would lead to unnecessary performance loss. Taking ESSD-AL1 as an example, the average latency and P99.9 latency are improved by up to 44.5% and 5.0 ×, respectively. 
+
+The above results can convey that the token refilled interval for rate-limiting is actually provider-specific. That being said, the cloud software I/O rate-limiting model should determine the exact token refilled interval with the underlying provider in mind and profiling experiments beforehand. The experimental methodology in this section could be useful for reference. 
+
+3) Limitation #3: Non-Instantaneous Synchronization of Cloud-Software-Side Rate-Limiting with EBS-Side Rate-Limiting: Meanwhile, we can also notice a discrepancy in Figure 8a, i.e., the P99.9 latency of ESSD-AL1 in bandwidth-related experiments becomes stable only when the token refilled interval is decreased to 20ms. The primary cause of this smaller token refilled interval could be the non-instantaneous synchronization of cloud-software-side rate-limiting with EBS-side rate-limiting, where the time differ-ences of rate-limiting at both ends could unexpectedly block some I/Os and increase the tail latency. This problem is more challenging (and may more likely appear) in bandwidth-related experiments because bandwidth experiments employ 256KB I/Os, which may incur higher processing overhead (compared to 4KB I/Os in IOPS experiments) and are thus more likely to increase the time difference between both ends. In addition, high-end ESSDs require supporting a bandwidth of a few GB/s (e.g., 1.1GB/s in ESSD-AL1), which can also exacerbate this problem because it is intrinsically hard for the provider to manage a massive number of I/Os while not affecting tail latency. To conclude, there exists a non-instantaneous synchroniza-tion between cloud-software-side rate-limiting and EBS-side rate-limiting, which may adversely impact performance in workloads with large-sized I/Os and high-end ESSDs. Mean-while, we found that setting up a finer-grained (or smaller) token refilled interval on the cloud software side is a feasible solution to address this problem without degrading the latency. For example, when the token refilled interval is configured to 20ms (versus 100ms), the P99.9 latency of ESSD-AL1 in bandwidth-related experiments is decreased by 59.8% (see Figure 8a). 
+
+B. Our Solution 
+
+Based on the above experiments and analysis, in this section, we present a refined I/O rate-limiting model for cloud software using ESSDs to obtain satisfactory latency. Our solution intro-duces two architectural changes beyond Calcspar’s IOPS-only, one-second-refill rate-limiting model [9]. The first is bandwidth-IOPS dual limiting , which indicates that both the bandwidth and IOPS (rather than only IOPS) IEEE TRANSACTIONS 9
+
+Algorithm 1 Pseudo-code of bandwidth-IOPS dual limiting  
+
+> 1:
+
+function PROCESS REQUEST (req)  
+
+> 2:
+
+// A request can only be processed if enough tokens are acquired from both bandwidth and IOPS rate limiters  
+
+> 3:
+
+// Step 1: Acquire tokens for bandwidth  
+
+> 4:
+
+remainingBytes ← req.sizeInBytes  
+
+> 5:
+
+while remainingBytes > 0 do  
+
+> 6:
+
+acquiredBytes ←
+
+bandwidthRateLimiter.acquire(remainingBytes)  
+
+> 7:
+
+if acquiredBytes > 0 then  
+
+> 8:
+
+remainingBytes ← remainingBytes −
+
+acquiredBytes  
+
+> 9:
+
+end if  
+
+> 10:
+
+end while  
+
+> 11: 12:
+
+// Step 2: Acquire token for IOPS  
+
+> 13:
+
+while !iopsRateLimiter.acquire(1) do  
+
+> 14:
+
+end while  
+
+> 15: 16:
+
+// Continue to process the request  
+
+> 17:
+
+// ...  
+
+> 18:
+
+end function 
+
+should be carefully regulated, in coordination with the rate-limiting model within EBS. Algorithm 1 shows the pseudo-code. Cloud software maintains two rate limiters, one for bytes and one for I/O count. An incoming request must acquire tokens from both limiters before proceeding; if either limiter lacks tokens, the request is deferred. The second is fine-grained token refilling , which has two implications. On the one hand, the token refilled interval should be meticulously profiled (rather than a fixed one-second) and may vary between different providers. We show how to figure out this information through profiling experi-ments in Section IV-A2. On the other hand, the token refilled interval should be finer than the profiled value, so as to avoid unexpected latency spikes due to non-instantaneous synchronization between cloud-software-side rate-limiting and EBS-side rate-limiting. V. C ASE STUDY ON ROCKS DB To instantiate the contract and the refined rate-limiting model, we conduct an application-level case study based on RocksDB [10], a popular LSM-tree-based key-value store. In Section V-A, we go through the general experimental setups shared across the case study. Then, from Section V-B to Section V-F, we explore how the cloud database using RocksDB as the storage engine can benefit from our findings. We conclude the case study in Section V-G. 
+
+A. Experimental Setups 
+
+We evaluate RocksDB on ESSD-AL2 from Alibaba Cloud (see Table I) using the popular YCSB benchmark tool [11]. For each experiment, we first preload 10M key-value pairs (each for a 16-byte key and a 1KB value) into the store and then employ 20 threads to issue 5M requests in total. We configure a 1GB block cache, which can hold approximately 10% of the dataset, and use direct I/Os to bypass the page cache effects. We implement our refined I/O rate-limiting model into RocksDB, namely RocksDB-E , with the bandwidth and IOPS budgets configured at 162MB/s and 4.5K IOPS, both representing 90% of the ESSD performance budgets (see Table I). The token refilled interval is set to 20ms, according to the conclusion in Section IV-A3. As with the default configuration in RocksDB [30], the priority weighting ratio between foreground I/Os (i.e., user reads) and background I/Os (i.e., flushes and compactions) is 10:1, and for background I/Os, that between flushes and compactions is also 10:1. 
+
+B. Cache Miss Minimization (Implication #1) 
+
+Implication #1 indicates that the per-I/O cost on ESSDs is substantially higher than on local SSDs, particularly for small outstanding I/Os. For RocksDB, the most latency-sensitive I/O path is the synchronous user reads [31], where each cache miss triggers small read I/Os to the ESSD with an unavoidable latency penalty of hundreds or thousands of microseconds. Consequently, minimizing the cache miss rate is no longer merely a performance optimization but becomes a key com-ponent for meeting user SLAs. To this end, techniques that can minimize cache misses are highly recommended for use with ESSDs. Such techniques typically include allocating larger cache space, pinning index and filter blocks in cache, and even prepopulating data blocks into the block cache after compactions (to mitigate the cache invalidation problem [32]). In short, trading memory for cache hits is the first line of defense to secure read SLAs on ESSDs. 
+
+C. Holistic I/O Regulation (Implication #1, Implication #4, and Rate-Limiting Model) 
+
+Implications #1 and #4, and the study on the rate-limiting model collectively pinpoint the necessity of a holistic I/O regulation. This is particularly important for RocksDB, which has bursty I/O traffic due to bandwidth-intensive compactions in the background that can easily threaten SLAs of cloud users. To demonstrate the effectiveness of our proposed rate-limiting model, we compare RocksDB-E with three baselines: (1) vanilla RocksDB without rate-limiting, i.e., RocksDB , (2) RocksDB using Calcspar’s one-second IOPS stabilizer, i.e., 
+
+RocksDB-C [9], and (3) RocksDB-E with one-second token-refill intervals, i.e., RocksDB-E(1s) , for breakdown analy-sis. 
+
+Throughput. Figure 9 presents the throughput results across different YCSB workloads (i.e., Load and A–F). We can first see that in YCSB Load (insert-only), all three rate-limited schemes outperform the vanilla RocksDB . Specifi-cally, both RocksDB-E variants reach 32Kops/s, which is 18.5% higher compared to RocksDB without rate-limiting. Similar trends are shown in other macro-benchmarks (i.e., A–F), where RocksDB-E achieves the best-level through-put, on average 20.7% higher compared to RocksDB . Al-though RocksDB-C can further improve load throughput from 32Kops/s to 34Kops/s, as discussed later, pushing ESSD IEEE TRANSACTIONS 10 Load              
+
+> 0
+> 10
+> 20
+> 30
+> 40
+> Throughput (Kops/s)
+> 27  34
+> 32
+> 32
+> ABCDEF
+> 0
+> 10
+> 20
+> 30
+> 40
+> Throughput (Kops/s)
+> 4.6
+> 4.9
+> 4.7
+> 6.9
+> 0.9
+> 3.9
+> 4.9
+> 5.5
+> 5.3
+> 11
+> 0.7
+> 4.7
+> 4.9
+> 5.3
+> 5.2
+> 11
+> 0.8
+> 4.8
+> 5.2
+> 5.5
+> 5.3
+> 12
+> 0.8
+> 4.8
+> RocksDB RocksDB-C RocksDB-E(1s) RocksDB-E
+> Fig. 9. Throughput of RocksDB across different workloads (i.e., Load and A–F) under different rate-limiting configurations. These include the vanilla RocksDB without rate-limiting (i.e., RocksDB ), RocksDB with 1-second-based IOPS limiting (i.e., RocksDB-C , proposed by Calcspar [9]), our proposed RocksDB with 20ms-based bandwidth-IOPS dual limiting (i.e.,
+> RocksDB-E ), and our proposed RocksDB-E but with 1-second token refilled intervals (i.e., RocksDB-E(1s) ) for breakdown analysis.
+
+beyond its bandwidth limit would cause severe latency penal-ties. 
+
+Load Latency. Figure 10 reports the average, P99, and maximum latency results under YCSB Load. We can first see from (a) that RocksDB-E reduces the average latency by 28.2% and 18.3% compared to RocksDB and RocksDB-C ,respectively. The results regarding maximum latency in (c) are even more striking: RocksDB-E reduces the maximum latency to only 2.9s, while RocksDB and RocksDB-C have maximum latencies of as high as 16s and 42s, respectively, which are 5.5 × and 14.5 × higher than that of RocksDB-E .Given that YCSB Load is bandwidth-intensive, the disastrous performance of RocksDB-C reveals that bandwidth limiting (not just IOPS) is crucial. Although the P99 latency of RocksDB-E in (b) is higher than both RocksDB and RocksDB-C , this reflects a deliber-ate architectural choice to smooth out tail latency. By precisely distributing I/O permits smoothly in time, RocksDB-E trades a modest P99 increase for the elimination of catastrophic tail events. For SLA-governed cloud database services, effectively bounding the worst scenario to small-digit seconds is far more valuable than minimizing the P99 at the cost of encountering unpredictable outliers lasting up to 42s. 
+
+Latency in macro-benchmarks. Figures 11, 12, and 13 report the maximum, P99, and average latency results in YCSB macro-benchmarks (i.e., A–F). We can first see from Figure 11 that RocksDB-E also effectively suppresses the maximum latency in macro-benchmarks. For example, the point read latency of RocksDB-E across different macro-benchmarks consistently remains between 18–20ms, and the scan latency (i.e., in YCSB E) is only 66ms. In contrast, the maximum read latency of RocksDB-C ranges from 608–812ms, while that of RocksDB-E(1s) ranges from 659–825ms, both over an order of magnitude higher than RocksDB-E . The fact that RocksDB-E(1s) also exhibits high maximum latency, comparable to RocksDB-C , demonstrates that fine-grained token refilling is crucial for securing consistently low worst-case latency in macro-benchmarks. Regarding P99 and average latencies shown in Figures 12 and 13, these two metrics follow a consistent pattern but reveal discrepancies across different operations. Specifically, R RC RE(1s) RE                
+
+> (a)
+> 0
+> 200
+> 400
+> 600
+> 800
+> Average Latency (  s)
+> 646
+> 568
+> 462
+> 464
+> RRC RE(1s) RE
+> (b)
+> 0
+> 1
+> 2
+> 3
+> 4
+> P99 Latency (ms)
+> 2.0
+> 0.008
+> 3.2
+> 3.2
+> RRC RE(1s) RE
+> (c)
+> 0
+> 20
+> 40
+> 60
+> 80
+> Maximum Latency (s)
+> 16
+> 42
+> 3.0
+> 2.9
+> Fig. 10. Average, P99, and maximum latency of RocksDB in YCSB Load (insert-only) under different rate-limiting configurations. R: RocksDB .
+> RC: RocksDB-C .RE(1s): RocksDB-E(1s) .RE: RocksDB-E .The detailed configurations of these schemes are described in the caption of Figure 9. Note that the three subfigures use different y-axis units (i.e., μs, ms, and s).
+
+for insert and update operations across macro-benchmarks, 
+
+RocksDB-E achieves significant improvements in both P99 latency and average latency. However, in terms of most read and scan operations (with the exception of reading the latest data in YCSB D), the latencies of RocksDB-E are on par with or slightly higher than the best among all evaluated schemes. 
+
+D. Revisiting Capacity and Performance Headroom (Implica-tion #2) 
+
+On local SSDs, garbage collection (GC) at high storage utilization causes severe write amplification and latency spikes. High performance utilization can further exacerbate this issue, since foreground I/Os compete for the available bandwidth and IOPS, leaving less headroom for background GCs. To this end, cloud database providers often conservatively provision storage capacity and performance budgets to secure consistent user experiences. This approach, however, directly inflates deployment costs, as a substantial portion of paid resources remains deliberately unused. Implication #2 suggests an opportunity for cloud databases to reassess, rather than automatically inherit, the conserva-tive headroom used in local-SSD deployments. Compared to the conventional conservative approach, this directly yields more usable resources from the same hardware configurations, reducing infrastructure costs when serving the same set of tenants. 
+
+E. Write Pattern: An Architectural Mismatch (Implication #3) 
+
+Implication #3 suggests that sequential-write-based software could benefit from proactively issuing random writes, given the random write throughput advantage observed at small I/O sizes and high queue depths on high-end ESSDs. However, we found that RocksDB is architecturally incapable of exploiting this opportunity. The mismatch arises at two levels. At the storage engine (e.g., LSM tree) level, all major write paths in RocksDB produce large and sequential I/Os that fall well outside the regime where random writes outperform. Flushes and compactions generate SSTables in 1MB write batches by default. Even for the write-ahead log (WAL) enabled with the synchronization option, its group commit technique [33] merges data from multiple threads into large writes. In these cases, the I/O size far exceeds the threshold IEEE TRANSACTIONS 11 A B C D E F 
+
+> 1000
+> 750
+> 500
+> 250
+> 0
+> 0
+> 250
+> 500
+> 750
+> 1000
+> Maximum Latency (ms)
+> 32
+> 26
+> 25
+> 330
+> 71
+> 243
+> 749
+> 755
+> 812
+> 608
+> 782
+> 731
+> 720
+> 659
+> 747
+> 785
+> 825
+> 691
+> 18
+> 18
+> 18
+> 18
+> 66
+> 20
+> 35
+> 22
+> 0.09
+> 0.1
+> 78
+> 591
+> 531
+> 0.08
+> 0.1
+> 1.7
+> 705
+> 333
+> 0.08
+> 0.1
+> 180
+> 18
+> 18
+> 0.09
+> 0.1
+> 0.5
+> READ
+> UPDATE
+> READ
+> UPDATE
+> READ READ
+> INSERT
+> SCAN
+> INSERT
+> READ
+> UPDATE
+> RocksDB
+> RocksDB-C
+> RocksDB-E(1s)
+> RocksDB-E
+
+Fig. 11. Maximum latency of RocksDB across different macro-benchmarks (i.e., A-F) under different rate-limiting configurations. The detailed configurations of these schemes are described in the caption of Figure 9. For each workload, latency is reported separately for each operation type. A B C D E F 
+
+> 20
+> 15
+> 10
+> 5
+> 0
+> 0
+> 5
+> 10
+> 15
+> 20
+> P99 Latency (ms)
+> 7.2
+> 7.0
+> 7.1
+> 6.6
+> 9.7
+> 7.7
+> 7.4
+> 6.8
+> 6.1
+> 3.1
+> 9.6
+> 6.9
+> 7.2
+> 7.0
+> 7.1
+> 2.3
+> 9.3
+> 7.2
+> 8.2
+> 7.0
+> 7.0
+> 0.3
+> 18
+> 6.9
+> 6.9
+> 6.4
+> 0.01
+> 0.03
+> 0.02
+> 7.2
+> 6.6
+> 0.01
+> 0.03
+> 0.03
+> 7.0
+> 6.5
+> 0.01
+> 0.03
+> 0.02
+> 0.5
+> 0.3
+> 0.009
+> 0.03
+> 0.02
+> READ
+> UPDATE
+> READ
+> UPDATE
+> READ READ
+> INSERT
+> SCAN
+> INSERT
+> READ
+> UPDATE
+> RocksDB
+> RocksDB-C
+> RocksDB-E(1s)
+> RocksDB-E
+
+Fig. 12. P99 latency of RocksDB across different macro-benchmarks (i.e., A-F) under different rate-limiting configurations. The detailed configura-tions of these schemes are described in the caption of Figure 9. For each workload, latency is reported separately for each operation type. 
+
+below which random writes exhibit a throughput advantage on ESSDs. While at the filesystem level, modern general-purpose filesystems also tend to avoid random I/Os. In ext4 [34], extent-based allocation together with the multi-block allocator promotes contiguous block placement. F2FS [26], by its log-structured design, converts updates into out-of-place sequential appends within active segments under its default policy. Under both filesystems, the I/O pattern arriving at the ESSD is predominantly sequential in common deployments, leaving little room to exploit the random-write advantage. Together, the two-level mismatch makes it difficult to apply Implication #3 to RocksDB; otherwise, it would require in-vasive modifications to both mature software systems, which would be virtually impractical. Nonetheless, purpose-built architectures that can fully control I/O patterns towards ESSDs can exploit this opportunity. For example, SPDK-based storage engines that employ the Forced Unit Access (FUA) mechanism for strong write durability can deliberately issue small writes to non-contiguous device locations, so as to leverage the A B C D E F 
+
+> 2000
+> 1500
+> 1000
+> 500
+> 0
+> 0
+> 500
+> 1000
+> 1500
+> 2000
+> Average Latency (  s)
+> 232
+> 208
+> 217
+> 158
+> 1192
+> 263
+> 237
+> 231
+> 242
+> 97
+> 1450
+> 233
+> 230
+> 212
+> 220
+> 112
+> 1336
+> 230
+> 301
+> 213
+> 214
+> 98
+> 1298
+> 228
+> 215
+> 190
+> 4.1
+> 11
+> 7.0
+> 195
+> 142
+> 4.0
+> 12
+> 7.8
+> 201
+> 158
+> 3.9
+> 11
+> 11
+> 188
+> 121
+> 3.6
+> 11
+> 6.2
+> READ
+> UPDATE
+> READ
+> UPDATE
+> READ READ
+> INSERT
+> SCAN
+> INSERT
+> READ
+> UPDATE
+> RocksDB
+> RocksDB-C
+> RocksDB-E(1s)
+> RocksDB-E
+
+Fig. 13. Average latency of RocksDB across different macro-benchmarks (i.e., A-F) under different rate-limiting configurations. The detailed con-figurations of these schemes are described in the caption of Figure 9. For each workload, latency is reported separately for each operation type. 
+
+performance advantage demonstrated in Observation #3. 
+
+F. Aggressive Compression (Implication #5) 
+
+According to Implication #5, we explore whether more aggressive compression using standard algorithms can benefit RocksDB on ESSDs. We compare three compression config-urations: no compression, LZ4 [13], and ZSTD [12], across three datasets with different levels of compressibility (i.e., low, medium, and high). On these three datasets, LZ4 achieves compression ratios of 1.01, 1.36, and 1.89, while ZSTD achieves those of 1.54, 2.11, and 3.74. Here, compression ratio is defined as the ratio of the original size to the compressed size. Figure 14 presents the results in terms of throughput and latency. 
+
+Load performance. As shown in Figure 14(a), ZSTD dramat-ically improves the throughput in YCSB Load (insert-only) by 38.9%–167% compared to NoCompress and 36.8%– 67.2% compared to LZ4 . Correspondingly, ZSTD reduces the load latency by 34.6%–65.5% compared to NoCompress 
+
+and 17.6%–36.7% compared to LZ4 . The high per-I/O cost of ESSDs underscores the benefits of reducing I/O volume; consequently, aggressive compression delivers significantly better write throughput and latency, and the improvements are more pronounced with higher data compressibility. 
+
+Read-only workload performance. Figure 14(b) shows the results in YCSB C (read-only). As we can see, ZSTD increases the throughput by up to 9.4% compared to NoCompress 
+
+and up to 4.1% compared to LZ4 , while slightly worsening the latency by up to 8.6% compared to NoCompress and up to 6.3% compared to LZ4 . Here, the small performance differences are due to the high block cache hit rate, as the Zipfian access pattern concentrates reads on a hot subset that is largely served from block cache (without triggering decompression). 
+
+Mixed read-write workload performance. Figure 14(c) shows the results in YCSB A (50% reads and 50% updates). 
+
+ZSTD improves the overall throughput by 6.9%–13.3% com-pared to NoCompress and 3.4%–6.7% compared to LZ4 .The update latency of ZSTD is also reduced by 10.1%–19.8% IEEE TRANSACTIONS 12 Low Medium High                     
+
+> Data Compressibility
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Throughput (Kops/s)
+> Low Medium High
+> Data Compressibility
+> 0
+> 100
+> 200
+> 300
+> 400
+> 500
+> Latency (  s)
+> NoCompress LZ4 ZSTD
+> (a) YCSB Load (insert-only) Low Medium High
+> Data Compressibility
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> Throughput (Kops/s)
+> Low Medium High
+> Data Compressibility
+> 0
+> 100
+> 200
+> 300
+> 400
+> 500
+> Latency (  s)
+> NoCompress LZ4 ZSTD
+> (b) YCSB C (read-only) Low Medium High
+> Data Compressibility
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> Throughput (Kops/s)
+> Low Medium High
+> Data Compressibility
+> 0
+> 100
+> 200
+> 300
+> 400
+> 500
+> Latency (  s)
+> +READ UPDATE
+> NoCompress LZ4 ZSTD
+> (c) YCSB A (50% reads and 50% updates) Fig. 14. Throughput and average latency of RocksDB across different YCSB workloads (i.e., Load, A, and C) under different compression configurations (i.e., no compression, LZ4, and ZSTD). In workloads A and C, read operations follow the Zipfian distribution.
+
+compared to NoCompress and 6.3%–10.1% compared to 
+
+LZ4 . However, the read latency rises, as update-triggered com-pactions invalidate block cache entries, causing subsequent reads to incur decompression overhead. Nevertheless, the read-latency gap between ZSTD and LZ4 is only 0.3%–18.5%, narrowing to just 0.3% for highly compressible data. That is, even with higher decompression overhead, ZSTD still delivers better overall throughput and update latency; read latency is comparable on highly compressible datasets, and moderately increases on less compressible datasets. 
+
+Storage footprint. Storage footprint reduction is one of the most direct cost benefits of standard compression algorithms on capacity-billed cloud storage. In the three datasets with different compressibility (i.e., low, medium, and high), ZSTD 
+
+significantly reduces the storage footprint by 35.2%, 52.7%, and 73.2%, respectively. In contrast, the savings from LZ4 are only 0.7%, 26.7%, and 47.2%. 
+
+G. Summary 
+
+In this section, we use RocksDB as a case study to examine how the ESSD contract and the refined I/O rate-limiting model can inform software design. Based on the investigation, we summarize four ESSD-aware guidelines for RocksDB: 1) minimize cache misses to protect the critical read path from costly I/Os; 2) holistically regulate I/Os with the refined rate-limiting model to improve latency, especially the maximum latency; 3) revisit the conservative capacity and performance head-room inherited from local-SSD deployments, as GC-related degradation is not exposed at the user-visible interface; 4) adopt aggressive compression using standard algorithms (e.g., ZSTD) when data is sufficiently compressible and CPU resources permit. Collectively, these results demonstrate the potential of ESSD-aware optimization in the evaluated RocksDB deploy-ment without hardware changes. VI. R ELATED WORK 
+
+Characterizing the performance of emerging storage tech-nologies remains a topic of enduring relevance. Previous stud-ies have explored the performance attributes of HDDs [35], flash-based SSDs [36], Optane-based SSDs [37], as well as flash SSDs with novel interfaces such as Key-Value (KV) [38] and Zoned Namespace (ZNS) [39]. Building on this research tradition, we present a performance analysis of the latest cloud-based ESSDs. Several studies have documented advancements in EBS ar-chitectures across storage, networking, hardware acceleration, and security [2], [4]–[6]. For instance, Zhang et al. [4], [8] detail the design evolution of Alibaba Cloud EBS over ten years, tracing its progression from simplicity in EBS1 to high performance and space efficiency in EBS2, and more recently to minimizing network traffic amplification in EBS3. Miao et al. [2] introduce two generations of storage network stacks: Luna (a user-space TCP stack) and Solar (a storage-optimized UDP stack) developed for Alibaba Cloud EBS, which collectively reduce average I/O latency by 72% over five years. Shu et al. [6] identify performance variability in Alibaba Cloud EBS resulting from DPU-based storage agents and propose BurstCBS, a hardware-software co-designed I/O scheduler that mitigates load imbalance and tenant inter-ference. To address ransomware threats in EBS, Wang et al. [5] develop DeftPunk, a block-level detection and recovery system that attains near-perfect recall across 13 ransomware variants with minimal runtime overhead. Additionally, Li et al. [3] profile EBS workloads from Alibaba Cloud and Tencent Cloud, offering insights into load intensity, spatial locality, and temporal patterns. Wu et al. [7] analyze I/O traces in Alibaba Cloud EBS, exposing traffic skew across virtualization frameworks, throttling mechanisms, cluster management, and caching layers, alongside discussions of potential mitigations. Tan et al. [40] propose Tela, a temporal load-aware placement strategy for ESSDs that forecasts workload patterns to enhance cloud resource allocation. From the cloud software perspective, Cosine [41] employs cost models to select optimal key-value storage engines based on workload requirements, budget constraints, performance targets, and cloud SLAs. A number of studies [42]–[44] IEEE TRANSACTIONS 13 
+
+examine tiered data management using LSM trees across EBS and other storage tiers, such as faster local SSDs or slower object stores. Mutant [42] dynamically reorganizes SSTables across tiers according to access frequency, enabling adaptive cost-performance trade-offs in RocksDB without costly data migration. ROCKSMASH [43] enhances metadata efficiency and read performance through a new cache design and extends the write-ahead log for rapid parallel recovery. MirrorKV [44] targets hybrid storage architectures combining EBS and object storage, introducing optimizations for compaction and query efficiency in such environments. Finally, Zhou et al. [9] highlight elevated latency variations in ESSDs when exceeding provisioned IOPS within one-second windows and propose I/O regulation techniques in LSM-tree-based stores to improve tail latency. VII. C ONCLUSION 
+
+In this paper, we present a user-centric performance charac-terization of ESSDs from Amazon AWS and Alibaba Cloud. Based on our in-depth investigation, we make three main contributions: (1) an ESSD contract that summarizes how ESSDs differ from local SSDs, (2) a refined I/O rate-limiting model that effectively suppresses latency spikes on ESSDs, and (3) a case study on RocksDB that explores our findings in the context of cloud databases. Together, they serve as a practical reference for EBS users in understanding and exploiting ESSDs, and we hope that our findings can stimulate more research on investigating ESSD performance features as well as ESSD-aware cloud software designs. REFERENCES [1] Y. Wang and M.-C. Yang, “The unwritten contract of cloud-based elastic solid-state drives,” in 2025 62nd ACM/IEEE Design Automation Conference (DAC) . IEEE, 2025, pp. 1–7. [2] R. Miao, L. Zhu, S. Ma, K. Qian, S. Zhuang, B. Li, S. Cheng, J. Gao, Y. Zhuang, P. Zhang et al. , “From luna to solar: the evolutions of the compute-to-storage networks in alibaba cloud,” in Proceedings of the ACM SIGCOMM 2022 Conference , 2022, pp. 753–766. [3] J. Li, Q. Wang, P. P. Lee, and C. Shi, “An in-depth comparative analysis of cloud block storage workloads: Findings and implications,” ACM Transactions on Storage , vol. 19, no. 2, pp. 1–32, 2023. [4] W. Zhang, E. Xu, Q. Wang, X. Zhang, Y. Gu, Z. Lu, T. Ouyang, G. Dai, W. Peng, Z. Xu et al. , “What’s the story in {EBS } glory: Evolutions and lessons in building cloud block store,” in 22nd USENIX Conference on File and Storage Technologies (FAST 24) , 2024, pp. 277–291. [5] Z. Wang, Y. Song, E. Xu, H. Wu, G. Tong, S. Sun, H. Li, J. Liu, L. Ding, R. Liu et al. , “Ransom access memories: Achieving practical ransomware protection in cloud with {DeftPunk },” in 18th USENIX Symposium on Operating Systems Design and Implementation (OSDI 24) , 2024, pp. 687–702. [6] J. Shu, K. Qian, E. Zhai, X. Liu, and X. Jin, “Burstable cloud block storage with data processing units,” in 18th USENIX Symposium on Operating Systems Design and Implementation (OSDI 24) , 2024, pp. 783–799. [7] H. Wu, E. Xu, L. Wang, Y. Hong, C. Niu, B. Shi, L. Zhu, J. He, D. Wu, W. Zhang et al. , “Hey hey, my my, skewness is here to stay: Challenges and opportunities in cloud block store traffic,” in Proceedings of the Twentieth European Conference on Computer Systems , 2025, pp. 736– 752. [8] E. Xu, W. Zhang, Q. Wang, X. Zhang, Y. Gu, Z. Lu, T. Ouyang, G. Dong, W. Peng, Z. Xu et al. , “Evolving the cloud block store with performance, elasticity, availability, and hardware offloading,” ACM Transactions on Storage , vol. 21, no. 2, pp. 1–29, 2025. [9] Y. Zhou, J. Zhou, S. Chen, P. Xu, P. Wu, Y. Wang, X. Liu, L. Zhan, and J. Wan, “Calcspar: A {Contract-Aware }{ LSM } store for cloud storage with low latency spikes,” in 2023 USENIX Annual Technical Conference (USENIX ATC 23) , 2023, pp. 451–465. [10] “RocksDB: A persistent key-value store for fast storage environments,” http://rocksdb.org/, 2026. [11] B. F. Cooper, A. Silberstein, E. Tam, R. Ramakrishnan, and R. Sears, “Benchmarking cloud serving systems with ycsb,” in Proceedings of the 1st ACM symposium on Cloud computing , 2010, pp. 143–154. [12] “Zstandard: Real-time data compression algorithm,” https://facebook. github.io/zstd/, 2026. [13] “LZ4: Extremely fast compression,” https://lz4.org/, 2026. [14] M. Bjørling, A. Aghayev, H. Holmberg, A. Ramesh, D. Le Moal, G. R. Ganger, and G. Amvrosiadis, “ZNS: Avoiding the Block Interface Tax for Flash-based SSD,” in Proceedings of the USENIX Annual Technical Conference (ATC’21) , 2021, pp. 689–703. [15] C. Sabol, R. Stenfort, and M. Allison, “Flexible Data Placement: State of the Union,” in Flash Memory Summit , 2023. [16] “Amazon AWS ESSD,” https://docs.aws.amazon.com/ebs/latest/ userguide/ebs-volumes.html, 2026. [17] “Alibaba Cloud ESSD,” https://www.alibabacloud.com/help/en/ecs/ user-guide/essds, 2026. [18] “Samsung 970 Pro,” https://semiconductor.samsung.com/ consumer-storage/internal-ssd/970pro/, 2024. [19] “FIO benchmark,” https://fio.readthedocs.io/en/latest/, 2026. [20] “Efficient I/O with io uring,” https://kernel.dk/io uring.pdf, 2019. [21] N. Li, M. Hao, H. Li, X. Lin, T. Emami, and H. S. Gunawi, “Fantastic ssd internals and how to learn and use them,” in Proceedings of the 15th ACM International Conference on Systems and Storage , 2022, pp. 72–84. [22] “Amazon EC2 General Purpose Instance Specifications,” https://docs. aws.amazon.com/ec2/latest/instancetypes/gp.html, 2026. [23] D. Skourtis, D. Achlioptas, N. Watkins, C. Maltzahn, and S. Brandt, “Flash on rails: Consistent flash performance through redundancy,” in 
+
+2014 USENIX Annual Technical Conference (USENIX ATC 14) , 2014, pp. 463–474. [24] J. Kim, K. Lim, Y. Jung, S. Lee, C. Min, and S. H. Noh, “Alleviating garbage collection interference through spatial separation in all flash arrays,” in 2019 USENIX Annual Technical Conference (USENIX ATC 19) , 2019, pp. 799–812. [25] T. Jiang, G. Zhang, Z. Huang, X. Ma, J. Wei, Z. Li, and W. Zheng, “{FusionRAID }: Achieving consistent low latency for commodity 
+
+{SSD } arrays,” in 19th USENIX Conference on File and Storage Technologies (FAST 21) , 2021, pp. 355–370. [26] C. Lee, D. Sim, J. Hwang, and S. Cho, “ {F2FS }: A new file system for flash storage,” in 13th USENIX Conference on File and Storage Technologies (FAST 15) , 2015, pp. 273–286. [27] O. Rodeh, J. Bacik, and C. Mason, “Btrfs: The linux b-tree filesystem,” 
+
+ACM Transactions on Storage (TOS) , vol. 9, no. 3, pp. 1–32, 2013. [28] “Wikipedia of Token Bucket Algorithm,” https://en.wikipedia.org/wiki/ Token bucket, 2017. [29] “Wikipedia of Weighted Fair Queueing,” https://en.wikipedia.org/wiki/ Weighted fair queueing, 2017. [30] “Rate Limiter in RocksDB,” https://github.com/facebook/rocksdb/wiki/ rate-limiter, 2022. [31] Y. Wang, C. Gong, G. Zhu, S. Wang, Z. Wang, H. Liu, J. Shi, W. Qin, W. Zhang, F. Li, and M.-C. Yang, “Making lsm-tree-based key-value store practical and efficient for multi-tenant serverless cloud databases,” 
+
+Proceedings of the ACM on Management of Data , vol. 4, no. 1, pp. 1–25, Feb. 2026, art. no. 53. [32] L. Yang, H. Wu, T. Zhang, X. Cheng, F. Li, L. Zou, Y. Wang, R. Chen, J. Wang, and G. Huang, “Leaper: A learned prefetcher for cache invalidation in lsm-tree based storage engines,” Proceedings of the VLDB Endowment , vol. 13, no. 12, pp. 1976–1989, 2020. [33] “WAL Group Commit in RocksDB,” https://github.com/facebook/ rocksdb/wiki/WAL-Performance, 2020. [34] A. Mathur, M. Cao, S. Bhattacharya, A. Dilger, A. Tomas, and L. Vivier, “The new ext4 filesystem: current status and future plans,” in Proceed-ings of the Linux symposium , vol. 2, 2007, pp. 21–33. [35] S. W. Schlosser and G. R. Ganger, “Mems-based storage devices and standard disk interfaces: A square peg in a round hole?” in FAST , 2004, pp. 87–100. [36] J. He, S. Kannan, A. C. Arpaci-Dusseau, and R. H. Arpaci-Dusseau, “The unwritten contract of solid state drives,” in Proceedings of the twelfth European conference on computer systems , 2017, pp. 127–144. [37] K. Wu, A. Arpaci-Dusseau, and R. Arpaci-Dusseau, “Towards an unwritten contract of intel optane {SSD },” in 11th USENIX Workshop on Hot Topics in Storage and File Systems (HotStorage 19) , 2019. [38] M. P. Saha, A. Maruf, B. S. Kim, and J. Bhimani, “Kv-ssd: What is it good for?” in 2021 58th ACM/IEEE Design Automation Conference (DAC) . IEEE, 2021, pp. 1105–1110. IEEE TRANSACTIONS 14 
+
+[39] K. Doekemeijer, N. Tehrany, B. Chandrasekaran, M. Bjørling, and A. Trivedi, “Performance characterization of nvme flash devices with zoned namespaces (zns),” in 2023 IEEE International Conference on Cluster Computing (CLUSTER) . IEEE, 2023, pp. 118–131. [40] D. Tan, J. Li, H. Wang, X. Li, W. Liu, Z. Qin, K. Zhou, M. Xie, and M. Tao, “Tela: A temporal load-aware cloud virtual disk placement scheme,” in Proceedings of the 30th ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 1 , 2025, pp. 1084–1100. [41] S. Chatterjee, M. Jagadeesan, W. Qin, and S. Idreos, “Cosine: a cloud-cost optimized self-designing key-value storage engine,” Proceedings of the VLDB Endowment , vol. 15, no. 1, pp. 112–126, 2021. [42] H. Yoon, J. Yang, S. F. Kristjansson, S. E. Sigurdarson, Y. Vigfusson, and A. Gavrilovska, “Mutant: Balancing storage cost and latency in lsm-tree data stores,” in Proceedings of the ACM Symposium on Cloud Computing , 2018, pp. 162–173. [43] P. Xu, N. Zhao, J. Wan, W. Liu, S. Chen, Y. Zhou, H. Albahar, H. Liu, L. Tang, and Z. Tan, “Building a fast and efficient lsm-tree store by integrating local storage with cloud storage,” ACM Transactions on Architecture and Code Optimization (TACO) , vol. 19, no. 3, pp. 1–26, 2022. [44] Z. Wang and Z. Shao, “Mirrorkv: An efficient key-value store on hybrid cloud storage with balanced performance of compaction and querying,” 
+
+Proceedings of the ACM on Management of Data , vol. 1, no. 4, pp. 1–27, 2023.

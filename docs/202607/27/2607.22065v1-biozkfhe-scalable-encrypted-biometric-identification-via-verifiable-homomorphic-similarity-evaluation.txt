@@ -1,0 +1,2392 @@
+Title: BioZKFHE: Scalable Encrypted Biometric Identification via Verifiable Homomorphic Similarity Evaluation
+
+URL Source: https://arxiv.org/pdf/2607.22065v1
+
+Published Time: Mon, 27 Jul 2026 00:30:42 GMT
+
+Number of Pages: 28
+
+Markdown Content:
+> IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 1
+
+# BioZKFHE: Scalable Encrypted Biometric Identification via Verifiable Homomorphic Similarity Evaluation 
+
+Rundong Xin, Taotao Wang, Member, IEEE , Xiaoxiao Wu, Senior Member, IEEE , Weizhi Meng, Senior Mem-ber, IEEE , Shengli Zhang, Senior Member, IEEE , and Shui Yu, Fellow, IEEE 
+
+Abstract —Large-scale biometric identification in outsourced settings requires two properties simultaneously: biometric tem-plates and queries must remain protected during computation, and the encrypted similarity outputs produced by an untrusted compute node must be verifiably correct before any application result is released. Existing FHE-based biometric systems primar-ily address confidentiality, while practical verifiability introduces two bottlenecks in the underlying encrypted 1: N matching layer: rotation- and bandwidth-heavy similarity evaluation and the high cost of proving repeated homomorphic similarity traces. We present BioZKFHE, a framework for scalable encrypted biomet-ric identification via verifiable homomorphic similarity evaluation that combines BGV homomorphic computation with committee-mediated proof opening/decryption and smart-contract verifi-cation of opened proof batches. To reduce encrypted storage and avoid rotation-heavy encrypted 1: N matching, we propose 
+
+Single-Coefficient Multi-Value (SCMV) packing, which binds multiple quantized embedding values into each plaintext entry through base-T expansion. To make proof generation practical, we propose Parallelizable and Verifiable Similarity Computation (PVSC) , which exploits the Double-CRT execution structure of BGV to decompose each blockwise similarity trace into parallel proof instances that are opened and checked before result release. Under standard lattice assumptions and explicit committee/verifier assumptions, we analyze recoverability, noise growth, confidentiality, encrypted-output integrity, and finalized-result integrity. Experiments on FaceNet and MobileFaceNet show near-lossless biometric utility, up to 67% encrypted-storage reduction, and about 22–44 s end-to-end proof-verified runtime for 10k–40k templates. 
+
+Index Terms —Biometric identification, fully homomorphic encryption, zero-knowledge proofs, verifiable computation, blockchain-assisted identity. 
+
+I. I NTRODUCTION 
+
+Biometric identification is a natural primitive for binding digital identities to unique humans. This need is especially 
+
+R. Xin, T. Wang, X. Wu, and S. Zhang are with the College of Electronics and Information Engineering, Shenzhen University, Shen-zhen 518060, China (e-mail: rundongxin1@gmail.com, ttwang@szu.edu.cn, xxwu.eesissi@szu.edu.cn, zsl@szu.edu.cn). T. Wang is the corresponding author. W. Meng is with the School of Computing and Communications, Lancaster University, Lancaster LA1 4WA, U.K. (e-mail: w.meng3@lancaster.ac.uk). Shui Yu is with the School of Computer Science, University of Technology Sydney, Sydney, NSW 2007, Australia (e-mail: shui.yu@uts.edu.au). Accepted for publication in IEEE Transactions on Dependable and Secure Computing . Digital Object Identifier: 10.1109/TDSC.2026.3716308. © 2026 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works. 
+
+prominent in Sybil-resistant decentralized systems and other blockchain-assisted identity workflows [1], [2], where biomet-ric 1: N matching is too expensive to execute directly on-chain. Practical deployments outsource similarity computation off-chain and use a smart contract for commitments, opened-proof verification, and finalization; this requires protected biometric data and threshold-opened public verification before release. These requirements must hold simultaneously . Biometric data are highly sensitive, and leakage is irreversible; even protected representations may suffer inversion and linkability risks [3], [4]. At the same time, an untrusted compute node should not be able to make the system accept an incorrect encrypted similarity output, nor should downstream opening or decryption turn a proof-verified ciphertext result into an incorrect identification outcome [5]. The goal is therefore not merely encrypted biometric matching, but verifiable encrypted biometric identification with committee-governed proof open-ing and result release. Fully homomorphic encryption (FHE) naturally addresses confidentiality by enabling similarity computation on en-crypted biometric representations with post-quantum security foundations [6]. Yet most FHE-based biometric systems still focus on privacy against honest-but-curious servers rather than the malicious outsourced setting in which encrypted outputs must be checked before result release. General verifiable encrypted-computation systems have made rapid progress [7]– [9], but they are not tailored to large-scale biometric identifi-cation, where one encrypted query must be matched against a large encrypted gallery and the resulting similarity scores must support a final identification decision. This paper focuses on two practical bottlenecks that arise when one tries to make encrypted biometric identification verifiable at scale: 1) Rotation- and bandwidth-heavy encrypted 1: N match-ing : Existing packing techniques [10]–[12] batch tem-plates into SIMD slots, but similarity computation still often requires expensive ciphertext rotations and slot ag-gregations, which dominate latency and communication as the repository grows [13]. 2) Proof-generation cost for repeated homomorphic sim-ilarity traces : Verifiability can enforce integrity, but proving the full encrypted computation monolithically is impractical. Existing systems [14], [15] still incur large circuits and limited parallelism for high-dimensional arXiv:2607.22065v1 [cs.CR] 24 Jul 2026 IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 2
+
+similarity evaluation, leading to high proof-generation latency. To address these bottlenecks, we present BioZKFHE, a framework for scalable encrypted biometric identification via verifiable homomorphic similarity evaluation. BioZKFHE combines BGV homomorphic computation, committee-based threshold opening and decryption, and smart-contract veri-fication in a blockchain-assisted outsourced workflow: the Compute Node performs encrypted 1: N similarity evaluation off-chain, the committee threshold-opens proof objects and later threshold-decrypts proof-verified ciphertext outputs, and the smart contract checks the opened proofs before any iden-tification result is finalized. BioZKFHE is built around two co-designed techniques. 
+
+Single-Coefficient Multi-Value (SCMV) packing binds multi-ple quantized embedding values into each packed plaintext entry through a base-T expansion, increasing ciphertext uti-lization, reducing encrypted storage, and removing rotation-heavy operations from the online similarity path. Parallelizable and Verifiable Similarity Computation (PVSC) exploits the Double-CRT execution structure of BGV to decompose each blockwise similarity trace into structured local proof instances, enabling parallel proof generation and public verification after threshold opening. In BioZKFHE, public verification is com-mittee mediated. The compute node first generates encrypted PVSC proof objects for the prescribed homomorphic matching trace; a threshold committee opens these proof objects, and the smart contract then verifies the opened records against the session-bound outputs. Thus, BioZKFHE provides public auditability for outsourced encrypted matching after threshold opening, while release of the final identification result remains threshold-governed. In summary, this paper makes the following contributions:  
+
+> •
+
+We formulate BioZKFHE as a blockchain-assisted frame-work for threshold-opened auditability in encrypted bio-metric identification, with explicit roles for off-chain ho-momorphic evaluation, threshold-governed proof opening and decryption, and smart-contract-side verification of opened proof batches.  
+
+> •
+
+We propose Single-Coefficient Multi-Value (SCMV) pack-ing to address the storage and rotation bottleneck in en-crypted 1: N matching, increasing effective packing den-sity, reducing encrypted storage, and eliminating rotation-heavy operations from the online similarity path.  
+
+> •
+
+We propose Parallelizable and Verifiable Similarity Com-putation (PVSC) to address the proof-scalability bottle-neck, decomposing each blockwise BGV similarity trace into a structured batch of parallel proof instances suitable for threshold opening and subsequent public verification.  
+
+> •
+
+We formalize recoverability, noise growth, confidentiality, encrypted-output integrity, and finalized-result integrity under explicit committee and verifier assumptions, and implement a Microsoft SEAL prototype that demonstrates near-lossless biometric utility, up to 67% encrypted-storage reduction, and about 22–44 s end-to-end proof-verified runtime at 10k–40k scale. II. R ELATED WORK 
+
+BioZKFHE lies at the intersection of three lines of work: privacy-preserving biometric computation with FHE, effi-ciency techniques for encrypted 1: N matching, and verifiable homomorphic computation under malicious servers. Table I summarizes representative works and the gap targeted by BioZKFHE. 
+
+A. FHE-Based Privacy-Preserving Biometric Computation 
+
+FHE enables biometric computation directly on en-crypted templates and queries, providing confidentiality un-der lattice-based assumptions. Prior work has explored both approximate-number schemes and quantized integer HE such as BGV/BFV [6], [28], [29]. Representative systems demon-strate the feasibility of encrypted representation search, tem-plate fusion, and encrypted biometric identification [16]– [19], and recent surveys summarize the broader landscape of privacy-preserving biometric protocols [30]. These works establish that biometric utility can be preserved under encryp-tion, but they primarily optimize confidential execution rather than the malicious outsourced setting considered here, where encrypted outputs must be checked before any identification result is released. 
+
+B. Packing and Comparison Reduction for Encrypted 1: N
+
+Matching 
+
+The scalability of encrypted 1: N matching depends heav-ily on how many templates can be packed per ciphertext and how much rotation or comparison overhead is incurred during similarity evaluation. Early work packed one template per ciphertext [10], while later schemes amortized ciphertext overhead by packing multiple templates [11], [12]. Orthogonal approaches further reduce encrypted comparisons through preselection or group-testing mechanisms [21], [22]. These techniques improve matching efficiency, but they do not ad-dress the correctness of the outsourced computation under malicious behavior. SCMV is complementary to this line of work: rather than pruning candidates, it changes the packed-entry granularity to increase effective packing density and remove rotation-heavy operations from the online encrypted 
+
+1: N matching path. 
+
+C. Verifiable Homomorphic Computation and Zero-Knowledge Proofs 
+
+FHE alone does not guarantee that an untrusted server per-formed the intended computation correctly. Earlier verifiable-computation frameworks either incurred high overhead or supported restricted classes of encrypted computation [23]– [26]. More recent work improves practicality through ring-oriented SNARKs, verifiable FHE systems, and FHE-friendly proof optimizations [7]–[9], [14], [27], [31]. Closer to bio-metric applications, PEEV presents a prototype framework for verifying encrypted-domain biometric computation [15]. To the best of our knowledge, however, no prior work si-multaneously targets efficient encrypted 1: N matching and IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 3
+
+TABLE I: Representative lines of related work, their main ideas, and the remaining gap addressed by BioZKFHE. 
+
+Line of Work Representative Focus Remaining Gap 
+
+FHE biometric systems HERS [16]; HEFT [17]; recent HE biometric systems [18], [19]. Confidential encrypted search, fusion, and identification. No public verification of outsourced similarity outputs. Packing and preselection for encrypted 1: N
+
+matching Secure Face Matching [10]; coefficient packing [11], [20]; preselection/group testing [12], [21], [22]. Higher packing density or fewer comparisons. Matching-efficiency only; no outsourced-trace verification. General VC on encrypted data Generic VC-on-encrypted-data frameworks [23]–[26]; practical verifiable FHE systems [7]–[9], [14], [27]. Generic proofs for encrypted/ring computation. Not tailored to large biometric galleries or repeated similarity traces. Biometric-oriented verifiable FHE PEEV [15]. Prototype verifiable framework for encrypted biometric computation. Does not jointly address rotation-heavy encrypted 1: N
+
+matching and proof scalability. 
+
+verification of the resulting similarity trace in a blockchain-assisted outsourced biometric-identification workflow. In short, prior work improves confidentiality, matching efficiency, or verifiability largely in isolation, whereas BioZKFHE integrates all three in one workflow. BioZKFHE addresses this gap by combining SCMV for matching efficiency with PVSC for per-block proof parallelism after committee-side opening. III. S YSTEM ARCHITECTURE AND SECURITY MODEL 
+
+This section presents the system architecture, party roles, workflow, and threat model of BioZKFHE. The system com-bines BGV FHE [29], the designated-verifier lattice prov-ing paradigm [32], and threshold opening/decryption mech-anisms [33]; cryptographic background is deferred to the Supplementary Material, Secs. I–III. 
+
+A. System Model 
+
+BioZKFHE supports outsourced biometric identification over encrypted templates in a blockchain-assisted setting. The heavy encrypted 1: N matching runs off-chain at the Compute Node, while the smart contract records commitments, verifies opened proofs, and gates session finalization. Fig. 1 illustrates the resulting architecture and workflow. For readability, Ta-ble II summarizes the notation used most frequently in the protocol, SCMV construction, and PVSC verification layer. 
+
+1) Entity Roles and Responsibilities: BioZKFHE involves four entities with distinct roles: 
+
+• Client Device : The biometric data owner. It holds the FHE public key pk HE and is the only entity with access to plaintext biometric data. 
+
+• Compute Node : The outsourced computation service. It uses pk HE and the public PVSC parameters pp PVSC to store the encrypted database DSCMV , perform homomor-phic matching, and generate PVSC proofs. 
+
+• Decryption Committee : The threshold trust an-chor. Its ncom members collectively hold shares 
+
+{sk i
+
+HE , sk i
+
+open }ncom 
+
+i=1 and jointly open proofs and decrypt similarity outputs. 
+
+• Blockchain Smart Contract : The public verifier and state gatekeeper. It stores the verifier-side PVSC material Face Encoding               
+
+> Feature Extraction Encryption
+> pk HE
+> Client Device
+> Homomorphic Computation
+> Proof for HE Computation
+> pk HE
+> RPVSC
+> 2) Encrypted 1: N
+> matching and proof generation: csim ,πenc
+> DSCMV
+> Threshold Decryption
+> sk 1PVSC sk n
+> PVSC • • •
+> sk 1HE sk m
+> HE • • •
+> 3) Threshold opening: ( πenc →π)and public verification: csim ,π
+> 4) Result recovery and decision: y
+> 5) On-chain finalization
+> Untrusted Compute Node Decryption Committee
+> Smart Contract: Proof Verification for HE Computation
+> Smart Contract: Finalization for Biometric Identification Result
+> Blockchain
+> 1) Request Submission: (sid ,ctx ),Cidentify /enroll
+
+Fig. 1: BioZKFHE architecture and protocol flow among the Client Device, Compute Node, Decryption Committee, and smart contract. TABLE II: Summary of frequently used notation. 
+
+Notation Description 
+
+λ, d, p, q Security parameter, BGV ring dimension, plaintext mod-ulus, and ciphertext modulus. 
+
+pk HE , sk HE BGV public key and threshold-shared secret key. 
+
+sk open , sk ℓ 
+
+> open
+
+Master proof-opening key and the ℓ-th committee mem-ber’s opening share. 
+
+(t, n com ) Committee threshold and committee size. 
+
+N , L, Γ Number of enrolled templates, embedding dimension, and quantization scale. 
+
+T , n, D SCMV base, binding factor, and digit-range bound for recoverable similarity scores. 
+
+DSCMV , Cm, M SCMV encrypted gallery, its m-th encrypted block, and the number of blocks. 
+
+Videntify , Venroll Plaintext matrices prepared for encrypted identification and conditional enrollment. 
+
+Cidentify , Cenroll Query and enrollment ciphertext matrices sent by the client. 
+
+csim  
+
+> m
+
+, csim , y Encrypted similarity output for block m, the blockwise output collection, and the final application output. 
+
+ctx , sid , op Session context, fresh session identifier, and operation type. 
+
+hid , um, hm, ρm Query commitment, block commitment preimage, session-bound block commitment, and descriptor digest. 
+
+Π(m)enc , Π(m) Encrypted and threshold-opened PVSC proof batch for block m.
+
+x(m), w(m) PVSC public statement and private witness for block m.
+
+RPVSC , pp PVSC , vk PVSC PVSC relation family, public parameters, and verifier-side material. 
+
+q(j), nq , dZK , nchunk RNS modulus, number of RNS limbs, proof-template chunk size, and chunks per limb. 
+
+(vk PVSC , RPVSC ), verifies opened proofs, records ac-cepted block indices, and finalizes outputs after threshold confirmations. 
+
+2) System Initialization: BioZKFHE is bootstrapped once, e.g., via a secure Multiparty Computation protocol. This setup generates: 
+
+• the key pair (pk HE , sk HE ) for the BGV scheme [29]; 
+
+• the public PVSC parameters pp PVSC (defined concretely in Section V-D1) together with a master proof-opening key sk open for the lattice-based designated-verifier ZK proving mechanism [32]. The secret keys sk HE and sk open are then shared among the Decryption Committee under a (t, n com ) threshold mech-anism [33], so no single entity can unilaterally open proofs or decrypt results. The threshold opening/decryption abstraction IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 4
+
+used here is summarized in the Supplementary Material, Sec. III. The Client Device receives pk HE , the Compute Node receives pk HE and pp PVSC , and the smart contract records the verifier-side material vk PVSC and RPVSC .
+
+3) Protocol Overview: BioZKFHE executes the following high-level workflow: 1) Request submission : For either enrollment or login, the client encrypts a quantized biometric vector under 
+
+pk HE . We denote the query ciphertext by Cidentify , the enrollment ciphertext by Cenroll , and the session context by ctx , which contains a fresh session identifier sid , the fixed SCMV gallery snapshot, and the relevant ledger metadata. 2) Encrypted 1: N matching and proof generation : The Compute Node evaluates homomorphic similarity over 
+
+Cidentify and the SCMV-formatted encrypted database 
+
+DSCMV = {Cm}m, producing blockwise encrypted similarity outputs csim := {csim  
+
+> m
+
+}m. It then runs PVSC to generate the encrypted proof collection Πenc := 
+
+{Π(m)enc }m, where each proof batch attests to the cor-rectness of the corresponding block output under the committed session context and inputs. 3) Threshold opening and public verification : A quorum of at least t committee members jointly opens Πenc into the plaintext proof collection Π := {Π(m)}m. An aggre-gation party may collect opening shares and submit the opened proofs together with the corresponding encrypted outputs on-chain, where the smart contract verifies them against ctx , records accepted block indices, and rejects duplicates within the same session. 4) Result recovery and decision : Once the smart contract has accepted the complete proof-verified block collec-tion exactly once, the committee threshold-decrypts csim 
+
+and derives the minimal application output y. For en-rollment, y is a uniqueness decision indicating whether all similarities are below the threshold. For login, y is either rejection or the matched identity index when the threshold is exceeded. 5) On-chain finalization : Committee members submit consistent confirmations binding the decrypted result y
+
+to the verified session, and the smart contract finalizes only after receiving at least t such confirmations. Algorithm 1 summarizes the end-to-end BioZKFHE pipeline in pseudo-algorithmic form, making the interac-tion among SCMV, PVSC, threshold opening/decryption, and contract-side verification explicit. Details of SCMV and PVSC are given in Sections IV and V, respectively. 
+
+B. Threat Model 
+
+BioZKFHE assumes that fewer than t committee members collude, that the blockchain executes the deployed smart-contract code correctly and deterministically, and that the client follows the specified biometric extraction, quantization, and encryption procedures. 
+
+1) Security Goals: BioZKFHE targets the following goals:  
+
+> •
+
+G1 (Biometric Confidentiality Against Untrusted Compute and Sub-Threshold Collusion) : An adversary controlling the Compute Node and fewer than t com-mittee members should learn nothing about the plaintext query embedding, enrolled templates, or intermediate homomorphic states beyond the intentionally released application-level output and the information inherently available to an authorized decryption quorum.  
+
+> •
+
+G2 (Publicly Verifiable Encrypted-Output Integrity) :A malicious Compute Node should not be able to cause the blockchain to accept an incorrect encrypted similarity output for the committed ciphertext inputs and the in-dexed committed gallery block resolved from the session snapshot, except with negligible probability.  
+
+> •
+
+G3 (Finalized Result Integrity) : A malicious aggrega-tion party or a partially corrupted committee should not be able to cause the blockchain to finalize an applica-tion output that is inconsistent with the complete proof-verified encrypted similarity result collection, except with negligible probability.  
+
+> •
+
+G4 (Post-Quantum Security Basis) : The system secu-rity should reduce to standard lattice-based assumptions, such as Ring-LWE, thereby targeting resistance against quantum polynomial-time adversaries. 
+
+2) Adversary Model: We analyze security under the fol-lowing trust assumptions and adversarial capabilities: 1) Malicious Compute Node : The Compute Node is un-trusted. It may deviate arbitrarily from the protocol, e.g., by substituting inputs, replaying stale data, or fabricating results. It also attempts to learn information from the encrypted database and query ciphertexts. 2) Partially Corrupted Committee : We assume a thresh-old adversary who can corrupt up to t − 1 committee members. These colluding members may share their internal states, but cannot reconstruct the full secret keys or by themselves produce a valid threshold opening or threshold decryption. 3) Malicious Aggregation Party : Any party that collects and relays proof-opening shares or decryption shares may be malicious. It may delay, withhold, reorder, or misaggregate shares. Our protocol therefore treats the aggregation party as untrusted: it may affect liveness, but it should not be able to make the blockchain accept an invalid proof or finalize an incorrect plaintext result. 4) Public Observer : The blockchain is public. Any ex-ternal observer can view all on-chain data, including proofs, commitments, and finalized outputs. 
+
+Scope and Boundaries: Our analysis does not cover committee corruption at or above the threshold t, liveness or censorship resistance under network or blockchain failures, malicious enrollment governance, inference leakage induced by repeated observation of intentionally released application outputs, or low-level implementation side channels such as timing and memory-access leakage. Within this scope, PVSC certifies per-block correctness for the committed ciphertext inputs, the indexed committed gallery block resolved from the session snapshot, and the prescribed homomorphic similarity circuit, while the smart contract enforces that every gallery-block index is accepted exactly once before result recovery IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 5                                                                                                                             
+
+> Algorithm 1: BioZKFHE end-to-end protocol pipeline. Input: operation type op ∈ { enroll ,login }, client biometric sample, and the current ordered SCMV gallery snapshot DSCMV ={Cm}Mm=1 .
+> Public parameters: pk HE ,pp PVSC ,(vk PVSC ,RPVSC ), and committee threshold policy (t, n com ).
+> Output: a finalized enrollment uniqueness decision or login identity decision y.1) Setup. Generate (pk HE ,sk HE )and pp PVSC ; share sk HE and sk open among the committee; let the contract store (vk PVSC ,RPVSC )and the committee roster. 2) Session creation. The contract creates a fresh session context ctx binding sid ,op , the ordered gallery snapshot, and ledger metadata. 3) Client preparation. The client extracts, normalizes, and quantizes the embedding, then runs (Videntify ,Venroll )←SCMV .Prepare (v)and (Cidentify ,Cenroll )←
+> SCMV .Encrypt (Videntify ,Venroll ,pk HE ).4) Bind request. The contract records hid =H(ctx ∥Cidentify )and resolves the snapshot commitment for each block index m.5) For each gallery block m= 1 , . . . , M , execute the block-verification loop:
+> a) The Compute Node evaluates csim
+> m←SCMV .Identify (Cidentify ,{Cm})and materializes the prescribed BGV multiply–relinearize–accumulate trace. b) The Compute Node generates Π(m)enc ←PVSC .ProofGen (m, ctx ,Cidentify ,Cm,csim
+> m,pp PVSC )and the descriptor digest ρm.c) At least tcommittee members threshold-open Π(m)enc into Π(m); an untrusted relay submits (m, csim
+> m, h id , h m, ρ m,Π(m)).d) The contract checks ctx , index validity, hm, descriptor order, and ρm, then runs PVSC .Verify on the opened proof batch. e) If verification accepts and mhas not been accepted in this session, the contract records mas covered; otherwise it rejects the block submission. 6) Coverage gate. If any snapshotted block index is missing or duplicated, abort finalization; otherwise enable threshold decryption of the verified encrypted-output collection. 7) Threshold recovery. The committee threshold-decrypts {csim
+> m}Mm=1 , recovers the similarity vector internally, and derives the minimal application output y.8) Finalize and update. Committee members submit confirmations binding yto ctx and the verified ciphertext-output collection. The contract finalizes after at least tconsistent confirmations; if op =enroll and yaccepts uniqueness, update the encrypted database with SCMV .Update (Cenroll ,DSCMV ).
+
+starts. The downstream release of the final application output remains threshold-governed: after the Decryption Committee jointly opens the encrypted proof objects and the smart con-tract verifies the encrypted-output computation, the committee decrypts the similarity result needed by the application, and the blockchain finalizes the session only after receiving at least 
+
+t mutually consistent committee confirmations. Accordingly, BioZKFHE protects biometric templates, query embeddings, and intermediate homomorphic states against the untrusted Compute Node, public observers, and any coalition of fewer than t committee members, but it does not hide the recovered similarity vector from an authorized quorum participating in threshold decryption. IV. D ESIGN DETAILS OF SCMV Given the system architecture in Section III-A, this section focuses on SCMV, i.e., how quantized biometric vectors are packed, encrypted, matched, recovered, and conditionally inserted into the encrypted database. Its goal is to improve the efficiency and scalability of FHE-based biometric identifi-cation by redesigning how quantized biometric embeddings are mapped to packed plaintext entries. A background on the adopted BGV computation model and its Double-CRT implementation view is given in the Supplementary Material, Sec. I. 
+
+A. Motivation and Structural Advantage 
+
+FHE provides privacy by computing directly on ciphertexts, but homomorphic polynomial arithmetic over large moduli is costly. SIMD batching mitigates this cost by packing multiple values into plaintext slots, yet standard biometric layouts re-main limited by the slot count d: horizontal packing processes templates largely one at a time, while vertical packing stores one quantized coordinate per slot across a row-wise block. SCMV uses the unused numeric range inside each plaintext entry to bind n quantized values through base-T expansion, so one row polynomial carries nd coordinate values and one processed block covers about nd templates. This changes packing granularity without changing the inner-product match-ing rule, reduces the block count to ⌈N/ (nd )⌉, and keeps the online similarity path rotation-free. Base-T digit packing itself is not claimed as new; SCMV’s contribution is the row-wise slot-level binding and its PVSC-aligned block layout. Fig. 2 visualizes this structural contrast against horizontal and vertical packing. Supplementary Material, Sec. IV gives explicit coefficient/slot-domain comparisons. 
+
+B. SCMV-Formatted Database Structure 
+
+The SCMV-formatted database organizes enrolled encrypted templates in a layout that simultaneously improves packing density, supports efficient blockwise homomorphic matching, and preserves a simple update mechanism for new enrollments. We denote this layout by DSCMV and describe it in three steps: template organization, base-T multi-value binding, and ciphertext construction. 
+
+1) Quantized embedding organization: Let the enrolled template of user r be represented by an L-dimensional quan-tized biometric embedding vr = (v1,r , . . . , v L,r )⊤, where 
+
+r ∈ { 1, . . . , N }. Partition the N vectors into size-d groups, and define the ℓ-th group matrix Vℓ ∈ ZL×d as Vℓ := [v(ℓ−1) d+1 , . . . , vℓd ] for ℓ ∈ { 1, . . . , ⌈N/d ⌉} . Padding with zero vectors is applied if N is not a multiple of d.
+
+2) Base-T n -value binding: SCMV next compresses every 
+
+n consecutive group matrices into one consolidated matrix by base-T multi-value binding within each packed plaintext entry. Specifically, for m ∈ { 1, . . . , M } with M := ⌈N/ (nd )⌉,SCMV combines {V(m−1) n+1 , . . . , Vmn } into a bound matrix 
+
+Wm ∈ ZL×d via Wm = Pnt=1 V(m−1) n+tT t−1. If the number of group matrices is not a multiple of n, the missing matrices in the last bundle are treated as all-zero matrices. Then, the entry wmi,j at the i-th row and j-th column of Wm
+
+is given by 
+
+wmi,j =
+
+> n
+
+X
+
+> t=1
+
+vi, (m−1) nd +( t−1) d+j T t−1, (1) where i ∈ { 1, . . . , L } and j ∈ { 1, . . . , d }. Eq. (1) shows that the values at coordinate i from n different users are bound into a single integer wmi,j .
+
+3) Ciphertext construction: Finally, each consolidated matrix Wm is converted into an encrypted block. Let 
+
+wmi denote the i-th row of Wm. Each row is batch-encoded and encrypted into a BGV ciphertext cmi ←
+
+BGV .Encrypt (BGV .Encode (wmi ), pk HE ). The resulting block IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 6... 
+
+... 
+
+... 
+
+... 
+
+... 
+
+... 
+
+> . . . . . .
+> *
+> *
+> *
+
+...  
+
+> base-T
+> binding
+
+... 
+
+... 
+
+... 
+
+...    
+
+> . . . . . .
+> ... ...
+> SIMD-based
+> (b) Rotation-free
+> (a) Need Rotation
+
+... ... 
+
+... 
+
+... 
+
+... 
+
+... 
+
+... 
+
+... 
+
+> . . . . . .
+> first ciphertext
+> d-th ciphertext
+> first ciphertext
+
+Fig. 2: Comparison of horizontal, vertical, and SCMV encoding schemes. 
+
+is Cm := [ cm 
+
+> 1
+
+, . . . , cmL ], and the SCMV-formatted encrypted template database is DSCMV := {C1, . . . , CM }.This description specifies the target encrypted layout of 
+
+DSCMV , rather than the full client-side preprocessing work-flow. In deployment, client devices locally prepare and encrypt biometric data into SCMV-compatible ciphertexts, while the Compute Node only stores and updates DSCMV through the ciphertext-level functions defined below, without accessing plaintext biometric data. 
+
+Remark 1. The SCMV layout substantially increases effec-tive packing density. Under standard slot-level SIMD, one ciphertext can encode about d/L users under vertical packing, whereas SCMV encodes about nd/L users by binding n values into each plaintext entry. This n-fold increase directly reduces ciphertext storage and the number of blocks processed during encrypted 1: N matching. The admissible choices of T and n,which must balance packing density against correctness and noise constraints, are analyzed in Section VI. With the SCMV data layout in place, we next define how a biometric embedding is mapped into this layout and how encrypted matching, similarity recovery, and database maintenance are carried out over DSCMV .
+
+C. SCMV Operating Functions 
+
+Building on the above database layout, we now formalize the functions of SCMV, namely, biometric preparation, en-cryption, encrypted 1: N matching, similarity recovery, and database update. In BioZKFHE, enrollment-time uniqueness checking and login-time identification share the same en-crypted matching primitive SCMV .Identify and differ only in the decision rule applied to the recovered similarity vector. 
+
+1) Biometric Preparation Function: Let v′ ∈ RL de-note the real-valued biometric embedding extracted from a biometric sample. The preparation function first normalizes 
+
+v′ to a fixed L2 norm Γ and rounds component-wise to obtain the quantized vector v ∈ ZL, and then maps v
+
+to two formatted plaintext matrices suitable for encrypted matching and conditional enrollment, formally defined as 
+
+(Videntify , Venroll ) ← SCMV .Prepare (v). The output matrices are constructed as follows:  
+
+> •
+
+Videntify ∈ ZL×d is constructed by replicating v across all 
+
+d columns, namely, Videntify = [ v, v, . . . , v]. This layout enables one encrypted query to be matched in parallel against all users packed into a database block.  
+
+> •
+
+Venroll ∈ ZL×d prepares the same quantized vector for possible insertion into the SCMV database. Let N be the number of already enrolled users and define the local offset a := N mod ( nd ). The target column index and binding-layer index are h := ( a mod d) + 1 and 
+
+k = ⌊a/d ⌋ + 1 , respectively. The matrix places vT k−1 in column h and zero vectors elsewhere. For login, only Videntify is needed; for enrollment, Videntify 
+
+supports uniqueness checking, whereas Venroll is retained for conditional insertion. 
+
+2) Biometric Encryption Function: The encryption function converts the prepared plaintext matrices into SCMV-compatible ciphertext blocks using the FHE public key pk HE , defined as (Cidentify , Cenroll ) ←
+
+SCMV .Encrypt (Videntify , Venroll , pk HE ). As in the database layout, encryption is performed row-wise. For each dimension 
+
+i ∈ { 1, . . . , L }, the i-th rows of Videntify and Venroll are encoded and encrypted to produce ciphertexts cid  
+
+> i
+
+and 
+
+cen  
+
+> i
+
+, respectively. The outputs are the ciphertext matrices 
+
+Cidentify := [ cid 1 , . . . , cid  
+
+> L
+
+] and Cenroll := [ cen 1 , . . . , cen  
+
+> L
+
+].
+
+3) Encrypted Matching Function: We use inner-product-based similarity in SCMV. Because all embeddings are nor-malized to the same L2 norm Γ, the inner product is pro-portional to cosine similarity up to a fixed scale factor. The encrypted matching function, executed by the Com-pute Node, computes encrypted similarity scores between the query embedding and all enrolled templates as csim ←
+
+SCMV .Identify (Cidentify , DSCMV ), where csim = {csim  
+
+> m
+
+}Mm=1 
+
+is the blockwise encrypted similarity output. For each database block Cm ∈ D SCMV , the node computes 
+
+csim  
+
+> m
+
+=
+
+> L
+
+M
+
+> i=1
+
+ cid  
+
+> i
+
+⊗ cmi
+
+, (2) where ⊗ and ⊕ denote BGV homomorphic multiplication and addition, respectively. This primitive is shared by enrollment-time uniqueness checking and login-time identification; only the post-recovery decision rule differs. 
+
+Computation Correctness: Let um 
+
+> sim
+
+∈ Zd denote the plain-text corresponding to csim  
+
+> m
+
+. Since Eq. (2) is a homomorphic multiply-and-accumulate over the L embedding dimensions, the j-th slot of um 
+
+> sim
+
+is 
+
+umj =
+
+> L
+
+X
+
+> i=1
+
+vi wmi,j =
+
+> n
+
+X
+
+> t=1
+> L
+
+X
+
+> i=1
+
+vi vi, (m−1) nd +( t−1) d+j
+
+!
+
+T t−1
+
+=
+
+> n
+
+X
+
+> t=1
+
+ v⊤v(m−1) nd +( t−1) d+j
+
+ T t−1.
+
+(3) Hence each slot of csim  
+
+> m
+
+compactly stores n similarity scores in base-T representation. 
+
+4) Similarity Decryption Function: For exposition, we write the recovery step as s ← SCMV .Decrypt (csim , sk HE ),where s ∈ ZN is the plaintext similarity vector. In the BioZKFHE system of Section III-A, this recovery is realized collectively by the Decryption Committee using threshold-held secret shares. For each ciphertext cm
+
+> sim
+
+, the decryptor obtains the plaintext vector um
+
+> sim
+
+. Since each element umj stores n
+
+similarity scores in base-T form, the individual scores are recovered by recursive centered decomposition. Specifically, IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 7
+
+initialize z(0)  
+
+> j
+
+= umj , and for t = 1 , . . . , n compute 
+
+s(m−1) nd +( t−1) d+j = ctr T
+
+
+
+z(t−1)  
+
+> j
+
+mod T
+
+
+
+,z(t) 
+
+> j
+
+= z(t−1)  
+
+> j
+
+− s(m−1) nd +( t−1) d+j
+
+T ,
+
+(4) where ctr T (·) maps an integer residue to its centered represen-tative in the interval (−T / 2, T / 2] . If padding was introduced in the last database block, the extra scores corresponding to padded zero templates are discarded, and only the first N
+
+recovered scores are retained in s.This decomposition is unique and error-free provided that 
+
+|v⊤vr | < T / 2 for all enrolled users, equivalently T ≥ 2D + 1 
+
+where D bounds the maximum absolute inner product. Under this condition, each packed similarity score lies strictly within the centered digit range of base T and can therefore be recovered without ambiguity. In BioZKFHE, SCMV .Decrypt is an internal recovery primitive executed by the Decryption Committee. The recov-ered similarity vector s need not be published. Instead, the committee derives a minimal application output from s. For enrollment-time uniqueness checking, insertion is accepted only if max r sr < τenroll , where τenroll is the prescribed uniqueness threshold. For login-time identification, access is accepted if max r sr ≥ τlogin , in which case the matched identity is r∗ := arg max r sr .
+
+5) Database Update Function: Finally, SCMV supports incremental enrollment without decrypting previously stored templates. This function is invoked only after the enrollment-time uniqueness check accepts. The update function integrates a new user’s encrypted template into the current database, namely, D′ 
+
+> SCMV
+
+← SCMV .Update (Cenroll , DSCMV ). If the current last block CM is not fully packed, Cenroll is merged into CM via homomorphic addition, i.e., cMi ′ = cMi ⊕ cen  
+
+> i
+
+for all i ∈ { 1, . . . , L }. Otherwise, Cenroll is appended as a new block CM +1 .
+
+Update integrity: The append case trivially preserves the SCMV layout. For the merge case, let wMi,h denote the plaintext value at the target slot h in the last block before update, where 
+
+h and k are the indices defined in SCMV .Prepare . Since the new user has global index N + 1 = ( M − 1) nd + ( k − 1) d + h,the updated plaintext becomes 
+
+wMi,h ′ = wMi,h + vi,N +1 T k−1 =
+
+> k
+
+X
+
+> t=1
+
+vi, (M −1) nd +( t−1) d+hT t−1.
+
+(5) Eq. (5) shows that the updated packed entry is exactly the base-T expansion of the k values now assigned to that slot. Therefore, database update preserves the SCMV invariant without decrypting or re-encrypting existing data. V. D ESIGN DETAILS OF PVSC The proposed PVSC scheme certifies a fixed compiled exe-cution trace for the SCMV similarity circuit rather than an in-formal claim that the Compute Node “performed the intended computation.” At a high level, PVSC follows the lattice-based designated-verifier proving paradigm of [32]; however, BioZKFHE does not use that paradigm as a standalone private-verification mechanism. Instead, for every SCMV block, the Compute Node generates encrypted proof instances for a deterministic family of local relations induced by the BGV evaluation trace, an authorized committee threshold-opens those instances, and the smart contract verifies the resulting opened proof batch together with explicit instance descriptors. This stricter view is important: the contract does not accept an opaque monolithic proof, but a parsed, ordered, and schedule-consistent batch that is tied to one unique blockwise execution. Supplementary Material, Sec. II provides the pedagogical background on the R1CS/QAP-based compiler viewpoint and the designated-verifier lattice proof mechanism underlying PVSC. The present section focuses on the main-paper abstrac-tion: the blockwise trace being certified, the public statement, the core relation family, and the protocol interfaces exercised by the SCMV similarity circuit of Eq. (2). 
+
+A. Motivation and Decomposition Strategy 
+
+The core challenge in verifiable FHE is the algebraic complexity of ring-based ciphertext arithmetic. In BioZKFHE, SCMV turns encrypted biometric matching into a regular blockwise multiply-and-accumulate trace: for each database block, Eq. (2) performs ciphertext multiplications followed by additions over degree-d polynomials with large moduli. Proving this entire trace as one monolithic statement is imprac-tical because the resulting circuit is large and offers limited parallelism. PVSC addresses this bottleneck by exploiting the Double-CRT execution structure of BGV. In practical libraries such as SEAL [34], ciphertext operations over Rq = Zq [x]/(xd + 1) 
+
+are implemented through two orthogonal decompositions: an RNS decomposition of the ciphertext modulus and an NTT representation of polynomial multiplication. PVSC leverages these two axes to break one large homomorphic similarity trace into many smaller proof instances of uniform shape. This decomposition preserves the semantics of the original FHE computation while exposing a natural granularity for parallel proof generation. Importantly, under the adopted designated-verifier lattice proof mechanism, these proof instances are generated first in encrypted form and become publicly ver-ifiable, under committee mediation, only after committee-side threshold opening. 
+
+B. PVSC-Specific Notation 
+
+To instantiate this decomposition concretely, we fix the pa-rameters that describe the Double-CRT view used throughout PVSC.  
+
+> •
+
+RNS decomposition. The ciphertext modulus is factored as q = Qnq 
+
+> j=1
+
+q(j), where the moduli {q(j)}nq 
+
+> j=1
+
+are pairwise co-prime. Ring operations modulo q are thus realized as nq parallel channels modulo the individual RNS moduli.  
+
+> •
+
+NTT decomposition and chunking. Under each modu-lus q(j), polynomial multiplication is carried out in the NTT domain as coordinate-wise multiplication. To match the capacity of the proof templates, we partition the 
+
+d NTT coordinates into chunks of size dZK , yielding 
+
+nchunk := ⌈d/d ZK ⌉ chunks per RNS channel. IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 8
+
+Accordingly, one logical ciphertext operation in the SCMV similarity trace is represented inside PVSC by many smaller instances indexed by an RNS modulus and an NTT chunk. This indexing is the basis for the proof parallelism illustrated in Fig. 3. 
+
+C. PVSC Statement, Proof Families, and Verification Scope 
+
+Since SCMV matching is executed blockwise over DSCMV ,PVSC also proves correctness on a per-block basis. For each SCMV database block Cm ∈ D SCMV , PVSC certifies a deterministic BGV trace for the fixed input/output tuple  Cidentify , Cm, csim 
+
+> m
+
+. Concretely, letting pmi denote the re-linearized product ciphertext obtained from the i-th query row and the i-th database row, and ami the running accumulator, the admitted trace is 
+
+pmi := Relin  cid  
+
+> i
+
+⊗ cmi
+
+ , am 
+
+> 0
+
+:= 0, ami := ami−1 ⊕ pmi ,
+
+(6) for i ∈ { 1, . . . , L }, with terminal condition amL = csim  
+
+> m
+
+. Thus PVSC certifies one fixed multiply–relinearize–accumulate schedule rather than a generic claim that the server “computed something consistent.” To avoid interpreting a blockwise proof with respect to an ad hoc gallery chosen by the Compute Node, BioZKFHE binds PVSC verification to a session-fixed encrypted gallery snapshot. Concretely, the contract binds the current ordered SCMV block-commitment state into ctx when a session is created, so a proof submitted for block index m is interpreted against the unique committed block at that index. The contract also records accepted indices and enables threshold decryption only after every gallery-block index has been accepted exactly once. 
+
+1) Public statement: For block index m, the public state-ment contains the published output ciphertext csim  
+
+> m
+
+, the block index m, the session context ctx , the query-binding com-mitment hid := H(ctx ∥Cidentify ), the session-bound block commitment hm := H(ctx ∥m∥um) with um := H(Cm), a batch-root digest ρm of the canonical ordered proof-instance descriptor sequence, and the public system parameters pp sys .We write 
+
+x(m) :=  csim  
+
+> m
+
+, m, ctx , h id , h m, ρ m, pp sys 
+
+. (7) The role of ρm is to bind the entire opened proof batch to one canonical ordered blockwise trace and thereby prevent proof splicing or reordering attacks. 
+
+2) Private witness: The prover’s witness for block m con-tains the hidden values needed to instantiate the fixed trace of Eq. (6). Concretely, it includes the ciphertext inputs Cidentify 
+
+and Cm, the product ciphertexts {pmi }Li=1 , the accumulator chain {ami }Li=0 , and the Double-CRT decomposition witnesses used by the local proof templates. We denote the full witness by w(m).The exact local witness structure and descriptor syntax are deferred to the Supplementary Material, Sec. V. 
+
+3) Proved relation: PVSC proves that there exists a witness 
+
+w(m) such that the witnessed ciphertext inputs match the public commitments under ctx , the opened proof batch is bound to ρm, and the published output ciphertext csim  
+
+> m
+
+equals ct_mul num:                                                                                  
+
+> inputs: 2*d ZK *2
+> ouputs: 1*d ZK *3
+> ct_mul num:
+> inputs: 2*d ZK *2
+> ouputs: 1*d ZK *3
+> ct_mul
+> inputs: 2*d ZK *2
+> outputs: 1*d ZK *3
+> in
+> in
+> in
+> ct_mul num:
+> inputs: 2*d ZK *2
+> ouputs: 1*d ZK *3
+> ct_mul num:
+> inputs: 2*d ZK *2
+> ouputs: 1*d ZK *3
+> ct_mul
+> inputs: 2*d ZK *2
+> outputs: 1*d ZK *3
+> in
+> in
+> in
+> ct_sum num:
+> inputs: 2*d ZK *3
+> ouputs: 1*d ZK *3
+> ct_sum num:
+> inputs: 2*d ZK *3
+> ouputs: 1*d ZK *3
+> ct_sum
+> inputs: 2*d ZK *3
+> outputs: 1*d ZK *3
+> in
+> in
+> in
+> ct_sum num:
+> inputs: 2*d ZK *3
+> ouputs: 1*d ZK *3
+> ct_sum num:
+> inputs: 2*d ZK *3
+> ouputs: 1*d ZK *3
+> ct_sum
+> inputs: 2*d ZK *3
+> outputs: 1*d ZK *3
+> in
+> in
+> in
+> ct_sum num:
+> inputs: 2*d ZK *3
+> ouputs: 1*d ZK *3
+> ct_sum num:
+> inputs: 2*d ZK *3
+> ouputs: 1*d ZK *3
+> ct_sum
+> inputs: 2*d ZK *3
+> outputs: 1*d ZK *3
+> in
+> in
+> in
+> Public
+> Secret
+> 1prod sim
+> mc
+> 1acc 0acc 1prod L−1prod 2acc L−
+> 1acc L−prod L
+> 1acc L−
+> ct_mul num:
+> inputs: 2*d ZK *2
+> ouputs: 1*d ZK *3
+> ct_mul num:
+> inputs: 2*d ZK *2
+> ouputs: 1*d ZK *3
+> ct_mul
+> inputs: 2*d ZK *2
+> outputs: 1*d ZK *3
+> in
+> in
+> in
+> prod L1prod L−
+
+Fig. 3: Double-CRT parallelization for PVSC. Operations are decom-posed via RNS {q(j)} and NTT chunks ( dZK ) for parallel ciphertext-domain proof generation. 
+
+the result of correctly evaluating the prescribed BGV similarity trace of Eq. (6). Formally, PVSC proves the NP relation 
+
+∃ w(m) s.t. Rel PVSC 
+
+ x(m), w(m) = 1 . (8) Operationally, Rel PVSC combines four kinds of checks, corresponding to the multiplication, accumulation, output-consistency, and block-binding families instantiated in the Supplementary Material, Sec. V: local multiplication correct-ness, local accumulation correctness, output consistency with 
+
+csim  
+
+> m
+
+, and one block-level binding check tying the whole opened batch to (ctx , h id , h m, ρ m). The public verifier sep-arately checks that the submitted pair (m, h m) matches the unique committed block at index m in the gallery snapshot bound to ctx . The descriptor-level formulation of these checks is deferred to the Supplementary Material, Sec. V. 
+
+4) Instantiation via proof-template families: PVSC realizes the above relation through a fixed family of proof templates aligned with the Double-CRT execution of the SCMV sim-ilarity trace. We denote this template family by RPVSC := 
+
+{R mul  
+
+> j
+
+, Racc  
+
+> j
+
+, Rout  
+
+> j
+
+}nq 
+
+> j=1
+
+∪{R bind }. The four families play dis-tinct roles: Rmul  
+
+> j
+
+certifies one local multiplication path under modulus q(j), Racc  
+
+> j
+
+certifies one local accumulator transition, 
+
+Rout  
+
+> j
+
+links the terminal accumulator to the public ciphertext output, and Rbind binds the whole batch to (ctx , h id , h m, ρ m).In our implementation, the canonical descriptor sequence has three counted layers for each block: Layer 1 contributes 
+
+nq nchunk L local instances, Layer 2 contributes nq nchunk (L −
+
+2) local instances, and Layer 3 contributes nq nchunk local in-stances. Hence the counted arithmetic/output layers contribute 
+
+Km = nq nchunk (2 L − 1) instances per block; the full batch additionally includes one block-binding instance. The exact descriptor syntax, local relations, and canonical family-major batch layout are given in the Supplementary Material, Sec. V. At the main-paper level, it suffices to note that proof size and verifier work grow linearly in the counted term Km, with one additional block-binding instance per block. 
+
+5) Verification scope: The exact scope of PVSC is inten-tionally narrower than the full application pipeline. Acceptance IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 9
+
+of Π(m) implies that there exists one globally consistent 
+
+hidden trace satisfying Eq. (6), that the trace is bound to the committed ciphertext inputs and the indexed committed gallery block resolved from the session snapshot bound to 
+
+ctx , and that its terminal ciphertext equals the published csim  
+
+> m
+
+.Complete 1: N correctness is obtained only after the contract has accepted every gallery-block index exactly once in the same session. PVSC does not by itself certify client-side feature extrac-tion, client-side encryption, threshold decryption, application-level threshold comparison, or the final identity decision. These later steps remain threshold-governed protocol ac-tions. Accordingly, the direct guarantee provided by PVSC in BioZKFHE is best described as snapshot-bound publicly verifiable encrypted-output integrity after threshold open-ing . In the current prototype, this scope includes cipher-text addition, ciphertext multiplication, the relinearization-dependent multiplication path, and the descriptor-level trace-consistency checks described above, but excludes client-side encode/encrypt, threshold decryption, rotations, modulus switching, and bootstrapping. 
+
+D. PVSC Core Functions 
+
+We now describe the protocol-level functions that realize PVSC in BioZKFHE. 
+
+1) PVSC Setup Function: The setup function generates the public PVSC parameters and the threshold-opening material required by PVSC. Formally,  pp PVSC , {sk ℓ
+
+> open
+
+}ncom 
+
+> ℓ=1
+
+ ← PVSC .Setup (λ, RPVSC , d ZK ),where pp PVSC :=  RPVSC , d ZK , {CiQ}3nq +1  
+
+> i=1
+
+, vk PVSC 
+
+.Here, the collection {CiQ}3nq +1  
+
+> i=1
+
+is a flattened notation for the family-level encrypted proving queries associated with  Rmul  
+
+> j
+
+, Racc  
+
+> j
+
+, Rout 
+
+> j
+
+nq 
+
+> j=1
+
+together with Rbind , vk PVSC denotes the public verification material used by the smart contract, and {sk ℓ
+
+> open
+
+}ncom  
+
+> ℓ=1
+
+are the threshold shares of the master opening key collectively held by the Decryption Committee. Chunk and concrete step indices appear only when these family-level queries are instantiated into one blockwise proof trace. No single party can unilaterally open an encrypted PVSC proof object. 
+
+2) PVSC Encrypted Proof Generation Function: The proof-generation function is executed by the Compute Node. For each database block Cm, the Compute Node first com-putes the output ciphertext csim  
+
+> m
+
+by evaluating the prescribed SCMV similarity circuit, and then generates the correspond-ing encrypted proof batch Π(m)enc := ⟨(δ(m,k ), π (m,k )enc )⟩Km+1 
+
+> k=1
+
+(the Km counted arithmetic and output instances together with the single block-binding instance). Formally, Π(m)enc ←
+
+PVSC .ProofGen  m, ctx , Cidentify , Cm, csim  
+
+> m
+
+, pp PVSC 
+
+, where the public commitments hid := H(ctx ∥Cidentify ) and hm := 
+
+H(ctx ∥m∥H (Cm)) are deterministically derived from the same call context and therefore need not be passed as separate inputs. Operationally, the prover materializes the fixed trace of Eq. (6), decomposes the relevant ciphertext states into Double-CRT witnesses, forms the canonical ordered descriptor se-quence and its digest ρm, and invokes the local proof templates in RPVSC . The exact descriptor-level proof-generation rules are given in the Supplementary Material, Sec. V. Throughout this process, ciphertext inputs and intermediate values remain private witnesses; the only released objects are the published ciphertext output csim  
+
+> m
+
+and the encrypted proof batch Π(m)enc ,whose opened form is verified against the public statement 
+
+x(m) of Eq. (7). 
+
+3) PVSC Threshold-Opening Function: The encrypted proof batch is next threshold-opened by the Decryption Committee. Concretely, Π(m) ←
+
+PVSC .ThresholdOpen  Π(m)enc , {sk ℓ
+
+> open
+
+}ℓ∈S , t  for any subset 
+
+S ⊆ { 1, . . . , n com } with |S| ≥ t, where Π(m) denotes the corresponding opened proof batch. The threshold-opening step preserves the logical structure of the proof families described above: it does not change the proved statement, but only transforms the encrypted designated-verifier proof object into an opened proof record that can be checked publicly. Any relay or aggregation party may collect and combine opening shares, but such a party is not trusted: malformed, reordered, or incomplete openings can at most cause opening failure or later rejection by the public verifier, but cannot by themselves make a false statement verify. 
+
+4) PVSC Public Verification Function: The smart contract verifies the opened proof batch against the full public state-ment. Let x(m) be the tuple in Eq. (7). The contract first parses the session-bound gallery snapshot from ctx , checks that the submitted block index m is valid for that snapshot, resolves the corresponding committed value um, and computes the expected block commitment h⋆m := H(ctx ∥m∥um). It rejects if the submitted hm differs from h⋆m or if the same block index has already been accepted in the current session. The contract then deterministically parses the opened batch 
+
+Π(m), checks that its ordered descriptor sequence has the ex-pected family counts and canonical family-major lexicographic order, and recomputes the sequence digest ρm. Only after these structural checks pass does it run PVSC .Verify  x(m), Π(m)
+
+on the opened local proofs under the verifier-side material 
+
+vk PVSC embedded in pp PVSC ⊆ pp sys . The concrete parser conditions are given in the Supplementary Material, Sec. V. At the protocol level, this step prevents transcript replay, stale-data replay, ciphertext substitution, and proof splicing across sessions or gallery blocks. 1
+
+If all checks pass, the contract records index m as cov-ered. A session becomes eligible for threshold decryption only after every block index in the snapshotted encrypted gallery has been accepted exactly once. Acceptance therefore certifies only that the encrypted similarity output for block 
+
+m is correct for the committed ciphertext inputs, the indexed committed gallery block resolved from the session snapshot, the canonical descriptor sequence, and the session context. The later release and finalization of the application output remain threshold-governed protocol steps outside PVSC .Verify itself. The foregoing discussion presents the main-paper abstraction        
+
+> 1A replayed proof from an old session has a different sid through ctx ; a different query changes hid ; a stale gallery block changes the recomputed
+> h⋆m; and a same-session duplicate is rejected because mis already recorded. Message withholding is a liveness issue and cannot make a stale proof accepted. IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 10
+
+of PVSC; the complete descriptor-level instantiation, including local witness syntax and parser conditions, is given in the Supplementary Material, Sec. V. 
+
+Scope and extension. The PVSC instantiation evaluated here certifies only the fixed SCMV similarity circuit of Eq. (2), namely a depth-1 multiply–relinearize–accumulate trace; rotations, modulus switching, bootstrapping, encrypted top-k/threshold decisions, nonlinear layers, and unnormalized cosine-similarity circuits are outside the current proof domain. Supporting multi-layer BGV circuits would require layered trace descriptors that bind operation tags, layer identifiers, input/output state digests, ciphertext levels, modulus-chain states, and evaluation-key identifiers, together with new local relations for rotations/key switching, modulus switching, and bootstrapping. The parser would also need to enforce topo-logical order and level consistency; Supplementary Material, Sec. V gives the descriptor-level extension requirements. VI. T HEORETICAL ANALYSIS 
+
+This section analyzes BioZKFHE from three perspectives: parameter selection, decryption correctness, and system secu-rity. We first derive admissible choices of the SCMV parame-ters T and n that maximize packing density while preserving recoverability of the packed similarity scores. We then analyze the growth of BGV noise under the SCMV identification circuit to justify correct decryption. Finally, we formalize the confidentiality, encrypted-output integrity, and finalized-result integrity goals of BioZKFHE and relate them to concrete attack scenarios in the blockchain-assisted outsourced setting. 
+
+A. Parameter Optimization for SCMV 
+
+The efficiency of SCMV is governed by two coupled parameters: the base T used to bind multiple similarity scores into one packed plaintext entry and the binding factor n that determines how many scores are packed together. The param-eter T must be large enough to support unique recovery of the packed scores under centered base-T decomposition, while n
+
+should be as large as possible without causing plaintext wrap-around. 
+
+1) Optimal Base Selection ( T ): We first determine a min-imal admissible choice of T . Let v′ ∈ RL denote a real-valued biometric embedding normalized to ∥v′∥2 = Γ , and let v ∈ ZL be its quantized version. The quantization error is ∆v = v − v′, where each component satisfies ∆vi ∈
+
+(−0.5, 0.5] .Since SCMV stores similarity scores as centered base-T
+
+digits, unique recovery requires the digit range to contain every possible signed inner product. It is therefore sufficient to choose T ≥ 2D + 1 , where D := max v1,v2 |v⊤ 
+
+> 1
+
+v2| denotes the maximum absolute inner product between any two valid quantized embeddings. To bound D, we expand the inner product of two quantized vectors as 
+
+v⊤ 
+
+> 1
+
+v2 = ( v′ 
+
+> 1
+
++ ∆ v1)⊤(v′ 
+
+> 2
+
++ ∆ v2)= v′⊤  
+
+> 1
+
+v′ 
+
+> 2
+
++ v′⊤  
+
+> 1
+
+∆v2 + ∆ v⊤ 
+
+> 1
+
+v′ 
+
+> 2
+
++ ∆ v⊤ 
+
+> 1
+
+∆v2. (9) Using the Cauchy–Schwarz inequality together with ∥v′∥2 =Γ and ∥∆v∥∞ ≤ 0.5, the four terms are bounded as follows:  
+
+> •
+
+v′⊤  
+
+> 1
+
+v′ 
+
+> 2
+
+≤ ∥ v′
+
+> 1
+
+∥2∥v′
+
+> 2
+
+∥2 = Γ 2; 
+
+> •
+
+v′⊤  
+
+> 1
+
+∆v2 ≤ ∥ v′
+
+> 1
+
+∥1∥∆v2∥∞ ≤ √L∥v′
+
+> 1
+
+∥2 · 0.5 = 0 .5Γ √L; 
+
+> •
+
+similarly, ∆v⊤ 
+
+> 1
+
+v′ 
+
+> 2
+
+≤ 0.5Γ √L; 
+
+> •
+
+∆v⊤ 
+
+> 1
+
+∆v2 ≤ PLi=1 |∆vi, 1∆vi, 2| ≤ 0.25 L.Since D is integer, the maximum absolute inner product is bounded by D ≤
+
+j
+
+Γ2 + Γ √L + 0 .25 L
+
+k
+
+. Under this bound, the smallest safe choice of the SCMV base is 
+
+T = 2 
+
+j
+
+Γ2 + Γ √L + 0 .25 L
+
+k
+
++ 1 . (10) Choosing the smallest admissible T is optimal for packing because it maximizes the number of base-T digits that fit within the plaintext modulus. 
+
+2) Optimal Binding Factor ( n): We next determine the largest admissible binding factor n once T is fixed. In SCMV, one packed plaintext entry stores n signed similarity scores in base T . To avoid modular wrap-around in Zp, the absolute value of every packed entry must remain below p/ 2.In the worst case, each packed similarity score has magni-tude at most D, so the absolute value of a packed entry is bounded by D Pnt=1 T t−1 = D(T n − 1) /(T − 1) . Therefore, a sufficient correctness condition is 
+
+D (T n − 1) /(T − 1) < p/ 2. (11) Rearranging Eq. (11) yields 
+
+n < log T
+
+ p(T − 1) /(2 D) + 1 . (12) Accordingly, the largest admissible integer binding factor is 
+
+nmax = log T
+
+ p(T − 1) /(2 D) + 1  − 1. (13) This expression makes explicit how the achievable SCMV packing density grows with the plaintext modulus p and decreases with the similarity bound D.
+
+B. Noise Analysis and Decryption Correctness 
+
+The previous subsection ensures that the packed plaintext values fit within the message space. We now show that the chosen ciphertext modulus can also sustain the noise growth of the homomorphic identification circuit, so that decryption remains correct. 
+
+1) Noise Model: We measure noise using the canonical embedding norm ∥ · ∥ can , which gives a convenient upper bound for cyclotomic rings [35]. For a ciphertext c decrypting to a message under secret key s, let v∗ denote the effective de-cryption error term. Following the standard coarse correctness analysis for BGV [36], it suffices to ensure ∥v∗∥∞ < q/ 2,and thus also ∥v∗∥can < q/ 2.We use the following standard BGV noise estimates [36]:  
+
+> •
+
+a fresh ciphertext has noise bound Bfresh ≈ 6p√d σ ,where σ is the standard deviation of the error distribution;  
+
+> •
+
+homomorphic addition satisfies ∥v∗(c1 ⊕ c2)∥can ≤∥v∗(c1)∥can + ∥v∗(c2)∥can ; 
+
+> •
+
+homomorphic multiplication satisfies ∥v∗(c1 ⊗c2)∥can ≤∥v∗(c1)∥can · ∥ v∗(c2)∥can · δexp , where δexp is the ring-expansion factor. In our coarse bound, the additional noise from relinearization is absorbed into the same multiplicative constant. IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 11 
+
+2) Noise Bound for SCMV Identification: We now apply these bounds to the SCMV identification circuit of Eq. (2). The query ciphertexts in Cidentify are fresh, so their noise is bounded by Bprobe := Bfresh . For the database ciphertexts, two cases arise. If a database block is created directly from a fully packed plaintext row, then each ciphertext in that block is also fresh and has noise Bfresh . Under the worst-case online construction path of SCMV, however, a block may be populated incrementally through up to nd ciphertext additions during enrollment updates. We therefore use the conservative bound Bdb ≤ nd · Bfresh for each database ciphertext. Under this worst-case assumption, the noise of one cipher-text product cid  
+
+> i
+
+⊗cmi is bounded by Bmult ≤ Bprobe ·Bdb ·δexp ≤
+
+nd · δexp · B2
+
+> fresh
+
+. Summing over the L embedding dimensions in Eq. (2) gives the total noise bound 
+
+Btotal ≤ L · nd · δexp · B2 
+
+> fresh
+
+≈ L · nd · δexp · (36 p2dσ 2). (14) Consequently, correct decryption is guaranteed whenever q > 
+
+2Btotal . Successful BGV decryption is exact, so the digit-level perturbation is η = 0 ; the SCMV margin is therefore 
+
+D < T / 2, or D + η < T / 2 under a residual-error model. Our experimental parameter sets satisfy this condition, ensuring that SCMV identification remains decryptable even under the conservative worst-case update-based noise bound above. 
+
+C. Security Analysis 
+
+We now analyze BioZKFHE under the threat model of Section III-B. The Compute Node may be fully malicious, the aggregation party that relays opening or decryption shares is untrusted, and the Decryption Committee is modeled through a (t, n com )-threshold assumption. Our arguments rely on cor-rect and deterministic execution of the deployed verifier, on the integrity of on-chain public commitments and commit-tee confirmations, and on the narrower verification scope of PVSC established in Section V-C: PVSC directly certifies only the correctness of the encrypted similarity output, whereas threshold decryption and result finalization remain protocol-level steps. 
+
+1) Game-Based Security Definitions: We formalize G1– G3 through three games. Throughout, λ denotes the security parameter and A is a PPT adversary that may corrupt the Compute Node, the aggregation party, and at most t − 1
+
+committee members. 
+
+Definition 1 (Biometric Confidentiality Against Untrusted Compute and Sub-Threshold Collusion) . In the experiment 
+
+Exp conf  
+
+> A
+
+(λ), the challenger runs setup and gives A all public parameters together with the shares of corrupted commit-tee members. The adversary submits two enrollment sets of equal size and two candidate query embeddings such that the two challenge worlds induce the same public session structure and the same intentionally released application-level output transcript. The challenger samples b ← { 0, 1},constructs the encrypted database D(b)SCMV , the encrypted query C(b)identify , the encrypted similarity outputs c(b)sim =
+
+{c(b),m  
+
+> sim
+
+}m, the encrypted PVSC proof collection Π(b)enc =
+
+{Π(b,m )enc }m, and the corresponding opened proof collection 
+
+Π(b) = {Π(b,m )}m. The adversary receives the released view 
+
+View (b) := ( D(b)SCMV , C(b)identify , c(b)sim , Π(b)enc , Π(b)) together with the corresponding on-chain commitments and public session metadata, and outputs a bit b′. The experiment outputs 1 iff 
+
+b′ = b. Define Adv conf  
+
+> A
+
+(λ) := | Pr[ b′ = b] − 1/2|. BioZKFHE achieves this confidentiality notion if Adv conf  
+
+> A
+
+(λ) is negligible for all PPT adversaries A.
+
+Definition 2 (Encrypted Similarity-Output Integrity) . In the experiment Exp enc -out -int  
+
+> A
+
+(λ), the adversary outputs a session context ctx , a block index m, a query ciphertext Cidentify , a candidate encrypted similarity output c∗
+
+> sim
+
+, an opened proof 
+
+Π∗, and commitments hid , h m. The challenger resolves from the gallery snapshot bound to ctx the unique committed block 
+
+Cm at index m, checks that hid = H(ctx ∥Cidentify ) and hm =
+
+H(ctx ∥m∥H (Cm)) , parses the descriptor sequence contained in Π∗, and computes the induced batch-root digest ρ∗
+
+> m
+
+. Let 
+
+x∗ := ( c∗
+
+> sim
+
+, m, ctx , h id , h m, ρ ∗
+
+> m
+
+, pp sys ) be the corresponding public statement. If either the deterministic parser rejects Π∗
+
+or PVSC .Verify (x∗, Π∗) rejects, the experiment outputs 0.Otherwise, the challenger recomputes the honest encrypted similarity output chon sim := SCMV .Identify (Cidentify , {Cm})
+
+and outputs 1 iff c∗
+
+> sim
+
+̸ = chon sim . BioZKFHE achieves encrypted similarity-output integrity if Pr[ Exp enc -out -int  
+
+> A
+
+(λ) = 1] is negligible for all PPT adversaries A.
+
+Definition 3 (Finalized Result Integrity) . Let Dec app (·) de-note the deterministic application decision rule fixed by the session context, e.g., enrollment-time uniqueness checking or login-time identification. In the experiment Exp res -int  
+
+> A
+
+(λ), the adversary outputs a session context ctx , a query ciphertext 
+
+Cidentify , a claimed blockwise encrypted similarity-output collection c∗ 
+
+> sim
+
+:= {c∗,m  
+
+> sim
+
+}m, a corresponding opened proof collection Π∗ := {Π∗,m }m, a candidate final output y∗, and a set of purported committee confirmations Σ∗. The challenger computes hid := H(ctx ∥Cidentify ), checks that the submitted block indices cover every index in the snapshotted encrypted gallery exactly once, and for each block index m resolves the unique committed block Cm from the gallery snapshot bound to ctx . It then computes hm := H(ctx ∥m∥H (Cm)) ,parses the descriptor sequence contained in Π∗,m to obtain 
+
+ρ∗,m , forms the corresponding public statement x∗,m := (c∗,m  
+
+> sim
+
+, m, ctx , h id , h m, ρ ∗,m , pp sys ), and outputs 0 if any de-terministic parsing or verification PVSC .Verify (x∗,m , Π∗,m )
+
+rejects. The challenger next checks whether Σ∗ contains at least t mutually consistent confirmations from distinct com-mittee members recognized by the contract, all binding the same session and the same proof-verified encrypted similarity-output collection together with H(y∗); otherwise it outputs 
+
+0. Finally, it threshold-decrypts the proof-verified encrypted similarity-output collection ordered by block index, applies 
+
+Dec app (·) to the recovered similarity result, and outputs 1
+
+iff the resulting reference output differs from y∗. BioZKFHE achieves finalized-result integrity if Pr[ Exp res -int  
+
+> A
+
+(λ) = 1] is negligible for all PPT adversaries A.
+
+2) Main Security Theorems: 
+
+Theorem 1 (Confidentiality) . Assume that (i) BGV under 
+
+(pk HE , sk HE ) is IND-CPA secure under the standard Ring-LWE assumption, (ii) the threshold sharing used for sk HE IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 12 
+
+and sk open reveals no information given fewer than t shares, (iii) the encrypted proof objects output by PVSC are com-putationally hiding prior to threshold opening, and (iv) the opened PVSC proof batches are zero knowledge with respect to their private witnesses conditioned on the public statements and canonical descriptors. Then for any PPT adversary A, the advantage Adv conf  
+
+> A
+
+(λ) is negligible. 
+
+Proof sketch. We use a hybrid argument. First replace the opened proof batches with simulated opened proofs; by zero knowledge, this changes the adversary’s view only negligi-bly. Next replace the encrypted proof objects with simulated ciphertext-domain proof objects; by their hiding property and the secrecy of the threshold opening material below threshold, this again changes the view only negligibly. Finally, replace the encrypted database, encrypted query, and encrypted similarity outputs for b = 0 with those for b = 1; by IND-CPA security of BGV, the resulting views are computationally indis-tinguishable. Hence the adversary’s distinguishing advantage is negligible. This theorem captures confidentiality against the untrusted Compute Node, public observers, and any coalition of fewer than t committee members. It does not claim secrecy against an authorized quorum that participates in threshold decryption of the similarity result. 
+
+Theorem 2 (Encrypted Similarity-Output Integrity) . Assume that (i) every instantiated local relation in RPVSC is sound under the adopted designated-verifier proving backend af-ter threshold opening, (ii) the deterministic parser of Sec-tion V-D4 accepts only complete, canonically ordered, and hash-consistent descriptor sequences, (iii) the commitment hash H is collision resistant, and (iv) the smart contract executes the parser and PVSC .Verify correctly and determinis-tically on immutable on-chain commitments and resolves the unique committed block for each submitted index from the gallery snapshot bound to ctx . Then for any PPT adversary 
+
+A, the probability Pr[ Exp enc -out -int  
+
+> A
+
+(λ) = 1] is negligible. 
+
+Proof sketch. Suppose that A wins with non-negligible prob-ability. Then the contract accepts Π∗ for the public statement 
+
+x∗, yet the published ciphertext c∗ 
+
+> sim
+
+is not the honest en-crypted similarity output for the committed query input and the unique committed gallery block at the submitted index m in the snapshot bound to ctx . Since acceptance requires success-ful deterministic parsing, the opened batch yields a complete and hash-consistent descriptor sequence whose digest equals 
+
+ρ∗
+
+> m
+
+. Hence the only ways for A to win are: (a) some false local arithmetic or block-binding statement is accepted, con-tradicting local soundness; or (b) the adversary changes the underlying ciphertext inputs, the descriptor sequence, or the indexed gallery block while preserving (hid , h m, ρ ∗
+
+> m
+
+), which implies a collision in H. Therefore the winning probability must be negligible. This argument bounds one block; session-level accumu-lation is stated in Corollary 1. We rely on Ring-LWE for BGV, the Module-LWE/Module-SIS-type proof-backend as-sumptions of [32], and collision resistance of H; see Sup-plementary Material, Sec. V. 
+
+Corollary 1 (Session-level soundness) . Let ϵloc be the worst-case soundness error of one opened local proof under the Module-LWE/Module-SIS-type proof backend of [32], and let 
+
+ϵH be the collision advantage of H. Under the assumptions of Theorem 2, a query session over M = ⌈N/ (nd )⌉ gallery blocks, each carrying Km = nq nchunk (2 L − 1) counted arithmetic/output instances plus one block-binding instance (Km + 1 verified instances per block), satisfies 
+
+ϵsess ≤ M (Km + 1) ϵloc + ϵH, (15) since the deterministic parser contributes no probabilistic error. Hence retaining a target session-soundness level requires the local proof parameter to absorb the additive union-bound loss 
+
+⌈log 2(M (Km + 1)) ⌉ bits; the representative accounting is tabulated in Supplementary Material, Sec. V. 
+
+Proof sketch. Any accepted false session forces either a false accepted local instance or a hash-binding collision, so the claim follows from a union bound over the M (Km + 1) 
+
+accepted local instances (the M K m counted arithmetic/output instances together with the M per-block Rbind instances) and the collision term. 
+
+Theorem 3 (Finalized Result Integrity) . Assume that (i) The-orem 2 holds, (ii) committee confirmations recorded on-chain are member-authenticated and cannot be forged for honest committee members, (iii) fewer than t committee members are corrupted, and (iv) each honest committee member issues a confirmation only after locally deriving the application output from the complete proof-verified encrypted similarity-output collection ordered by block index. Then for any PPT adversary 
+
+A, the probability Pr[ Exp res -int  
+
+> A
+
+(λ) = 1] is negligible. 
+
+Proof sketch. Assume that A wins with non-negligible prob-ability. Since Definition 3 requires successful deterministic parsing and public verification of every opened proof against the corresponding encrypted similarity output and also requires complete coverage of the snapshotted gallery block indices, Theorem 2 implies that the accepted encrypted similarity-output collection is correct except with negligible probability. Since fewer than t committee members are corrupted, any accepted confirmation set of size at least t contains at least one honest member. By assumption, an honest member confirms only the output obtained by locally threshold-decrypting the complete proof-verified encrypted similarity-output collection ordered by block index and applying Dec app (·) to the re-covered similarity result. Hence the finalized output cannot differ from the reference output except with negligible proba-bility. 
+
+3) Resistance to Specific Attacks: Replay and substitution attacks are prevented by the session-bound public statement together with the descriptor-sequence binding. Each PVSC instance is tied to a unique context ctx containing a fresh session identifier sid , and the smart contract rejects reused or expired sessions. The on-chain commitments hid and hm
+
+bind the proof to the exact query ciphertext and to the indexed committed gallery block resolved from the session snapshot, while the digest ρm binds the entire ordered local-proof descriptor sequence. Hence replaying an old proof, IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 13 
+
+silently substituting Cidentify or Cm, splicing local proofs from another batch, or moving a valid proof across sessions makes the public statement inconsistent unless the adversary finds a collision in H or breaks PVSC soundness. Omission, duplication, and reordering attacks are additionally prevented by the deterministic parser and the contract-side coverage rule: the contract records which indices have already been accepted in the current session and enables threshold decryption only after every gallery-block index has been accepted exactly once. A malicious aggregation party may still misorder, withhold, or misaggregate proof-opening shares or result-decryption shares, and may attempt to mix a valid proof-verified en-crypted similarity-output collection with an incorrect plaintext application output. On the proof side, such behavior can at most cause opening failure or later public-verification failure, because the smart contract verifies the opened proofs directly. On the result side, the contract accepts an output only after re-ceiving at least t mutually consistent committee confirmations bound to the same proof-verified encrypted similarity-output collection. Since fewer than t committee members may be corrupted, any accepted confirmation set contains at least one honest member, and honest members confirm only outputs obtained by locally deriving the application result from the proof-verified encrypted similarity-output collection. There-fore malicious aggregation may affect liveness, but it cannot by itself cause an incorrect plaintext result to be finalized on-chain, as formalized by Definition 3 and Theorem 3. VII. E XPERIMENTAL EVALUATION 
+
+We evaluate four claims: integer quantization preserves biometric utility, SCMV improves encrypted 1: N matching scalability, PVSC makes encrypted-output integrity practical, and the integrated proof-verified pipeline remains feasible. Unless explicitly stated otherwise, verification results refer only to the opened-proof layer, and latency excludes face detection and neural feature extraction and is averaged over 100 randomly selected query images. 
+
+A. Experimental Methodology and Setup 1) Hardware and implementation: BioZKFHE was im-plemented on Microsoft SEAL [34]. All encrypted match-ing, database-operation, and PVSC parallelization benchmarks were executed on the same Linux server with dual Intel Xeon Platinum 8352V CPUs (2.10 GHz, 36 cores/72 threads per socket), 60 GB RAM, and Ubuntu 22.04. 2 Unless stated oth-erwise, “matching latency” refers to SCMV .Identify only and excludes client-side feature extraction, whereas “verification-side cost” refers to threshold opening plus public verification of the opened proofs. For the smart-contract layer, we implemented a Solid-ity 0.8.24/Hardhat 3.7.0 prototype (optimizer 200, EDR sim-ulated L1) for session binding, opened-proof headers, cover-age tracking, committee confirmations, finalization, and the opened-QAP verifier kernels used by PVSC .Verify . These      
+
+> 2Artifact repository containing implementation code, benchmark scripts, plotting scripts, and configuration files: https://github.com/plan-lab-szu/ BioZKFHE.
+
+measurements cover contract-side enforcement and verifier-kernel execution for opened local proof instances. They do not treat all uncompressed PVSC proof payloads as a gas-optimized full-batch L1 submission; instead, full-batch size and scaling are accounted for in the proof-footprint and session-scaling results. Costs are 31,649–114,799 gas for state-management functions and 50,980–63,830 gas for QAP verifier kernels, with details in Supplementary Sec. V. 
+
+2) Datasets, feature extraction, and evaluation usage: 
+
+We constructed the evaluation pool from two public face datasets, LFW and CASIA-WebFace. Each image was first processed by MTCNN for face detection and then converted to a fixed-dimensional embedding using either FaceNet [37] or MobileFaceNet [38], producing L = 128 and L = 512 
+
+embeddings, respectively. The feature extractors are trained on VGGFace2 and kept fixed during evaluation; no additional fine-tuning is performed on LFW or CASIA-WebFace. Each embedding was then L2-normalized, scaled by a quantization factor Γ, and rounded to integers before encryption, following the SCMV preparation procedure in Section IV-C. For biometric evaluation, gallery and query templates are drawn from disjoint images of each retained identity: if an identity has at least two usable images, one image is used as the gallery template and the remaining images are used as query templates. In the encrypted experiments, BioZKFHE stores one enrolled template per user, so N denotes both the gallery template count and the enrolled user count. The same identity set and gallery/query partition are used for the floating-point and quantized evaluations. 
+
+3) Evaluation protocol and reporting conventions: We re-port biometric utility and encrypted-system cost. Utility met-rics are top-1 identification accuracy, EER, and FAR/FRR at the operating threshold of the corresponding model and quantization setting. System metrics include encrypted match-ing latency, encrypted storage, PVSC proof-generation time, public-verification time on the opened proof collection, and integrated pipeline runtime. Here, “public verification” denotes verifier execution on the opened PVSC proof batch; contract-side gas, calldata, and storage measurements are reported separately for the session-binding, coverage, confirmation, and finalization logic. Since prior systems are unavailable under matched implementations and parameters, the primary same-platform reference point is the n = 1 configuration of the same codebase, which preserves the same row-wise encrypted matching pipeline while disabling SCMV multi-value binding; Supplementary Sec. VI reports an indicative cross-paper comparison for context only. 
+
+B. Utility Under Feature Quantization 
+
+We first test whether the integer embedding used by SCMV preserves the biometric utility needed for downstream identi-fication. To isolate this effect, we compare floating-point and quantized pipelines on the same identity set and gallery/query partition. Fig. 4 reports the identification-accuracy loss with respect to the floating-point baseline together with the corresponding EER under different quantization factors Γ, and Table III lists IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 14 
+
+representative absolute values. For both FaceNet ( L = 128 )and MobileFaceNet ( L = 512 ), most degradation is concen-trated at very small Γ and quickly becomes negligible as 
+
+Γ increases. We therefore use Γ = 128 for FaceNet and 
+
+Γ = 512 for MobileFaceNet in the subsequent encrypted experiments. At these operating points, BioZKFHE achieves 99.47% and 98.30% identification accuracy, respectively, while the corresponding EERs remain essentially unchanged from the floating-point baselines. In short, both models remain within the 1% accuracy-loss tolerance once Γ is sufficiently large, supporting the claim that integer-domain matching is effectively utility preserving in BioZKFHE. 
+
+C. Encrypted Matching Scalability and Storage Cost 
+
+We next test whether SCMV delivers the predicted struc-tural gain as the gallery size N grows. Since the same en-crypted matching primitive underlies enrollment-time unique-ness checking and login-time identification, these results characterize the common encrypted matching layer. Using the matched-codebase n = 1 setting as the same-platform reference point, we examine the key SCMV claim: one block covers nd templates, so both encrypted storage and processed-block count should scale approximately with ⌈N/ (nd )⌉.We use Γ = 128 for FaceNet and Γ = 512 for Mobile-FaceNet. In the reported implementation, the corresponding SCMV bases are set to T = 35729 and T = 547715 ,respectively. We use polynomial degree d = 8192 through-out the scalability experiments. For a given SCMV binding factor n, the plaintext modulus p is selected to satisfy the recoverability condition while preserving a sufficient noise margin. In our implementation, p is set to a 20-bit, 31-bit, and 46-bit plaintext modulus for FaceNet with n = 1 , 2, 3,respectively. The corresponding ciphertext moduli are repre-sented in RNS form with coefficient-modulus decompositions 110-bit {30 , 25 , 25 , 30 }, 150-bit {45 , 30 , 30 , 45 }, and 170-bit {45 , 40 , 40 , 45 }. For MobileFaceNet, p is set to a 21-bit and 40-bit plaintext modulus for n = 1, 2, with 120-bit {30 , 30 , 30 , 30 } and 160-bit {45 , 35 , 35 , 45 } coefficient-modulus decompositions, respectively. In SCMV .Identify , each similarity score is computed us-ing one ciphertext–ciphertext multiplication per embedding dimension, and the resulting products are then accumulated through ciphertext additions. Since SCMV avoids query-time rotations and the current evaluation path has multiplicative depth 1, all experiments are carried out at a fixed modulus level and do not invoke modulus switching. Fig. 5 summarizes the resulting scalability trends. As ex-pected, both matching latency and encrypted storage grow approximately linearly with the number of SCMV database blocks. Increasing the binding factor n reduces the number of encrypted blocks that must be stored and scanned, which directly lowers both latency and storage. The per-n security/performance trade-off is reported in Supplementary Material, Sec. IV. At fixed d = 8192 , the smallest margins are about 135 bits for FaceNet with n = 3 
+
+and about 147 bits for MobileFaceNet with n = 2 (rough 16 32 64 128 512 2048        
+
+> 0
+> 0.5
+> 1
+> 1.5
+> 2
+> Tolerance
+> Quantization Factor ( Γ)
+> Accuracy Loss (%)
+> (a) FaceNet ( L= 128 )
+> 4
+> 4.5
+> 5
+> 5.5
+> Baseline
+> EER (%)
+> Accuracy Loss
+> EER
+> 16 32 64 128 512 2048
+> 0
+> 0.5
+> 1
+> 1.5
+> 2
+> Tolerance
+> Quantization Factor ( Γ)
+> Accuracy Loss (%)
+> (b) MobileFaceNet ( L= 512 )
+> 1.5
+> 2
+> 2.5
+> 3
+> 3.5
+> Baseline
+> EER (%)
+> Accuracy Loss
+> EER
+
+Fig. 4: Utility under integer quantization: accuracy loss and EER versus Γ.TABLE III: Identification performance under representative quanti-zation factors Γ.                               
+
+> Model ΓAcc. (%) EER (%) FAR (%) FRR (%) FaceNet
+> (L= 128 )Cleartext 99.47 4.17 0.20 5.76 16 98.91 5.36 0.36 12.87 128 99.47 4.16 0.20 5.84
+> MobileFaceNet
+> (L= 512 )Cleartext 98.37 1.68 1.80 1.47 16 96.67 3.33 2.97 3.70 512 98.30 1.63 1.77 1.83
+
+Core-SVP lower-bound estimates [39], [40], reported to more digits in the supplementary table only for reproducibility); meanwhile, at N = 10 6, the corresponding block counts drop from 123 to 41 and from 123 to 62, respectively. These results support the main SCMV claim: relative to the same-platform reference point n = 1 , increasing the binding factor reduces both ciphertext expansion and the number of processed encrypted blocks without changing the logical matching rule. Supplementary Sec. IV separates horizontal packing, the row-wise vertical baseline, and SCMV. At N =100 k, the FaceNet horizontal baseline uses 1,563 blocks and 10,941 rotations, whereas SCMV with n = 3 uses 5 blocks, no online rotations, 543.4 ms latency, and 188.51 MiB storage; for MobileFaceNet, SCMV with n = 2 reduces the scan from 6,250 horizontal blocks to 7 SCMV blocks. The same sec-tion reports the per-n security/performance table and lattice-estimator settings. An indicative cross-paper comparison is provided in Sec. VI of the Supplementary Material, but our primary quantitative reference remains the matched-codebase 
+
+n = 1 baseline because implementation environments and evaluation protocols differ substantially across systems. 
+
+D. PVSC Overhead for Encrypted-Output Integrity 
+
+We now test whether PVSC makes encrypted-output in-tegrity practical at the ciphertext-output layer. Here, “public verification” refers to execution of the verifier logic on the 
+
+opened proof batch after committee-side threshold opening, rather than to blockchain-specific gas, calldata, or state-storage cost. Accordingly, the results below characterize protocol-level public verifiability rather than deployment-optimized contract efficiency. 
+
+1) Microbenchmark of decomposed proof templates: Fig. 6 reports the proof-generation and public-verification time for decomposed BGV addition and multiplication templates under three chunk sizes, dZK ∈ { 128 , 256 , 512 }. For both operations, the proof-generation cost grows approximately linearly with 
+
+dZK : for example, the multiplication-template cost increases from 46.9 ms at dZK = 128 to 170.8 ms at dZK = 512 . In contrast, the public-verification time remains small, ranging IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 15 
+
+Fig. 5: SCMV scalability: latency and encrypted storage versus database size N .
+
+from 0.85 to 1.47 ms across all tested settings. This behavior matches the intended decomposition trade-off: smaller chunk sizes reduce the cost of an individual proof instance but increase the number of instances, whereas larger chunk sizes reduce fragmentation at the cost of more expensive instances. 
+
+2) Parallel proof generation: Fig. 7 compares single-process and multi-process proof generation for three represen-tative workloads, testing whether Double-CRT decomposition exposes enough parallelism to offset PVSC cost. The benefit is substantial and consistent across all tested cases: the total proof-generation time decreases from 2074 s to 17 s for the 128-dimensional workload, from 5988 s to 49 s for the 256-dimensional workload, and from 10655 s to 85 s for the 512-dimensional workload, corresponding to about 122 ×, 122 ×,and 125 × speedups, respectively. The multi-process configu-ration uses 128 concurrent proof-generation processes mapped onto the server’s 144 hardware threads, so these speedups stay below the deployed parallelism. Public verification remains below 1.1 s and is omitted from Fig. 7 for readability. The key takeaway is not the exact speedup factor of one platform, but that the Double-CRT decomposition exposes many weakly dependent proof tasks, making proof genera-tion highly parallelizable. It also determines footprint: en-crypted/opened proof size and verifier-side public input are linear in Km = nq nchunk (2 L−1) per block, while committee-side opening communication is additionally linear in t. Since each block submission adds only one output ciphertext and a constant-size session-binding tuple, the proof object dominates the non-ciphertext footprint. 
+
+3) Proof footprint and session accumulation: BioZKFHE’s verification footprint is driven by opened local proofs. With chunk size dZK , one block has nchunk = ⌈d/d ZK ⌉
+
+chunks per RNS limb and Km = nq nchunk (2 L − 1) 
+
+counted arithmetic/output instances: nq nchunk L multiplica-tion, nq nchunk (L − 2) accumulation, and nq nchunk output instances. The L − 2 term reflects that a1 = p1 is fused into multiplication and aL = csim  
+
+> m
+
+is certified by the output layer (Supplementary Material, Sec. V). The full opened batch adds one block-binding instance, so it has Km +1 verified instances, while a session over N templates has M = ⌈N/ (nd )⌉ blocks, 
+
+M K m counted arithmetic/output instances, and M block-binding instances. Table IV reports verified proof-object struct sizes for the implemented nq = 3 prototype. The soundness accounting in Supplementary Material, Sec. V uses the conservative four-limb count nq = 4 ; because proof count and footprint are lin-ear in nq , a four-limb deployment scales by about 4/3 from the measured rows. Since Km depends only on (nq , n chunk , L ),128 256 512   
+
+> 0
+> 50
+> 100
+> 150
+> 200
+> 30 .7
+> 61 .3
+> 127 .2
+> 46 .9
+> 86 .1
+> 170 .8
+> Chunk Size ( dZK )
+> Time (ms)
+> (a) Proof Generation Time
+> BGV Addition
+> BGV Multiplication
+> 128 256 512
+> 0
+> 0.5
+> 1
+> 1.5
+> 2
+> 0.85
+> 1.02
+> 1.32
+> 0.99
+> 1.10
+> 1.47
+> Chunk Size ( dZK )
+> Time (ms)
+> (b) Proof Verification Time
+> BGV Addition
+> BGV Multiplication
+
+Fig. 6: PVSC microbenchmarks for decomposed proof templates under different chunk sizes dZK .
+
+Fig. 7: PVSC proof-generation time under single-process and multi-process execution for representative workloads. TABLE IV: Representative PVSC proof footprint at dZK = 512 under the prototype nq = 3 proof-channel setting. Session sizes use N =100 k.                               
+
+> Profile MKmEnc./blk Open/blk Open/session
+> FaceNet n= 1 13 12,240 668.07 MiB 5.04 MiB 65.56 MiB FaceNet n= 3 5 12,240 896.67 MiB 8.12 MiB 40.62 MiB MobileFaceNet n= 1 13 49,104 3.22 GiB 19.48 MiB 253.25 MiB MobileFaceNet n= 2 7 49,104 3.51 GiB 32.59 MiB 228.15 MiB 10k 20k 30k 40k
+> Template Library Size
+> 0
+> 50
+> 100
+> 150
+> Time (ms)
+> 59%
+> 39%
+> 59%
+> 39%
+> 42%
+> 55%
+> 42%
+> 55%
+> (a) Low-Latency Operations (ms)
+> Threshold Dec.
+> Ciphertext Comp.
+> Encryption
+> 10k 20k 30k 40k
+> Template Library Size
+> 0
+> 25
+> 50
+> Time (s)
+> 77%
+> 23%
+> 77%
+> 23%
+> 77%
+> 23%
+> 77%
+> 23%
+> (b) Dominant Operations (s)
+> Verification Cost
+> Proof Generation
+
+Fig. 8: Integrated overhead breakdown versus template-library size. 
+
+profiles differing only in the SCMV binding factor n share 
+
+Km but differ in M and ciphertext parameters. Detailed rows for dZK ∈ { 128 , 256 , 512 }, public-input size, and committee-opening communication appear in Supplementary Material, Sec. V. 
+
+E. Integrated Pipeline Overhead Breakdown 
+
+We next evaluate the end-to-end proof-verified identification pipeline, combining encrypted matching, opened-proof verifi-cation, and threshold recovery of the similarity result. Fig. 8 reports the integrated pipeline under FaceNet with 
+
+n = 3 , d = 8192 , dZK = 512 , and the same threshold setting as Table IV. Fig. 8(a) shows that the low-latency stages remain small across all tested settings: encryption stays around 50 ms, ciphertext computation rises from about 33 ms to 66 ms as IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 16 
+
+the template library grows from 10k to 40k, and committee-side recovery remains minor. In contrast, Fig. 8(b) shows that proof-related costs dominate: the total dominant proof-related runtime is about 22 s for 10k–20k templates and about 44 s for 30k–40k templates, with proof generation contributing roughly 77% and verification-side costs about 23%. These results support feasibility at 10k–40k scale while identifying proof generation as the main remaining bottleneck. VIII. C ONCLUSION 
+
+BioZKFHE combines SCMV for efficient encrypted 1: N
+
+matching with PVSC for proof-verified outsourced similarity evaluation, thereby supporting scalable threshold-opened au-ditability for biometric identification. Experiments on FaceNet and MobileFaceNet show near-lossless utility, up to 67% reduction in encrypted storage, and feasible end-to-end exe-cution at 10k–40k scale with about 22–44 s runtime. In BioZKFHE, auditability is intentionally separated from threshold-governed release: PVSC certifies the encrypted sim-ilarity outputs accepted after threshold opening, whereas final decryption and decision release remain committee-governed. Within this model, BioZKFHE protects templates, queries, and intermediate homomorphic states against the Compute Node, public observers, and any coalition of fewer than t committee members, while the main remaining opportunities lie in lower-footprint proving, smaller proof/public-input footprints, and lighter threshold-release mechanisms. ACKNOWLEDGMENT 
+
+The authors would like to thank the editor and the anony-mous reviewers for their valuable comments and suggestions, which helped improve the quality of this paper. The work of T. Wang, X. Wu, and S. Zhang is supported by Solo Research Limited. REFERENCES [1] B. Cao, S. Xiao, L. Shi, T. Wang, J. Chen, J. Wang, X. Ling, H. Xu, S. Zhang, and E. Liu, “Web 3.0: A survey on the architectures, enabling technologies, applications, and challenges,” IEEE Commun. Surveys Tuts. , vol. 27, no. 1, pp. 1–35, 2025. [2] T. Wang, S. Zhang, Q. Yang, and S. C. Liew, “Account service network: A unified decentralized Web 3.0 portal with credible anonymity,” IEEE Netw. , vol. 37, no. 6, pp. 101–108, 2023. [3] M. Outroshi-Shahreza, V. K. Hahn, M. Shkel, and S. Marcel, “Vulner-ability of state-of-the-art face recognition models to template inversion attack,” IEEE Trans. Inf. Forensics Security , vol. 19, pp. 2548–2563, 2024. [4] M. Outroshi-Shahreza, V. K. Hahn, and S. Marcel, “Measuring linka-bility of protected biometric templates using maximal leakage,” IEEE Trans. Inf. Forensics Security , vol. 18, pp. 1021–1035, 2023. [5] Y. Zhang, Y. Liu, L. Wang, X. Lou, D. Feng, and J. Liao, “Privacy-preserving biometric authentication: Cryptanalysis and countermea-sures,” IEEE Trans. Dependable Secure Comput. , vol. 20, no. 3, pp. 2346–2359, 2023. [6] J. H. Cheon, A. Kim, M. Kim, and Y. Song, “Homomorphic encryption for arithmetic of approximate numbers,” in Proc. Int. Conf. Theory Appl. Cryptol. Inf. Secur. (ASIACRYPT) . Springer, 2017, pp. 409–437. [7] S. Chatel, C. Knabenhans, A. Pyrgelis, C. Troncoso, and J.-P. Hubaux, “VERITAS: Plaintext encoders for practical verifiable homomorphic encryption,” in Proc. ACM SIGSAC Conf. Comput. Commun. Secur. (CCS) , 2024, pp. 2520–2534. [8] D. F. Aranha, A. Costache, A. Guimar˜ aes, and E. Soria-V´ azquez, “HE-LIOPOLIS: Verifiable computation over homomorphically encrypted data from interactive oracle proofs is practical,” in Proc. Int. Conf. Theory Appl. Cryptol. Inf. Secur. (ASIACRYPT) , 2024, pp. 302–334. [9] X. Zhang, R. Wang, Z. Liu, B. Xiang, Y. Deng, B. Fisch, and X. Lu, “Phalanx: An FHE-friendly SNARK for verifiable computation on encrypted data,” in Proc. ACM SIGSAC Conf. Comput. Commun. Secur. (CCS) , 2025, pp. 4035–4048. [10] V. N. Boddeti, “Secure face matching using fully homomorphic encryp-tion,” in Proc. IEEE Int. Conf. Biometrics Theory, Appl. Syst. (BTAS) ,2018, pp. 1–10. [11] P. Bauspieß, J. Olafsson, J. Kolberg, P. Drozdowski, C. Rathgeb, and C. Busch, “Improved homomorphically encrypted biometric identifica-tion using coefficient packing,” in Proc. IEEE Int. Workshop Biometrics Forensics (IWBF) , 2022, pp. 1–6. [12] R. Xin, T. Wang, J. Wang, C. Zhao, and J. Wang, “Privacy-preserving preselection for face identification based on packing,” arXiv preprint arXiv:2507.02414 , 2025. [13] S. Halevi, Y. Polyakov, and V. Shoup, “An improved RNS variant of the BFV homomorphic encryption scheme,” in Proc. Cryptogr. Track RSA Conf. (CT-RSA) , 2019, pp. 83–105. [14] C. Ganesh, A. Nitulescu, and E. Soria-Vazquez, “Rinocchio: SNARKs for ring arithmetic,” J. Cryptol. , vol. 36, no. 4, p. 41, 2023. [15] O. Ahmed, C. Gouert, and N. G. Tsoutsos, “PEEV: Parse Encrypt Execute Verify—a verifiable FHE framework,” IEEE Access , vol. 12, pp. 1–15, 2024. [16] J. J. Engelsma, A. K. Jain, and V. N. Boddeti, “HERS: Homomorphically encrypted representation search,” IEEE Trans. Biom. Behav. Identity Sci. ,vol. 4, no. 3, pp. 349–360, 2022. [17] B. J. Sperling, N. Ratha, A. Ross, and V. N. Boddeti, “HEFT: Homo-morphically encrypted fusion of biometric templates,” in Proc. IEEE Int. Joint Conf. Biometrics (IJCB) , 2022, pp. 1–8. [18] D. Choi, G. Kim, M. Seo, Y. Kwon, and S. Chang, “Blind-Match: Efficient homomorphic encryption-based 1:N matching for privacy-preserving biometric identification,” in Proc. ACM Int. Conf. Inf. Knowl. Manag. (CIKM) , 2024, pp. 4423–4430. [19] H. Ao and V. N. Boddeti, “CryptoFace: End-to-end encrypted face recognition,” in Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2025, pp. 1845–1855. [20] J. Bai, X. Zhang, X. Song, H. Shao, Q. Wang, S. Cui, and G. Russello, “CryptoMask: Privacy-preserving face recognition,” in Proc. Int. Conf. Inf. Commun. Secur. (ICICS) , 2023, pp. 333–350. [21] P. Bauspieß, J. Kolberg, P. Drozdowski, C. Rathgeb, and C. Busch, “Privacy-preserving preselection for protected biometric identification using public-key encryption with keyword search,” IEEE Trans. Ind. Informat. , vol. 19, no. 5, pp. 6447–6458, 2023. [22] A. Ibarrondo, H. Chabanne, V. Despiegel, and M. ¨ Onen, “Grote: Group testing for privacy-preserving face identification,” in Proc. ACM Conf. Data Appl. Secur. Priv. (CODASPY) , 2023, pp. 117–128. [23] R. Gennaro, C. Gentry, and B. Parno, “Non-interactive verifiable com-puting: Outsourcing computation to untrusted workers,” in Proc. Annu. Int. Cryptol. Conf. (CRYPTO) , 2010, pp. 465–482. [24] D. Fiore, R. Gennaro, and V. Pastro, “Efficiently verifiable computation on encrypted data,” in Proc. ACM SIGSAC Conf. Comput. Commun. Secur. (CCS) , 2014, pp. 844–855. [25] D. Fiore, A. Nitulescu, and D. Pointcheval, “Boosting verifiable compu-tation on encrypted data,” in Proc. Int. Conf. Pract. Theory Public-Key Cryptogr. (PKC) , 2020, pp. 124–154. [26] A. Bois, I. Cascudo, D. Fiore, and D. Kim, “Flexible and efficient verifiable computation on encrypted data,” in Proc. Int. Conf. Pract. Theory Public-Key Cryptogr. (PKC) , 2021, pp. 528–558. [27] C. Knabenhans, A. Viand, A. Merino-Gallardo, and A. Hithnawi, “vFHE: Verifiable fully homomorphic encryption,” in Proc. Workshop Encrypted Comput. Appl. Homomorph. Cryptogr. (WAHC) . ACM, 2024, pp. 11–22. [28] C. Marcolla, V. Sucasas, M. Manzano, R. Bassoli, F. H. P. Fitzek, and N. Aaraj, “Survey on fully homomorphic encryption, theory, and applications,” Proceedings of the IEEE , vol. 110, no. 10, pp. 1572–1609, 2022. [29] Z. Brakerski, C. Gentry, and V. Vaikuntanathan, “(leveled) fully ho-momorphic encryption without bootstrapping,” ACM Transactions on Computation Theory , vol. 6, no. 3, pp. 13:1–13:36, 2014. [30] L. Zeng, P. Shen, X. Zhu, X. Tian, and C. Chen, “A review of privacy-preserving biometric identification and authentication protocols,” 
+
+Computers & Security , vol. 150, p. 104309, 2025. [31] S. Atapoor, K. Baghery, H. V. L. Pereira, and J. Spiessens, “Verifiable FHE via lattice-based SNARKs,” IACR Commun. Cryptol. , vol. 1, no. 1, 2024. [32] Y. Ishai, A. Sahai, H. Wee, and Z. Wu, “Shorter and faster post-quantum designated-verifier zkSNARKs from lattices,” in Proc. ACM SIGSAC Conf. Comput. Commun. Secur. (CCS) , 2021, pp. 2382–2399. [33] R. Bendlin and I. Damg˚ ard, “Threshold decryption and zero-knowledge proofs for lattice-based cryptosystems,” in Theory of Cryptography Conference . Springer, 2010, pp. 201–218. [34] Microsoft Research, “Microsoft SEAL (release 4.1),” https://github.com/ IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 17 
+
+Microsoft/SEAL, 2023. [35] V. Lyubashevsky, C. Peikert, and O. Regev, “A toolkit for ring-lwe cryptography,” in Advances in Cryptology – EUROCRYPT 2013 , ser. Lecture Notes in Computer Science, vol. 7881. Springer, 2013, pp. 35–54. [36] C. Gentry, S. Halevi, and N. P. Smart, “Homomorphic evaluation of the AES circuit,” in Proc. Annu. Int. Cryptol. Conf. (CRYPTO) , 2012, pp. 850–867. [37] F. Schroff, D. Kalenichenko, and J. Philbin, “FaceNet: A unified embedding for face recognition and clustering,” in Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2015, pp. 815–823. [38] S. Chen, Y. Liu, X. Gao, and Z. Han, “MobileFaceNets: Efficient cnns for accurate real-time face verification on mobile devices,” arXiv preprint arXiv:1804.07573 , 2018. [39] M. R. Albrecht, R. Player, and S. Scott, “On the concrete hardness of learning with errors,” Cryptology ePrint Archive , 2015. [40] M. R. Albrecht, “On dual lattice attacks against small-secret LWE and parameter choices in HElib and SEAL,” in Proc. Annu. Int. Conf. Theory Appl. Cryptogr. Techn. (EUROCRYPT) , 2017, pp. 103–129. Supplementary Material for “BioZKFHE: Scalable Encrypted Biometric Identification via Verifiable Homomorphic Similarity Evaluation” 
+
+Rundong Xin, Taotao Wang, Member, IEEE , Xiaoxiao Wu, Senior Member, IEEE ,Weizhi Meng, Senior Member, IEEE , Shengli Zhang, Senior Member, IEEE , and Shui Yu, Fellow, IEEE 
+
+This supplementary material provides self-contained cryp-tographic background for the main paper. Its purpose is to help readers from biometric systems, applied cryptography, and secure computation follow the technical design of BioZKFHE without assuming prior familiarity with fully homomorphic encryption, lattice-based zero-knowledge proofs, or threshold cryptography. The presentation is aligned with the notation and interfaces used in the main text, and focuses on the specific cryptographic abstractions needed for SCMV and PVSC rather than on the most general formulations of the underlying primitives. Besides the cryptographic background in Secs. I– III, this supplement also includes a structural comparison with conventional packing layouts in Sec. IV, the concrete descriptor-level PVSC formulation in Sec. V, and an indicative cross-paper comparison in Sec. VI. I. BGV F ULLY HOMOMORPHIC ENCRYPTION 
+
+Fully Homomorphic Encryption (FHE) is a foundational technology in post-quantum cryptography because it simul-taneously offers security based on hard lattice problems and supports direct computation on ciphertexts without decryption. By enabling addition and multiplication on encrypted data, FHE resolves the traditional tension between data utility and privacy protection. In BioZKFHE, we adopt the Brakerski– Gentry–Vaikuntanathan (BGV) scheme [s1] as the underlying FHE layer. BGV is built from the Ring-Learning With Errors (RLWE) assumption and, in practical implementations, relies on batching, relinearization, and the Double-CRT represen-tation to make homomorphic computation efficient [s2]–[s5]. This appendix provides the BGV background needed by the main paper. In particular, we introduce the core interfaces of the adopted BGV model, namely encoding/decoding, key generation, encryption/decryption, and homomorphic addi-tion/multiplication, and then explain how the Double-CRT representation supports efficient evaluation. 
+
+Mathematical Notations and Structures : All operations are performed over the cyclotomic ring R := Z[x]/(xd + 1) ,where d is a power of two. The plaintext and ciphertext rings are Rp := R/p R and Rq := R/q R, respectively, where p is the plaintext modulus and q is the ciphertext modulus, with 
+
+p ≪ q. Equivalently, one may write Rp ∼= Zp[x]/⟨xd + 1 ⟩
+
+and Rq ∼= Zq [x]/⟨xd + 1 ⟩. In the main paper, the ciphertext modulus is further decomposed as q = Qnq 
+
+> j=1
+
+q(j), where the moduli {q(j)}nq 
+
+> j=1
+
+are pairwise co-prime. The discrete Gaus-sian distribution over Z with standard deviation σ is denoted by DZ,σ . A BGV ciphertext is written as c = ( c(0) , c (1) ) ∈ R 2 
+
+> q
+
+,the public key as pk HE , the secret key as sk HE , and the public evaluation-key set as evk HE . Throughout the supplementary material and the main paper, the symbols ⊕ and ⊗ denote BGV homomorphic addition and multiplication, respectively. 
+
+A. Encoding and Decoding 
+
+This part introduces the encoding and decoding interfaces of the BGV scheme, which convert between raw message vectors and plaintext polynomials. 
+
+Encoding : In the batched form of BGV, a raw message is represented by a slot vector m = ( m1, . . . , m d) ∈ Zdp. When 
+
+p ≡ 1 (mod 2 d), the polynomial xd +1 splits completely over 
+
+Zp, so there exist pairwise distinct roots ξ1, . . . , ξ d ∈ Zp such that xd + 1 = Qdj=1 (x − ξj ) over Zp. This induces a CRT isomorphism Rp ∼= Qdj=1 Zp.The encoding operation maps the slot vector m to the unique plaintext polynomial v(x) ∈ R p of degree smaller than 
+
+d satisfying v(ξj ) = mj for all j ∈ { 1, . . . , d }. Equivalently, one may write 
+
+v(x) = BGV .Encode (m) = 
+
+> d
+
+X
+
+> j=1
+
+mj ℓj (x), (1) where ℓj (x) ∈ R p is the j-th Lagrange basis polynomial associated with the roots {ξ1, . . . , ξ d}. Thus, encoding packs 
+
+d plaintext slots into one plaintext polynomial. 
+
+Decoding : The decoding operation is the inverse of encod-ing. Given a plaintext polynomial v(x) ∈ R p, the decoder recovers the slot vector by evaluating v(x) at the CRT points: 
+
+m = BGV .Decode (v) =  v(ξ1), v (ξ2), . . . , v (ξd). (2) Hence encoding and decoding are inverse CRT maps between the coefficient representation of a plaintext polynomial and its slot representation. 
+
+Batch Processing : The above encoding/decoding mecha-nism is usually referred to as batching. It enables a single ciphertext to carry d plaintext slots and lets homomorphic operations act on all slots in parallel. This SIMD capability is the basis for efficient encrypted matching in BioZKFHE. The SCMV design in the main paper starts from this batching interface, but further exploits the representational range of each plaintext entry by binding multiple values into one entry through base-T expansion. 
+
+B. Key Generation, Encryption and Decryption 
+
+This part presents the key-generation, encryption, and de-cryption interfaces. Before introducing them, we define poly-nomial addition, multiplication, and scalar multiplication in 18 SUPPLEMENTARY MATERIAL FOR BIOZKFHE 19 
+
+the ciphertext ring. Given a(x) = Pd−1 
+
+> i=0
+
+aixi ∈ R q , b(x) = 
+
+Pd−1 
+
+> i=0
+
+bixi ∈ R q , and a scalar k ∈ Zq , these operations are 
+
+a(x) + b(x) = 
+
+> d−1
+
+X
+
+> i=0
+
+(ai + bi)xi,a(x) · b(x) = 
+
+
+
+> d−1
+
+X
+
+> i=0
+> d−1
+
+X
+
+> j=0
+
+aibj xi+j
+
+ mod ( xd + 1 , q ),k · a(x) = 
+
+> d−1
+
+X
+
+> i=0
+
+(ka i)xi,
+
+(3) where polynomial multiplication is followed by reduction modulo xd + 1 , and all coefficients are reduced modulo q.
+
+Key Generation : The BGV scheme first generates a pub-lic/secret key pair together with public evaluation keys. We write the key-generation interface as 
+
+(pk HE , sk HE , evk HE ) ← BGV .KeyGen (1 λ, d, p, q ). (4) The secret key is a small polynomial s(x) ∈ R q , usually sam-pled coefficientwise from a small set such as {− 1, 0, 1}. The public key is a pair pk HE = ( a(x), b (x)) , where a(x) ← R q
+
+is sampled uniformly and 
+
+b(x) = −a(x) · s(x) + p e pk (x) (mod q), (5) with epk (x) ∈ R q sampled from a small-error distribution such as DZ,σ . In the current BioZKFHE evaluation path, the only evaluation key actually used is the public relinearization key set, written in the main paper as evk HE = {rk HE }.
+
+Encryption : The encryption function takes a plaintext poly-nomial v(x) ∈ R p and the public key pk HE = ( a(x), b (x)) as input, and outputs a ciphertext c = ( c(0) (x), c (1) (x)) ∈ R 2 
+
+> q
+
+.We write this as 
+
+c = BGV .Encrypt (v, pk HE ). (6) To encrypt, the scheme samples a short random polynomial 
+
+u(x) and small error polynomials e0(x), e 1(x) ∈ R q , and computes 
+
+c(0) (x) = v(x) + b(x) · u(x) + p e 0(x) (mod q),c(1) (x) = a(x) · u(x) + p e 1(x) (mod q). (7) The random masking term u(x) together with the error terms ensures semantic security under the RLWE assumption. 
+
+Decryption : The decryption function takes a ciphertext c =(c(0) (x), c (1) (x)) ∈ R 2 
+
+> q
+
+and the secret key sk HE = s(x), and outputs the plaintext polynomial v(x) ∈ R p:
+
+v = BGV .Decrypt (c, sk HE ). (8) The key intermediate quantity is 
+
+v∗(x) = c(0) (x) + c(1) (x) · s(x) (mod q). (9) Substituting the encryption equations gives 
+
+v∗(x) = v(x)+ p epk (x) u(x)+ e0(x)+ e1(x) s(x) (mod q).
+
+(10) Thus, when the effective error term remains sufficiently small relative to q, reducing v∗(x) modulo p recovers the plaintext polynomial: 
+
+v(x) = v∗(x) mod p. (11) This abstract decryption form is the one used by the main paper’s correctness and noise analysis. 
+
+C. Homomorphic Addition and Multiplication 
+
+This part first introduces the Double-CRT representation used in practical BGV computation, and then explains how homomorphic addition and homomorphic multiplication are carried out under that representation. 
+
+Double-CRT Representation : The BGV scheme employs the Double-CRT representation as a key optimization tech-nique to improve computational efficiency and reduce memory usage during homomorphic evaluation [s3]–[s5]. It combines two decomposition layers. 1) Modulus decomposition : In the first CRT layer, the large ciphertext modulus is decomposed as q = Qnq 
+
+> j=1
+
+q(j),where the factors {q(j)} are pairwise co-prime. This induces the ring decomposition 
+
+Rq ∼=
+
+> nq
+
+Y
+
+> j=1
+
+Rq(j) , Rq(j) := R/q (j)R. (12) Therefore, each ciphertext component over Rq is rep-resented by its residues over the smaller rings {R q(j) },enabling arithmetic to be performed in a Residue Num-ber System (RNS). 2) Polynomial decomposition via NTT : In the second CRT layer, each small ring Rq(j) is represented in the Num-ber Theoretic Transform (NTT) domain, provided that 
+
+q(j) ≡ 1 (mod 2 d). If a(x) ∈ Rq(j) is written in coefficient form, the transform NTT q(j) (a) maps it to its point-value representation at suitable roots of unity. Under this representation, polynomial multiplication be-comes elementwise multiplication: 
+
+NTT q(j) (a · b) = NTT q(j) (a) ⊙ NTT q(j) (b), (13) where ⊙ denotes the Hadamard product. This is exactly the implementation view exploited by PVSC in the main paper. 
+
+Homomorphic Addition : Consider two ciphertexts c1 =(c(0) 1 , c (1) 1 ) ∈ R 2 
+
+> q
+
+and c2 = ( c(0) 2 , c (1) 2 ) ∈ R 2 
+
+> q
+
+. Under the first CRT layer, each ciphertext component is decomposed into residues c(t) 
+
+> r,j
+
+∈ R q(j) , where r ∈ { 1, 2}, t ∈ { 0, 1}, and 
+
+j ∈ { 1, . . . , n q }. Under the second CRT layer, each residue polynomial is represented by its NTT vector bc(t) 
+
+> r,j
+
+∈ Zdq(j) .The homomorphic addition operation cadd = c1 ⊕ c2 is then performed componentwise: 
+
+bc(t)add ,j = bc(t)1,j + bc(t)2,j , ∀ t ∈ { 0, 1}, j ∈ { 1, . . . , n q }. (14) Applying the inverse NTT and CRT recombination recon-structs the resulting ciphertext components over Rq .
+
+Homomorphic Multiplication : The multiplication of two ciphertexts c1 = ( c(0) 1 , c (1) 1 ) ∈ R 2 
+
+> q
+
+and c2 = ( c(0) 2 , c (1) 2 ) ∈R2 
+
+> q
+
+first produces a three-component ciphertext ecprod =(˜ c(0) prod , ˜c(1) prod , ˜c(2) prod ) ∈ R 3 
+
+> q
+
+, where 
+
+˜c(0) prod (x) = c(0) 1 (x) · c(0) 2 (x),
+
+˜c(1) prod (x) = c(0) 1 (x) · c(1) 2 (x) + c(1) 1 (x) · c(0) 2 (x),
+
+˜c(2) prod (x) = c(1) 1 (x) · c(1) 2 (x).
+
+(15) Under the Double-CRT representation, each polynomial is represented by NTT vectors. And thus, according to Eq. (13), SUPPLEMENTARY MATERIAL FOR BIOZKFHE 20 
+
+the multiplications in Eq. (15) are performed component-wise as 
+
+bc(0) prod ,j = bc(0) 1,j ⊙ bc(0) 2,j ,
+
+bc(1) prod ,j = bc(0) 1,j ⊙ bc(1) 2,j + bc(1) 1,j ⊙ bc(0) 2,j ,
+
+bc(2) prod ,j = bc(1) 1,j ⊙ bc(1) 2,j ,
+
+∀ j ∈ { 1, . . . , n q }.
+
+(16) After inverse NTT and CRT recombination, one obtains the three-component ciphertext ecprod over Rq . In practical BGV implementations, this product ciphertext is then relinearized with the public relinearization key rk HE to obtain a standard two-component ciphertext denoted by cprod . This relinearized ciphertext cprod is the multiplication output used in the main paper and is expressed as cprod = c1 ⊗ c2. Thus, the computation path exercised in BioZKFHE consists of homomorphic addition ⊕, homomorphic multiplication ⊗, and relinearization, whereas modulus switching and bootstrapping are not invoked in the current similarity-evaluation path. II. G ENERIC BACKGROUND ON DESIGNATED -V ERIFIER 
+
+PROOFS 
+
+This section collects the generic designated-verifier proof background used by BioZKFHE beyond the BGV material of Section I. We first recall the standard algebraic path from Rank-1 Constraint Systems to Quadratic Arithmetic Programs, and then sketch a generic lattice-based designated-verifier proof paradigm. Threshold decryption is summarized separately in Section III, while the concrete SCMV packing comparison and the concrete PVSC formulation are deferred to later sections. 
+
+Mathematical Notations and Structures : The algebraic background in this section is presented over a finite field F. An R1CS instance with Ng constraints and Nw variables is spec-ified by matrices A, B, C ∈ FNg ×(Nw +1) and an assignment vector z = [1 , x, w]⊤, where x is the public input and w is the private witness. In the QAP view, {ωi}Ng −1 
+
+> i=0
+
+denotes the inter-polation points, Z(X) is the vanishing polynomial over these points, and A(X), B (X), C (X), H (X) denote the aggregate and quotient polynomials induced by z. For the designated-verifier lattice proving layer, C denotes the target algebraic relation, query num the number of sampled query points, 
+
+query size := 4 the number of polynomial evaluations per point corresponding to A, B, C, H , pt dim := query num ·
+
+query size the plaintext dimension of one proof vector, and 
+
+τ an auxiliary dimension used for integrity checking of the prover’s homomorphic linear aggregation. In the generic proof interface, the public proving material is denoted by pp ZK , the opening secret by sk open , the verifier-side public material by 
+
+vk ZK , and the encrypted proving queries by {CiQ}nrow  
+
+> i=1
+
+.
+
+A. Rank-1 Constraint System 
+
+A Rank-1 Constraint System (R1CS) [s6] is a standard algebraic framework for encoding computation. Formally, an R1CS instance is defined by three matrices A, B, C ∈
+
+FNg ×(Nw +1) , where F is a finite field, Ng is the number of constraints, and Nw is the number of witness and public-input variables excluding the constant 1. Let z = [1 , x, w]⊤ ∈
+
+FNw +1 , where x is the public input and w is the private witness. The R1CS relation is 
+
+(Az) ⊙ (Bz) = Cz, (17) where ⊙ denotes the Hadamard product. Intuitively, each row of (A, B, C) encodes one multiplicative constraint, and the assignment (x, w) is valid if and only if all such constraints are satisfied simultaneously. 
+
+B. Quadratic Arithmetic Program and R1CS-to-QAP Conver-sion 
+
+A Quadratic Arithmetic Program (QAP) [s7] converts the constraint-satisfaction problem of R1CS into a polynomial identity problem. This conversion is widely used in succinct proof systems because it compresses many local constraints into one global algebraic relation. 
+
+QAP Overview : Let {ωi}Ng −1 
+
+> i=0
+
+be interpolation points associated with the Ng constraints. From the R1CS matrices, one constructs three families of polynomials {Ai(X)}Nw
+
+> i=0
+
+,
+
+{Bi(X)}Nw
+
+> i=0
+
+, and {Ci(X)}Nw 
+
+> i=0
+
+by interpolation over these points, and defines the vanishing polynomial 
+
+Z(X) =  
+
+> Ng−1
+
+Y
+
+> i=0
+
+(X − ωi). (18) Given an assignment z, the aggregate polynomials are 
+
+A(X) = 
+
+> Nw
+
+X
+
+> i=0
+
+ziAi(X),B(X) = 
+
+> Nw
+
+X
+
+> i=0
+
+ziBi(X),C(X) = 
+
+> Nw
+
+X
+
+> i=0
+
+ziCi(X).
+
+(19) Then the assignment z satisfies the original R1CS if and only if there exists a quotient polynomial H(X) such that 
+
+A(X) · B(X) = H(X) · Z(X) + C(X). (20) Thus, the entire constraint system is reduced to a polynomial divisibility condition. 
+
+Purpose of the R1CS-to-QAP Conversion : The main purpose of this conversion is to support succinct verification. A verifier could check all Ng R1CS constraints directly, but this would require work linear in Ng . In contrast, the QAP formulation reduces verification to checking whether Eq. (20) holds at random points. By the Schwartz–Zippel lemma, a false identity is unlikely to hold at a randomly chosen challenge point, so the verifier can test correctness with much less work than re-evaluating all constraints. This algebraic compression is the core reason why SNARK-style proof systems can achieve succinct verification. 
+
+C. Lattice-Based Designated-Verifier ZKSNARK Construction 
+
+We now sketch a generic designated-verifier lattice proving paradigm. At a high level, the setup algorithm derives public proving material and a secret opening key. The prover then combines encrypted query material with witness-dependent values to produce an encrypted proof object. Finally, the des-ignated verifier opens this object and checks the corresponding polynomial identities. SUPPLEMENTARY MATERIAL FOR BIOZKFHE 21 
+
+1) Setup phase: The core function of the setup algorithm takes the target algebraic relation and system parameters as input and generates the designated-verifier proving material: 
+
+ pp ZK , sk open 
+
+ ← ZK .Setup (C, params) , (21) where pp ZK contains the relation family, the encrypted proving queries, and the verifier-side public material, while sk open is the secret opening key used to open encrypted proof objects. The setup procedure may be viewed as having three steps. First, it generates the internal public/secret parameters for the underlying lattice-based linear encryption layer. Concretely, one may view the secret opening key as containing a secret ma-trix pair (S, Tmat ), where S controls decryption of encrypted proof components and Tmat supports an integrity check on the opened vector. The corresponding public parameters include a uniformly random matrix A and a matrix D derived from 
+
+S by an RLWE-style relation over the ring Rq . This is the designated-verifier analogue of key generation for the proof-opening layer. Second, the setup compiles the target constraint sys-tem into its QAP form and samples random query points 
+
+{t1, . . . , t query num }. At these points, it evaluates the relevant QAP polynomials, thereby obtaining the query values associ-ated with the polynomials A, B, C , and H.Third, the setup organizes these evaluations into a query ma-trix Q whose columns correspond to the evaluation positions of the proof vector. Each row of Q is then encrypted under the designated-verifier opening key, yielding the encrypted proving queries that appear in the public proving material. Abstractly, these objects are collected in 
+
+pp ZK =  R, d ZK , {CiQ}nrow  
+
+> i=1
+
+, vk ZK 
+
+. (22) 
+
+2) Proof Generation: The prover executes the proof-generation phase using the public proving material, the public input, and the private witness. At the generic interface level, this is written as 
+
+Πenc ← ZK .Prove  x, w, pp ZK 
+
+, (23) where Πenc = {(δk, π k
+
+> enc
+
+)}Kk=1 denotes the encrypted proof batch. Pedagogically, the proof-generation procedure has two conceptual steps. 1) Witness Preparation : The prover first computes the rel-evant witness-dependent algebraic values. In a generic R1CS/QAP picture, this means forming the witness vector z, deriving the quotient polynomial H(X) from Eq. (20), and then collecting the required evaluations of 
+
+A, B, C, and H at the sampled challenge points. 2) Homomorphic Proof Aggregation : The prover next com-bines the witness-dependent values with the encrypted query material. Abstractly, if the witness-derived proof vector is denoted by π, then the encrypted proof object is obtained as an encrypted linear aggregation of the query ciphertext rows against the entries of π. This is the key designated-verifier feature: the prover never reveals the raw evaluation vector directly, but only its encrypted image under the query system derived in setup. Because the aggregation is linear and the underlying en-cryption scheme is additively homomorphic, the resulting proof object is valid with respect to the witness-dependent evaluations while still hiding them from anyone who does not hold the opening key. This is the point at which succinctness and zero knowledge meet: the prover has compressed the witness into a short encrypted algebraic object that can later be opened and checked. 
+
+3) Proof Verification: In a designated-verifier proof system, verification naturally has two layers: opening and checking. At the generic interface level, the designated verifier first opens the encrypted proof batch: 
+
+Π ← ZK .Open  Πenc , sk open 
+
+, (24) where Π = {(δk, π k)}Kk=1 is the corresponding plaintext proof batch. It then checks the opened batch by running 
+
+b ← ZK .Verify  x, Π, vk ZK 
+
+, (25) where b ∈ { 0, 1} is the verifier’s accept/reject decision. Peda-gogically, this verification process consists of four conceptual steps. 1) Proof Opening : The encrypted proof object is opened using the designated-verifier secret opening material. The result is a plaintext vector containing the algebraic proof values needed for checking. 2) Integrity Check : The verifier checks that the opened vec-tor is structurally consistent with the auxiliary integrity relation induced by the matrix Tmat . This prevents a malicious prover from exploiting the homomorphic ag-gregation layer to produce malformed openings that do not correspond to a valid encrypted linear combination. 3) Evaluation Reconstruction : Once integrity has been validated, the verifier reconstructs the full polynomial evaluations used in the proof. In a QAP view, this means recovering the evaluations of A, B, C, and H at the sampled challenge points after accounting for the public-input contribution. 4) Algebraic Consistency Check : Finally, the verifier checks the required polynomial identity. In the pedagogical QAP picture, this amounts to testing 
+
+A(ti) · B(ti) ?
+
+= H(ti) · Z(ti) + C(ti) (26) for all sampled query points ti. If these checks pass, the verifier accepts; otherwise, the proof is rejected. This algebraic viewpoint explains the logic behind designated-verifier lattice proofs. Section V later instantiates this generic setup/prove/open/verify pattern for the blockwise similarity trace used in BioZKFHE. III. L ATTICE -B ASED THRESHOLD DECRYPTION 
+
+Threshold Decryption (TD) is a fundamental primitive in distributed cryptographic systems [s8]. In BioZKFHE, it en-ables the Decryption Committee of ncom members to jointly recover the plaintext of a ciphertext such that no fewer than a threshold t of committee members can perform the recovery, while no single member ever holds the complete secret key. This primitive is useful whenever decryption authority must be distributed across multiple entities rather than concentrated in one trusted server. Since the underlying FHE layer is BGV, the threshold decryption interface should be consistent with the ring structure and decryption form introduced in Section I. This subsection therefore summarizes a lattice-based threshold SUPPLEMENTARY MATERIAL FOR BIOZKFHE 22 
+
+decryption view over the same BGV framework, focusing on key generation and secret sharing, distributed partial decryp-tion, and share aggregation for plaintext recovery. 
+
+Mathematical Notations and Structures : We use the same ring notation as in Section I. In particular, R := Z[x]/(xd +1) ,the plaintext ring is Rp := R/p R, and the ciphertext ring is 
+
+Rq := R/q R, where p ≪ q. The discrete Gaussian distri-bution over Z with standard deviation σ is denoted by DZ,σ .A ciphertext is written as c = ( c(0) , c (1) ) ∈ R 2 
+
+> q
+
+, the global public key is written as pk HE , and the Decryption Committee holds threshold shares {sk i
+
+> HE
+
+}ncom  
+
+> i=1
+
+of the FHE secret key. For a subset S ⊆ { 1, . . . , n com } with |S| ≥ t, the corresponding Lagrange coefficients are written as {λi(S)}i∈S .
+
+A. Key Generation and Secret Sharing 
+
+This part defines the threshold key-generation procedure, which generates the global public key and distributes secret-key shares among the ncom committee members. 
+
+Key Generation : The threshold key-generation interface is written as 
+
+ pk HE , {sk i
+
+> HE
+
+}ncom 
+
+> i=1
+
+ ← TD .KeyGen (1 λ, n com , t, d, p, q ).
+
+(27) The global secret key is first sampled in the same way as in the BGV scheme. Concretely, a small polynomial s(x) ∈ R q
+
+is sampled coefficientwise from a small set such as {− 1, 0, 1},and a public key pk HE = (a(x), b (x)) is generated with 
+
+a(x) ← R q uniform and 
+
+b(x) = −a(x) · s(x) + p e (x) (mod q), (28) where e(x) ∈ R q is a small error polynomial. The key difference from standard BGV is that the secret key s(x) is not kept by any single entity. Instead, it is split into shares under a (t, n com ) threshold mechanism. For exposition, one may describe this through a Shamir-style sharing polynomial 
+
+F (z) = s(x) + 
+
+> t−1
+
+X
+
+> j=1
+
+αj (x)zj , (29) where αj (x) ∈ R q are sampled uniformly or from an appro-priate masking distribution. The secret-key share of committee member i is then 
+
+sk i 
+
+> HE
+
+= si(x) := F (i) ∈ R q , i ∈ { 1, . . . , n com }. (30) Thus, no single committee member learns the full secret key, while any set of at least t shares can support decryption through interpolation in the sharing space. 
+
+B. Distributed Partial Decryption 
+
+This section describes how an individual committee member uses its own secret share to produce a partial decryption contribution. 
+
+Share Generation : Given a ciphertext c =(c(0) (x), c (1) (x)) ∈ R 2 
+
+> q
+
+and a secret share sk i 
+
+> HE
+
+= si(x),committee member i computes a partial decryption share 
+
+μi(x) ← TD .PartDec (c, sk i
+
+> HE
+
+). (31) At a high level, this partial share should contribute to the global decryption term c(1) (x) · s(x), but without revealing the full secret key. A natural form is 
+
+μi(x) = c(1) (x) · si(x) + p e sm  
+
+> i
+
+(x) (mod q), (32) where esm  
+
+> i
+
+(x) ∈ R q is an additional masking or smudging polynomial. The factor p is important: it ensures that the extra masking term vanishes after the final reduction modulo p, and therefore does not alter the recovered plaintext. In this way, each party releases only a masked partial contribution rather than an exact decryption term. Depending on the concrete threshold implementation, a party may also attach an auxiliary proof that its partial share was computed consistently from a valid secret-key share. The main paper does not rely on any specific share-verification mechanism, and therefore abstracts this step away. 
+
+C. Share Aggregation and Reconstruction 
+
+The final plaintext is recovered by aggregating at least t
+
+valid partial decryption shares. 
+
+Reconstruction : Let S ⊆ { 1, . . . , n com } be any subset with 
+
+|S| ≥ t, and let {μi(x)}i∈S be the corresponding valid partial shares. The aggregation interface is 
+
+v(x) ← TD .Combine  c, {μi}i∈S
+
+. (33) The combiner first computes the Lagrange coefficients 
+
+λi(S) = Y 
+
+> j∈Sj̸=i
+
+−ji − j , i ∈ S, (34) over the sharing domain. It then forms the aggregated partial decryption term 
+
+μagg (x) = X
+
+> i∈S
+
+λi(S) · μi(x) (mod q). (35) By the linearity of the threshold sharing scheme, the secret shares interpolate back to the original secret key, so 
+
+X
+
+> i∈S
+
+λi(S) · si(x) = s(x). (36) Substituting Eq. (32) into Eq. (35) yields 
+
+μagg (x) = c(1) (x) · s(x) + p E sm (x) (mod q), (37) where Esm (x) denotes the aggregated masking polynomial. Finally, the plaintext polynomial is recovered by combining the first ciphertext component with the aggregated decryption term and reducing modulo p:
+
+v(x) =  c(0) (x) + μagg (x) mod p. (38) Using the decryption form from Section I, one sees that 
+
+c(0) (x) + μagg (x) = v(x) + p E (x) (mod q), (39) for an effective error polynomial E(x) absorbing both the original encryption noise and the aggregated masking noise. Therefore, reduction modulo p recovers the plaintext polyno-mial exactly, provided that the effective error remains within the correctness regime of the BGV scheme. This threshold view matches the system abstraction used in the main paper. Each committee member contributes a local decryption share, and an untrusted combiner may aggregate at least t such shares. The resulting plaintext is accepted only through the later committee-side and on-chain consis-tency checks of BioZKFHE. Hence, the combiner may affect SUPPLEMENTARY MATERIAL FOR BIOZKFHE 23 
+
+liveness by delaying or misaggregating shares, but cannot by itself cause an incorrect plaintext result to be finalized. IV. C OMPARISON WITH CONVENTIONAL PACKING 
+
+LAYOUTS 
+
+To make the role of SCMV more explicit, we compare it with two conventional encrypted biometric layouts, namely horizontal packing and vertical packing. The goal of this comparison is not to claim a universal dominance result for every implementation detail, but to isolate the structural dif-ference that matters most in BioZKFHE: how many templates are covered by one processed database unit, and whether query-time similarity evaluation requires slot aggregation or ciphertext rotation. For clarity, we use the term processed database unit to denote the minimum encrypted unit consumed by one invo-cation of the matching kernel. Under vertical packing and SCMV, this unit is naturally one block of L row ciphertexts. Under horizontal packing, the analogous unit is one encrypted template, since one template is typically packed across slots and processed separately. The comparison is also meant to clarify the novelty bound-ary. Base-T digit shifting is a known packing primitive: it may be applied in the coefficient domain by storing digit bundles as polynomial coefficients, or combined with batching by storing one logical value per CRT slot and using SIMD parallelism. SCMV uses the second representation layer differently: each CRT slot stores a base-T bundle of n same-coordinate bio-metric values, and the slots are arranged row-wise by feature coordinate. This row-wise slot-level binding is what lets one processed block cover nd templates and keeps the online trace aligned with the blockwise PVSC proof batch. The distinction can be written explicitly as 
+
+Pcoef (X) = 
+
+> d
+
+X
+
+> j=1
+
+cj Xj−1,cj =
+
+> n
+
+X
+
+> t=1
+
+aj,t T t−1,Pslot (X) = Encode (a1, . . . , a d),P m
+
+> SCMV ,i
+
+(X) = Encode  (bmi,j )dj=1 
+
+,bmi,j =
+
+> n
+
+X
+
+> t=1
+
+vi,r (m,t,j )T t−1,r(m, t, j ) = ( m − 1) nd + ( t − 1) d + j. 
+
+(40) Here Pcoef represents coefficient-domain digit packing, Pslot 
+
+represents ordinary one-value-per-slot batching, and P m
+
+> SCMV ,i
+
+is the row-wise slot-domain binding used by SCMV. Table I highlights the main design trade-off. Horizontal packing is conceptually simple, but it provides little amor-tization across the repository and usually requires an internal reduction step to turn slot-wise products into one similarity score. Row-wise vertical baselines improve ciphertext utiliza-tion by letting one processed unit cover d templates, but the matching path is still commonly dominated by slot aggregation and rotation-related overhead. SCMV changes the granularity of packing itself: instead of storing only one quantized value in each plaintext entry, it binds n values into that entry through base-T expansion. As a result, one SCMV block covers nd 
+
+templates while preserving the same row-wise block structure. This structural difference directly affects both storage and online matching cost. Since SCMV .Identify evaluates one block at a time and the number of blocks scales as ⌈N/ (nd )⌉,increasing the binding factor n reduces the number of en-crypted blocks that must be stored, scanned, and proved. At the same time, SCMV removes query-time rotation from the similarity path, so the online cost is driven mainly by the block count and the per-block multiply-and-accumulate trace rather than by slot-shuffling operations. Table II adds a matched-codebase baseline comparison at 
+
+N = 100 k. Horizontal packing is included to show the cost of template-major slot aggregation, vertical packing corresponds to the row-wise n = 1 baseline, and SCMV increases the binding factor while preserving the same rotation-free online trace. These rows are intended to complement the main paper’s Table I: base-T digit packing is a known representation technique, while BioZKFHE uses it in a row-wise biometric SIMD layout that reduces the block count and keeps each block trace aligned with PVSC verification. Table III reports the per-n security/performance trade-off induced by increasing the SCMV binding factor. The se-curity estimates were obtained with SageMath 10.9.rc0 and 
+
+lattice-estimator , using rough Core-SVP/GSA esti-mates under an RLWE-to-LWE proxy with secret distribution 
+
+CenteredBinomial(2) and error standard deviation σ = 3 .2.Core-SVP is a lower-bound cost model and the flat RLWE-to-LWE proxy ignores ring structure, so it is conservative in the sense of under-estimating attack cost; the two-decimal values are listed only for reproducibility and should be read as approximate security margins rather than exact bit-security levels. The estimates characterize the BGV/RLWE confiden-tiality layer; the module-lattice parameters of the designated-verifier proof backend that carry the local soundness ϵloc are governed by [s9] and are not re-estimated here. The table makes the cost of increasing n explicit rather than treating SCMV packing as free. For FaceNet, moving from 
+
+n = 1 to n = 3 increases the ciphertext modulus from 110 to 170 bits and reduces the estimated security margin from 243.66 to 135.49 bits, but the number of processed blocks drops from 123 to 41 and the measured/extrapolated matching latency drops by 65.7%. For MobileFaceNet, moving from 
+
+n = 1 to n = 2 keeps a 147.46-bit estimate while halving the block count from 123 to 62 and reducing the matching latency by 50.2%. V. C ONCRETE PVSC F ORMULATION FOR BIO ZKFHE We now make explicit the descriptor-level relation compiled by PVSC for one SCMV database block. For each block 
+
+Cm ∈ D SCMV , PVSC certifies a deterministic BGV trace for the fixed input/output tuple  Cidentify , Cm, csim 
+
+> m
+
+. Letting pmi
+
+denote the relinearized product ciphertext obtained from the 
+
+i-th query row and the i-th database row, and ami the running accumulator, the admitted trace is 
+
+pmi := Relin  cid  
+
+> i
+
+⊗ cmi
+
+ , am 
+
+> 0
+
+:= 0, ami := ami−1 ⊕ pmi ,
+
+(41) SUPPLEMENTARY MATERIAL FOR BIOZKFHE 24 
+
+TABLE I: Structural comparison of encrypted biometric packing layouts. Here N is the database size, d is the batching degree, L is the embedding dimension, and n is the SCMV binding factor.                                              
+
+> Layout Packing principle Templates covered by one processed unit Query-time slot aggre-gation / rotation Number of pro-cessed units for N
+> templates Incremental update charac-teristic
+> Horizontal packing One template is packed contigu-ously across slots and compared separately About one template per processed unit Typically required to re-duce slot-wise products to one similarity value
+> Θ( N)Simple append, but poor repository-level amortization Row-wise vertical base-line The same feature coordinate of many templates is packed into one row-wise SIMD structure
+> dtemplates per block of Lrow ciphertexts Typically required to ag-gregate slot-level results or align data across the matching trace
+> Θ( ⌈N/d ⌉)Amortizes storage better than horizontal packing, but the similarity path remains rotation-sensitive SCMV nquantized values are bound into each plaintext entry through base-
+> Texpansion and then arranged in the same row-wise block structure
+> nd templates per block of Lrow ci-phertexts No query-time rotation or slot aggregation in the similarity path
+> Θ( ⌈N/ (nd )⌉)Supports incremental enroll-ment by homomorphic ad-dition into the last partially filled block
+
+TABLE II: Measured SCMV baseline comparison at N = 100 k. Latency is the encrypted matching latency in milliseconds.                                         
+
+> Model Method nBlocks Online rotations Latency / storage
+> FaceNet Horizontal packing –1,563 10,941 75,183.3 ms / 306.06 MiB FaceNet Row-wise vertical baseline 113 01,427.0 ms / 326.13 MiB FaceNet SCMV 270720.9 ms / 221.52 MiB FaceNet SCMV 350543.4 ms / 188.51 MiB MobileFaceNet Horizontal packing –6,250 56,250 381,467.2 ms / 1.27 GiB MobileFaceNet Row-wise vertical baseline 113 06,311.7 ms / 1.36 GiB MobileFaceNet SCMV 2703,412.9 ms / 984.30 MiB
+
+TABLE III: Per-n parameter security and matching trade-off at N = 10 6. The latency column reports encrypted SCMV matching latency.                                                   
+
+> Model npbits qbits Security bits RNS limbs MStorage Latency
+> FaceNet 120 110 243.66 30+25+25+30 123 5.77 GiB 6275.585 ms FaceNet 231 150 161.18 45+30+30+45 62 2.91 GiB 3149.330 ms FaceNet 346 170 135.49 45+40+40+45 41 1.92 GiB 2150.655 ms MobileFaceNet 121 120 217.54 30+30+30+30 123 23.07 GiB 25701.169 ms MobileFaceNet 240 160 147.46 45+35+35+45 62 11.63 GiB 12804.881 ms
+
+for i ∈ { 1, . . . , L }, with terminal condition amL = csim  
+
+> m
+
+. Thus PVSC certifies one fixed multiply–relinearize–accumulate schedule rather than an arbitrary claim of output consistency. 
+
+a) Public statement and witness.: For block index m,the public statement contains the published output ciphertext 
+
+csim  
+
+> m
+
+, the block index m, the session context ctx , the query-binding commitment hid := H(ctx ∥Cidentify ), the session-bound block commitment hm := H(ctx ∥m∥um) with um := 
+
+H(Cm), a batch-root digest ρm of the canonical proof-instance descriptor sequence, and the public system parameters pp sys .We write 
+
+x(m) :=  csim  
+
+> m
+
+, m, ctx , h id , h m, ρ m, pp sys 
+
+. (42) The private witness w(m) contains the ciphertext inputs 
+
+Cidentify and Cm, the product ciphertexts {pmi }Li=1 , the ac-cumulator chain {ami }Li=0 , the Double-CRT decomposition witnesses used by the local proof templates, and the preimages of the descriptor digests needed to show that all local instances refer to one consistent hidden trace. 
+
+b) Relation decomposition.: Let J := {1, . . . , n q } and 
+
+X := {1, . . . , n chunk }. For each (j, χ ) ∈ J ×X , let dχ ≤ dZK 
+
+be the size of the corresponding NTT chunk, and let Fνj be the proof field used to compile modulus-q(j) arithmetic into R1CS/QAP form, with νj chosen large enough to represent the local modular equations without ambiguity. PVSC proves the NP relation 
+
+∃ w(m) s.t. Rel PVSC 
+
+ x(m), w(m) = 1 , (43) where the defining conjunction is 
+
+^
+
+> j∈J
+
+^
+
+> χ∈X
+> L
+
+^
+
+> i=1
+
+Rmul 
+
+> j
+
+ δ(m,j,χ,i )mul , ω (m,j,χ,i )mul 
+
+ = 1 
+
+∧ ^
+
+> j∈J
+
+^
+
+> χ∈X
+> L−1
+
+^
+
+> i=2
+
+Racc 
+
+> j
+
+ δ(m,j,χ,i )acc , ω (m,j,χ,i )acc 
+
+ = 1 
+
+∧ ^
+
+> j∈J
+
+^
+
+> χ∈X
+
+Rout 
+
+> j
+
+ δ(m,j,χ )out , ω (m,j,χ )out 
+
+ = 1 
+
+∧ R bind  δ(m)bind , ω (m)bind 
+
+ = 1 .
+
+(44) The conjunction in Eq. (44) enforces four requirements simul-taneously: local multiplication correctness, local accumulation correctness, the terminal accumulation step together with out-put consistency with the public ciphertext csim  
+
+> m
+
+, and one block-level binding check tying the entire batch to (ctx , h id , h m, ρ m).
+
+c) Counted instances per block.: The per-block instance count Km = nq nchunk (2 L−1) follows directly from Eq. (44). For each of the nq nchunk modulus/chunk pairs (j, χ ), the multiplication relation Rmul  
+
+> j
+
+contributes L instances (one relin-earized product pi per embedding dimension i ∈ { 1, . . . , L }). The accumulation relation Racc  
+
+> j
+
+contributes L − 2 instances: the chain a0 = 0, ai = ai−1 ⊕ pi has its first step a1 = p1
+
+fused into the multiplication output (so it is not separately proved) and its terminal step aL = csim  
+
+> m
+
+certified by the output relation, leaving the intermediate transitions i = 2 , . . . , L − 1.The output relation Rout  
+
+> j
+
+contributes one instance per pair, certifying the terminal accumulation step and the equality of SUPPLEMENTARY MATERIAL FOR BIOZKFHE 25 
+
+aL with the published ciphertext. Summing over the nq nchunk 
+
+pairs gives nq nchunk 
+
+ L + ( L − 2) + 1  = nq nchunk (2 L − 1) ,where the fused initial step is realized by setting the first accumulator digest equal to the first product digest (formalized below). Thus Km counts the arithmetic and output instances; the single per-block binding relation Rbind adds one further instance, so the full opened batch comprises Km +1 instances, with the additive +1 an O(1) term affecting neither the linear footprint scaling nor, by more than one bit, the logarithmic union-bound slack of the session soundness accounting below. 
+
+d) Descriptor families and canonical batch layout.: 
+
+PVSC realizes Eq. (44) through the fixed family 
+
+RPVSC := {R mul  
+
+> j
+
+, Racc  
+
+> j
+
+, Rout  
+
+> j
+
+}nq 
+
+> j=1
+
+∪ {R bind }. (45) Each instantiated proof instance carries a public descriptor recording its lexicographic index tuple and the digests of the boundary values it is meant to connect. Concretely,  
+
+> •
+
+δ(m,j,χ,i )mul =  m, j, χ, i, η (m,j,χ,i )id , η (m,j,χ,i )db , η (m,j,χ,i )prod 
+
+
+
+binds the relevant input chunks to the claimed relinearized product chunk.  
+
+> •
+
+δ(m,j,χ,i )acc =  m, j, χ, i, η (m,j,χ,i −1) acc , η (m,j,χ,i )prod , η (m,j,χ,i )acc 
+
+
+
+links the previous accumulator chunk, the product chunk, and the next accumulator chunk.  
+
+> •
+
+The output descriptor 
+
+δ(m,j,χ )out =  m, j, χ, η (m,j,χ,L −1) acc , η (m,j,χ,L )prod ,η(m,j,χ,L )acc , η (m,j,χ )pub 
+
+
+
+certifies the terminal accumulation step aL = aL−1 ⊕ pL
+
+by binding the previous accumulator chunk and the final product chunk to the final accumulator chunk, and links that final accumulator chunk to the corresponding public-output chunk extracted from csim  
+
+> m
+
+. 
+
+> •
+
+δ(m)bind =  m, ctx , h id , h m, ρ m, η (m)pub 
+
+ binds the descriptor-sequence digest, session information, and public output ciphertext digest η(m)pub := H(csim  
+
+> m
+
+).To realize the fused initial step, the parser sets η(m,j,χ, 1) acc := 
+
+η(m,j,χ, 1) prod , identifying the first accumulator chunk a1 with the first product chunk p1; consequently δacc is instantiated only for i = 2 , . . . , L − 1, while the terminal step i = L is folded into δout .Accordingly, the opened proof batch for block m is parsed as 
+
+Π(m) =  δ(m,j,χ,i )mul , π (m,j,χ,i )mul 
+
+ lex 
+
+> j,χ,i
+
+∥  δ(m,j,χ,i )acc , π (m,j,χ,i )acc 
+
+ lex 
+
+> j,χ,i
+
+∥  δ(m,j,χ )out , π (m,j,χ )out 
+
+ lex 
+
+> j,χ
+
+∥  δ(m)bind , π (m)bind 
+
+ ,
+
+(46) where ∥ denotes ordered concatenation, and each indexed angle-bracket term denotes the corresponding sequence listed in lexicographic order over its index tuple. Thus the full batch is ordered first by family type and then by the relevant indices. Each modulus/chunk pair contributes L first-layer instances, 
+
+L−2 second-layer instances, and one output-binding instance. Hence 
+
+Km = nq nchunk (2 L − 1) . (47) Here Km counts only the arithmetic and output instances, i.e., the Rmul , Racc , and Rout families. The full opened batch Π(m) of Eq. (46) additionally contains the single block-binding instance (δ(m)bind , π (m)bind ), so it comprises Km + 1 proof instances in total. The additive +1 is an O(1) term that affects neither the linear footprint scaling nor, by more than one bit, the logarithmic union-bound slack of the session soundness accounting. The sequence digest is computed as 
+
+ρm := H δ(m, 1) ∥ · · · ∥ δ(m,K m), (48) where δ(m, 1) , . . . , δ (m,K m) are the Km counted arithmetic and output descriptors (the Rmul , Racc , and Rout families) listed in the canonical order above, excluding the binding descriptor 
+
+δ(m)bind . The binding instance then commits to this digest, since 
+
+ρm is an input to δ(m)bind ; hence the definition of ρm is not circular. 
+
+e) Proof generation and deterministic parsing.: At proof-generation time, the prover first materializes the trace of Eq. (41), then decomposes the relevant ciphertext states into Double-CRT witnesses, deterministically forms the descriptor sequence, computes ρm by Eq. (48), and finally produces the encrypted local proofs {π(m,k )enc }Km+1  
+
+> k=1
+
+against the correspond-ing descriptor/witness pairs (the Km counted arithmetic and output proofs together with the single block-binding proof). After threshold opening, the smart contract resolves um
+
+from the session-bound gallery snapshot, recomputes the ex-pected block commitment h⋆m := H(ctx ∥m∥um), and rejects repeated or mismatched indices. It then runs a deterministic parser over Π(m) and accepts the structure only if all of the following hold: 1) the descriptor multiset has exactly the required cardinal-ities for Rmul , Racc , Rout , and Rbind ;2) the descriptors appear in the canonical lexicographic order over family type and index tuple; 3) every accumulation descriptor consumes the output di-gest of the preceding accumulator state and the product digest of the matching multiplication instance; 4) every output descriptor checks the terminal accumula-tion step for the same modulus/chunk pair, consuming the previous accumulator digest η(·,L −1) acc and the final product digest η(·,L )prod and binding them to the final accumulator digest η(·,L )acc and the corresponding public-output chunk; 5) the recomputed sequence digest equals the submitted 
+
+ρm.Only after these structural checks pass does the contract run 
+
+PVSC .Verify  x(m), Π(m) on all opened local proofs. This parser is what prevents omission, duplication, reordering, and proof-splicing attacks at the opened-batch level. 
+
+f) Leakage profile after threshold opening.: Threshold opening converts the encrypted designated-verifier proof object into a committee-opened, publicly verifiable proof record, but it does not make the private PVSC witness public. The zero-knowledge guarantee is interpreted relative to the public statement and the descriptor sequence that the verifier must see in order to parse the batch. Table IV summarizes this boundary. In particular, the Double-CRT decomposition affects the shape and count of local proof instances, but the RNS/NTT wit-ness coefficients, product ciphertext components, accumulator SUPPLEMENTARY MATERIAL FOR BIOZKFHE 26 
+
+TABLE IV: Leakage profile of threshold-opened PVSC proof batches.                                  
+
+> Component Public after opening Hidden under witness zero knowledge
+> Session and statement binding Block index m, session context ctx , commitments hid ,
+> hm, descriptor digest ρm, public output-ciphertext di-gest Biometric plaintexts, decryption shares, and secret keys; the plaintext similarity vector is released only through the threshold-governed application flow Descriptor sequence Family type, lexicographic order, local instance count
+> Km, RNS limb identifiers, NTT chunk identifiers, and expected boundary-digest wiring Private trace values that realize those descriptors, including hidden ciphertext-state decompositions and witness assignments Double-CRT witness material Parameter-derived shape information such as nq,
+> nchunk , and chunk indices RNS/NTT coefficient values, product ciphertext components, accumu-lator states, and intermediate homomorphic states Opened local proofs Proof records needed by PVSC .Verify and deterministic parser checks Witness-dependent values beyond what is implied by the public statement, descriptors, and the validity of the proved relation
+
+states, and biometric plaintext values remain witness-hidden under the adopted proof backend. 
+
+g) Session-level soundness accounting.: Let ϵloc (λZK )
+
+denote the maximum soundness error of one opened local proof instance in the designated-verifier lattice proof backend, instantiated from linear-only vector encryption over rank-2 module lattices under the Module-LWE/Module-SIS-type assumptions stated in [s9], and let ϵH(λH) denote the collision advantage against the hash function used for commitments and descriptor roots. For a query session with M = ⌈N/ (nd )⌉
+
+gallery blocks and Km + 1 verified local instances per block (with Km = nq nchunk (2 L − 1) counted arithmetic/output instances and one block-binding instance), any accepted false session implies either at least one false local instance verifies or a hash binding collision occurs. Therefore 
+
+ϵsess ≤
+
+> M
+
+X
+
+> m=1
+
+(Km + 1) ϵloc + ϵH ≤ M (Kmax + 1) ϵloc + ϵH.
+
+(49) The deterministic parser contributes no probabilistic error under correct implementation. Thus a target λsess -bit session soundness level requires the local proof target to include the union-bound loss, e.g., λloc ≥ λsess +⌈log 2(M (Kmax +1)) ⌉+s
+
+for slack s. This bound is the session-level statement promoted to Corollary 1 in the main text. Since all blocks of a session share the same instance count here, Kmax = Km. Table V tabulates the dominant counted term M K m; adding the M
+
+block-binding instances does not change the rounded slack 
+
+⌈log 2(·)⌉ in any reported row, so the tabulated local-soundness targets are unchanged. To keep the accounting conservative, the table uses the full four-limb count nq = 4 , which upper-bounds the instance total of the implemented nq = 3 prototype used for the footprint tables; over-counting instances can only loosen the union bound, so the resulting local-soundness target is an upper bound for the prototype as well. The four-limb parameter sets discussed in the main text give the following representative accounting. 
+
+h) Extension path for multi-layer traces.: The con-crete descriptor language above is intentionally specialized to the depth-1 SCMV similarity trace. A multi-layer BGV computation would require descriptors of the form δ =(op , ℓ, ι, η in , η out , lev , ek ), where op identifies the operation family, ℓ is the circuit layer, ι is the local RNS/NTT/chunk index, ηin and ηout bind the consumed and produced ciphertext states, lev records the ciphertext level and modulus-chain position, and ek identifies the evaluation key when a key-dependent operation is used. Additions and multiplications can reuse the current local templates with layer/state tags. Rotations would add automorphism and key-switch consis-tency relations; modulus switching would add exact level-transition, scaling, and rounding relations; and bootstrapping would either need to be expanded into its own verified subtrace or represented by a subtrace digest whose internal proof is checked separately. The deterministic parser would have to verify topological order, single-use or allowed reuse of intermediate states, level compatibility, and complete output coverage before invoking the local verifiers. 
+
+i) Proof Footprint and Contract-Side Enforcement De-tails.: This subsection provides the detailed implementation and footprint rows used in the experimental discussion. For one block, PVSC instantiates Km = nq nchunk (2 L − 1) 
+
+counted arithmetic/output proof instances plus one block-binding instance, where nchunk = ⌈d/d ZK ⌉. Table VI reports the per-block proof footprint of the implemented prototype, while Table VII aggregates the corresponding opened-proof and communication footprints at the session level. Both tables use the implemented prototype with nq = 3 active proof channels; this differs from the conservative nq = 4 count used for the session soundness accounting above, which upper-bounds the instance total. Because the counted proof-instance term and the per-block proof-object footprint are linear in nq ,a full four-limb ( nq = 4 ) deployment footprint scales approx-imately by the factor 4/3 from the measured three-channel rows; we report the measured three-channel prototype to avoid presenting extrapolated bytes as measured. The proof-footprint rows are struct-size footprints from generated proof objects whose proof generation and verification passed; session rows multiply the counted arithmetic/output term and the per-block byte quantities by M = ⌈N/ (nd )⌉. Because the current backend does not expose a canonical binary serialization API for all proof objects, the byte counts are computed from the generated proof object’s field and ring dimensions rather than from a deployment-specific wire format, and should be read as struct-size estimates rather than on-wire measurements. We separately measure the smart-contract surface that en-forces public session state. Table VIII reports the resulting gas consumption, calldata size, storage writes, and execution latency for the measured contract functions. The prototype uses Solidity 0.8.24, Hardhat 3.7.0, optimizer 200 runs, and the Hardhat EDR simulated L1 backend. The contract checks session binding, query/gallery commitments, opened-proof headers, duplicate block indices, coverage, threshold confirma-tions, finalization, and the opened-QAP verifier kernels used by PVSC .Verify . These measurements cover contract-side en-SUPPLEMENTARY MATERIAL FOR BIOZKFHE 27 
+
+TABLE V: Representative session-level soundness accounting for four active RNS proof channels ( nq = 4 ), d = 8192 , and slack s = 16 
+
+bits.                                                                             
+
+> Profile NndZK MKmCounted M K m128 + ⌈log 2(M(Km+ 1)) ⌉+s
+> FaceNet n= 1 100,000 1512 13 16,320 212,160 162 FaceNet n= 3 100,000 3512 516,320 81,600 161 MobileFaceNet n= 1 100,000 1512 13 65,472 851,136 164 MobileFaceNet n= 2 100,000 2512 765,472 458,304 163 FaceNet n= 3 1,000,000 3128 41 65,280 2,676,480 166 MobileFaceNet n= 2 1,000,000 2128 62 261,888 16,237,056 168 MobileFaceNet n= 1 1,000,000 1128 123 261,888 32,212,224 169
+
+TABLE VI: Per-block PVSC proof footprint, measured on the implemented three-channel prototype ( nq = 3 ); these are measured prototype struct sizes, not four-limb ( nq = 4 ) measured bytes. All rows use d = 8192 .                                                                                                                                              
+
+> Profile LdZK nchunk KmEnc./block Opened/block Public input/block
+> FaceNet n= 1 128 128 64 48,960 2.61 GiB 20.17 MiB 167.34 MiB FaceNet n= 1 128 256 32 24,480 1.30 GiB 10.09 MiB 167.34 MiB FaceNet n= 1 128 512 16 12,240 668.07 MiB 5.04 MiB 167.34 MiB FaceNet n= 2 128 128 64 48,960 3.50 GiB 32.50 MiB 251.02 MiB FaceNet n= 2 128 256 32 24,480 1.75 GiB 16.25 MiB 251.02 MiB FaceNet n= 2 128 512 16 12,240 896.67 MiB 8.12 MiB 251.02 MiB FaceNet n= 3 128 128 64 48,960 3.50 GiB 32.50 MiB 251.02 MiB FaceNet n= 3 128 256 32 24,480 1.75 GiB 16.25 MiB 251.02 MiB FaceNet n= 3 128 512 16 12,240 896.67 MiB 8.12 MiB 251.02 MiB MobileFaceNet n= 1 512 128 64 196,416 12.88 GiB 77.92 MiB 671.34 MiB MobileFaceNet n= 1 512 256 32 98,208 6.44 GiB 38.96 MiB 671.34 MiB MobileFaceNet n= 1 512 512 16 49,104 3.22 GiB 19.48 MiB 671.34 MiB MobileFaceNet n= 2 512 128 64 196,416 14.05 GiB 130.37 MiB 1007.02 MiB MobileFaceNet n= 2 512 256 32 98,208 7.03 GiB 65.19 MiB 1007.02 MiB MobileFaceNet n= 2 512 512 16 49,104 3.51 GiB 32.59 MiB 1007.02 MiB
+
+TABLE VII: Session-level PVSC footprint at dZK = 512 and threshold t = 3 , on the implemented three-channel prototype ( nq = 3 ); measured prototype struct sizes, not four-limb measured bytes.                                                                                        
+
+> Profile NnMCounted M K mOpened/session Opening comm.
+> FaceNet n= 1 100,000 113 159,120 65.56 MiB 18.21 MiB FaceNet n= 1 1,000,000 1123 1,505,520 620.26 MiB 172.29 MiB FaceNet n= 2 100,000 2785,680 56.87 MiB 9.81 MiB FaceNet n= 2 1,000,000 262 758,880 503.71 MiB 86.85 MiB FaceNet n= 3 100,000 3561,200 40.62 MiB 7.00 MiB FaceNet n= 3 1,000,000 341 501,840 333.10 MiB 57.43 MiB MobileFaceNet n= 1 100,000 113 638,352 253.25 MiB 73.05 MiB MobileFaceNet n= 1 1,000,000 1123 6,039,792 2.34 GiB 691.20 MiB MobileFaceNet n= 2 100,000 27343,728 228.15 MiB 39.34 MiB MobileFaceNet n= 2 1,000,000 262 3,044,448 1.97 GiB 348.41 MiB
+
+forcement and verifier-kernel execution for opened local proof instances. They do not treat all uncompressed PVSC proof payloads as a gas-optimized full-batch L1 submission; instead, full-batch size and scaling are accounted for in the proof-footprint and session-scaling results. At the session level, total enforcement gas scales mainly with M : for example, FaceNet with n = 3 costs 799,768 gas at N = 100 k and 4,185,244 gas at N = 1 M, while MobileFaceNet with n = 2 costs 987,850 gas at N = 100 k and 6,160,105 gas at N = 1 M. VI. I NDICATIVE CROSS -P APER COMPARISON OF THE 
+
+ENCRYPTED -M ATCHING LAYER 
+
+Table IX presents an indicative cross-paper comparison of the encrypted-matching layer against representative privacy-preserving biometric identification schemes. The reported values are not strictly apples-to-apples be-cause the compared systems use different datasets, hardware platforms, cryptographic parameterizations, and implementa-tion optimizations. For this reason, the main paper does not treat cross-paper latency numbers as a primary quantitative claim. Representative points of reference include BGV-based packed-identification systems such as Bauspieß et al. and CryptoMask [s10], [s11], as well as more recent HE-based identification systems such as MFBR-ID and IDFace [s12], [s13]. Within this limitation, SCMV provides strong storage effi-ciency and a balanced trade-off among search cost, enrollment cost, and encrypted database footprint. In particular, compared with prior BGV-based systems such as Bauspieß et al. and CryptoMask, SCMV reduces both latency and storage over-head; compared with large-footprint BFV-based baselines, it avoids a very large encrypted database footprint. We therefore view SCMV as especially attractive when both encrypted storage efficiency and dynamic database maintenance matter. REFERENCES [s1] Z. Brakerski, C. Gentry, and V. Vaikuntanathan, “(leveled) fully ho-momorphic encryption without bootstrapping,” ACM Transactions on Computation Theory , vol. 6, no. 3, pp. 13:1–13:36, 2014. [s2] V. Lyubashevsky, C. Peikert, and O. Regev, “A toolkit for ring-lwe cryptography,” in Advances in Cryptology – EUROCRYPT 2013 , ser. Lecture Notes in Computer Science, vol. 7881. Springer, 2013, pp. 35–54. [s3] S. Halevi, Y. Polyakov, and V. Shoup, “An improved RNS variant of the BFV homomorphic encryption scheme,” in Proc. Cryptogr. Track RSA Conf. (CT-RSA) , 2019, pp. 83–105. IEEE TRANSACTIONS ON DEPENDABLE AND SECURE COMPUTING 28 
+
+TABLE VIII: Contract-side enforcement cost measured from transaction receipts.                                         
+
+> Function Gas Calldata bytes Storage writes Latency (ms)
+> createSession 114,799 164 61.039
+> submitOpenedProofHeader 54,037 164 20.852
+> submitCommitteeConfirmation:first 74,225 68 21.387
+> submitCommitteeConfirmation:additional 54,445 68 20.679
+> finalizeSession 31,649 68 10.450
+> verifyQAP:q14 50,980 2,596 00.696
+> verifyQAP:q15 52,820 2,756 00.662
+> verifyQAP:q21 63,830 3,716 00.838
+> submitOpenedProofWithQAP:q21 94,041 3,908 21.631
+
+TABLE IX: Indicative cross-paper comparison of the encrypted-matching layer with representative privacy-preserving biometric identification schemes. Reported values are taken from the corresponding papers and are not strictly apples-to-apples because datasets, hardware platforms, and cryptographic settings differ. 
+
+Scheme Search Latency (s) Enrollment Latency (s) Storage Primitive 
+
+Single-core Multi-core Single-core Multi-core Bauspiess et al. 1000.0 130.0 1001.0 130.1 10.0 GB BGV CryptoMask 25.0 3.3 27.0 3.4 5.1 GB BGV MFBR-ID 5.2 0.6 13132.0 1644.0 132.1 GB BFV IDFace 2.9 0.3 880.0 109.0 4.125 GB CKKS 
+
+SCMV 8.2 1.3 9.2 1.4 1.7 GB BGV [s4] M. R. Albrecht et al. , “Homomorphic encryption standard,” Homomor-phicEncryption.org, 2024, version 1.1. [s5] Microsoft Research, “Microsoft SEAL (release 4.1),” https://github. com/Microsoft/SEAL, 2023. [s6] J. Liang, D. Hu, P. Wu, Y. Yang, Q. Shen, and Z. Wu, “SoK: Understanding zk-SNARKs: The gap between research and practice,” in 34th USENIX Security Symposium (USENIX Security 25) , 2025, pp. 2085–2104. [s7] A. Nainwal, A. Kamble, and N. Awathare, “A comparative analy-sis of zk-snarks and zk-starks: Theory and practice,” arXiv preprint arXiv:2512.10020 , 2025. [s8] R. Bendlin and I. Damg˚ ard, “Threshold decryption and zero-knowledge proofs for lattice-based cryptosystems,” in Theory of Cryptography Conference . Springer, 2010, pp. 201–218. [s9] Y. Ishai, A. Sahai, H. Wee, and Z. Wu, “Shorter and faster post-quantum designated-verifier zkSNARKs from lattices,” in Proc. ACM SIGSAC Conf. Comput. Commun. Secur. (CCS) , 2021, pp. 2382–2399. [s10] P. Bauspieß, J. Olafsson, J. Kolberg, P. Drozdowski, C. Rathgeb, and C. Busch, “Improved homomorphically encrypted biometric identifica-tion using coefficient packing,” in Proc. IEEE Int. Workshop Biometrics Forensics (IWBF) , 2022, pp. 1–6. [s11] J. Bai, X. Zhang, X. Song, H. Shao, Q. Wang, S. Cui, and G. Russello, “CryptoMask: Privacy-preserving face recognition,” in Proc. Int. Conf. Inf. Commun. Secur. (ICICS) , 2023, pp. 333–350. [s12] A. Bassit, F. F. Hahn, R. N. Veldhuis, and A. Peter, “Practical biometric search under encryption: Meeting the nist runtime requirement without loss of accuracy,” IEEE Transactions on Biometrics, Behavior, and Identity Science , vol. 7, no. 4, pp. 710–727, 2025. [s13] S. Kim, S. Paik, C. Hwang, D. Kim, J. Shin, and J. H. Seo, “Idface: Face template protection for efficient and secure identification,” in 
+
+Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV) , October 2025, pp. 13 995–14 005.
