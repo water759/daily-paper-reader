@@ -1,0 +1,226 @@
+Title: Renting the Cracking Machine with a Cost-and-Time Analysis of Exhaustive DES-56 Key Search in the Cloud
+
+URL Source: https://arxiv.org/pdf/2607.23443v1
+
+Published Time: Tue, 28 Jul 2026 00:52:48 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Renting the Cracking Machine with a Cost-and-Time Analysis of Exhaustive DES-56 Key Search in the Cloud 
+
+## Gonzalo Sharif Curi Martínez 
+
+Instituto Tecnológico de Buenos Aires (ITBA) 
+
+gcurimartinez@itba.edu.ar 
+
+## Rodrigo Ramele 
+
+Instituto Tecnológico de Buenos Aires (ITBA) 
+
+rramele@itba.edu.ar 
+
+## July 26, 2026 
+
+Abstract 
+
+The Data Encryption Standard (DES), with its 56-bit key, has been considered cryptographically broken since 1998. However, a concrete, reproducible measurement of the cost and time required to perform an exhaustive key search using today’s commodity cloud infrastructure has not been widely reported in recent literature. In this paper we present a distributed brute-force system built on AWS EC2 that partitions the 256 
+
+keyspace across 37 c6i.2xlarge instances running a C/OpenMP worker, achieving a measured throughput of 2.91 M keys/s per instance ( ∼108 × 10 6 keys/s aggregate). We conduct 15 independent trials covering keyspace offsets from 10 6 to 1.5 × 10 10 keys, measuring wall-clock time and monetary cost per trial. For small offsets ( ≤ 10 8), total time is dominated by AWS instance boot latency ( ≈ 90 s), yielding a mean of 116 .8 ±
+
+20 .1 s at $0.41 per attack. For larger offsets the search time dominates and grows linearly: a key at offset 1.5×10 10 requires ≈ 87 minutes and $18. At the measured aggregate throughput of 108 M keys/s, exhausting the full 256 keyspace with these 37 instances would take ≈ 21 years; however, because the workload is embarrassingly parallel and cloud capacity is elastic, the same search can be traded for money almost linearly. Extrapolating our measured cost, a complete exhaustive search would cost ≈ $1 .2Mand, with a sufficiently large fleet, could be completed in about one day. The system is thus practical for bounded-subspace attacks at negligible cost, and full DES exhaustion, while expensive, is firmly within reach of a well-funded attacker using only commodity cloud resources. 
+
+Keywords: DES, brute-force, cloud computing, AWS EC2, OpenMP 
+
+# 1 Introduction 
+
+The Data Encryption Standard (DES) [1] was the dominant symmetric cipher from 1977 to the late 1990s. Its principal weakness is its 56-bit effective key length ( 256 ≈ 7.2 × 10 16 
+
+possible keys), which has been considered cryptographically insufficient since the late 1970s 1arXiv:2607.23443v1 [cs.CR] 26 Jul 2026 [2]. Prior work has demonstrated exhaustive key search attacks using dedicated ASICs and FPGAs (see Section 2.2), but these approaches required significant upfront investment in specialized, non-reusable hardware. A natural follow-up question is: how expensive and how fast is the same attack with today’s commodity cloud resources, available to anyone with a credit card? Cloud computing has dramatically changed the economics of computation: large clusters of CPUs can be rented for seconds at a time, charged by the second, and terminated when done. Distributed, embarrassingly parallel workloads – such as exhaustive key search – are ideally suited for this model [8]. In this work we implement a full DES brute-force system on AWS EC2 and conduct 15 independent experiments covering keyspace offsets from 10 6 to 1.5 × 10 10 keys. We report throughput, time-to-solution, and cost across both a boot-dominated and a search-dominated regime, providing an empirical, reproducible answer to the title question. 
+
+# 2 Background 
+
+## 2.1 The DES Algorithm 
+
+DES is a 64-bit block cipher based on a 16-round Feistel network [1]. Each round applies the function f (R, K i), which consists of: (1) expansion E (32 → 48 bits), (2) XOR with subkey 
+
+Ki, (3) substitution through 8 S-boxes ( 48 → 32 bits), and (4) fixed permutation P . The 56-bit key (the remaining 8 bits are parity) generates 16 subkeys via the key schedule (PC-1 and PC-2 permutations and left-circular shifts). 
+
+## 2.2 Prior Work on DES Key Search 
+
+The cost of breaking DES has been revisited as technology evolved. Diffie and Hellman [2] estimated in 1977 that a $20M machine could search the keyspace in about a day; Wiener [3] later proposed a $1M design recovering a key in 3.5 hours on average. The definitive empirical result came in 1998, when the EFF built Deep Crack for $250,000—1,856 custom ASICs that exhausted the keyspace in under 56 hours [4]. Commodity FPGAs then lowered the barrier: COPACOBANA (2006, 120 FPGAs, under $10,000) averaged 8.7 days [5], and its successor RIVYERA pushed this below a day [7]. More recently, Cui and Zhang [6] introduced algorithmic optimizations (composite S/P-box tables, partial matching) reducing per-key cost by ≈16 ×, but without addressing deployment cost on real infrastructure. Notably, none of these works measures the cost and time of a DES key search on commod-ity cloud infrastructure, where there is no upfront capital cost and the attacker pays only for the seconds used. This paper provides the first empirical answer to that question. 
+
+# 3 Materials and Methods 
+
+## 3.1 System Architecture 
+
+The system comprises three components: 
+
+Coordinator (Python + boto3, local machine): partitions the 256 keyspace into W
+
+disjoint ranges and launches W EC2 instances, each receiving its assigned range via a user-data script. 1 With W = 37 , worker i covers [iδ, (i+1) δ) where δ = ⌊256 /37 ⌋ ≈ 1.95 ×10 15 keys 
+
+> 1The worker enumerates the 56 effective key bits and inserts the 8 parity bits before the DES key schedule,
+
+2(the last worker extends to 256 ). It collects results over the Simple Queue Service (SQS), a fully managed message-queue service in which producers push messages that a consumer later retrieves, using long-polling (a request that blocks for up to a 20 s timeout until a message arrives, avoiding busy-waiting); and it uploads a stop flag to the Simple Storage Service (S3), a managed object store, once a matching key (KPA) or a candidate above the score threshold (COA) is found. 
+
+Workers (C/OpenMP, AWS C6i-family instances c6i.2xlarge , 8 vCPUs each): each worker receives [kstart , k end ) and iterates over every key in that range. OpenMP distributes the sub-range across the 8 available vCPUs, with one independent top-K candidate list per thread to avoid lock contention. Workers poll S3 every 30 s for the stop flag. 
+
+AWS managed services : the design uses SQS for worker-to-coordinator communication (workers push results and heartbeats into the queue) and S3 for the stop flag (workers poll the object). This split reflects the two access patterns: SQS is well suited to many producers sending to one consumer, whereas a single SQS message can only be consumed once, so it cannot broadcast a stop signal to all 37 workers; an S3 object, which every worker can read independently, serves that broadcast role instead. Figure 1 shows the full communication topology. 
+
+AWS 
+
+Coordinator 
+
+> Python + boto3
+
+37 × EC2 c6i.2xlarge 
+
+> C/OpenMP
+
+SQS Queue 
+
+> results + heartbeats
+
+S3 stop_flag        
+
+> 1run_instances
+> 2heartbeat 3candidates
+> 4long poll (20 s)
+> 5upload stop_flag 6poll every 30 s
+
+Figure 1: System architecture. Numbers indicate the sequence of events during an attack. Solid arrows: active communication. Dashed arrows: polling. Double arrows ( 3, 5): primary data path. 
+
+## 3.2 Ciphertext-Only Scoring 
+
+The system implements two attack modes. In known-plaintext attack (KPA) mode, the attacker possesses a matching plaintext–ciphertext pair, and each candidate key is verified by an exact comparison — a key is correct if and only if it reproduces the known plaintext. In ciphertext-only attack (COA) mode, only the ciphertext is available, and the correct key must be identified statistically by recognizing when the decrypted output resembles meaningful text. This paper focuses on COA, which is both the more challenging and the more realistic    
+
+> so the counter ranges over the 256 distinct effective keys with no redundancy. Each trial therefore tests a unique effective key.
+
+3scenario: it requires no prior knowledge of the plaintext and is the mode an attacker would face when intercepting encrypted traffic. In COA mode, the correct key is identified by a log-frequency score over a Spanish letter-frequency model. Each byte b receives a log-weight w(b) derived from Spanish unigram frequencies (printable characters range from about −2.0 for the most common symbols to 
+
+−6.2 for the rarest); any non-printable byte receives a −100 penalty. The score of a candidate key is score (k) = X
+
+> b∈dec (k)
+
+w(b) (1) Since every candidate first passes the printable-ASCII filter, the −100 floor acts as the re-jection mechanism rather than a term in the sum. Legitimate Spanish text scores roughly 
+
+−2.5 to −3.5 per byte, while keys that pass the ASCII filter by chance average ≈ − 4.7. The early-exit threshold of −4.0 × nbytes (evaluated on the full multi-block score) separates the two cleanly. 
+
+## 3.3 DES Implementation and Optimizations 
+
+A naive bit-by-bit DES implementation achieves ∼125 ,000 keys/s. We apply four indepen-dent optimizations, building on classic software-DES techniques for combining the S-box and permutation stages [9, 10]: 
+
+SP-tables. The permutation P is linear: P (A⊕B) = P (A)⊕P (B). Since the outputs of the 8 S-boxes occupy disjoint bit positions in the 32-bit word, P (sbox_out ) = L7 
+
+> s=0
+
+P (Xs).Each P (Xs) depends only on the 6-bit input to S-box s (26 = 64 possibilities). We precompute 
+
+SP [s][ i] = P (“Ss(i) in its position” ), a 8 × 64 × 4 = 2048 byte table that fits entirely in L1 cache. The full Feistel round reduces to 8 table lookups and 7 bitwise ORs. 
+
+Byte-indexed LUTs for IP, IP −1, PC-1, PC-2. Every bit permutation is linearly decomposable over bytes. For example, IP (x) = W7 
+
+> k=0
+
+ip_lut [k][( x ≫ (56 − 8k)) & 0xFF ].The four tables total ∼62 KB ( 8 × 256 × 8 bytes for IP, IP −1, and PC-1; 7 × 256 × 8 bytes for PC-2, whose input is 56 bits), fitting in L2 cache. 
+
+Direct bit-shift expansion E. The 48-bit expansion of R is computed with 8 constant bit-shift expressions derived from the DES standard, eliminating the 48-iteration loop entirely. In fact, the expansion is fused with the subkey XOR and SP-table indexing: no explicit 48-bit 
+
+E(R) value is ever materialized. 
+
+Early rejection (COA mode). For a random key, the probability that all 8 bytes of one decrypted block fall in the printable ASCII range [0x20, 0x7E] (95 of 256 values) is 
+
+(95 /256) 8 ≈ 0.036% . Blocks are tested one by one; decryption halts on the first non-printable byte. In practice, 99.96% of keys are rejected after a single block, making the effective cost per key ≈1× one block rather than 10 × (the default block count for scoring). Collectively, these optimizations reduce the Feistel round to 8 table lookups and 7 bitwise ORs for the S-box and permutation P , eliminate all bit-level loops for IP, IP −1, PC-1, and PC-2, and remove the 48-iteration expansion loop entirely. Combined with gcc -O3 and OpenMP across 8 vCPUs, the final measured throughput is 2.91 M keys/s per instance in COA mode with 10 ciphertext blocks (derived by linear regression over trials 11–15; see Section 4). 
+
+## 3.4 Experimental Design 
+
+To measure the system’s performance empirically and address the title question, we conduct 15 independent trials organized in two groups: 41. Group A (trials 1–10, boot-dominated): We fix a known plaintext (88-byte Span-ish poem encoded as 11 DES blocks, of which the first 10 are used for scoring) and construct 10 keys as ki = k(wi) 
+
+> start
+
++ δi, with the worker indices wi and offsets δi cho-sen to increase monotonically across trials (workers 0, 4, 8, . . . , 36 ; offsets from 10 6 to 
+
+10 8). This spreads the trials across the keyspace while keeping the search component small, characterizing the system’s baseline performance when infrastructure latency dominates. 2. Group B (trials 11–15, search-dominated): Five additional trials with increasing offsets δi ∈ { 10 9, 3×10 9, 5×10 9, 10 10 , 1.5×10 10 }, placed in workers 2, 10, 18, 26, and 34 respectively. This group allows empirical measurement of per-worker throughput and characterizes how total time scales with keyspace position. 3. For each trial we record: (a) total wall-clock time from coordinator launch to full instance termination, and (b) AWS cost. 4. We report mean μ and standard deviation σ for Group A, and per-instance throughput derived from Group B. All trials use 37 on-demand c6i.2xlarge instances ($0.34/h) in us-east-1 , the same pre-compiled AMI, and 10 ciphertext blocks. The system is validated beforehand against the FIPS-46 test vector (key: 133457799BBCDFF1 , plaintext: 0123456789ABCDEF , expected ciphertext: 85E813540F0AB405 ). 
+
+# 4 Results 
+
+## 4.1 Per-Trial Measurements 
+
+Table 1 shows all 15 trial results, split into two groups: trials 1–10 with small offsets ( ≤ 10 8)where boot latency dominates, and trials 11–15 with larger offsets ( 10 9–1.5 × 10 10 ) where search time dominates. All times are wall-clock times from coordinator launch to full instance termination. Cost is computed as 37 × $0 .34 /h × ttotal and represents an upper bound: since instances are launched sequentially over ≈55 s, the average instance runs for ttotal − 27 .5 s, making the true cost slightly lower (by ≈$0 .03 –$0.06 per trial). 5Table 1: Results of 15 independent trials with increasing offsets. All times include instance boot ( ≈90 s), key search, and shutdown. Keys are enumerated over the effective 56-bit keyspace; the recovered key matches the original up to parity bits (see Section 4.3). Trial Recovered key (hex) Offset ttotal Cost ($) 1 00000000007a0880 1 × 10 6 101 s 0.35 2 1ad63e2250701818 5 × 10 6 105 s 0.37 3 36ac7c44a0e03030 1 × 10 7 100 s 0.35 4 5282ba66f6b274c8 2 × 10 7 106 s 0.37 5 6e58f88a4c84ba60 3 × 10 7 101 s 0.35 6 8a3036acac1c58f8 5 × 10 7 106 s 0.37 7 a60674d00ab2f890 7 × 10 7 131 s 0.46 8 c0dcb2f260863e28 8 × 10 7 127 s 0.44 9 dcb2f214b65882c0 9 × 10 7 129 s 0.45 10 f88a30380c2ac858 1 × 10 8 162 s 0.57 
+
+μ ± σ (trials 1–10) ≤ 10 8 116 .8 ± 20 .1 s 0.408 ± 0.070 
+
+11 0cea9e985edc9ccc 1 × 10 9 6m 35s 1.38 12 44981aec6aa4c2fc 3 × 10 9 17m 06s 3.59 13 7c449840766cea2c 5 × 10 9 27m 35s 5.78 14 b2f214aaaeb8885c 1 × 10 10 56m 39s 11.88 15 ea9e9214e804268c 1.5 × 10 10 1h 26m 31s 18.14 
+
+## 4.2 Analysis 
+
+The results reveal two distinct regimes determined by the relationship between offset and throughput. 
+
+Boot-dominated regime (trials 1–10, offset ≤ 10 8). For these small offsets the actual key search takes at most a few tens of seconds (e.g. ≈34 s for the largest, offset 
+
+10 8), so total time ( 116 .8 ± 20 .1 s) is still largely explained by AWS provisioning ( ≈90 s) and instance shutdown ( ≈15 s average, up to 30 s worst case due to the S3 poll interval). The variance across trials in this group reflects both AWS boot/shutdown jitter and the growing search component as the offset increases. 
+
+Search-dominated regime (trials 11–15, offset ≥ 10 9). For larger offsets the search time dominates and grows linearly with offset, as expected. We fit a linear model ttotal =
+
+δ/r + c to the five Group B trials, where δ is the offset and r is the per-worker throughput. The fit yields r = 2 .91 M keys/s per worker ( ≈108 M keys/s aggregate across 37 instances), with R2 = 0 .9994 . Figure 2 shows the fit against the measured points. The near-perfect linearity confirms that the system behaves as a constant-throughput search engine, and that the throughput is stable across an order of magnitude in offset. 60 × 10 2 × 10 4 × 10 6 × 10 8 × 10 1 × 10 1.2 × 10 1.4 × 10 1.6 × 10 
+
+0
+
+2,000 
+
+4,000 
+
+Offset δ (keys) 
+
+> Total time (s)
+
+Measured (Group B) 
+
+Linear fit t = δ/r , r = 2 .91 M/s 
+
+Figure 2: Search-dominated regime: total time grows linearly with offset. The slope gives a per-worker throughput of r = 2 .91 M keys/s ( R2 = 0 .9994 ). 
+
+Important caveat on scope. These results should not be interpreted as evidence that DES can be broken in minutes for an arbitrary key. The trials cover only a small fraction of the 256 keyspace: the largest offset tested ( 1.5×10 10 ) represents just 2×10 −5% of the full keyspace. At the measured aggregate throughput of 108 M keys/s, a complete exhaustive search of the 256 effective keyspace would require 256 /108 ×10 6 ≈ 6.7×10 8 s, or roughly 21 years in the worst case (the expected time is half that, ≈10 .6 years). However, because exhaustive search is embarrassingly parallel and cloud capacity is elastic, this time can be traded for money almost linearly: doubling the number of instances halves the wall-clock time at (approximately) constant total cost. Figure 3 shows this trade-off. The total cost of a full worst-case exhaustion is essentially fixed regardless of fleet size: Cost full ≈ 256 
+
+rworker · 3600 × $0 .34 /h ≈ $2 .3M (worst case ), (2) or ≈$1 .2M for the expected case. Within this fixed budget, the attacker chooses the wall-clock time by scaling the fleet: ≈1.4 × 10 5 instances complete the expected-case search in about a day, and ≈10 6 instances in a few hours. Thus, while a single 37-instance run is only practical for bounded subspaces, full DES exhaustion is a question of budget rather than feasibility for a well-funded attacker. 71 h 1 day 1 week 1 month 1 yr 10.6 yr 
+
+10 2
+
+10 4
+
+10 6   
+
+> ∼1day, ∼1.4×10 5inst.
+> 37 inst. (this work)
+
+Wall-clock time to exhaust 256 (expected case) 
+
+> Instances required
+
+Figure 3: Cost/time scaling for full 256 exhaustion (expected case). The horizontal axis is the target wall-clock time (log scale), reaching 10.6 years with our 37-instance fleet at the far right; the vertical axis is the number of instances needed to hit that time. Because total worker-hours are fixed, the total monetary cost is approximately constant ( ≈$1 .2M) along the whole curve — only the wall-clock time changes. Reaching a one-day search requires 
+
+∼1.4 × 10 5 instances. 
+
+## 4.3 Note on DES Parity Bits 
+
+Each byte of the 64-bit DES key reserves its least significant bit for parity, leaving 56 effective bits. Our worker enumerates these 56 bits with all parity bits zeroed, producing the canonical 
+
+form of each key; any two keys differing only in parity bits encrypt identically. For example, Trial 1 targets effective-key index 10 6, whose canonical form 00000000007a0880 is exactly what the search recovers. All 15 trials recover the canonical key matching their target index, confirmed by successful plaintext recovery in every case. 
+
+# 5 Conclusion 
+
+We presented a distributed brute-force system for DES on 37 AWS EC2 c6i.2xlarge in-stances, measuring an aggregate throughput of 108 M keys/s ( 2.91 M per instance, R2 =0.9994 ). Across 15 trials we observe two regimes: boot-dominated (offset ≤ 10 8, ≈2 min, 
+
+≈$0 .41 ) and search-dominated, where time grows linearly with offset (offset 1.5 × 10 10 ,
+
+≈87 min, ≈$18 ). For bounded subspaces the attack is trivially cheap: any key within a known, manageable fraction of the keyspace is recovered in minutes for well under a dollar. Full exhaustion is more expensive but not infeasible: at our measured throughput it costs ≈$1 .2M in the expected case, and thanks to the elastic, embarrassingly parallel nature of the workload, the attacker freely trades money for time — ∼1.4×10 5 instances would complete the search in about a day. DES thus offers no meaningful security today: bounded-key scenarios fall for pocket change, and full recovery is a budget question, not a technical barrier. Compared to COPACOBANA (2006, $10,000, 8.7-day average) [5], commodity cloud infrastructure offers a dramatically lower barrier to entry with no upfront hardware cost. 
+
+Future work: GPU acceleration. Our CPU-based workers are far from the most cost-effective option. GPU implementations of DES exhaustive search report throughputs orders of magnitude higher per device: Ahmadzadeh et al. [11] demonstrate a high-performance, energy-efficient key search on DES-like cryptosystems, and a more recent study reports ≈3.87 
+
+billion keys/s for DES on a single RTX 3070 GPU, outperforming FPGA clusters such as 8COPACOBANA in price-performance [12]. A single modern GPU thus matches over a thou-sand of our CPU instances; porting the worker to CUDA would lower both the wall-clock time and the dollar cost of full exhaustion by one to two orders of magnitude, and is the natural next step for this work. 
+
+# References 
+
+[1] National Bureau of Standards. Data Encryption Standard . FIPS PUB 46, U.S. Depart-ment of Commerce, 1977. [2] W. Diffie and M. E. Hellman. Exhaustive cryptanalysis of the NBS data encryption standard. Computer , 10(6):74–84, 1977. [3] M. J. Wiener. Efficient DES key search. Technical Report TR-244, School of Computer Science, Carleton University, 1994. Presented at the rump session of CRYPTO ’93. [4] Electronic Frontier Foundation. Cracking DES: Secrets of Encryption Research, Wiretap Politics and Chip Design . O’Reilly & Associates, 1998. [5] S. Kumar, C. Paar, J. Pelzl, G. Pfeiffer, and M. Schimmler. Breaking ciphers with COPACOBANA – a cost-optimized parallel code breaker. In Cryptographic Hardware and Embedded Systems (CHES 2006) , LNCS 4249, pages 101–118. Springer, 2006. [6] Y. Cui and B. Zhang. Optimizing exhaustive key search attacks on the Data Encryption Standard. In Proceedings of SPIE , vol. 13800, 2025. DOI: https://doi.org/10.1117/ 12.3076743 .[7] SciEngines GmbH. Break DES in less than a single day. http://www.sciengines.com ,2008. [8] Network World. Password cracking in the cloud. https://www.networkworld.com/ article/2194881 , November 2010. [9] E. Biham. A fast new DES implementation in software. In Fast Software Encryption (FSE 1997) , LNCS 1267, pages 260–272. Springer, 1997. [10] M. Kwan. Reducing the gate count of bitslice DES. IACR Cryptology ePrint Archive, Report 2000/051, 2000. [11] A. Ahmadzadeh, O. Hajihassani, and S. Gorgin. A high-performance and energy-efficient exhaustive key search approach via GPU on DES-like cryptosystems. The Journal of Supercomputing , 74(1):160–182, 2018. [12] A. Adomnicai et al. Key lengths revisited: GPU-based brute force cryptanalysis of DES, 3DES, and PRESENT. Journal of Systems Architecture , 124:102402, 2022. 9

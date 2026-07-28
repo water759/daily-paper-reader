@@ -1,0 +1,1750 @@
+Title: ATLAS: Automated Approximation of Transformers for Efficient Homomorphic Inference in One Hour
+
+URL Source: https://arxiv.org/pdf/2607.23478v1
+
+Published Time: Tue, 28 Jul 2026 00:55:47 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+# ATLAS : Automated Approximation of Transformers for Efficient Homomorphic Inference in One Hour 
+
+## Jianhang Xie 
+
+City University of Hong Kong Hong Kong, China jianhang.xie@my.cityu.edu.hk 
+
+## Sicheng Tan 
+
+Shandong University Qingdao, China sqtsc@mail.sdu.edu.cn 
+
+## Vishnu Naresh Boddeti 
+
+Michigan State University East Lansing, MI, USA vishnu@msu.edu 
+
+## Zhichao Lu 
+
+City University of Hong Kong Hong Kong, China zhichao.lu@cityu.edu.hk 
+
+Abstract 
+
+Fully homomorphic encryption (FHE) provides strong cryptographic guarantees for private inference, but deploying transformer models under FHE remains prohibitively expensive. A key bottleneck is that non-linear operations such as softmax, normalization, and activa-tion must be replaced with polynomial approximations compatible with the CKKS scheme, and the multiplicative depth consumed by these approximations dominates inference cost. Recent frameworks have advanced approximation techniques, yet all rely on manu-ally configured approximation hyperparameters (e.g., number of iterations, polynomial degree), applied uniformly across all layers. While convenient, this uniform-configuration approach is overly rigid: different layers can tolerate different levels of approximation error without degrading predictive accuracy, and uniform configu-rations cannot exploit this variability to reduce latency. Allowing each layer to adopt its own configuration, however, causes the search space to explode with model depth, reaching roughly 10 84 
+
+configurations for BERT/ViT (12 layers) and 10 225 for LLaMA3 (32 layers), rendering manual exploration practically impossible. We present ATLAS , an automated framework that configures per-layer approximation settings by formulating the problem as a multi-objective optimization over latency and predictive accuracy. The resulting problem is inherently difficult: 1) competing objectives over a large decision space (120 or 320 variables for BERT/ViT or LLaMA3); 2) expensive evaluation, as each configuration takes 70– 1,000 seconds even in cleartext; and 3) sparse optimization signals, as 35–50% of candidate configurations yield numerically invalid solutions. ATLAS addresses these challenges through a two-stage optimization strategy that progressively relaxes layer-wise con-straints, combined with surrogate models to accelerate evaluation. Compared to iterative softmax (Cho et al., CCS 2024) and THOR (Moon et al., CCS 2025), ATLAS reduces multiplicative depth by ∼35% 
+
+and ∼17% with negligible accuracy loss, translating to ∼25% and 
+
+∼20% reduction in end-to-end inference latency, respectively, while completing the entire configuration search in one hour. As a post-processing step compatible with existing approximation advance-ments, ATLAS generalizes across encoder-only (BERT), decoder-only (LLaMA3-8B), and vision (ViT) transformers, and complements par-allel work on packing and matrix multiplication to substantially lower the barrier to deploying cryptographically secure inference. Code: https://github.com/jianhayes/ATLAS Transformers 
+
+> Automatically
+> Configure
+> Approximation
+> Accuracy
+> Latency
+> Config 3
+> Config 1
+> Config 2
+> FHE Evaluation
+
+ATLAS  
+
+> Encrypt Decrypt
+> User’s Private Data
+> Public
+> Key
+> Service
+> Provider
+> Service
+> Provider
+> Network
+> Secret
+> Key
+> Search in
+> One -Hour
+> Best Config
+> Polynomial
+> Transformers
+
+Figure 1: ATLAS can automatically design polynomial approx-imation configurations for FHE compatible transformers. 
+
+ATLAS solutions span the trade-off between accuracy and la-tency for ciphertext inference and can be deployed on the cloud server to satisfy a range of customer requirements. 
+
+Keywords 
+
+Fully Homomorphic Encryption, CKKS Scheme, Transformers, Se-cure Inference, Multi-Objective Optimization 
+
+1 Introduction 
+
+The widespread deployment of machine learning has created a growing tension between model utility and data privacy. In sensi-tive applications such as medical diagnosis, financial assessment, and legal document analysis, a client wishes to obtain predictions from a server-hosted model without revealing the underlying input data. Fully homomorphic encryption offers a compelling crypto-graphic solution to this problem: as shown on the right side of Figure 1, under an honest-but-curious server assumption, FHE al-lows the server to evaluate the model entirely on encrypted data, providing strong privacy guarantees without requiring the server’s trust beyond adherence to the protocol. Transformer architectures have become the dominant paradigm for such tasks, spanning language understanding (BERT [ 22 ], LLaMA [ 48 ]) and vision (ViT [ 24 ]). Deploying transformers under FHE, however, remains extremely expensive. The Cheon-Kim-Kim-Song (CKKS) scheme [ 10 , 11 , 14 ], which supports approximate arithmetic on real-valued data, is the most practical choice for neural network arXiv:2607.23478v1 [cs.CR] 26 Jul 2026 FHE BERT        
+
+> 1107.52 s 241.18 s
+> 34.40 s
+> 89.51s
+> 11.83 s
+> 90.58s 567.71 s
+> MatrixMul
+> Others
+> Softmax
+> Boot in So
+> Normalization
+> Boot in Norm
+> Activation
+> Boot in Act
+> ATLAS FHE BERT
+> 792.10 s 123.9 s
+> 29.17 s 11.57 s
+> 61.57 s
+> 475.38 s
+> 18.32 s
+> 48.14 s24.06 s
+> 48.22s 24.09s
+
+Figure 2: Runtime breakdown of end-to-end FHE BERT [ 22 ]on an RTX 4090. ATLAS achieves a 28.5% speedup, and saves 29.01 s, 16.08 s, and 60.34 s in Softmax, normalization, and ac-tivation approximations, respectively, which further reduces bootstrapping overhead by ∼117 s. 
+
+inference, but it imposes a fundamental constraint: operations are limited to polynomial arithmetic, and the number of sequential mul-tiplications (the multiplicative depth) determines both the cipher-text parameter size and the overall latency. As shown in Figure 2, a baseline FHE implementation of a transformer devotes approxi-mately 46% of inference time to non-linear operations alone. This overhead arises because non-linear functions such as softmax, layer normalization, and GELU are incompatible with FHE and must be replaced with polynomial approximations, each consuming signifi-cant multiplicative depth. A substantial body of recent work has sought to reduce this cost. One line of work targets the linear components of transformers, particularly ciphertext-ciphertext matrix multiplication (CCMM) and plaintext-ciphertext matrix multiplication (PCMM) [ 28 , 35 , 38 ]. A second line of work addresses approximations of non-linear op-erations such as Softmax, LayerNorm, and GELU directly, either through polynomial approximations or through iterative computa-tions [ 16 , 41 , 54 ]. A third line of work seeks to improve the com-putational efficiency of core cryptographic primitives, including bootstrapping [3, 8, 9, 12, 17] and polynomial multiplication [31]. Despite this progress, a critical design decision remains unad-dressed across all existing frameworks: how to set the hyperparam-eters governing each polynomial approximation. Current practice treats this as a manual, per-function problem. A practitioner selects an approximation for each non-linear function type (e.g., a degree 𝑑 
+
+minimax polynomial for GELU) and applies it uniformly across all layers. This approach is intuitive but suboptimal. The true objective is not to approximate individual functions accurately in isolation, but to preserve the end-to-end task accuracy of the pretrained trans-former model under the constraints of FHE. Optimizing for this global objective opens the possibility of heterogeneous, per-layer configurations in which different layers use different approxima-tion configuration hyperparameters, trading local approximation fidelity for global depth reduction. The challenge is that this search space is vast. With multiple tunable hyperparameters per operator and dozens of layers per model, the space of valid configurations spans 10 84 to 10 225 possibilities depending on the architecture. We present ATLAS , a framework-agnostic post-processing method that automatically discovers depth-efficient approximation config-urations for any FHE-compatible transformer. ATLAS formulates the problem as multi-objective optimization over multiplicative depth and end-to-end accuracy, and solves it through a two-stage evolutionary search. ATLAS treats any existing FHE transformer framework as a black box, operating entirely post-training on the frozen pretrained model and requiring no retraining, fine-tuning, or changes to its packing strategy or encryption parameters. An overview of ATLAS is shown in Figure 1. The contributions of this paper are: (1) Problem formulation. We identify the selection of per-layer polynomial approximation hyperparameters as a crit-ical and underexplored bottleneck in FHE transformer in-ference, and formulate it as a multi-objective combinatorial optimization problem over multiplicative depth and end-to-end accuracy. (2) ATLAS . We present a framework-agnostic post-processing method that solves this problem through a two-stage evo-lutionary search, designed to handle conflicting objectives, expensive evaluations, and a high density of invalid configu-rations. ATLAS is complementary to existing frameworks, in-cluding THOR [ 38 ], NEXUS [ 54 ], and MOAI [ 55 ], and can be applied on top of any FHE-compatible transformer without modifying the underlying encryption or packing strategy. (3) Empirical evaluation. Evaluated on BERT-base, LLaMA-3 8B, and ViT-base, ATLAS reduces multiplicative depth by 35 percent and inference latency by 25 percent relative to expert-designed baselines, with negligible accuracy loss. The search completes in under 30 minutes for BERT and ViT, and under one hour for LLaMA-3 8B. 
+
+2 Preliminaries 2.1 FHE Scheme and Bootstrapping 
+
+CKKS Scheme. The Cheon-Kim-Kim-Song (CKKS) [ 14 ] is a leveled homomorphic encryption scheme. Compared with previous FHE schemes, e.g., BGV [ 6], BFV [ 5], and TFHE [ 15 ], which only support integer number encryption, the CKKS can encrypt real and complex number calculations. Under RNS-CKKS, the plaintexts and ciphertexts are elements in a residue cyclotomic polynomial ring RQℓ = ZQℓ [𝑋 ]/( 𝑋 𝑁 +1).The modulus is Qℓ = Îℓ𝑖 =0 𝑞 𝑖 , where 0 ≤ ℓ ≤ 𝐷 , the ℓ is level , the 
+
+𝐷 is level budget. 𝑁 is the polynomial degree in RNS-CKKS, and a ciphertext has 𝑁 /2 slot counts for single instruction multiple data (SIMD) processing. We denote the above procedure from cleartext 
+
+𝑢 to SIMD ciphertext Enc (𝑢 ) as Enc (·) , and the opposite direction decryption-decoding algorithm is denoted as Dec (·) . Specifically, assuming that homomorphic addition is ⊞ and homomorphic mul-tiplication is ⊠, the operations can be described in the following with 𝑢 and 𝑣 as: 
+
+Dec (Enc (𝑢 ) ⊞Enc (𝑣 )) =Dec (Enc (𝑢 )) + Dec (Enc (𝑣 )) ≈ 𝑢 +𝑣 
+
+Dec (Enc (𝑢 ) ⊠Enc (𝑣 )) =Dec (Enc (𝑢 )) × Dec (Enc (𝑣 )) ≈ 𝑢 ×𝑣 (1) 
+
+Bootstrapping. Leveled homomorphic encryption schemes like CKKS only support a finite number of homomorphic multiplications, each of which consumes one level due to rescaling. So, when the level of a ciphertext becomes zero, the decryption would fail, so we need to perform a bootstrapping [10 ] operation to reset to a high level if it is too low to do a computation. The bootstrapping allows us to evaluate circuit of arbitrary depth, as it homomorphically evaluates the decryption circuit and raises the modulus from Q0 to 
+
+Q𝐷 by leveraging the isomorphism R𝑞 0 R𝑞 0 ×R 𝑞 1 × · · · ×R 𝑞 𝐷 [ 4]. A freshly encrypted ciphertext starts with 𝐷 levels, but bootstrapping consumes 𝐾 levels and reduces it to 𝐷 − 𝐾 levels. As bootstrapping requires a lot of key switching operations (KSO), it becomes the most time-consuming operation in RNS-CKKS. 
+
+2.2 Transformers 
+
+Transformer [ 49 ] models are typically encoder-only (BERT [ 22 ]), decoder-only (e.g., GPT [ 43 ] and LLaMA [ 48 ]), or vision encoder (ViT [ 24 ]). Despite this distinction, the structure of the Transformer layer is similar in both encoders and decoders: a stack of 𝐿 layers. A basic Transformer layer 𝑓 (𝒙 ) , includes Attention, Multilayer Perceptron (MLP), and LayerNorm, as shown in Equation (2). 
+
+𝑓 (𝒙 ) = LayerNorm2 (MLP (LayerNorm1 (Attention (𝒙 )))) , (2) where 𝒙 ∈R𝑛 ×𝑑 is the input embedding, 𝑛 is the number of tokens and 𝑑 is the hidden size. For attention, the weight matrices are 𝑾 𝑄 , 𝑾 𝐾 , 𝑾 𝑉 , 𝑾 𝑂 ∈ R𝑑 ×𝑑 ,yielding 𝑸 =𝒙𝑾 𝑄 , 𝑲 =𝒙𝑾 𝐾 , and 𝑽 =𝒙𝑾 𝑉 . For standard multi-head attention (MHA) with ℎ heads, 𝑸 , 𝑲 , and 𝑽 are partitioned into 
+
+𝑸 ℎ, 𝑲 ℎ, 𝑽 ℎ ∈R𝑛 ×𝑑 𝑘 , where 𝑑 𝑘 =𝑑 /ℎ is the head dimension. The atten-tion computation for a single head is shown in Equation (3). 
+
+Attention (𝑸 ℎ, 𝑲 ℎ, 𝑽 ℎ ) = Softmax 
+
+ 𝑸 ℎ 𝑲 ℎ𝑇 
+
+√𝑑 𝑘 
+
+
+
+𝑽 ℎ (3) Finally, the outputs of all heads are concatenated and projected via 
+
+𝑾 𝑂 to produce the final attention result. For the MLP, let 𝑑 ff be the intermediate size. The MLP weights consist of two matrices 𝑾 up ∈ R𝑑 ×𝑑 ff , 𝑾 down ∈ R𝑑 ff ×𝑑 , with an activation 𝜎 (·) placed between them. Typically 𝜎 (𝑥 )=GELU (𝑥 ). For the LLaMA MLP, 𝜎 (𝑥 )=SiLU (𝑥 ) and it adopts a gated structure. For normalization, standard Transformers use LayerNorm [ 2 ]. Modern LLMs such as LLaMA employ RMSNorm [ 53 ] to reduce computational cost. The placement of normalization depends on the specific architecture. 
+
+2.3 FHE Transformers 
+
+Since homomorphic matrix multiplication is nearly lossless in preci-sion, the precision loss arises from the approximation of non-linear components. Thus, constructing FHE inference requires a primary focus on these non-linearities. For Transformers, the non-linear components include Softmax in Attention, normalization , and ac-tivation in the MLP. Compared to CNNs [ 1, 32 ] where only ReLU requires approximation, building a Transformer inference system under FHE is considerably more challenging. Currently, the ap-proximation of these components [ 16 , 38 , 44 , 52 , 54 , 55 ] relies on expert-designed heuristics and manually configured hyperparame-ters. 
+
+Softmax Approximation. The standard softmax function is de-fined as Softmax (𝒙 )𝑖 =exp (𝑥 𝑖 )/ Í𝑗 exp (𝑥 𝑗 ), which contains the non-linear exponential exp (𝑥 ) and inverse 1/𝑥 . Some works replace the Attention with HE-friendly alternatives, such as Gaussian-kernel Attention [ 44 ], activation-based Attention [ 56 ], and BPMax [ 40 ], but these replacements all require model retraining. Recent works [ 52 , 54 , 55 ] directly approximate exp (𝑥 ) and 1/𝑥 
+
+separately over a given interval. For example, exp (𝑥 ) is approxi-mated via limit (1 + 𝑥 /2𝑟 )2𝑟 
+
+[54 , 55 ] for 𝑥 ∈ [− 2𝑟 , 0], or via a Cheby-shev polynomial [ 52 ]; and 1/𝑥 via Goldschmidt iteration [ 54 , 55 ]or a Chebyshev-initialized Goldschmidt refinement [52]. To improve numerical stability, the row maximum is subtracted: 
+
+Softmax (𝒙 )=Softmax (𝒙 −max 𝑖 𝑥 𝑖 ). In FHE, dynamically computing 
+
+max 𝑖 𝑥 𝑖 is prohibitively expensive; thus, a statistical hard-coded constant maximum 𝑐 is used instead. Although this separate approximation incurs low multiplicative depth, the effective domains of the 1/𝑥 and exp (𝑥 ) approximations jointly constrain the softmax input range. From the NEXUS [ 47 ]codebase, we measure the usable softmax interval to be roughly 
+
+[− 2.19 , 0]. As a result, the valid input range may be narrower than the range of 𝑥 𝑖 − 𝑐 , leading to approximation failure. A state-of-the-art alternative employs an iterative softmax [ 16 ]with normalize-and-square strategy. It assumes that inputs after subtracting the maximum are non-positive, i.e., 𝒙 ∈[− 𝑀, 0]𝑛 . The input is scaled by 1/2𝑘 and recovered via 𝑘 iterations. Consequently, the effective input range of the iterative softmax can be estimated as 
+
+[− 2𝑘 ln 𝑛, 0]. For its default setting 𝑘 =5 and 𝑛 =256 , this gives a lower bound of roughly 𝑀 ≈177 . So this mitigates the limited-domain problem. THOR [ 38 ] also proposes a similar square-and-normalize approach that reduces the required number of iterations. The precision of the above methods depends on the approxima-tion degree of the inverse square root (or inverse) polynomial and the number of iterations 𝑘 . In iterative softmax [ 16 ], these hyper-parameters are manually configured based on expert heuristics. 
+
+Normalization Approximation. LayerNorm requires the inverse square root (invsqrt): LayerNorm (𝑥 𝑖 )=𝑤 𝑖 ·( 𝑥 𝑖 −𝜇 )/ √𝜎 2 + 𝜖 +𝑏 𝑖 , where 
+
+𝜇 and 𝜎 2 denote the mean and variance of input 𝒙 , 𝑤 𝑖 and 𝑏 𝑖 are affine transform coefficients. RMSNorm is analogous by omitting the mean. Nearly all existing works [ 52 , 54 , 55 ] approximate in-vsqrt via Newton’s method [ 42 ], often combined with Goldschmidt iterations [ 27 ] for high-precision refinement. For example, the NEXUS [ 54 ] codebase [ 47 ] uses 𝜈 =4 Newton steps to compute 1/√𝑥 ,followed by 𝛾 =2 Goldschmidt steps; MOAI [ 55 ] and ARION [ 52 ]adopt a similar variant. The effectiveness of LayerNorm and RMSNorm under FHE hinges on whether the input variance (or root mean square) lies within the valid approximation interval of the invsqrt. At the same time, the numbers of Newton and Goldschmidt iterations in the above methods remain hand-tuned fixed values. 
+
+Activation Approximation. The GELU function is defined as 
+
+GELU (𝑥 ) = 𝑥 ·Φ(𝑥 ), where Φ(𝑥 ) is the cumulative distribution func-tion for Gaussian distribution, or by its tanh approximation. Early FHE Transformers [ 19 , 54 ] and some interactive methods [ 23 , 36 , 39 ]use a piecewise GELU approximation, which employs a sign func-tion approximated by minimax composition [ 33 , 34 ] for segments selection. However, the piecewise GELU approximation is valid only for a small domain, e.g., 𝑥 ∈ [− 8, 8] claimed in NEXUS [ 54 ], which is insufficient to cover the input range encountered during Transformer inference. To address this limitation, recent works [ 25 ,38 , 52 , 55 ] explicitly define an approximate GELU with polynomials. For example, MOAI [ 55 ] uses a degree-23 polynomial; ARION [ 52 ]adopts a degree-255 Chebyshev polynomial; and THOR [ 38 ] em-ploys a composite polynomial with degree-31 and degree-27. For LLaMA’s SiLU, MOAI [ 55 ] does not specify a degree, deferring to Orion [ 25 ]. However, the polynomial degrees are largely determined by heuristics and manual tuning in all these works. 
+
+2.4 Threat Model 
+
+In the context of secure inference, the following threat model is generally assumed [ 1, 32 , 54 ]: a customer uploads encrypted data to the Cloud; the Cloud service provider then processes the ciphertext using neural networks deployed on its servers and returns the encrypted output to the customer; finally, the customer decrypts the result locally using a secret key. Under this model, the Cloud provider cannot access the sensitive information contained in the customer’s input or output data, while the client remains unaware of the details of neural networks. 
+
+3 ATLAS : Adapting Transformers for FHE 
+
+ATLAS is an automated, framework-agnostic post-processing method that designs efficient polynomial approximation configurations for FHE transformers. Rather than applying a single set of hand-tuned hyperparameters uniformly across all layers, ATLAS assigns each layer its own approximation hyperparameters. We adopt a multi-objective evolutionary search algorithm to navigate the com-binatorial space of layerwise approximation hyperparameters and discover configurations that are (i) significantly more efficient than hand-tuned hyperparameters, and (ii) span the accuracy-efficiency trade-off. Specifically, we adopt a two-stage evolutionary procedure that progressively relaxes layer-wise constraints. 
+
+3.1 Problem Formulation 
+
+Given a cleartext transformer 𝑓 , we would like to develop its poly-nomial approximation ˜𝑓 𝝀 by choosing appropriate hyperparameters 
+
+𝝀 = (𝝀 𝑠𝑜 𝑓 𝑡𝑚𝑎𝑥 , 𝝀 𝑛𝑜𝑟𝑚 , 𝝀 𝑎𝑐𝑡 ) to configure softmax 𝝀 𝑠𝑜 𝑓 𝑡𝑚𝑎𝑥 , normal-ization 𝝀 𝑛𝑜𝑟𝑚 , and activation function 𝝀 𝑎𝑐𝑡 approximations. The goal is to minimize latency overhead without sacrificing security, while ensuring that ˜𝑓 𝝀 exhibits similar predictive performance un-der FHE. This can be mathematically formulated as: minimize 𝝀 𝐿𝑎𝑡 ( ˜𝑓 𝝀 , D) ,
+
+subject to 𝐴𝑐𝑐 (𝑓 , D) − 𝐴𝑐𝑐 ( ˜𝑓 𝝀 , D) ≤ 𝜖 𝑎𝑐𝑐 , (4) where 𝐿𝑎𝑡 (·) measures runtime latency of the approximated model 
+
+˜𝑓 𝝀 under FHE, 𝐴𝑐𝑐 (·) computes its accuracy over a representative set of data samples D, and 𝜖 𝑎𝑐𝑐 signifies the error tolerance which is typically a small number approaching zero. Directly solving Equation (4) imposes two main challenges: (1) measuring latency reliably and consistently on hardware is not trivial; (2) 𝐴𝑐𝑐 (·) metric may not always be sensitive to deviations in model outputs due to approximation error. Accordingly, a more practical formulation of the problem is as follows. minimize 𝝀 𝑀𝑢𝑙 _𝐷𝑒𝑝𝑡ℎ ( ˜𝑓 𝝀 ),
+
+subject to 𝑓 (𝑥 ) − ˜𝑓 𝝀 (𝑥 ) ≤ 𝜖 ∀𝑥 ∈ D , (5) where 𝑀𝑢𝑙 _𝐷𝑒𝑝𝑡ℎ (·) computes the total multiplicative depth and 
+
+𝜖 controls the tolerance on output deviation of a FHE transformer model ˜𝑓 𝝀 from its cleartext counterpart 𝑓 .Unfortunately, choosing an appropriate 𝜖 in Equation (5) is also not straightforward, as different transformer models and tasks re-quire different levels of precision (e.g., ViT can tolerate large de-viation in outputs without dropping accuracy on ImageNet-1K classification compared to BERT on GLUE benchmark). An over-constrained 𝜖 leads to sub-optimal run-time latency, while an under-constrained 𝜖 leads to a noticeable drop in model performance. As opposed to adaptively/carefully tuning 𝜖 , we propose to formulate the problem as a multi-objective optimization problem minimize 𝝀 
+
+
+
+𝑀𝑢𝑙 _𝐷𝑒𝑝𝑡ℎ ( ˜𝑓 𝝀 ), 𝑀𝐴𝐸 (𝑓 , ˜𝑓 𝝀 )
+
+
+
+,
+
+where 𝑀𝐴𝐸 (𝑓 , ˜𝑓 𝝀 ) = 1
+
+|D| ∑︁ 𝑥 ∈ D 
+
+𝑓 (𝑥 ) − ˜𝑓 𝝀 (𝑥 ) , (6) to simultaneously balance run-time latency and approximation precision, circumventing the need of choosing an 𝜖 .
+
+3.2 Search Space and Encoding 
+
+A decision vector 𝝀 specifies how softmax, normalization, and activation functions are approximated in each of the 𝐿 Transformer layer ( 𝐿 = 12 for BERT-Base and ViT-Base, 𝐿 = 32 for LLaMA3-8B). The decision variables are grouped by operators (i.e., softmax, normalization, and activation) and arranged in ascending layer order (i.e., from Layer 1 to 𝐿 ), as follows. 
+
+𝝀 =   𝑝 (1) 
+
+> 1
+
+, . . . , 𝑝 (1) 
+
+> 5
+
+, · · · , 𝑝 (𝐿 ) 
+
+> 1
+
+, . . . , 𝑝 (𝐿 )
+
+> 5
+
+| {z }
+
+𝝀 𝑠𝑜 𝑓 𝑡𝑚𝑎𝑥 
+
+,𝜈 (1)
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝛾 (1)
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝜈 (1) 
+
+> 𝑚𝑙𝑝
+
+, 𝛾 (1) 
+
+> 𝑚𝑙𝑝
+
+, · · · , 𝜈 (𝐿 )
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝛾 (𝐿 )
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝜈 (𝐿 ) 
+
+> 𝑚𝑙𝑝
+
+, 𝛾 (𝐿 )
+
+> 𝑚𝑙𝑝
+
+| {z }
+
+𝝀 𝑛𝑜𝑟𝑚 
+
+,𝑝 (1) 
+
+> 𝑎𝑐𝑡
+
+, · · · , 𝑝 (𝐿 )
+
+> 𝑎𝑐𝑡
+
+| {z }
+
+𝝀 𝑎𝑐𝑡 
+
+,
+
+(7) resulting in a total of 5𝐿 + 4𝐿 + 𝐿 = 10 𝐿 integer variables. 
+
+Softmax 𝝀 𝑠𝑜 𝑓 𝑡𝑚𝑎𝑥 Encoding. We adopt the iterative method pro-posed by Cho et al. [ 16 ] for softmax approximation, with one mod-ification to use Chebyshev polynomials instead of power basis for coefficient estimation. Algorithm 1 outlines our procedure. 
+
+Algorithm 1: Iter. Softmax (𝑥 ; 𝑘, 𝑝 1, · · · , 𝑝 𝑘 ) in ATLAS 
+
+Input: 𝑥 ∈ [− 𝑀, 0]𝑛 , 𝑘 ∈ Z>0, (𝑝 1, · · · , 𝑝 𝑘 )
+
+Output: 𝑦 ≈ Softmax (𝑥 ) 
+
+> 1
+
+𝑦 ← ChebyPolyEvalExp (𝑥 /2𝑘 , 15 ); 
+
+> 2
+
+for 𝑗 ← 1 to 𝑘 do  
+
+> 3
+
+𝑎 ← ChebyPolyEvalInvsqrt (Í𝑛 𝑖 =1 𝑦 2 
+
+> 𝑖
+
+, 2𝑝 𝑗 − 1) ;
+
+// Chebyshev invsqrt with degree 2𝑝 𝑗 − 1 
+
+> 4
+
+𝑦 ← ( 𝑎 · 𝑦 )2; 
+
+> 5
+
+end  
+
+> 6
+
+return 𝑦 ;Given an input 𝒙 ∈ [− 𝑀, 0]𝑛 , the algorithm first divides the input by 2𝑘 and applies a 15-degree Chebyshev exponential ap-proximation ChebyPolyEvalExp . It then applies 𝑘 iterations, each consisting of: (i) summing the squared intermediate values, (ii) eval-uating a ChebyPolyEvalInvsqrt that approximates the invsqrt, and (iii) multiplying and squaring the result. The key hyperparam-eters are the total number of iterations 𝑘 and the degree of the Chebyshev polynomial 𝑝 in each iteration. We embed the choice of 𝑘 into the degree variables by allowing the 𝑝 𝑗 to be zero, indicating that the 𝑗 -th and all its subsequent iterations are skipped. In summary, each layer 𝑖 ∈1,··· ,𝐿 is assigned five integer variables 
+
+(𝑝 (𝑖 ) 
+
+> 1
+
+, 𝑝 (𝑖 ) 
+
+> 2
+
+, 𝑝 (𝑖 ) 
+
+> 3
+
+, 𝑝 (𝑖 ) 
+
+> 4
+
+, 𝑝 (𝑖 ) 
+
+> 5
+
+), where 𝑝 (𝑖 ) 
+
+> 1
+
+∈ [ 1, 7] and 𝑝 (𝑖 ) 
+
+> 2
+
+, . . . , 𝑝 (𝑖 ) 
+
+> 5
+
+∈[0, 7]. A non-zero value determines the polynomial degree for the invsqrt function approximation in an iteration, and a zero value omits that iteration and all the subsequent ones. The upper bound is set to 7 following the settings from [ 16 ], and the lower bound is chosen such that at least one iteration is executed. The full softmax configuration contributing 5𝐿 integer variables is then encoded as: 
+
+𝝀 𝑠𝑜 𝑓 𝑡𝑚𝑎𝑥 =(𝑝 (1) 
+
+> 1
+
+, · · · , 𝑝 (1) 
+
+> 5
+
+, · · · , 𝑝 (𝐿 ) 
+
+> 1
+
+, · · · , 𝑝 (𝐿 ) 
+
+> 5
+
+). (8) 
+
+Normalization 𝝀 𝑛𝑜𝑟𝑚 Encoding. Both the Attention and MLP modules in a Transformer layer use normalization (e.g., LayerNorm and RMSNorm). Algorithm 2 outlines the Newton–Goldschmidt approximation of the invsqrt used in normalization. The two loop counters 𝜈 and 𝛾 directly control the accuracy–depth trade -off: larger values improve the approximation quality at the cost of additional multiplicative depth. We therefore adopt the default setting from the NEXUS codebase [ 47 ] ( 𝜈 = 4, 𝛾 = 2) as a reference and treat both (𝜈, 𝛾 ) counters as searchable integer parameters .
+
+Algorithm 2: Newton–Gold InvSqrt (𝑥 ; 𝜈, 𝛾 ) in ATLAS 
+
+Input: Input 𝑥 ; Newton steps 𝜈 , Goldschmidt steps 𝛾 
+
+Output: 𝑦 ≈ 1/√𝑥  
+
+> 1
+
+𝑦 ← − 1.29 ×10 −4 · 𝑥 + 0.129 ; // initial guess  
+
+> 2
+
+for 𝑖 ← 1 to 𝜈 do  
+
+> 3
+
+𝑦 ← 𝑦 ·  1.5 − 0.5 · 𝑥 · 𝑦 2  ; // Newton Iter  
+
+> 4
+
+end  
+
+> 5
+
+𝑎, 𝑏 ← 𝑥𝑦, 𝑦 /2; 
+
+> 6
+
+for 𝑖 ← 1 to 𝛾 do  
+
+> 7
+
+𝑎, 𝑏 ← 𝑎 (1.5 − 𝑎𝑏 ), 𝑏 (1.5 − 𝑎𝑏 ) ; // Goldschmidt Iter  
+
+> 8
+
+end  
+
+> 9
+
+return 𝑦 ← 2𝑏 ;For each layer 𝑖 ∈1,··· ,𝐿 , four integer variables are assigned: at-tention Newton iterations 𝜈 (𝑖 ) 
+
+> 𝑎𝑡𝑡𝑛
+
+∈ [ 1, 4], attention Goldschmidt iterations 𝛾 (𝑖 ) 
+
+> 𝑎𝑡𝑡𝑛
+
+∈ [ 1, 2], MLP Newton iterations 𝜈 (𝑖 ) 
+
+> 𝑚𝑙𝑝
+
+∈ [ 1, 4], and MLP Goldschmidt iterations 𝛾 (𝑖 ) 
+
+> 𝑚𝑙𝑝
+
+∈ [ 1, 2]. The normalization vari-ables of layer 𝑖 and the full configuration vector with 4𝐿 integer variables are encoded as: 
+
+𝝀 𝑛𝑜𝑟𝑚 = (𝜈 (1)
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝛾 (1)
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝜈 (1) 
+
+> 𝑚𝑙𝑝
+
+, 𝛾 (1) 
+
+> 𝑚𝑙𝑝
+
+, · · · , 𝜈 (𝐿 )
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝛾 (𝐿 )
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝜈 (𝐿 ) 
+
+> 𝑚𝑙𝑝
+
+, 𝛾 (𝐿 ) 
+
+> 𝑚𝑙𝑝
+
+).
+
+(9) 
+
+Activation 𝝀 𝑎𝑐𝑡 Encoding. The non-linear activation function (e.g., GELU or SiLU) is approximated by a single Chebyshev polyno-mial [ 25 , 52 ]. The degree directly determines the multiplicative depth consumed; we therefore include the degree 𝑝 𝑎𝑐𝑡 in the search space for exploring the accuracy–depth trade -off. Each layer 𝑖 can select an integer 𝑝 𝑎𝑐𝑡 ∈[ 1, 9], yielding a polynomial de-gree of 2𝑝 𝑎𝑐𝑡 −1. The full activation configuration vector is then: 
+
+𝝀 𝑎𝑐𝑡 = (𝑝 (1) 
+
+> 𝑎𝑐𝑡
+
+, 𝑝 (2) 
+
+> 𝑎𝑐𝑡
+
+, · · · , 𝑝 (𝐿 ) 
+
+> 𝑎𝑐𝑡
+
+). (10) BERT-Base ViT-Base LLaMA3-8B  
+
+> 0
+> 200
+> 400
+> 600
+> 800
+> 1000
+> Inference Time for 1,000 samples (s)
+> 77.5 ±0.1 s 117.9 ±0.0 s
+> 1006.9 ±0.1 s
+
+(a) Expensive evaluation BERT-base ViT-base Llama3-8B  
+
+> 30
+> 40
+> 50
+> 60
+> 70
+> % of sampled configs with finite MAE
+> 48.1 ±1.5%
+> 35.6 ±1.5%
+> 45.9 ±1.6%
+
+(b) Fraction of finite MAE 
+
+Figure 3: Key challenges in searching for FHE approximation configurations. (a) Even a single cleartext evaluation of MAE is time - consuming, and FHE evaluation is orders of magni-tude slower. (b) A large portion of the search space produces invalid (NaN/ ∞) MAE, resulting in a sparse feasible region. 
+
+3.3 Search Challenges 
+
+The search space defined in Section 3.2 is inherently combinatorial. For a single layer, the number of unique configurations is: 
+
+|S 𝑙𝑎𝑦𝑒𝑟 | = |S 𝑠𝑜 𝑓 𝑡𝑚𝑎𝑥 | × |S 𝑛𝑜𝑟𝑚 | × |S 𝑎𝑐𝑡 |
+
+=
+
+> 5
+
+∑︁ 
+
+> 𝑘 =1
+
+7𝑘 
+
+!
+
+× ( 4 · 2 · 4 · 2) × 9
+
+= 19 607 × 64 × 9 = 11 293 632 ≈ 1.13 × 10 7,
+
+(11) where |S 𝑠𝑜 𝑓 𝑡𝑚𝑎𝑥 | = 19 607 , |S 𝑛𝑜𝑟𝑚 | = 64 , and |S 𝑎𝑐𝑡 | = 9. When configurations are assigned per-layer, the total search volume grows to |S 𝑙𝑎𝑦𝑒𝑟 |𝐿 , yielding 11 293 632 12 ≈ 4.3 × 10 84 for 𝐿 =12 (BERT/ViT) and 11 293 632 32 ≈ 4.9 × 10 225 for 𝐿 =32 (LLaMA3 - 8B). Beyond the sheer size of this space, the optimization must overcome several additional fundamental difficulties. 
+
+• NP-Hard structure. Selecting per-layer approximation hy-perparameters under a depth–accuracy budget is a con-strained integer program that generalizes multi-dimensional knapsack and per-layer precision assignment, both NP-hard. No polynomial-time exact algorithm is therefore expected, motivating heuristic, population-based search rather than exhaustive or exact optimization. 
+
+• Conflicting objectives. The two objectives—multiplicative depth and MAE—are inherently conflicting: higher-degree polynomials and more iterations reduce MAE but consume more depth, and vice versa. Finding a single solution that simultaneously minimizes both objectives is generally infea-sible; instead, we seek a set of Pareto-optimal solutions that represent the efficient trade-off between the two. Stage 1 – All layers share the same configuration 
+
+> Init
+
+Stage 2 – Each layer has its own configuration                
+
+> MAE
+> Depth
+> λ1
+> λ2
+> λN
+> λ1′
+> λ2′
+> λN′
+> HV
+> HV′
+> MAE
+> Depth
+> λ1
+> λ2
+> λN
+> HV
+> MAE
+> Depth
+> λ1′
+> λ2′
+> λN′
+> HV′
+> λN′′
+> λ1′′
+> λ2′′
+> HV′′ Rejected
+> All layers share the
+> same configuration
+> Each layer has its
+> own configuration
+> Data subset surrogate
+> Distributed Eval
+> Acceleration
+> Techniques NSGA -II survival selection
+> Random Init Stage 1
+> Pareto
+> Data s ubset surrogate
+> Early -Layer proxy
+> Distributed Eval
+> Acceleration
+> Techniques
+> Stage 2
+> Pareto
+> Selection Crossover Survival Mutation Evaluation
+> Pareto Configs
+> Norm Softmax Act Norm Softmax Act
+
+Figure 4: ATLAS is a two-stage process. Stage 1 identifies a set of efficient layer - uniform approximations, and Stage 2 refines these into heterogeneous layer-wise configurations to further improve the depth–accuracy trade-off. 
+
+• Expensive evaluation. Each candidate configuration must be instantiated as a model and evaluated to obtain its MAE and depth. Even in the cleartext polynomial setting used during search, a single function evaluation (FE) is costly for computing MAE. As shown in Figure 3(a), a single FE un-der cleartext already takes 77 .5 s for BERT, 118 s for ViT, and 1007 s for LLaMA; under end-to-end FHE, the latency is even higher. This cost compounds in population-based meth-ods, where every generation evaluates an entire population, making naive deployment of evolutionary search prohibitive without aggressive evaluation acceleration. 
+
+• Sparse feasible region. A large fraction of the search space yields configurations that produce NaN or infinite MAE, ren-dering them useless. Figure 3(b) shows that the proportion of configurations with finite MAE is below 50% for all three models. This sparse signal makes the optimization landscape highly discontinuous, further complicating the search. 
+
+3.4 Two-Stage Search with NSGA-II 
+
+In ATLAS , to address the challenges outlined in Section 3.3, we de-velop a two-stage evolutionary optimization strategy based on the Non-dominated Sorting Genetic Algorithm II (NSGA-II) [ 20 ]. The core idea is to decompose the search: first explore the compact Lay-erProblem , where all 𝐿 layers share the same configuration; then refine them into per-layer settings by solving NetworkProblem ,where each layer can have different configurations. As shown in Figure 4, the first stage is computationally efficient and produces a set of layer-uniform yet high-quality configurations that serve as a 
+
+warm start for the second stage, thereby drastically accelerating convergence. 
+
+3.4.1 Preliminaries on NSGA-II. ATLAS adopts NSGA-II [ 20 ] to han-dle the two competing objectives—multiplicative depth and MAE— through Pareto dominance: 𝝀 1 dominates 𝝀 2 if it is no worse in both objectives and strictly better in at least one. The non-dominated set forms the Pareto front, whose quality we measure by the hyper-volume (HV) [ 57 ] with respect to a fixed reference point; a larger HV in the (depth, MAE) space indicates a front that achieves lower depth, lower error, or a better trade-off between the two. NSGA-II evolves a population of solutions (i.e., configuration vec-tors) over generations through four operators: selection , crossover ,and mutation produce new candidate solutions from the current population, and survival selection then determines which solutions advance to the next generation. The survival step is the core of NSGA-II: given a combined pool of current and newly generated solutions, non-dominated sorting partitions the pool into fronts 
+
+F1, F2, . . . , admitting solutions front by front; when a front cannot be fully admitted, crowding distance —the objective-space distance to neighbors within the same front—serves as a tiebreaker, favor-ing solutions in less densely populated regions. Together, the two criteria balance convergence toward the Pareto front with diversity along it, as illustrated in Figure 4. The main evolutionary operators are summarized below. 
+
+• Selection. Promising solutions, referred to as parents , are chosen via binary tournament selection: two individuals are randomly sampled, and the one with better non - dominated rank is kept. This process repeats until enough parents are selected. 
+
+• Crossover. A standard two-point crossover is used to ex-change sub-components between two parents at each cross-over point to create a new set of solutions, referred to as 
+
+offspring .
+
+• Mutation. An integer step mutation operator then perturbs each variable in the offspring solution by +1 or -1 following a binomial distribution with a probability proportional to one over the number of variables, rounding to the nearest integer within the bounds. 
+
+3.4.2 Two-Stage Framework. However, directly applying NSGA-II to the 10 𝐿 - variable NetworkProblem suffers from the curse of dimensionality: the initial population is extremely sparse, and the search wastes many evaluations on infeasible or poor regions. We observed that a configuration where all layers are identical already yields a reasonable baseline; evaluating it on the LayerProblem is fast, and the HV grows quickly. In contrast, the per -layer search requires tens of thousands of FEs to reach a comparable HV. This motivates an efficient two-stage design: 
+
+• LayerProblem — all 𝐿 layers share the same configuration by constraining: 
+
+
+
+𝒑 (1) = 𝒑 (2) = · · · = 𝒑 (𝐿 ) , where 𝒑 = (𝑝 1, 𝑝 2, 𝑝 3, 𝑝 4, 𝑝 5)
+
+𝜈 (1) 
+
+> 𝑎𝑡𝑡𝑛
+
+= 𝜈 (2) 
+
+> 𝑎𝑡𝑡𝑛
+
+= · · · = 𝜈 (𝐿 )
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝜈 (1) 
+
+> 𝑚𝑙𝑝
+
+= 𝜈 (2) 
+
+> 𝑚𝑙𝑝
+
+= · · · = 𝜈 (𝐿 )
+
+> 𝑚𝑙𝑝
+
+𝛾 (1) 
+
+> 𝑎𝑡𝑡𝑛
+
+= 𝛾 (2) 
+
+> 𝑎𝑡𝑡𝑛
+
+= · · · = 𝛾 (𝐿 )
+
+> 𝑎𝑡𝑡𝑛
+
+, 𝛾 (1) 
+
+> 𝑚𝑙𝑝
+
+= 𝛾 (2) 
+
+> 𝑚𝑙𝑝
+
+= · · · = 𝛾 (𝐿 )
+
+> 𝑚𝑙𝑝
+
+𝑝 (1) 
+
+> 𝑎𝑐𝑡
+
+= 𝑝 (2) 
+
+> 𝑎𝑐𝑡
+
+= · · · = 𝑝 (𝐿 ) 
+
+> 𝑎𝑐𝑡
+
+.
+
+(12) 
+
+• NetworkProblem — each layer has its own configuration, i.e. the 10 𝐿 -variable bounded integer space represented by 
+
+𝝀 in (7). Stage 1. NSGA - II searches the single - layer configuration that is applied identically to all 𝐿 layers. With a moderate budget (e.g., 
+
+1/10 of the total budget ), the algorithm produces a Pareto set of high-quality layer-uniform configurations 𝝀 𝑙𝑎𝑦𝑒𝑟 .
+
+Stage 2. These 𝝀 𝑙𝑎𝑦𝑒𝑟 , together with a small subset of randomly created configurations, form a seeded initial population of the 
+
+NetworkProblem for NSGA-II. Because 𝝀 𝑙𝑎𝑦𝑒𝑟 already resides in promising regions of the objective space, the search starts from a favorable basin and efficiently refines per -layer configurations. The Stage -2 budget (e.g., 9/10 of the total budget ) is set to match the total evaluation budget. 
+
+3.5 Accelerating the Search 
+
+Even with the two-stage strategy, each evaluation call remains expensive. To further reduce the cost of the search, we introduce two surrogate models that approximate the true objectives at a fraction of the cost and a distributed evaluation technique. 
+
+Data Subset Surrogate. A single evaluation over the full dataset dominates the search time. We observe that the MAE computed on a small random subset of the data is highly correlated with the full-dataset MAE. For a given configuration, one can view the subset MAE as an estimate of the true full-dataset MAE. That is, following Equation (6) , we are not evaluating all 𝑥 ∈ D , but take a sampled subset of D. To assess the reliability of this surrogate, we measure the Kendall 𝜏 rank correlation between the two quantities: 
+
+𝜏 close to 1 indicates that the ordering of configurations is largely preserved. Figure 5 (top right) reports 𝜏 and the resulting speed-up as a function of subset size. For BERT, a subset of 50 IMDB sentences achieves 𝜏 ≈ 0.85 with ∼470 × speed-up, sufficient for reliable rank-ing. For ViT, even 10 ImageNet validation images yield 𝜏 ≈ 0.936 
+
+with ∼440 × speed-up. Figure 5 (bottom left) and Figure 5 (bottom right) illustrate this correlation for the chosen sizes: each point represents one configuration whose evaluation is performed on a random subset, with the corresponding full-dataset MAE on the vertical axis. In practice, we set the proxy subset size to 10 for all three models (BERT, ViT, and LLaMA) throughout the search to achieve maximum speed-up. 
+
+Early-Layer Proxy. In the LayerProblem , all layers share the same configuration; consequently, the MAE measured at interme-diate Transformer layers is strongly correlated with the final-layer MAE. Figure 5 (top left) plots Kendall 𝜏 between early layer-𝑖 MAE and last layer MAE against the resulting speed-up. For BERT, layer 4 already gives 𝜏 = 0.927 with ∼3× speed-up; for ViT, layer 7 achieves 
+
+𝜏 = 0.914 with ∼1.8× speed-up. Figure 5 (middle left) and Figure 5 (middle right) show the corresponding relations between last layer MAE and layer-𝑖 MAE. Stopping the forward pass at an early layer avoids the computation of all subsequent Transformer layers, yield-ing an acceleration proportional to 𝐿 /𝑖 . This proxy is only valid when all layers are identical (Stage 1) and is disabled in Stage 2, where per-layer configurations vary independently. For the surrogate models of LLaMA3-8B, we use a data subset surrogate with 10 IMDB sentences, with 𝜏 = 0.905 and ∼454 ×
+
+speed-up, and a layer-9 MAE as the early-layer proxy, with 𝜏 =
+
+0.924 and ∼8.5× speed-up. The detailed experiments are shown in Appendix E. 
+
+Figure 5: MAE at an early layer as a surrogate for MAE at the last layer, and the correlation between the MAE on the full and subset of the dataset, are shown on BERT and ViT. Distributed Evaluation. Evaluation is further accelerated by dis-tributing the population across multiple GPUs, exploiting the natu-ral parallelism of evolutionary search: the fitness of every individual in a generation can be computed independently. 
+
+Overall Speed-Up. Combining the above techniques reduces the effective cost of a single evaluation by a factor of several hundred to over one thousand in Stage 1. In Stage 2, we drop the early-layer proxy as different layers may use different configurations, yet the search is already warm-started in a promising region of the objective space. Together, these techniques make the ATLAS 
+
+tractable even for large models such as LLaMA3-8B. 
+
+4 Experimental Validation 
+
+ATLAS automatically approximates pre-trained transformers for efficient homomorphic encryption through evolutionary search. Here, we design experiments to answer the following research questions (RQs): 
+
+• RQ1: Can ATLAS discover transformer approximation hyperpa-rameters that improve the accuracy–depth (inference latency) trade-off achieved by existing hand-tuned secure transformer inference solutions? (Section 4.2) 
+
+• RQ2: What insights does ATLAS reveal about the approxi-mation hyperparameters that improve the accuracy–depth? 
+
+(Section 4.3) • RQ3: How efficient and generalizable is ATLAS at approximat-ing pre-trained transformers that span the accuracy-efficiency trade-off? (Section 4.4) 
+
+4.1 Experimental Setup 
+
+Datasets. During search, both BERT and LLaMA use 10 randomly sampled IMDB [ 37 ] training sentences as the proxy subset for MAE evaluation. For the task evaluation, BERT is assessed on three GLUE benchmark tasks [ 50 ]: SST-2, RTE, and QNLI; LLaMA is evaluated on MMLU [ 29 ], GSM8K [ 18 ], and HumanEval [ 7]. Specifically, we evaluate MMLU on 64 sampled test examples from its abstract algebra subset. ViT uses 10 random ImageNet-1K [ 21 ] images as the search proxy, and the full ImageNet-1K validation set for final Top-1 accuracy measurement. 
+
+Hardware, Searching and FHE Libraries. The multi -objective search is implemented on top of PyMOO 0.6.1.6 , a Python frame-work for evolutionary optimization on cleartext polynomial model evaluation, with HuggingFace and Transformers 4.57.1 provid-ing off -the -shelf model architectures and weights, and our tensor backend is the PyTorch 2.6.0 + CUDA 12.4 .The FHE backend is Phantom-FHE [51], a GPU-accelerated C++ homomorphic encryption library that offers an interface similar to Microsoft SEAL [ 45 ] but operates on CUDA - enabled devices. Our FHE inference system additionally relies on LibTorch 2.6.0 +
+
+CUDA 12.4 for model weights loading. All search runs and FHE inference latency measurements were conducted on a server equipped with the NVIDIA RTX 4090 48 GB GPUs and an AMD EPYC 7343 16-core 32-thread processor with 256 GB RAM. We implemented the ATLAS FHE inference system in CUDA/C++ on top of NEXUS - EndtoEnd [ 47 ] and Phantom-FHE [51 ], under the RNS - CKKS scheme. The system adopts the ciphertext and plaintext row - packing strategies as well as the PCMM and CCMM from NEXUS - EndtoEnd, and extends the CCMM and PCMM operations to meet the requirements of ViT and LLaMA. Bootstrapping placement in our FHE inference system follows a strategy similar to that of THOR [ 38 ]: a level check is placed before every heavy homomorphic operator, and bootstrapping is triggered only when the remaining level of a ciphertext is insufficient for the next operation. Each bootstrapping acts on the 32 ,768 slots, and the reported #Boot is the number of such 32K-slot bootstrappings consumed by a full forward pass. 
+
+Search Parameters. The two-stage NSGA-II shares a unified set of hyperparameters across all three architectures. In LayerProblem 
+
+(Stage 1), the population size is 48 and the algorithm runs for 50 generations, yielding 48 · ( 50 + 1) = 2,448 FEs. In NetworkProb-lem (Stage 2), the population size is 96 and the algorithm runs for 225 generations, yielding 96 · ( 225 + 1) = 21 ,696 FEs. The total FE budget per run is therefore 24 ,144 across all models. Both crossover and mutation operators are consistent across stages: crossover is a two-point homogeneous operation with probability 0.9; muta-tion applies an integer step perturbation to each individual with probability 0.9, while the per-variable mutation rate is set to 1/𝑛 var .We use two objective metrics: MAE (defined in Equation (6) )and the total approximation multiplicative depth. The total approx-imation multiplicative depth is the sum of the multiplicative depths of all non-linear approximation components in Transformers; the depth of homomorphic matrix multiplications is excluded because it is fixed for a given architecture and does not affect the search. 
+
+RNS - CKKS Parameters. We follow the cryptographic parameter-ization as prior FHE inference works [ 1, 32 , 54 ]. The cyclotomic polynomial degree is 𝑁 = 216 ; the ciphertext budget is 𝐷 = 28 ;bootstrapping consumes 𝐾 = 14 levels, leaving 𝐷 − 𝐾 = 14 multi-plicative levels after a refresh. The base, special, and bootstrapping moduli each use 51 bits, while the default modulus uses 46 bits [ 13 ]. This configuration guarantees 128 -bit security. 
+
+Baselines. Architecture Baseline: We benchmark the proposed 
+
+ATLAS on three representative Transformer architectures with open-source weights in HuggingFace : the encoder of BERT -base ( 𝐿 =12 ), the vision encoder of ViT - Base ( 𝐿 =12 ), and the decoder of LLaMA3 -8B (𝐿 =32 ). For BERT and LLaMA, the number of tokens is set to 
+
+128 ; the original ViT-Base (Patch16-224) sequence length of 197 is padded to 256 to match the slots. 
+
+Approximation Baseline: For comparison, we reproduce the non - linear approximation recipes of NEXUS [ 54 ] and THOR [ 38 ]within our FHE inference system. For the iterative softmax of Cho et al. [ 16 ], we pair it with NEXUS [ 54 ] LayerNorm setting (𝜈 =4, 𝛾 =2) and a Chebyshev GELU [ 25 , 52 ] of degree 511 to obtain a high-precision complete end -to -end pipeline. All baselines are evaluated under the same cryptographic and hardware settings. Because the level of input ciphertext, homomorphic MM, packing strategies, and bootstrapping placements vary substantially across frameworks, our reproducing end - to -end latencies of NEXUS [ 54 ]and THOR [ 38 ] reported here reflect only the approximation con-figuration and are not directly comparable to those in the original papers; we deliberately adopt a simple row - packing homomorphic MM instead of the highly optimized alternatives (discussed in Sec-tion 5.2) to ensure a fair, isolated evaluation of the approximation recipes alone. 
+
+4.2 Main Results of ATLAS 
+
+For each neural network architecture, ATLAS obtains a set of MAE– depth Pareto configurations with two-stage search (as shown in Figure 4) on a small set of proxy data (e.g., IMDB). Then, ATLAS 
+
+evaluates these configurations on each downstream task to build the accuracy–depth Pareto front (or accuracy–latency Pareto front, see Appendix F for details). 
+
+4.2.1 BERT. The hand-tuned high-precision baseline using iter-ative softmax [ 16 ] (denoted IS) operates at total approximation depth 1356 with 588 bootstrappings, yielding a latency of 1107 .5 son RTX 4090 and accuracies of 93 .2% on SST-2, 69 .0% on RTE, and 
+
+91 .3% on QNLI. Figure 6 reports the accuracy–depth Pareto fronts discovered by ATLAS on the three GLUE tasks: SST-2, RTE and QNLI. The fronts are steep: a modest increase in total approximation mul-tiplicative depth yields configurations that match or exceed the IS in accuracy, while reducing latency substantially. For example, on SST-2, S4 comes within 0.2 pp of the IS at 93 .0% accuracy and 
+
+23 .6% lower latency; on RTE, R4 surpasses IS with 70 .0% accuracy and 25 .6% lower latency. The best configuration differs by task—S4 for SST-2, Q4 for QNLI, R4 for RTE—because different tasks have different preferences for the approximation configuration. This task-specific preference is exactly what a hand-crafted recipe cannot 900 1000 1100 1200 1300  
+
+> Total Approximation Multiplicative Depth ( )
+> 80
+> 82
+> 84
+> 86
+> 88
+> 90
+> 92
+> 94
+> SST-2 Accuracy (%)
+> S1
+> S2
+> S3
+> S4 X
+> Original BERT (93.23%)
+> ATLAS-S1-4 (Task-specific)
+> ATLAS-X (General)
+> Iterative Softmax (CCS '24)
+> THOR (reproduced)
+> THOR (paper)
+> NEXUS (paper)
+
+(a) SST-2 900 1000 1100 1200 1300    
+
+> Total Approximation Multiplicative Depth ( )
+> 89.5
+> 89.8
+> 90.0
+> 90.2
+> 90.5
+> 90.8
+> 91.0
+> 91.2
+> 91.5
+> QNLI Accuracy (%)
+> Q1
+> Q2
+> Q3 Q4 (X)
+> Original BERT (91.25%)
+> ATLAS-Q1-4 (Task-specific)
+> ATLAS-X (General)
+> Iterative Softmax (CCS '24)
+> NEXUS (paper)
+
+(b) QNLI 900 1000 1100 1200 1300   
+
+> Total Approximation Multiplicative Depth ( )
+> 60
+> 62
+> 64
+> 66
+> 68
+> 70
+> 72
+> RTE Accuracy (%)
+> R1
+> R2
+> R3
+> R4
+> X
+> Original BERT (68.95%)
+> ATLAS-R1-4 (Task-specific)
+> ATLAS-X (General)
+> Iterative Softmax (CCS '24)
+> THOR (paper)
+> NEXUS (paper)
+
+(c) RTE 
+
+Figure 6: Pareto fronts discovered by ATLAS on three tasks of BERT. Each point represents a non - dominated 𝝀 configuration, plotted in the space of multiplicative depth vs. downstream task accuracy. The iterative softmax baseline is shown as a reference. Dashed horizontal lines indicate the accuracy of the underlying cleartext model. 
+
+capture, and what ATLAS discovers automatically. Table 1a summa-rizes the results of Pareto configurations of BERT. Although several configurations are shared across tasks (S1=Q1=R1, S3=R2, Q3=R3), the task-specific choices differ, confirming that ATLAS adapts to the demands of each downstream task. Notably, configuration Q4 still performs well on all three tasks, providing a general balanced choice (denoted X) for multi-task deployment. As a result, for RQ1 , ATLAS 
+
+can automatically discover configurations that preserve or improve accuracy at substantially lower depth and latency in encoder-only architectures, advancing the accuracy–depth frontier over the hand-tuned baseline. 
+
+Comparison with NEXUS and THOR. As shown in Table 1a, we reproduce the non-linear approximations of NEXUS [ 54 ] and THOR [ 38 ] in 𝐷 −𝐾 = 14 levels, and evaluate them in our end-to-end system; these results are marked with †. The reproduced accura-cies fall below reports in their original papers. We conjecture that these hand-crafted recipes hard-code approximation domains—such as the GELU input interval and the constant softmax maximum— that are calibrated to the activation statistics of the specific model weights used in each work (and, in THOR’s case, to fine-tuned weights that are not publicly released). When the same recipes are applied to the open-source weights adopted in our reproduced setup, the activations fall outside these fixed domains, degrading accuracy. This highlights the generalizability of ATLAS . Notably, 
+
+ATLAS configurations also outperform both reproduced NEXUS and THOR in efficiency: it achieves lower depth, fewer bootstrappings, and lower latency than NEXUS and THOR. 
+
+Latency Breakdown. For an example, Figure 2 decomposes the end - to - end latency of IS (denoted FHE BERT) and S2 (i.e., ATLAS 
+
+FHE BERT in Figure 2) on an RTX 4090. ATLAS achieves a 28 .5% 
+
+speedup compared with baseline. Beyond the direct savings in the three approximations with ∼220 s, ATLAS configuration yields an additional indirect benefit: because the iterative softmax termi-nates at a lower multiplicative level 3 (occasionally 4 or 5), the subsequent CCMM 𝑺𝒐 ℎ 𝑽 ℎ (𝑺𝒐 ℎ = Softmax (𝑸 ℎ 𝑲 ℎ𝑇 /√𝑑 𝑘 )) operates at a reduced level. In the baseline, each 𝑺𝒐 ℎ 𝑽 ℎ consumes 1.89 s at level 14, whereas ATLAS executes it in only 0.62 –0.82 s, accounting for roughly ∼90 s of the total latency reduction. 900 1000 1100 1200 1300  
+
+> Total Approximation Multiplicative Depth ( )
+> 75
+> 76
+> 77
+> 78
+> 79
+> 80
+> 81
+> 82
+> ImageNet-1K Top-1 Accuracy (%)
+> V1
+> V2
+> V3
+> Original ViT-B/16 (80.32%)
+> ATLAS-V1-3
+> Iterative Softmax (CCS '24)
+
+(a) ViT on ImageNet-1K 2400 2600 2800 3000 3200 3400 3600   
+
+> Total Approximation Multiplicative Depth ( )
+> 30.5
+> 31.0
+> 31.5
+> 32.0
+> 32.5
+> 33.0
+> 33.5
+> MMLU Accuracy (%)
+> M1
+> M2
+> LLaMA3-8B (31.25%)
+> ATLAS-M1-2
+> Iterative Softmax (CCS '24)
+
+(b) LLaMA-3 on MMLU 2400 2600 2800 3000 3200 3400 3600  
+
+> Total Approximation Multiplicative Depth ( )
+> 25.5
+> 26.0
+> 26.5
+> 27.0
+> 27.5
+> 28.0
+> 28.5
+> 29.0
+> HumanEval Pass@1 (%)
+> H1
+> H2
+> LLaMA3-8B (26.22%)
+> ATLAS-H1-2
+> Iterative Softmax (CCS '24)
+
+(c) LLaMA-3 on HumanEval 2400 2600 2800 3000 3200 3400 3600   
+
+> Total Approximation Multiplicative Depth ( )
+> 13.5
+> 14.0
+> 14.5
+> 15.0
+> 15.5
+> 16.0
+> GSM8K Exact Match (%)
+> G1
+> G2
+> LLaMA3-8B (15.01%)
+> ATLAS-G1-2
+> Iterative Softmax (CCS '24)
+
+(d) LLaMA-3 on GSM8K 
+
+Figure 7: Pareto fronts discovered by ATLAS on ViT and three tasks of LLaMA. Each point represents a non - dominated 𝝀 
+
+configuration, plotted in the space of multiplicative depth vs. downstream task accuracy. The iterative softmax baseline is shown as a reference. Dashed horizontal lines indicate the accuracy of the underlying cleartext model. 
+
+4.2.2 ViT. The IS baseline achieves a top-1 accuracy of 80 .32% with a latency of 2944 .8 s, a total approximation multiplicative depth of 
+
+1356 , and 1608 bootstrappings. Figure 7a shows the accuracy–depth Pareto front discovered by ATLAS on ImageNet-1K, which has three configurations V1, V2 and V3, and a similar steep shape. The best configuration V3 surpasses the baseline with 80 .36% accuracy while reducing depth by 28 .8% , bootstrappings by 23 .5% , and latency by 
+
+18 .5% . Table 1b lists the Pareto configurations of ViT. For RQ1 ,these results also confirm that ATLAS can surpass the hand-tuned configuration in the vision encoder architecture. Table 1: Approximation depth, bootstrapping count, latency, and downstream accuracy of FHE Transformer inference. Mul Depth – total approximation multiplicative depth; #B – #Boot; Lat. – end-to-end FHE inference latency on RTX 4090. 
+
+† indicates results produced with our framework. The Pareto-optimal ones are highlighted in bold. 
+
+Mul Depth #B Lat. (s) Accuracy (%) SST2 QNLI RTE BERT-Base [22] - - - 93.2 91.3 69.0 IterSoftmax [16] 1356 588 1108 93.2 91.3 69.0 NEXUS [54] - - - 92.1 89.9 69.9 NEXUS † 948 912 1134 49.1 49.5 52.3 THOR [38] - - - 91.6 - 72.2 THOR † 1070 732 1023 80.7 52.4 52.2 
+
+ATLAS -S1 (R1, Q1) 840 390 793 85.2 90.5 65.7 
+
+ATLAS -Q2 847 390 795 88.2 90.6 65.0 
+
+ATLAS -S2 854 390 792 88.3 90.5 65.3 
+
+ATLAS -S3 (R2) 864 393 806 90.5 89.7 66.4 
+
+ATLAS -R3 (Q3) 879 393 809 87.4 91.2 68.6 
+
+ATLAS -R4 888 402 824 85.8 90.8 70.0 
+
+ATLAS -S4 918 411 846 93.0 90.6 68.6 
+
+ATLAS -Q4 (X) 919 408 845 92.9 91.2 68.9 
+
+(a) BERT-Base ( 𝐿 =12 ). 
+
+Mul Depth #B Lat. (s) Top-1 Accuracy (%) ImageNet-1K ViT-Base [24] - - - 80.32 IterSoftmax [16] 1356 1608 2944.8 80.32 
+
+ATLAS -V1 907 1206 2320.1 76.68 
+
+ATLAS -V2 915 1248 2445.8 79.80 
+
+ATLAS -V3 966 1230 2398.5 80 .36 
+
+(b) ViT-Base ( 𝐿 =12 ). 
+
+Mul Depth Accuracy (%) MMLU GSM8K HumanEval LLaMA3-8B [48] - 31.25 15.01 26.22 IterSoftmax [16] 3616 31.25 15.01 26.22 
+
+ATLAS -M1 (G1, H1) 2377 31.25 14.25 26.83 
+
+ATLAS -M2 (G2) 2386 32.81 15.24 25.61 
+
+ATLAS -H2 2390 31.25 14.71 28.05 (c) LLaMA3-8B ( 𝐿 =32 ). 
+
+4.2.3 LLaMA3. On three benchmarks (MMLU, GSM8K, and Hu-manEval) under a zero-shot, no-chain-of-thought (no-CoT) setting with 128 tokens, the IS has a total approximation depth of 3616 
+
+and achieves 31 .25% on MMLU, 15 .01% exact match on GSM8K, and 26 .22% pass@1 on HumanEval. Figure 7b (MMLU), Figure 7d (GSM8K), and Figure 7c (HumanEval) report the accuracy–depth Pareto fronts discovered by ATLAS , reducing depth by 33 .9% –34 .3% 
+
+across all tasks while matching or exceeding baseline accuracy, and the fronts are also steep. As a result, for the best configurations, the M2 (also G2) improves MMLU to 32 .81% and GSM8K to 15 .24% 
+
+with 34 .0% lower depth; on HumanEval, H2 improves pass@1 to 
+
+28 .05% with 33 .9% depth reduction. Table 1c summarizes the above configurations. Notably, configurations are shared across tasks: M1=G1=H1 and M2=G2. Overall, for RQ1 , these results also show that ATLAS can capture the task-specific configurations compared with a hand-crafted recipe in decoder-only architecture. S1                                                                                                                                                                                                                                                                                                                                                                                                                         
+
+> S2
+> S3
+> S4
+> Q1
+> Q2
+> Q3
+> R1
+> R2
+> R3
+> R4
+> X
+> Softmax iterations ( k)
+> 333433333333
+> 333433333333
+> 333433333333
+> 334433333433
+> 333433333333
+> 333433333333
+> 334333333333
+> 333433333333
+> 333433333333
+> 334333333333
+> 334333333433
+> 334333334433
+> SST-2 QNLI RTE X
+> 3
+> 4
+> S1
+> S2
+> S3
+> S4
+> Q1
+> Q2
+> Q3
+> R1
+> R2
+> R3
+> R4
+> X
+> LayerNorm Newton iters ( dnewt )
+> 111111111111
+> 111111111111
+> 112211111121
+> 222222222222
+> 111111111111
+> 111111111111
+> 221112222111
+> 111111111111
+> 112211111121
+> 221112222111
+> 222222222222
+> 111111111111
+> SST-2 QNLI RTE X
+> 1
+> 2
+> 3
+> 012345678910 11
+> BERT-Base Layer
+> S1
+> S2
+> S3
+> S4
+> Q1
+> Q2
+> Q3
+> R1
+> R2
+> R3
+> R4
+> X
+> always
+> p8GELU degree ( p)
+> 777777777887
+> 777777777887
+> 777777777887
+> 878777777987
+> 777777777887
+> 777777777887
+> 777777777887
+> 777777777887
+> 777777777887
+> 777777777887
+> 778777777887
+> 778787877997
+> SST-2 QNLI RTE X
+> 7
+> 8
+> 9
+
+Figure 8: Per-layer visualization of the Pareto configs of ATLAS 
+
+for BERT shown in Figure 6. V1                                                                                                                                                  
+
+> V2
+> V3
+> IS
+> Softmax iterations ( k)
+> 544444444444
+> 544444444444
+> 544444444444
+> 555555555555
+> 4
+> 5
+> V1
+> V2
+> V3
+> IS
+> LayerNorm Newton iters ( dnewt )
+> 111111111111
+> 111111111111
+> 222212122221
+> 4444444444441
+> 2
+> 4
+> 012345678910 11
+> ViT-Base Layer
+> V1
+> V2
+> V3
+> IS
+> GELU degree ( p)
+> 676676777756
+> 667777777766
+> 776677777767
+> 9999999999995
+> 6
+> 7
+> 9
+
+Figure 9: Per - layer visualization of the Pareto configs of ATLAS 
+
+for ViT shown in Figure 7a. 4.3 Layerwise ATLAS Analysis 
+
+For RQ2 , to better understand how ATLAS achieves the accuracy– efficiency trade -offs reported earlier, we examine the per - layer hy-perparameter configurations of several representative Pareto -optimal solutions. Two trends emerge from the visualizations in Figures 8 and 9. 
+
+Layerwise Allocation Can Expose Redundancy. As shown in Figure 8, for BERT, almost every solution across the three GLUE tasks sets the iterative softmax iteration count to 𝑘 = 3, substan-tially lower than the default 𝑘 = 5 used by IS from [ 16 ]. Because 𝑘 
+
+determines the effective lower bound of the softmax input domain (−2𝑘 ln 128 ), the 𝑘 = 3 suggests that almost all BERT Attention scores lie within [− 38 .8, 0], and the uniform 𝑘 = 5 is largely re-dundant. Only layers 3, 4, 9, and 10 occasionally increase 𝑘 to 4,indicating a limited need for a wider domain [− 77 .6, 0]. Also, a similar pattern holds for other modules: the Attention LayerNorm consistently uses 𝜈 = 1 or 2 Newton iterations across all configu-rations, well below the NEXUS reference of 𝜈 = 4; for the GELU activation, most layers settle at 𝑝 = 7 (degree 127 ), while layers 10 and 11 require 𝑝 = 8 or 9 (degree up to 511 ). These observations suggest that a large portion of the uniform safety margins built into manually designed approximations can be trimmed when layers are automatically configured independently. 
+
+Architecture - Specific Preferences. As shown in Figure 9, the optimal configuration pattern differs notably between BERT and ViT. In contrast to BERT, the ViT solutions use 𝑘 = 4 for 11 of the 
+
+12 layers and 𝑘 = 5 for the first layer, implying that the ViT Atten-tion scores span a wider numerical range on the image data; and the Attention LayerNorm 𝜈 values follow a similarly conservative profile. The GELU degrees are generally lower in ViT (i.e., 𝑝 = 5∼7
+
+vs. 𝑝 = 7∼9 in BERT). Consequently, the relative latency reduction over IS is smaller for ViT than for BERT, which may simply reflect the different intrinsic approximation demands of the two archi-tectures rather than any limitation of the search. Together, these findings indicate that the ideal approximation recipe is architecture -and dataset - dependent, and that an automated per - layer search, i.e., ATLAS , can help uncover such dependencies that are difficult to anticipate manually. 
+
+4.4 Search Efficacy 0 10k 20k 30k 60k 90k 
+
+> Number of Function Evaluations (FEs)
+> 0
+> 100
+> 200
+> 300
+> 400
+> Hypervolume (  )
+> 7× faster
+> 2× faster
+> Two-Stage Joint Optimization
+> Two-Stage Sequential Optimization
+> Single-Stage Joint Optimization
+> Single-Stage Sequential Optimization
+> Independent Optimization
+> via Grid Search (21,000 FEs)
+
+(a) HV vs. Num of FEs Original Data Subset     
+
+> Surrogate
+> +Early Layer
+> Surrogate
+> +Distributed
+> (8 GPUs)
+> 10 1
+> 10 0
+> 10 1
+> 10 2
+> Wall-Clock Time (hours)
+> 14.7d
+> 4.3h 3.6h
+> 22.3m
+> 82× faster 1.2× faster
+> 10× faster
+> Stage 1 (Layer)
+> Stage 2 (Network)
+
+(b) HV vs. Wall-clock Time 
+
+Figure 10: Search efficiency of ATLAS on BERT. (a) Comparison of optimisation strategies in terms of hypervolume achieved for a given number of function evaluations. (b) Impact of the acceleration techniques introduced in Section 3.5: each curve adds one more technique on top of the previous. Comparison of Optimization Strategies. Figure 10a tracks the HV of the Pareto front as a function of the number of FEs for five representative strategies. Recall that a larger HV in the (depth, MAE) space indicates a superior trade -off between multiplicative depth and approximation error. The most basic strategy, independent optimization via grid search , separately grids the softmax space and the combined normalization + activation space, then picks the best combination. It requires roughly 21 ,000 FEs to reach an HV of 
+
+∼310 , serving as a lower-bound baseline. 
+
+Sequential optimization (either single -stage or two -stage) op-timizes one group of variables at a time while freezing the oth-ers, cycling through softmax, normalization, and activation. In the single -stage variant, all layers are jointly configured; in the two -stage variant, a warm - start is used before per - layer tuning. Both are consistently outperformed by their joint optimization 
+
+counterparts, where all variables are evolved together. For instance, two -stage joint optimization reaches an HV of ∼420 + in only ∼14 ,000 
+
+FEs, roughly twice as fast as two -stage sequential optimization (∼30 ,000 FEs). This gap confirms that the three approximation blocks in Transformer are interdependent and should not be treated in isolation .The two - stage joint optimization (our ATLAS configuration) further accelerates progress: it achieves an HV of ∼450 + within 
+
+∼30 ,000 FEs, whereas single - stage joint optimization plateaus at a lower HV despite consuming more evaluations. The two -stage design therefore provides a 7× speed - up over single - stage joint optimization for reaching a given HV, highlighting the benefit of the layer-wise warm-start. 
+
+Impact of Acceleration Techniques. Figure 10b breaks down the wall -clock time required to reach a target HV when the accelera-tion techniques from Section 3.5 are incrementally turned on. The original two - stage NSGA - II without any surrogate would require roughly 14 .7 days to complete the search budget. The data subset surrogate alone reduces this time to 4.3 hours, an 82 × speed - up, by evaluating MAE on only 10 representative samples instead of the full calibration set. Adding the early - layer proxy in Stage 1 further shortens the run to 3.6 hours ( 1.2× ad-ditional speed - up), because the forward pass is truncated at an intermediate layer where the MAE is strongly correlated with the last - layer MAE. Finally, distributed evaluation over 8 GPUs brings the search time down to 22 .3 minutes, an extra 10 × accel-eration obtained from the natural parallelism of the evolutionary algorithm. Altogether, for RQ3 , these techniques shrink the search time from more than two weeks to under half an hour, making the optimization pipeline practical not only for small models with encoder-only and vision encoder architecture, but also for large models such as LLaMA. 
+
+5 Related Work 5.1 Non-linear Approximation Design 
+
+Designing New Approximations. To enable secure Transformer inference under FHE, recent efforts focus on designing approxima-tions for the key non-linear components: softmax, normalization, and activation. One line of works [ 40 , 44 , 56 ] design HE-friendly alternatives and retrain the entire model; however, full retraining or fine-tuning is computationally intensive and expensive for mod-ern LLMs. The most relevant direction to our work is therefore the post-training approach: replacing the non-linear operations directly with high-precision polynomial approximations while keeping the pretrained weights frozen, as done in NEXUS [ 54 ], THOR [ 38 ], and MOAI [ 55 ], etc. Additionally, several studies specifically tackle the most challenging operator in Transformer, softmax, with special-ized approximation strategy [16, 38, 41]. 
+
+Manual Configuration. Despite their effectiveness, all above methods rely on heuristics and expert experience to set approxi-mation hyperparameters such as polynomial degree and iteration counts. These approximations are often adapted from numerical methods (e.g., Goldschmidt algorithm [ 27 ], Newton’s method, and Remez algorithm for power-basis/Chebyshev polynomial, etc.), and a significant safety margin is deliberately built in to ensure cor-rectness. Within deep neural networks, however, the precision requirements typically leave a considerable slack that heuristic or hand-tuned configurations often fail to exploit. 
+
+Automatic Configuration. The work closest to ours is AutoFHE [ 1], which uses multi-objective optimization and full fine-tuning to search per-layer ReLU approximations in FHE CNNs from a small set of three candidate degrees (identity, quadratic, and minimax composite [ 33 , 34 ]). However, this approach is limited to CNNs and does not readily transfer to Transformers, especially modern LLMs. Since the number of non-linearities is much larger, the search space explodes, the functional forms are more diverse, and the fine-tuning cost becomes prohibitive. Prior to AutoFHE, several works applied neural architecture search to FHE CNNs to reduce the number of approximated ReLUs and select architectures [ 26 , 30 , 46 ]. These methods require neural architectural modifications and training from scratch, making them equally ill-suited for Transformers. In contrast, ATLAS is the first method to automatically configure per-layer polynomial approximations for FHE Transformers. Unlike AutoFHE, whose search is coupled to gradient-based fine-tuning of the network, ATLAS operates entirely post-training on a frozen pretrained model, and therefore scales to settings where fine-tuning is prohibitively expensive, such as the 8B-parameter LLaMA3. It fur-ther generalizes across encoder-only (BERT), decoder-only (LLaMA3), and vision (ViT) Transformers—rather than the ReLU-only CNNs targeted by prior automated methods—systematically exploiting the precision slack that hand-tuned configurations leave unused. 
+
+5.2 FHE Inference System Design 
+
+Efficient Homomorphic Matrix Multiplication. Several recent frameworks have focused on optimizing packing and homomor-phic MM to reduce overhead. For example, NEXUS [ 54 ] eliminates wasted ciphertext slots through compression/decompression and exploits monomial properties to lower communication. THOR [ 38 ]formulates MM via diagonals, using ciphertext rotations and en-trywise products to compute matrix products efficiently, and packs multiple diagonals into one ciphertext for parallelism. 
+
+End-to-End Transformer Inference. While many works pro-vide individual homomorphic operators, few deliver a complete, reproducible end-to-end pipeline. NEXUS [ 54 ] offers standalone components, but how multiple packing strategies should coexist or interconvert across modules remains unclear. THOR [ 38 ] presents an end-to-end system, yet it requires precomputing and storing over 180 GB of model weights and keys, and demands at least 80 GB of GPU memory for a single BERT inference; moreover, the supplied configuration is tied to its precomputed weights and cannot easily generalize to other downstream tasks. MOAI [ 55 ] and ARION [ 52 ]both achieve end-to-end inference, but at substantial cost: MOAI reports its end-to-end evaluation on a high-memory datacenter GPU (an H200), whereas ARION runs on CPU only. Also, their un-amortized latency with batch size 256 reaches 10 and 16 hours per 128-token sequence, respectively, making the cost of deployment testing prohibitively high. Although their amortized throughput is competitive, the underlying packing algorithms do not support smaller batch sizes without substantial rework. Given these barriers, we pivot to a basic row-packing imple-mentation built upon and extended from an open-source codebase NEXUS-EndtoEnd [ 47 ]. While the simple row-packing homomor-phic MM is not as competitive as the highly optimized alternatives, it does not affect the configuration of non-linear approximations and provides a fair, transparent baseline for evaluating different approximation choices. Our system supports the full lifecycle from approximation search to end-to-end ciphertext model evaluation. Importantly, our ap-proach is orthogonal to the design of efficient packing and MM; our search framework serves as a general-purpose tool that com-plements any of the above high-performance systems by providing automatic approximation configurations. 
+
+6 Concluding Remarks 
+
+The central insight of this paper is simple: existing FHE transformer frameworks fix approximation hyperparameters per function type and apply them uniformly across layers, leaving significant depth savings unrealized. ATLAS addresses this by treating approxima-tion configuration as an optimization problem rather than a design choice, automatically discovering per-layer configurations that ex-isting frameworks can adopt without modification. Applied to any hand-designed FHE transformer, ATLAS delivers a 35 percent reduc-tion in multiplicative depth and a 25 percent reduction in inference latency, with negligible accuracy loss and no manual effort, in under one hour of search. These are gains that require no changes to the underlying cryptographic pipeline and only negligible accuracy tradeoff, obtainable entirely through automated post-processing. We also demonstrate, for the first time, that this approach gener-alizes to vision transformers, extending the scope of private infer-ence beyond the language models that prior work has exclusively targeted. 
+
+References          
+
+> [1] Wei Ao and Vishnu Naresh Boddeti. 2024. AutoFHE: Automated adaption of CNNs for efficient evaluation over FHE. In Proceedings of the 33rd USENIX Security Symposium . 2173–2190. [2] Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E Hinton. 2016. Layer normaliza-tion. arXiv preprint arXiv:1607.06450 (2016). [3] Youngjin Bae, Jaehyung Kim, Damien Stehlé, and Elias Suvanto. 2024. Bootstrap-ping small integers with CKKS. In International Conference on the Theory and Application of Cryptology and Information Security . Springer, 330–360. [4] Jean-Philippe Bossuat, Christian Mouchet, Juan Troncoso-Pastoriza, and Jean-Pierre Hubaux. 2021. Efficient bootstrapping for approximate homomorphic encryption with non-sparse keys. In Annual International Conference on the Theory and Applications of Cryptographic Techniques . 587–617.
+
+[5] Zvika Brakerski. 2012. Fully homomorphic encryption without modulus switch-ing from classical GapSVP. In Annual Cryptology Conference . 868–886. [6] Zvika Brakerski, Craig Gentry, and Vinod Vaikuntanathan. 2014. (Leveled) fully homomorphic encryption without bootstrapping. ACM Transactions on Computation Theory (TOCT) 6, 3 (2014), 1–36. [7] Mark Chen, Jerry Tworek, Heewoo Jun, et al. 2021. Evaluating Large Language Models Trained on Code. arXiv preprint arXiv:2107.03374 (2021). [8] Jung Hee Cheon, Wonhee Cho, Jaehyung Kim, and Damien Stehlé. 2023. Ho-momorphic multiple precision multiplication for CKKS and reduced modulus consumption. In Proceedings of the 2023 ACM SIGSAC Conference on Computer and Communications Security . 696–710. [9] Jung Hee Cheon, Hyeongmin Choe, Minsik Kang, Jaehyung Kim, Seonghak Kim, Johannes Mono, and Taeyeong Noh. 2025. Grafting: decoupled scale factors and modulus in RNS-CKKS. In Proceedings of the 2025 ACM SIGSAC Conference on Computer and Communications Security . 1098–1112. [10] Jung Hee Cheon, Kyoohyung Han, Andrey Kim, Miran Kim, and Yongsoo Song. 2018. Bootstrapping for approximate homomorphic encryption. In Annual Inter-national Conference on the Theory and Applications of Cryptographic Techniques .360–384. [11] Jung Hee Cheon, Kyoohyung Han, Andrey Kim, Miran Kim, and Yongsoo Song. 2018. A full RNS variant of approximate homomorphic encryption. In 
+
+International Conference on Selected Areas in Cryptography . 347–368. https: //link.springer.com/chapter/10.1007/978-3-030-10970-7_16. [12] Jung Hee Cheon, Guillaume Hanrot, Jongmin Kim, and Damien Stehlé. 2025. SHIP: A shallow and highly parallelizable CKKS bootstrapping algorithm. In 
+
+Annual International Conference on the Theory and Applications of Cryptographic Techniques . Springer, 398–428. [13] Jung Hee Cheon, Minki Hhan, Seungwan Hong, and Yongha Son. 2019. A Hybrid of Dual and Meet-in-the-Middle Attack on Sparse and Ternary Secret LWE. IEEE Access 7 (2019), 89497–89506. [14] Jung Hee Cheon, Andrey Kim, Miran Kim, and Yongsoo Song. 2017. Homo-morphic encryption for arithmetic of approximate numbers. In International conference on the theory and application of cryptology and information security .Springer, 409–437. [15] Ilaria Chillotti, Nicolas Gama, Mariya Georgieva, and Malika Izabachène. 2020. TFHE: fast fully homomorphic encryption over the torus. Journal of Cryptology 
+
+33, 1 (2020), 34–91. [16] Wonhee Cho, Guillaume Hanrot, Taeseong Kim, Minje Park, and Damien Stehlé. 2024. Fast and accurate homomorphic softmax evaluation. In Proceedings of the 2024 on ACM SIGSAC Conference on Computer and Communications Security .4391–4404. [17] Hyeongmin Choe, Jaehyung Kim, Damien Stehlé, and Elias Suvanto. 2025. Lever-aging discrete CKKS to bootstrap in high precision. In Proceedings of the 2025 ACM SIGSAC Conference on Computer and Communications Security . 1083–1097. [18] Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser, Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano, Christopher Hesse, and John Schulman. 2021. Training Verifiers to Solve Math Word Problems. arXiv preprint arXiv:2110.14168 (2021). [19] Leo de Castro, Daniel Escudero, Adya Agrawal, Antigoni Polychroniadou, and Manuela Veloso. 2025. EncryptedLLM: Privacy-Preserving Large Language Model Inference via GPU-Accelerated Fully Homomorphic Encryption. In Proceedings of the International Conference on Machine Learning .[20] K. Deb, A. Pratap, S. Agarwal, and T. Meyarivan. 2002. A fast and elitist multiobjec-tive genetic algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation 
+
+6, 2 (2002), 182–197. doi:10.1109/4235.996017 [21] Jia Deng, Wei Dong, Richard Socher, Li-Jia Li, Kai Li, and Li Fei-Fei. 2009. Imagenet: A large-scale hierarchical image database. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition . 248–255. [22] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. Bert: Pre-training of deep bidirectional transformers for language understanding. In 
+
+Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies . 4171–4186. [23] Ye Dong, Wen-jie Lu, Yancheng Zheng, Haoqi Wu, Derun Zhao, Jin Tan, Zhicong Huang, Cheng Hong, Tao Wei, and Wenguang Chen. 2023. Puma: Secure inference of llama-7b in five minutes. arXiv preprint arXiv:2307.12533 (2023). https: //arxiv.org/abs/2307.12533 [24] Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xi-aohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, and Neil Houlsby. 2021. An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale. In Proceedings on the International Conference on Learning Representations .[25] Austin Ebel, Karthik Garimella, and Brandon Reagen. 2025. Orion: A Fully Homomorphic Encryption Framework for Deep Learning. In Proceedings of the 30th ACM International Conference on Architectural Support for Programming Languages and Operating Systems . 734–749. [26] Zahra Ghodsi, Akshaj Kumar Veldanda, Brandon Reagen, and Siddharth Garg. 2020. Cryptonas: Private inference on a relu budget. In Proceedings of the Advances in Neural Information Processing Systems , Vol. 33. 16961–16971. [27] Robert E Goldschmidt. 1964. Applications of division by convergence . Ph. D. Dissertation. Massachusetts Institute of Technology. [28] Seyda Nur Guzelhan, Lohit Daksha, Carlos Agulló Domingo, Gilbert Jonatan, John Kim, Jose L. Abellan, David Kaeli, and Ajay Joshi. 2026. ELLMo: Packing-and Depth-Aware Encrypted Transformer Inference. Cryptology ePrint Archive, Paper 2026/198 (2026). https://eprint.iacr.org/2026/198 [29] Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas Mazeika, Dawn Song, and Jacob Steinhardt. 2021. Measuring Massive Multitask Language Un-derstanding. In Proceedings of the International Conference on Learning Represen-tations .[30] Nandan Kumar Jha, Zahra Ghodsi, Siddharth Garg, and Brandon Reagen. 2021. Deepreduce: Relu reduction for fast private inference. In Proceedings of the Inter-national Conference on Machine Learning . PMLR, 4839–4849. [31] Andrey Kim, Ahmet Can Mert, Anisha Mukherjee, Aikata Aikata, Maxim Deryabin, Sunmin Kwon, Hyung Chul Kang, and Sujoy Sinha Roy. 2024. Explor-ing the advantages and challenges of fermat NTT in FHE acceleration. In Annual International Cryptology Conference . Springer, 76–106. [32] Eunsang Lee, Joon-Woo Lee, Junghyun Lee, Young-Sik Kim, Yongjune Kim, Jong-Seon No, and Woosuk Choi. 2022. Low-complexity deep convolutional neural networks on fully homomorphic encryption using multiplexed parallel con-volutions. In Proceedings of the International Conference on Machine Learning .12403–12422. [33] Eunsang Lee, Joon-Woo Lee, Jong-Seon No, and Young-Sik Kim. 2021. Minimax approximation of sign function by composite polynomial for homomorphic comparison. IEEE Transactions on Dependable and Secure Computing 19, 6 (2021), 3711–3727. [34] Junghyun Lee, Eunsang Lee, Joon-Woo Lee, Yongjune Kim, Young-Sik Kim, and Jong-Seon No. 2023. Precise approximation of convolutional neural networks for homomorphically encrypted data. IEEE Access 11 (2023), 62062–62076. [35] Lawrence Lim, Vikas Kalagi, Divyakant Agrawal, and Amr El Abbadi. 2025. Tricycle: Private Transformer Inference with Tricyclic Encodings. Cryptology ePrint Archive, Paper 2025/1200 (2025). https://eprint.iacr.org/2025/1200 [36] Wen-jie Lu, Zhicong Huang, Zhen Gu, Jingyu Li, Jian Liu, Cheng Hong, Kui Ren, Tao Wei, and WenGuang Chen. 2025. BumbleBee: Secure Two-party Inference Framework for Large Transformers. In Proceedings of the 32nd Annual Network and Distributed System Security Symposium .[37] Andrew L. Maas, Raymond E. Daly, Peter T. Pham, Dan Huang, Andrew Y. Ng, and Christopher Potts. 2011. Learning Word Vectors for Sentiment Analysis. In Proceedings of the 49th Annual Meeting of the Association for Computational Linguistics: Human Language Technologies , Dekang Lin, Yuji Matsumoto, and Rada Mihalcea (Eds.). Association for Computational Linguistics, Portland, Oregon, USA, 142–150. https://aclanthology.org/P11-1015/ [38] Jungho Moon, Dongwoo Yoo, Xiaoqian Jiang, and Miran Kim. 2025. THOR: Secure transformer inference with homomorphic encryption. In Proceedings of the 2025 ACM SIGSAC Conference on Computer and Communications Security .3765–3779. [39] Qi Pang, Jinhao Zhu, Helen Möllering, Wenting Zheng, and Thomas Schneider. 2024. BOLT: Privacy-Preserving, Accurate and Efficient Inference for Transform-ers. In 2024 IEEE Symposium on Security and Privacy (SP) . 4753–4771. [40] Dongjin Park, Eunsang Lee, and Joon-Woo Lee. 2025. Powerformer: Efficient and High-Accuracy Privacy-Preserving Language Model with Homomorphic Encryption. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics . 11090–11111. [41] Hanjun Park, Byeong-Seo Min, Jiheon Woo, Min-Wook Jeong, Jongho Shin, Yongwoo Lee, Young-Sik Kim, and Yongjune Kim. 2026. Efficient Softmax Refor-mulation for Homomorphic Encryption via Moment Generating Function. arXiv preprint arXiv:2602.01621 (2026). [42] Hongyuan Qu and Guangwu Xu. 2023. Improvements of homomorphic secure evaluation of inverse square root. In International Conference on Information and Communications Security . Springer, 110–127. [43] Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya Sutskever, et al . 2019. Language models are unsupervised multitask learners. OpenAI blog 
+
+1, 8 (2019), 9. [44] Donghwan Rho, Taeseong Kim, Minje Park, Jung Woo Kim, Hyunsik Chae, Ernest K Ryu, and Jung Hee Cheon. 2025. Encryption-Friendly LLM Architecture. In Proceedings of the International Conference on Learning Representations .[45] SEAL. 2020. Microsoft SEAL is an easy-to-use and powerful homomorphic encryption library. https://github.com/Microsoft/SEAL [46] Wenting Zheng Srinivasan, PMRL Akshayaram, and Popa Raluca Ada. 2020. Delphi: A cryptographic inference service for neural networks. In Proceedings of the 29th USENIX Security Symposium . 2505–2522. [47] Zhengyuan Su. 2025. Reproducing NEXUS with Phantom bootstrapping. https: //github.com/timzsu/NEXUS-End2End [48] Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet, Marie-Anne Lachaux, Timothée Lacroix, Baptiste Rozière, Naman Goyal, Eric Hambro, Faisal Azhar, et al . 2023. Llama: Open and efficient foundation language models. arXiv preprint arXiv:2302.13971 (2023). https://arxiv.org/abs/2302.13971 [49] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017. Attention is all you need. Advances in neural information processing systems 30 (2017). [50] Alex Wang, Amanpreet Singh, Julian Michael, Felix Hill, Omer Levy, and Samuel R. Bowman. 2019. GLUE: A Multi-Task Benchmark and Analysis Platform for Natural Language Understanding. In Proceedings on the International Conference on Learning Representations .[51] Hao Yang, Shiyu Shen, Wangchen Dai, Lu Zhou, Zhe Liu, and Yunlei Zhao. 2024. Phantom: A cuda-accelerated word-wise homomorphic encryption library. IEEE Transactions on Dependable and Secure Computing 21, 5 (2024), 4895–4906. [52] Linhan Yang, Jingwei Chen, Wangchen Dai, Shuai Wang, Wenyuan Wu, and Yong Feng. 2025. ARION: Attention-Optimized Transformer Inference on Encrypted Data. Cryptology ePrint Archive, Paper 2025/2271 (2025). https://eprint.iacr.org/ 2025/2271 [53] Biao Zhang and Rico Sennrich. 2019. Root mean square layer normalization. In           
+
+> Proceedings of the Advances in Neural Information Processing Systems .[54] Jiawen Zhang, Xinpeng Yang, Lipeng He, Kejia Chen, Wen-jie Lu, Yinghao Wang, Xiaoyang Hou, Jian Liu, Kui Ren, and Xiaohu Yang. 2025. Secure transformer inference made non-interactive. In Proceedings of the 32nd Annual Network and Distributed System Security Symposium .[55] Linru Zhang, Xiangning Wang, Jun Jie Sim, Zhicong Huang, Jiahao Zhong, Huax-iong Wang, Pu Duan, and Kwok-Yan Lam. 2026. MOAI: Module-optimizing architecture for non-interactive secure transformer inference. In Proceedings of the 14th International Conference on Learning Representations .[56] Itamar Zimerman, Moran Baruch, Nir Drucker, Gilad Ezov, Omri Soceanu, and Lior Wolf. 2024. Converting transformers to polynomial form for secure inference over homomorphic encryption. In Proceedings of the International Conference on Machine Learning . 62803 – 62814. [57] E. Zitzler and L. Thiele. 1999. Multiobjective evolutionary algorithms: a com-parative case study and the strength Pareto approach. IEEE Transactions on Evolutionary Computation 3, 4 (1999), 257–271. doi:10.1109/4235.797969
+
+A Hypervolume 
+
+For a set of solutions S and a reference point 𝒓 , the hypervol-ume [ 57 ] HV (S , 𝒓 ) measures the portion of the objective space that is dominated by at least one solution in S and, dominates 𝒓 
+
+at the same time. As shown in Figure 11, in the two - dimensional minimization case with 𝑓 1 vs. 𝑓 2 (where smaller values are better, e.g., MAE vs. multiplicative depth), this corresponds to the total area of the union of the rectangles that have a solution point and 
+
+𝒓 as opposite corners. Given two solutions 𝒂 and 𝒃 (both better than 𝒓 in all objectives), the hypervolume is exactly the area cov-ered by the two rectangles defined by (𝒂 , 𝒓 ) and (𝒃 , 𝒓 ), without double - counting their overlap. Intuitively, a larger hypervolume is better , which indicates that the solution set covers more of the region between the solutions and the reference point, i.e., closer to the true Pareto front. min  𝑓 2
+
+min  𝑓 1
+
+a
+
+b
+
+HV
+
+r
+
+Figure 11: Illustration of the hypervolume in two-dimensional minimization case. 
+
+B FHE Inference System Implementation 
+
+We develop our GPU-accelerated FHE inference system based on our extensions of an open-source codebase, i.e., NEXUS-End2End [ 47 ]. Our experiment platform is a modified version RTX 4090 with 48GB. The encoder of BERT, decoder of LLaMA, and vision encoder of ViT can be run in constrained 40GB GPU based on our FHE inference system. As a result, our system’s reliance on GPU memory is sig-nificantly lower than that of existing frameworks [ 38 , 54 , 55 ]. We have also integrated LibTorch into our library, allowing us to build models directly by reading Torch weights, rather than pre-storing large amounts of encoded plaintext weights. In our system, we can pre-compute the weights packing (this requires ∼200 GB RAM for BERT), or dynamically pack the weights in runtime. 
+
+B.1 Polynomial Evaluation with Paterson–Stockmeyer Method 
+
+The Chebyshev coefficients of exponential function, inverse square root, GELU, and SiLU used in this work were generated directly by the chebyshevform function in Sollya 8.0 , with the intermediate precision set to 1024 bits. After generation, all coefficients with absolute values smaller than 10 −14 were set to zero. The resulting coefficients were stored in scientific notation, with 40 decimal digits retained for each coefficient. Also, we implement the Paterson - Stockmeyer (PS) polynomial evaluation method in our FHE inference system and apply it uni-formly to both power - basis and Chebyshev - basis polynomials. Let 
+
+deg (𝑝 ) be the polynomial degree. For a power - basis polynomial the multiplicative depth is ⌈log 2 (deg (𝑝 ) + 1)⌉ ; for a Chebyshev - basis polynomial, a single additional linear transformation is required on the input, yielding a depth of ⌈log 2 (deg (𝑝 ) + 1)⌉ + 1.
+
+B.2 Details of Iterative Softmax in ATLAS 
+
+Following Cho et al. [ 16 ], the polynomial degree of exponential approximation is fixed to 15 ; the input interval for generating each degree-(2𝑝 (𝑖 ) 
+
+> 𝑗
+
+−1) polynomial depends on the iteration index 𝑗 :
+
+(0.085 , 256 ) for 𝑗 =1, (0.003 , 1.238 ) for 𝑗 ∈{ 2, 3, 4}, and (0.0036 , 1.0816 )
+
+for 𝑗 =5, as shown in Table 2. 
+
+Table 2: Search space for the iterative softmax approxima-tion. The exponential function is approximated by a 15 -degree polynomial. The inverse square root in iteration 𝑗 
+
+uses a Chebyshev polynomial of degree 2𝑝 𝑗 −1, where 𝑝 1 ∈[ 1, 7]
+
+(non - zero) and 𝑝 2, . . . , 𝑝 5 ∈[ 0, 7]. A zero 𝑝 𝑗 omits that iteration. 
+
+iter. 𝑗 degree input range 
+
+exp (𝑥 ) all 15 (− 8, 0)
+
+1/√𝑥 
+
+1 2𝑝 1 − 1 (0.085 , 256 )
+
+2 2𝑝 2 − 1 (0.003 , 1.238 )
+
+3 2𝑝 3 − 1 (0.003 , 1.238 )
+
+4 2𝑝 4 − 1 (0.003 , 1.238 )
+
+5 2𝑝 5 − 1 (0.0036 , 1.0816 )
+
+B.3 Per-Layer Softmax Max-Constant 
+
+In FHE, dynamically evaluating max 𝑖 𝑥 𝑖 in the softmax exponenti-ation is prohibitively expensive. Following prior work [ 54 ], each per-layer maximum is replaced by a fixed constant in searching and FHE inference, which is calibrated on a single real-data sample using the iterative softmax [16]-based baseline. For BERT - Base ( 𝐿 = 12 ), one IMDB sentence is used, yielding the 12 integer constants: 
+
+𝒄 𝑏𝑒𝑟𝑡 = [ 13 , 18 , 34 , 16 , 12 , 13 , 13 , 12 , 13 , 12 , 15 , 10 ], (13) for ViT-Base ( 𝐿 = 12 ), one ImageNet-1K validation image gives: 
+
+𝒄 𝑣𝑖𝑡 = [ 108 , 32 , 22 , 14 , 15 , 15 , 15 , 13 , 15 , 13 , 13 , 9 ], (14) for LLaMA3-8B ( 𝐿 = 32 ), the same IMDB procedure yields: 
+
+𝒄 𝑙𝑙𝑎𝑚𝑎 = [ 22 , 7, 5, 6, 6, 9, 9, 8, 9, 10 , 9, 7, 6, 9, 10 , 9,
+
+9, 9, 13 , 11 , 12 , 10 , 8, 13 , 9, 9, 10 , 9, 12 , 11 , 11 , 89 ]. (15) These vectors are injected directly into our softmax computation of all configurations in cleartext simulated evaluation and FHE inference. 
+
+B.4 Homomorphic Matrix Multiplication 
+
+For PCMM, we follow the BSGS-based implementation used in prior work [ 47 ]. Since each ciphertext has 32768 = 128 × 256 slots, we use ct. (128 , 128 )× pt. (128 , 128 ) as the basic PCMM operator, which fits within one ciphertext. The ciphertext is first expanded into 16 baby-step rotations. For each of the 16 giant steps, the corresponding plaintext diagonals are encoded and multiplied with the baby-step ciphertexts, and the partial sums are then rotated and accumulated to the final output. Overall, one ct. (128 , 128 )× pt. (128 , 128 ) PCMM requires 16 × 16 = 256 plaintext-ciphertext multiplications and 32 rotations, including 16 baby-step rotations and 16 giant-step rotations. The computation consumes one level. For higher-dimensional PCMM, we decompose the computation into independent ct. (128 , 128 )× pt. (128 , 128 ) block operations and combine the partial results using homomorphic rotations and addi-tions. For ct. (𝐴, 𝐵 )× pt. (𝐶, 𝐷 ), this gives (𝐴 · 𝐵 · 𝐶 )/( 2 · 128 3) basic block operations, while the extended PCMM still consumes only one level. We also extend the codebase [ 47 ] to support BSGS-based CCMM using rotations and precomputed masks. A ct. (128 , 128 )× 
+
+ct. (128 , 128 ) CCMM consumes three levels due to masking and ciphertext-ciphertext multiplication. Unlike PCMM, this CCMM implementation is not dimension-generic, since each new matrix shape requires separately designed masks. 
+
+C Non-linear Approximation in NEXUS C.1 Softmax in NEXUS 
+
+Limit Exponential Function. The NEXUS adopts the limit approx-imation 𝑝 (𝑥 ) = (1 + 𝑥 /2𝑟 )2𝑟 
+
+, 𝑟 = 7 to approximate the exponential function exp (𝑥 ), consuming 8 multiplicative depths. 
+
+Goldschmidt Inverse. The NEXUS fixes Goldschmidt steps 𝛾 = 4,so the multiplicative depth is 5. Our reproduction shows that, under the 1% relative-error criterion, the effective input range of this inverse module is limited to [0.13 , 1.87 ]. For the complete exp-plus-inverse Softmax subroutine, the measured effective logits range is approximately [− 2.19 , 0].
+
+C.2 LayerNorm in NEXUS 
+
+The NEXUS adopts Newton + Goldschmidt invsqrt in LayerNorm, as shown in Algorithm 2, it computes 1/√𝑥 using an initial linear 
+
+Algorithm 3: Goldschmidt Inv (𝑥 ;𝛾 ) in NEXUS 
+
+Input: Input 𝑥 ; iteration count 𝛾 
+
+Output: 𝑟 ≈ 𝑥 −1 
+
+> 1
+
+𝑟 ← 2 − 𝑥 ; 
+
+> 2
+
+for 𝑖 ← 1 to 𝛾 do  
+
+> 3
+
+𝑟 ← 𝑟 · ( 1 + ( 1 − 𝑥 )2)) ; 
+
+> 4
+
+end  
+
+> 5
+
+return 𝑟 ;approximation, followed by 𝜈 = 4 steps of the Newton-Raphson method ( 𝑦 𝑖 +1 = 1.5 𝑦 𝑖 − 0.5 𝑥 𝑦 3 
+
+> 𝑖
+
+) and 𝛾 = 2 steps of the Goldschmidt iteration. In our reproduction, the invsqrt approximation achieves about 1% relative error when its input 𝑥 , i.e., the LayerNorm vari-ance, lies in the empirical range [2.0, 954 .3].
+
+C.3 GELU in NEXUS 
+
+The GELU in NEXUS is fitting the Tanh-based GELU by a piecewise polynomial function, as shown in Equation (16). 
+
+GELU (𝑥 ) =
+
+
+
+0 if 𝑥 ≤ − 4
+
+𝑝 𝑘 (𝑥 ) if − 4 < 𝑥 ≤ − 1.95 
+
+𝑞 𝑑 (𝑥 ) if − 1.95 < 𝑥 ≤ 3
+
+𝑥 if 𝑥 > 3
+
+(16) where 𝑝 𝑘 (𝑥 ) is 𝑘 -degree polynomial, and 𝑞 𝑑 (𝑥 ) is 𝑑 -degree poly-nomial, and 𝑘 = 3, 𝑑 = 6. For the selection function, employing a sign function approximated by minimax composition [ 33 ], i.e., 
+
+AppGELU (𝑥 ) = 𝑏 0 · 0 + 𝑏 1𝑝 (𝑥 ) + 𝑏 2𝑞 (𝑥 ) + 𝑏 3𝑥 , where 𝑃 (𝑥 ) and 
+
+𝑄 (𝑥 ) are high-degree polynomials, and 𝑏 𝑖 , 𝑖 = 0, 1, 2, 3 are segments control hyperparameters. For the polynomials 𝑝 𝑘 (𝑥 ) and 𝑞 𝑑 (𝑥 ), the coefficients come from the NEXUS codebase. Empirically, this piece-wise GELU approximation satisfies the 1% relative-error criterion only on the effective input range [− 5, 5].
+
+D Non-linear Approximation in THOR D.1 Softmax in THOR 
+
+THOR first approximates Softmax (𝑥 /𝛿 2) by scaling the input by 
+
+1/( 𝛿 1𝛿 2), applying a polynomial exponential approximation, raising the result to the 𝛿 1-th power, and normalizing it with a Goldschmidt-based inverse using adaptive relaxation. It then applies log 𝛿 2 square-and-normalize steps to recover Softmax (𝑥 ). In our reproduction, we implement the THOR setting (𝛿 1, 𝛿 2) = (2, 2). We empirically find that its effective encrypted-input range is approximately [− 26 , 22 ],within which the reproduced module achieves a relative error of about 10 −3 compared with cleartext softmax. 
+
+D.2 LayerNorm in THOR 
+
+THOR rewrites LayerNorm into a scaled form using 𝑛𝑥 − Í 𝑥 as the numerator and a denominator term derived from Í 𝑥 and Í 𝑥 2.It then applies a Goldschmidt-based inverse-square-root approxi-mation with adaptive relaxation and uses the result to normalize the scaled numerator. Algorithm 4: LayerNorm via Iterative Invsqrt in THOR 
+
+Input: Input 𝑥 ; affine coefficients 𝑤, 𝑏 , iteration 𝑇 
+
+Output: 𝑦 ≈ LayerNorm (𝑥 ) 
+
+> 1
+
+Compute Í 𝑥 and Í 𝑥 2 by ciphertext rotations and additions;  
+
+> 2
+
+𝑚 ← 𝑛𝑥 − Í 𝑥 ; 
+
+> 3
+
+𝑣 ← 𝑛 Í 𝑥 2 − ( Í 𝑥 )2 + ˜𝜀 ; 
+
+> 4
+
+𝑎 0 ← 𝑣, 𝑏 0 ← 1; 
+
+> 5
+
+for 𝑡 ← 0 to 𝑇 − 1 do  
+
+> 6
+
+𝑎 𝑡 +1 ← 𝑘 𝑡 𝑎 𝑡 (3 − 𝑘 𝑡 𝑎 𝑡 )2/4; 
+
+> 7
+
+𝑏 𝑡 +1 ← √𝑘 𝑡 𝑏 𝑡 (3 − 𝑘 𝑡 𝑎 𝑡 )/ 2; 
+
+> 8
+
+end  
+
+> 9
+
+𝑦 ← 𝑤 · ( 𝑚 · 𝑏 𝑇 ) + 𝑏 ; 
+
+> 10
+
+return 𝑦 ;
+
+D.3 GELU in THOR 
+
+THOR approximates GELU through the tanh-based formulation, where the input 𝑥 is first scaled as 𝑧 = 𝑥 /64 and tanh (𝑧 ) is approx-imated by a composed polynomial 𝑝 2 (𝑝 1 (𝑧 )) with two degree-15 polynomials. 𝑝 1 (·) is obtained by least-squares fitting, and 𝑝 2 (·) is used for residual refinement. The final GELU value is then recovered as 64 𝑧 · ( 1 + 𝑝 2 (𝑝 1 (𝑧 )))/ 2. In our reproduction, we empirically iden-tify [− 70 , 116 ] as the effective input range, where the reproduced GELU module keeps the absolute error below 1% .
+
+E Surrogate Models of LLaMA 
+
+Figure 12 (top right) reports Kendall 𝜏 and the resulting speed-up as a function of the proxy subset size for LLaMA3-8B. As the subset size increases, 𝜏 approaches 1. A subset of 10 IMDB sentences, evaluated on eight NetworkProblem configurations, yields 𝜏 ≈ 0.905 with a 
+
+∼454 × speed-up (Figure 12, bottom right), which is sufficient for reliable ranking. Thus, ATLAS uses a subset size of 10 for LLaMA3-8B in practice. Figure 12 (top left) plots 𝜏 between the early layer-𝑖 MAE and the last-layer MAE against the corresponding speed-up. As the layer index increases, 𝜏 similarly approaches 1. As illustrated for one example (Figure 12, bottom left), using the layer-9 MAE as the early-layer proxy gives 𝜏 = 0.924 with an ∼8.5× speed-up. Accordingly, 
+
+ATLAS adopts the layer-9 MAE as the proxy for LayerProblem in LLaMA3-8B. 
+
+F Extended Experimental Results F.1 Accuracy–Latency Pareto of BERT 
+
+Figure 13 shows the accuracy–latency Pareto fronts discovered by 
+
+ATLAS on SST-2, RTE, and QNLI. The IS baseline is the same, oper-ating at 1107 .5 s with accuracies 93 .2% (SST-2), 69 .0% (RTE), and 
+
+91 .3% (QNLI). The fronts exhibit the same steep shape observed in the accuracy–depth view as discussed in Section 4.2.1: a modest latency budget yields configurations that match or exceed IS in accuracy. For example, on SST-2, S3 matches IS at 93 .0% accuracy with 23 .6% lower latency ( 846 .5 s); on RTE, R3 surpasses IS by 1.0
+
+pp ( 70 .0% vs. 69 .0% ) with 25 .6% lower latency ( 824 .5 s); on QNLI, Q3 matches IS accuracy ( 91 .2% ) with 23 .7% lower latency ( 844 .8 s). 
+
+Figure 12: MAE at an early layer as a surrogate for MAE at the last layer, and the correlation between the MAE on the full and subset of the dataset, are shown on LLaMA. 
+
+Table 3 summarizes these three representative configurations. As before, the best configuration differs by task—S3 for SST-2, Q3 for QNLI, R3 for RTE—reflecting that different tasks have differ-ent preferences for the approximation configuration. Notably, the configuration Q3 (denoted X) performs well across all three tasks, offering a balanced choice for multi-task deployment; X is also the same configuration identified in the accuracy–depth Pareto front. For RQ1 , these results confirm that ATLAS automatically discov-ers configurations that advance the accuracy–latency frontier over the hand-tuned baseline in encoder-only architectures. Figure 14 visualizes the per-layer configurations for reference. 
+
+Table 3: Accuracy–Latency Pareto points for BERT-Base (𝐿 =12 ).                                                                 
+
+> Mul Depth #B Lat. (s) Accuracy (%) SST2 QNLI RTE BERT-Base [22] ---93.2 91.3 69.0 IterSoftmax [16] 1356 588 1108 93.2 91.3 69.0
+> ATLAS -S1 854 390 792 88.3 90.5 65.3
+> ATLAS -R1 840 390 793 85.2 90.5 65.7
+> ATLAS -Q1 847 390 795 88.2 90.6 65.0
+> ATLAS -S2 864 393 806 90.5 89.7 66.4
+> ATLAS -R2 (Q2) 879 393 809 87.4 91.2 68.6
+> ATLAS -R3 888 402 825 85.8 90.8 70.0
+> ATLAS -Q3 (X) 919 408 845 92.9 91.2 68.9
+> ATLAS -S3 918 411 847 93.0 90.6 68.6
+
+F.2 Accuracy–Latency Pareto of ViT 
+
+Figure 15 shows the accuracy–latency Pareto front discovered by 
+
+ATLAS on ImageNet-1K. The IS baseline achieves 80 .32% top - 1 ac-curacy at 2944 .8 s. The front contains two configurations V1 and 800 850 900 950 1000 1050 1100 1150 
+
+Latency on RTX 4090 (s) 
+
+80 
+
+82 
+
+84 
+
+86 
+
+88 
+
+90 
+
+92 
+
+94 
+
+> SST-2 Accuracy (%)
+
+S1 
+
+S2 
+
+S3 X
+
+Original BERT (93.23%) 
+
+ATLAS-S1-4 (Task-specific) 
+
+ATLAS-X (General) 
+
+Iterative Softmax (CCS '24) 
+
+THOR (reproduced) 
+
+THOR (paper) 
+
+NEXUS (paper) (a) SST-2 800 850 900 950 1000 1050 1100 1150 
+
+Latency on RTX 4090 (s) 
+
+89.5 
+
+89.8 
+
+90.0 
+
+90.2 
+
+90.5 
+
+90.8 
+
+91.0 
+
+91.2 
+
+91.5 
+
+> QNLI Accuracy (%)
+
+Q1 
+
+Q2 Q3 (X) 
+
+Original BERT (91.25%) 
+
+ATLAS-Q1-4 (Task-specific) 
+
+Iterative Softmax (CCS '24) 
+
+NEXUS (paper) (b) QNLI 800 850 900 950 1000 1050 1100 1150 
+
+Latency on RTX 4090 (s) 
+
+60 
+
+62 
+
+64 
+
+66 
+
+68 
+
+70 
+
+72 
+
+> RTE Accuracy (%)
+
+R1 
+
+R2 
+
+R3 
+
+X
+
+Original BERT (68.95%) 
+
+ATLAS-R1-4 (Task-specific) 
+
+ATLAS-X (General) 
+
+Iterative Softmax (CCS '24) 
+
+THOR (paper) 
+
+NEXUS (paper) (c) RTE 
+
+Figure 13: Accuracy–Latency Pareto fronts discovered by ATLAS on three tasks of BERT. Each point represents a non - dominated 
+
+𝝀 configuration, plotted in the space of FHE inference latency (RTX 4090) vs. downstream task accuracy. The iterative softmax baseline is shown as a reference. Dashed horizontal lines indicate the accuracy of the underlying cleartext model. 2300 2400 2500 2600 2700 2800 2900 
+
+Latency on RTX 4090 (s) 
+
+74 
+
+75 
+
+76 
+
+77 
+
+78 
+
+79 
+
+80 
+
+81 
+
+> ImageNet-1K Top-1 Accuracy (%)
+
+V1 
+
+V2 IS 
+
+Original ViT-B/16 (80.32%) 
+
+ATLAS-V1-2 
+
+Iterative Softmax (CCS '24) 
+
+Figure 15: Accuracy–Latency Pareto front discovered by 
+
+ATLAS on ImageNet-1K of ViT-Base. Table 4: Accuracy–Latency Pareto points for ViT-Base ( 𝐿 =12 ). 
+
+Mul Depth #B Lat. (s) Top-1 Accuracy (%) ImageNet-1K ViT-Base [24] - - - 80.32 IterSoftmax [16] 1356 1608 2944.8 80.32 
+
+ATLAS -V1 907 1206 2320.1 76.68 
+
+ATLAS -V2 966 1230 2398.5 80 .36 V1 
+
+> V2
+> IS
+
+Softmax iterations ( k)                                  
+
+> 544444444444
+> 544444444444
+> 555555555555
+
+4
+
+5
+
+> V1
+> V2
+> IS
+
+LayerNorm Newton iters ( dnewt )                                  
+
+> 111111111111
+> 222212122221
+> 444444444444
+
+1
+
+2
+
+4
+
+0 1 2 3 4 5 6 7 8 9 10 11 
+
+ViT-Base Layer 
+
+> V1
+> V2
+> IS
+
+GELU degree ( p)                                  
+
+> 676676777756
+> 776677777767
+> 999999999999
+
+5
+
+6
+
+7
+
+9
+
+Figure 16: Per-layer visualization of the Accuracy–Latency Pareto configs of ATLAS for ViT - Base on ImageNet-1K shown in Figure 15. S1                                                                                                                                                                                                                                        
+
+> S2
+> S3
+> Q1
+> Q2
+> Q3
+> R1
+> R2
+> R3
+> X
+> Softmax iterations ( k)
+> 333433333333
+> 333433333333
+> 334433333433
+> 333433333333
+> 334333333333
+> 334333334433
+> 333433333333
+> 334333333333
+> 334333333433
+> 334333334433
+> SST-2 QNLI RTE X
+> 3
+> 4
+> S1
+> S2
+> S3
+> Q1
+> Q2
+> Q3
+> R1
+> R2
+> R3
+> X
+> LayerNorm Newton iters ( dnewt )
+> 111111111111
+> 112211111121
+> 222222222222
+> 111111111111
+> 221112222111
+> 111111111111
+> 111111111111
+> 221112222111
+> 222222222222
+> 111111111111
+> SST-2 QNLI RTE X
+> 1
+> 2
+> 3
+> 012345678910 11
+
+BERT-Base Layer                                                                                                                
+
+> S1
+> S2
+> S3
+> Q1
+> Q2
+> Q3
+> R1
+> R2
+> R3
+> X
+> always
+> p8GELU degree ( p)
+> 777777777887
+> 777777777887
+> 878777777987
+> 777777777887
+> 777777777887
+> 778787877997
+> 777777777887
+> 777777777887
+> 778777777887
+> 778787877997
+> SST-2 QNLI RTE X
+> 7
+> 8
+> 9
+
+Figure 14: Per-layer visualization of the Accuracy–Latency Pareto configs of ATLAS for BERT shown in Figure 13. 
+
+V2 (Table 4). The best configuration V2 surpasses IS with 80 .36% 
+
+accuracy while reducing latency by 18 .5% (2398 .5 s). For RQ1 , this confirms that ATLAS automatically discovers per-layer approxima-tion recipes that improve the accuracy–latency Pareto front of ViT. Figure 16 visualizes the per-layer configurations for reference.

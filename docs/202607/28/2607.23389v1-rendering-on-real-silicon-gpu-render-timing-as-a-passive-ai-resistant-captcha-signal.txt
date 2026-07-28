@@ -1,0 +1,127 @@
+Title: Rendering on Real Silicon: GPU Render-Timing as a Passive, AI-Resistant CAPTCHA Signal
+
+URL Source: https://arxiv.org/pdf/2607.23389v1
+
+Published Time: Tue, 28 Jul 2026 01:00:17 GMT
+
+Number of Pages: 5
+
+Markdown Content:
+# Rendering on Real Silicon: GPU Render-Timing as a Passive, AI-Resistant CAPTCHA Signal 
+
+## David Noever and Forrest McKee 
+
+## PeopleTec, Inc. , {david.noever, forrest.mckee }@peopletec.com 
+
+# Abstract 
+
+Conventional CAPTCHAs pose puzzles that modern AI sys-tems increasingly solve, while behavioral and cryptographic-attestation defenses carry privacy or enrollment costs. We in-vestigate an orthogonal signal: the physical timing behavior of a client’s GPU under a controlled WebGL rendering work-load. Unlike WebGL fingerprinting , which hashes pixel out-put into a static device identifier, we measure render-timing 
+
+dynamics to classify rather than identify, leaking no persistent identifier. We characterize the in-the-wild adversary with a 12-hour passive deployment (207 unsolicited requests; 86% auto-mated; 85% of browser-claiming clients failed HTTP header-consistency checks). We then collect labeled GPU-timing samples through a single public endpoint exercised by real browsers (positive class, 13 distinct GPUs) and by keyed headless automation across a render-backend matrix (negative class). Software-rendered automation—empirically the domi-nant real-world adversary—separates from genuine GPUs by roughly 5× in mean render time. On a confound-controlled comparison (identical GPU family and browser engine, dif-fering only in headless vs. interactive execution), headless au-tomation on real hardware still exhibits a distinct timing sig-nature, separating from human samples by 75–106% on frame jitter, timer-quantization ratio, and coefficient of variation. We report these as pilot-scale findings on a single GPU architec-ture and outline the cross-architecture collection required to establish generalization. 
+
+# 1 Introduction 
+
+CAPTCHAs were designed around tasks easy for humans and hard for machines. That asymmetry has eroded: vision-language models (VLMs) solve image, text, and audio challenges with reported accuracies of 96–99.8% [1, 2], CAPTCHA-solving services and human-in-the-loop APIs ab-sorb the remainder, and even behavioral-biometric defenses face increasingly capable mimicry. The defensive frontier has shifted from posing harder puzzles toward verifying properties an automated client cannot cheaply reproduce. This paper examines one such property: the physical timing behavior of a real GPU. We position the approach (Figure 1) as a passive, physical-layer variant of hardware attestation. Where cryptographic attestation (TPM, WebAuthn, Secure Enclave) proves device identity through a signed challenge— at the cost of enrollment, a persistent identifier, and a trust chain that excludes many legitimate clients—a render-timing test asks only that the client behave like real silicon while exe-cuting an ordinary graphics workload. No enrollment, no per-sistent identity, no key material. We make three contributions: 1. An empirical characterization of the automated traffic reaching an exposed endpoint, establishing that the op-erative adversary is overwhelmingly render-free. 2. A single-endpoint methodology that gathers identically-measured timing samples from real browsers and from keyed headless automation, with trustworthy negative-class labels. 3. A pilot analysis showing clean separation of software-rendered bots, and a measurable, confound-controlled timing signature distinguishing even headless automation on real hardware, on one GPU architecture. 
+
+# 2 Related Work 
+
+We organize prior work into five strands and state our relation-ship to each. Figure 1 summarizes the contrast. 
+
+Visual and cognitive CAPTCHAs, and AI solvers. The dominant CAPTCHA paradigm presents perceptual or cog-nitive challenges [3, 4]. Their security has collapsed against modern AI: generative and adversarial solvers defeat text and image challenges [5], and recent agentic VLM systems such as Halligan [2] generalize across visual challenge types, solv-ing unseen CAPTCHAs by parsing an objective, abstracting the challenge, and synthesizing an interaction program. No-tably, that threat model explicitly assumes the CAPTCHA is 
+
+not vulnerable to side channels and that the attacker operates “vision-level only.” Our method is complementary : it adds a non-visual, physical signal that lies precisely in the gap such solvers exclude. 
+
+Behavioral biometrics. Production systems (reCAPTCHA v3, Cloudflare Turnstile, hCaptcha) score sessions on mouse micro-movements, scroll velocity, keystroke cadence, and tim-ing regularity [1, 6], and the research literature has extended 1arXiv:2607.23389v1 [cs.CR] 25 Jul 2026 Figure 1: CAPTCHA families organized by the property a client must reproduce to pass. Prior families verify cognition (visual puzzles), behavior (biometrics), computational cost (proof-of-work), or device identity (WebGL fingerprinting), each with a known evasion. The proposed approach verifies that the client is executing on genuine GPU hardware by measuring physical render timing—a property automated clients lack rather than a puzzle they can solve. 
+
+this with synthetic-trajectory and keystroke-generation de-fenses [7, 8]. These observe human motor noise . We observe 
+
+hardware execution physics ; the two are orthogonal and com-bine naturally within a multi-signal risk score. A key practical difference: behavioral signals require interaction time and are vulnerable to replay and learned mimicry, whereas a render-timing probe completes in a fixed sub-second window and measures a property the adversary cannot supply without real hardware. 
+
+Proof-of-work CAPTCHAs. Proof-of-work (PoW) sys-tems such as ALTCHA and Arkose Labs impose a client-side computational cost, shifting attack economics through cost asymmetry [9, 10]. Critically, modern PoW deliberately uses memory-hard functions (Argon2id, scrypt) to narrow the performance gap between commodity devices and specialized hardware [9]. Our approach inverts this: we use a rendering workload not as a cost toll but as a measurement probe , and we exploit rather than erase the hardware gap—the physical timing distribution of the GPU executing the probe is the sig-nal. 
+
+WebGL fingerprinting. The closest-named prior art renders a hidden scene and hashes pixel output, combined with the 
+
+WEBGL debug renderer info string, into a stable device identifier [11]. This is widely deployed for tracking and bot detection, and is recognized as harder to spoof than canvas or user-agent fingerprints because it derives from hardware be-havior [11]. Two distinctions define our contribution. First, 
+
+purpose : fingerprinting performs identification (a persistent per-device hash, with attendant privacy concerns and track-ing use), whereas we perform classification (human vs. au-tomated) and retain no persistent identifier. Second, and de-cisively, signal : the entire fingerprint-evasion ecosystem— antidetect browsers, canvas-noise injection, renderer-string spoofing, low-level C++ patching [12]—targets the pixel hash and renderer string . None of it addresses render timing , be-cause timing is not what these systems fingerprint. Our signal is therefore orthogonal to, and survives, the deployed spoof-ing stack: a tool that perfectly forges the renderer string and pixel output of an “NVIDIA RTX 4070” still cannot forge the timing distribution of one it does not physically possess. 
+
+GPU timing side-channels. A peer-reviewed body of work establishes that GPU and browser timing carry exploitable hardware information. JavaScript microarchitectural attacks recover high-resolution timing despite browser timer coars-ening [13], and WebGPU/WebGL timing has been used for cache attacks and website fingerprinting. These works use GPU timing offensively (to extract secrets or identify activity). We repurpose the same physical phenomenon defensively : the hardware-dependence of render timing that makes it a side-channel risk is precisely what makes it a bot-classification sig-nal. This literature grounds our core assumption—that render timing reflects physical hardware—in established results. 23 Threat Model: What Reaches the Endpoint 
+
+Before measuring GPU timing, we characterized the adver-sary empirically. A public endpoint on commodity cloud in-frastructure passively logged unsolicited traffic over a 12-hour window, recording for each request the source address, au-tonomous system (resolved via Team Cymru), requested path, User-Agent, and the HTTP headers a conforming browser emits. The endpoint received 207 unsolicited requests; the first ar-rived 12.6 s after launch. Although 192/207 (93%) presented a browser-like User-Agent, only 28 (15% of those) were consis-tent with a genuine browser once presence of Sec-Fetch-* ,
+
+Accept-Language , and a content-specific Accept header was required—matching the header-based detection used in practice [6]. The remaining 85% declared a browser identity while omitting headers no real browser omits. In aggregate, 86% of requests were automated; requested paths were dom-inated by secret- and configuration-discovery probes; exactly one request touched a data-collection path and none reached any rendering endpoint. The operative finding: the in-the-wild adversary is render-free . These clients do not execute client-side JavaScript and never reach a rendering stage, so a render-gated challenge filters them by construction—but they also yield no timing data, so characterizing evasive bots that do render re-quires the deliberate collection described next. 
+
+# 4 Methodology 
+
+## 4.1 Single-endpoint collection 
+
+A single public page serves a shared WebGL harness and accepts session records at one endpoint. Both classes flow through the same instrument, eliminating measurement con-founds between them. Real visitors open the page and, with consent, post a timing record (positive class). Headless au-tomation is driven to the same URL by a sweep tool carry-ing a server-side secret, so its label is trustworthy at collection (negative class). The server stamps each record with receive-side metadata the client cannot forge, including the header-consistency signal above. 
+
+## 4.2 The harness 
+
+The harness issues a deterministic, fragment-shader-bound WebGL workload and records per-frame render time across a fixed window after warm-up. Each frame forces pipeline completion via a synchronous pixel read-back, so measured time reflects GPU execution rather than asynchronous queue submission. The raw per-frame series is retained; fea-tures are derived offline so they can be revised without re-collection. The harness also records the unmasked renderer string, browser/platform metadata, and the observed timing-source resolution. 
+
+## 4.3 Features 
+
+Per session we derive distributional statistics: mean and me-dian render time; dispersion (standard deviation, coefficient of variation [CV], inter-quartile range); shape (skewness, kurto-sis); frame-to-frame jitter (mean absolute first difference); and a timer-quantization indicator (distinct timing values / frame count). 
+
+## 4.4 Negative-class backend matrix 
+
+The sweep navigates to the page across automation stacks and backends: Chromium over SwiftShader and SwANGLE (soft-ware), Chromium with GPU disabled (CPU fallback), head-less Firefox and WebKit, and Chromium acquiring a physical GPU in headless mode. The last cell is the hard negative —automation on real hardware—and prevents a classifier from succeeding merely by keying on a software-renderer string. Because headless Chromium frequently falls back to software, the page self-gates this cell, posting only sessions in which a genuine hardware renderer was acquired. 
+
+## 4.5 Evaluation discipline 
+
+Any classifier is evaluated under a device-held-out split: en-tire GPUs are assigned to train or test, never individual sam-ples. Training on some GPUs and testing on GPUs unseen in training is the only honest measure of generalization; a per-sample split would leak device identity and inflate accuracy. 
+
+## 4.6 Ethical considerations 
+
+The threat-model measurement passively recorded metadata (source address, autonomous system, requested path, headers) of unsolicited requests arriving at infrastructure we control; no challenge or payload was returned beyond a static page, and no third-party service was probed. Positive-class timing sam-ples were contributed by visitors who affirmatively consented on the collection page after disclosure of what is transmitted; records contain no cookies, account data, or persistent iden-tifiers, consistent with the classification-not-identification de-sign. Negative-class sessions were generated exclusively by automation we operated against our own endpoint. 
+
+# 5 Results 
+
+We group usable sessions into three classes: human (real GPU, interactive), software bot (software-rendered headless), and hard negative (real GPU, headless). Table 1 summarizes the pilot dataset. 
+
+## 5.1 Software automation separates widely 
+
+Software-rendered bots render the workload far more slowly than genuine GPUs—26.3 ms vs. 5.1 ms, a 5.2× gap—with higher jitter and quantization (Figure 2). As this population 3Table 1: Pilot dataset summary by class. Group n GPUs mean (ms) jitter Human (real, interactive) 26 13 5.09 0.42 Software bot 273 4 26.28 2.03 Hard negative (real, headless) 20 2 8.25 0.91     
+
+> Figure 2: Mean frame render time by class (log scale). Software bots are ∼5×slower than genuine GPUs; hard negatives overlap the human range on this feature and require other features to separate.
+
+is also the entire in-the-wild adversary, a simple render-time threshold filters realistic automated traffic. 
+
+## 5.2 Headless on real hardware leaves a signa-ture 
+
+The harder question is whether automation on a genuine GPU is distinguishable from a human on the same hardware. Com-paring across browser engines would confound the result, since engines differ in WebGL implementation and timer be-havior. We therefore restrict to one confound-controlled con-dition: the same GPU family (Intel integrated) and engine (Chromium/ANGLE), differing only in headless vs. interac-tive execution (Table 2, Figure 3). Headless sessions show 3.3× higher quantization ratio, 
+
+2.6× higher jitter, and 2.2× higher CV than interactive ses-sions on the same hardware. The direction is consistent with a physical mechanism: a headless browser lacks the display compositor and refresh pacing that regularize frame timing in interactive use, so it renders with more timing roughness, not less—the opposite of the naive intuition that automation is flat-ter, and the reason a single CV threshold is insufficient (Fig-ure 4). 
+
+# 6 Limitations and Scope 
+
+Single architecture. The confound-controlled signature is shown on Intel integrated GPUs only—the single family for which we hold both human and hard-negative samples. Whether it replicates on discrete NVIDIA/AMD and Ap-ple Silicon is the central open question; the mechanism is architecture-independent in principle, but faster discrete GPUs                       
+
+> Table 2: Confound-controlled comparison: Intel GPUs, Chromium/ANGLE, headless bot vs. interactive human. Feature Human Bot Sep. (n=14 )(n=20 )distinct-value ratio 0.076 0.249 106% frame jitter (ms) 0.351 0.912 89% coeff. of variation 0.112 0.247 75% mean render (ms) 5.78 8.25 35%
+> Figure 3: Per-feature distributions, Intel GPUs under matched en-gine. Headless execution shows higher timer-quantization ratio, jit-ter, and CV than interactive use of the same hardware.
+
+may compress the timing differences below measurability. We make no cross-architecture claim. 
+
+Pilot scale. The positive class spans 13 GPUs / 26 sessions; the hard negative spans 2 GPUs / 20 sessions. These support separability in principle on the measured devices, not a trained discriminator with characterized error rates. 
+
+Adversary adaptation. An adversary can render on real hardware (raising cost, not enabling free evasion) or inject syn-thetic jitter to mimic interactive timing. The method is best un-derstood as a low-friction, hard-to-spoof signal within multi-signal risk assessment, and as a near-complete filter against the render-free automation that dominates real traffic. 
+
+Timer hardening. Browsers that coarsen or jitter high-resolution timers compress the signal; the harness records ob-served timer resolution per session, but the population-level impact is not yet quantified. 
+
+# 7 Conclusion 
+
+The in-the-wild automated adversary does not render, so a render-gated challenge filters it almost entirely. Beyond that, even headless automation on genuine hardware leaves a mea-surable timing signature relative to interactive use of the same hardware, at least on the Intel GPUs measured here. Establish-ing cross-architecture generalization is a matter of continued, architecture-stratified collection, for which the single-endpoint methodology described here is designed; the immediate targets are matched human/hard-negative pairs on discrete NVIDIA and AMD GPUs and on Apple Silicon. 4Figure 4: Two-feature space (jitter vs. quantization ratio). Humans cluster at low jitter and low quantization; software bots spread across high jitter; hard negatives form a distinct band of elevated quantiza-tion at low jitter. 
+
+# References 
+
+[1] ScopeDesign. Why Can’t Bots Solve CAPTCHA? Bot Detection Guide 2024–2025 , 2025. [2] J. Teoh et al. Halligan: A Generalized Visual CAPTCHA Solver via VLM Agents . USENIX Security, 2025. [3] M. Guerar et al. Gotta CAPTCHA’em All: A Survey of 20 Years of the Human-or-Computer Dilemma. ACM Comput. Surv. 54(9), 2021. [4] N.D. Trong et al. New Cognitive Deep-Learning CAPTCHA. 
+
+Sensors 23(4):2338, 2023. [5] G. Ye et al. Yet Another Text CAPTCHA Solver: A GAN-Based Approach. ACM CCS , 2018. [6] KnowledgeSDK. Anti-Bot Detection in 2026 , 2026. [7] A. Acien et al. BeCAPTCHA-mouse: Synthetic Mouse Tra-jectories and Improved Bot Detection. Pattern Recognition 
+
+127:108643, 2022. [8] D. DeAlcala et al. BeCAPTCHA-type: Biometric Keystroke Data Generation for Improved Bot Detection. CVPR Work-shops , 2023. [9] ALTCHA. Proof-of-Work CAPTCHA Documentation , 2024. 
+
+https://altcha.org .[10] Arkose Labs. Proof of Work: Invisible Economic Barrier , 2026. [11] Spidra. WebGL Fingerprinting and How to Bypass It When Scraping , 2026. [12] Browserless. Browser Fingerprinting Guide: Detection & By-pass Methods , 2025. [13] Z. Wang et al. WebGPU-SPY: Finding Fingerprints in the Sand-box through GPU Cache Attacks. arXiv:2401.04349 , 2024. 
+
+5
