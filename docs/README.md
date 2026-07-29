@@ -6,71 +6,73 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-28
-- 运行时间：2026-07-28 20:49:14 UTC
+- 最新运行日期：2026-07-29
+- 运行时间：2026-07-29 20:34:16 UTC
 - 运行状态：成功
 - 本次总论文数：17
 - 精读区：6
 - 速读区：11
 
 ### 今日简报（AI）
-今日共精读6篇、速读11篇论文，聚焦LLM代码安全与声学侧信道攻击两大高风险方向；最值得关注的是键盘敲击噪声自监督窃听攻击（9.0分）与LLM代码迭代重提示安全修复（9.0分），以及LLM代理内存提取攻击（8.0分）；建议优先阅读精读论文以理解新型攻击面，速读部分可重点关注ZKP安全工具验证的挑战。
-- 详情：[/202607/28/README](/202607/28/README)
+今日日报聚焦17篇最新论文，精读6篇，重点关注拓扑引导的分裂学习与多智能体后门检测。  
+最值得看的是BettiSplit利用拓扑结构增强隐私保护，以及多智能体LLM后门早期检测方法。  
+建议优先阅读《BettiSplit》和《Early Detection》，把握隐私保护与安全前沿。
+- 详情：[/202607/29/README](/202607/29/README)
 
 ### 精读区论文标签
-1. [Transforming Keystroke Noise to Text: Self-Supervised Acoustic Eavesdropping Attacks on Keyboards](/202607/28/2607.22094v1-transforming-keystroke-noise-to-text-self-supervised-acoustic-eavesdropping-attacks-on-keyboards)  
+1. [BettiSplit: Topology-Guided Privacy-Aware Split Learning Against Feature Inversion and Gradient Leakage](/202607/29/2607.24556v1-bettisplit-topology-guided-privacy-aware-split-learning-against-feature-inversion-and-gradient-leakage)  
    标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：基于自监督学习的键盘声学窃听攻击
-2. [The Illusion of Secure LLM Code: Closing the Security Gap via Iterative Reprompting](/202607/28/2607.23710v1-the-illusion-of-secure-llm-code-closing-the-security-gap-via-iterative-reprompting)  
-   标签：评分：9.0/10、query:sec-cloud-ai
-   evidence：评估LLM生成认证代码安全性，涉及密码认证
-3. [Multi-Agent Privacy Game in Federated Learning: A Unified Mean-Field View](/202607/28/2607.23029v1-multi-agent-privacy-game-in-federated-learning-a-unified-mean-field-view)  
+   evidence：隐私保护的分裂学习，防御特征反转和梯度泄漏
+2. [Early Detection of Distributed Backdoors in Multi-Agent LLM Systems: A Characterization Study](/202607/29/2607.24893v1-early-detection-of-distributed-backdoors-in-multi-agent-llm-systems-a-characterization-study)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：通过平均场博弈实现联邦学习隐私保护
-4. [False Prophets: On the Security of World Models in Agentic Systems](/202607/28/2607.23147v1-false-prophets-on-the-security-of-world-models-in-agentic-systems)  
+   evidence：多智能体LLM系统中分布式后门的早期检测
+3. [ALIBI: Adaptive Agentic Attacks on LLM-Based Vulnerability Detectors via Adversarial Code Comments](/202607/29/2607.24964v1-alibi-adaptive-agentic-attacks-on-llm-based-vulnerability-detectors-via-adversarial-code-comments)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：代理系统中世界模型的安全漏洞
-5. [Accountable yet Anonymous AI Agents - Split-Knowledge Binding in National Agent-Identity Layer in China](/202607/28/2607.23207v1-accountable-yet-anonymous-ai-agents---split-knowledge-binding-in-national-agent-identity-layer-in-china)  
+   evidence：对LLM漏洞检测器的对抗性攻击
+4. [MOSAIC-FL, a micro-service based privacy-preserving framework with application to genomics](/202607/29/2607.25107v1-mosaic-fl-a-micro-service-based-privacy-preserving-framework-with-application-to-genomics)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：AI代理身份认证，结合可问责性与匿名性
-6. [On AI Safety and Security Technical Debt in Engineering AI-Enabled Systems](/202607/28/2607.23365v1-on-ai-safety-and-security-technical-debt-in-engineering-ai-enabled-systems)  
+   evidence：基于微服务架构的隐私保护联邦学习
+5. [How to Watermark the RLWE Homomorphic Ciphertexts](/202607/29/2607.25222v1-how-to-watermark-the-rlwe-homomorphic-ciphertexts)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：人工智能安全与安全技术债务
+   evidence：同态加密水印技术用于机密计算
+6. [Cyber-Capable AI Agents: Vulnerabilities, Evaluation Containment, and Defensive Response](/202607/29/2607.25379v1-cyber-capable-ai-agents-vulnerabilities-evaluation-containment-and-defensive-response)  
+   标签：评分：8.0/10、query:sec-cloud-ai
+   evidence：AI智能体脆弱性分类与防御
 
 ### 速读区论文标签
-1. [Isolated but Exposed: Persistence-Based Memory Extraction Attack on LLM Agents](/202607/28/2607.23444v1-isolated-but-exposed-persistence-based-memory-extraction-attack-on-llm-agents)  
+1. [Does Runtime Topology Context Improve LLM-Generated Kubernetes Security Patches?](/202607/29/2607.25995v1-does-runtime-topology-context-improve-llm-generated-kubernetes-security-patches)  
    标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：针对大语言模型代理内存提取的攻击，属于AI安全威胁
-2. [ATLAS: Automated Approximation of Transformers for Efficient Homomorphic Inference in One Hour](/202607/28/2607.23478v1-atlas-automated-approximation-of-transformers-for-efficient-homomorphic-inference-in-one-hour)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：面向Transformer同态推理的自动化多项式近似
-3. [ZKP Security Tools and Verification: Coverage, Effectiveness, Adoption, and Challenges](/202607/28/2607.23752v1-zkp-security-tools-and-verification-coverage-effectiveness-adoption-and-challenges)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：零知识证明安全工具，机密计算技术
-4. [Agentic Permissions Policy Algebra for Taint Confinement in LLM Agents](/202607/28/2607.24625v1-agentic-permissions-policy-algebra-for-taint-confinement-in-llm-agents)  
-   标签：评分：8.0/10、query:sec-cloud-ai
-   evidence：针对LLM代理的IFC抵御提示注入
-5. [Agentic Cloud Decoys: A Deception-Driven Framework for Autonomous Intrusion Investigation](/202607/28/2607.24006v1-agentic-cloud-decoys-a-deception-driven-framework-for-autonomous-intrusion-investigation)  
+   evidence：使用LLM生成Kubernetes安全补丁，应对云安全挑战
+2. [ScoreShield: Differentially Private Release of Similarity Scores](/202607/29/2607.25041v1-scoreshield-differentially-private-release-of-similarity-scores)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：云诱饵框架用于自主入侵调查
-6. [Beyond Aggregate Risk: Role-Stratified Conformal Risk Control for LLM Tool Calls](/202607/28/2607.24343v1-beyond-aggregate-risk-role-stratified-conformal-risk-control-for-llm-tool-calls)  
+   evidence：相似度分数的差分隐私发布；AI应用中的隐私保护
+3. [QCOEM: Quantum Cloud Orchestration with Evolutionary Multi-Objective Optimization](/202607/29/2607.25358v1-qcoem-quantum-cloud-orchestration-with-evolutionary-multi-objective-optimization)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：面向LLM工具调用的角色分层风险控制
-7. [Experimental Side Channel Analysis of Protocol Stages in Quantum Identity Authentication](/202607/28/2607.24639v1-experimental-side-channel-analysis-of-protocol-stages-in-quantum-identity-authentication)  
+   evidence：量子云编排框架用于分布式量子计算后端；分布式云架构
+4. [Architectural Backdoors in Vision-Language Model Supply Chains via Representation Steering](/202607/29/2607.25479v1-architectural-backdoors-in-vision-language-model-supply-chains-via-representation-steering)  
    标签：评分：7.0/10、query:sec-cloud-ai
-   evidence：量子身份认证与侧信道分析
-8. [Black-Box Performance Evaluation of Elastic Block Storage: Contract, Rate-Limiting Model, and Software Exploration](/202607/28/2607.20319v1-black-box-performance-evaluation-of-elastic-block-storage-contract-rate-limiting-model-and-software-exploration)  
+   evidence：视觉语言模型供应链中的架构后门
+5. [WASP: A Configurable Framework for Portable Stateful Serverless Applications](/202607/29/2607.25493v1-wasp-a-configurable-framework-for-portable-stateful-serverless-applications)  
+   标签：评分：7.0/10、query:sec-cloud-ai
+   evidence：面向边缘云连续体的有状态无服务器框架
+6. [Towards a Systems Foundation for Agentic Cloud Management](/202607/29/2607.25883v1-towards-a-systems-foundation-for-agentic-cloud-management)  
+   标签：评分：7.0/10、query:sec-cloud-ai
+   evidence：智能体云管理架构
+7. [Toward Standardized Cross-Vendor Agent Tool Trust Management in Autonomous Networks](/202607/29/2607.25914v1-toward-standardized-cross-vendor-agent-tool-trust-management-in-autonomous-networks)  
+   标签：评分：7.0/10、query:sec-cloud-ai
+   evidence：自主网络中AI代理的信任管理；代理工具调用的安全威胁
+8. [Weak Private Information Retrieval for Graph-based Storage](/202607/29/2607.21014v1-weak-private-information-retrieval-for-graph-based-storage)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：对云弹性块存储进行黑盒性能评估，揭示其架构特性
-9. [Share No More Than the Request Requires: Federated Disclosure for Perspective-Aware AI](/202607/28/2607.22953v1-share-no-more-than-the-request-requires-federated-disclosure-for-perspective-aware-ai)  
+   evidence：图存储系统的弱私有信息检索
+9. [Practical Post-Quantum Cryptography for Bandwidth Constrained or Non-Terrestrial Networks, and Power Constrained Devices](/202607/29/2607.23007v1-practical-post-quantum-cryptography-for-bandwidth-constrained-or-non-terrestrial-networks-and-power-constrained-devices)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：面向视角感知AI的联邦披露以保护隐私
-10. [Rendering on Real Silicon: GPU Render-Timing as a Passive, AI-Resistant CAPTCHA Signal](/202607/28/2607.23389v1-rendering-on-real-silicon-gpu-render-timing-as-a-passive-ai-resistant-captcha-signal)  
+   evidence：后量子密码在受限网络中的认证应用
+10. [To What Extent Can Inherent Communication Noise Guarantee Privacy in Distributed Cooperative Control?](/202607/29/2607.25564v1-to-what-extent-can-inherent-communication-noise-guarantee-privacy-in-distributed-cooperative-control)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：利用GPU时序的抗AI验证码
-11. [Renting the Cracking Machine with a Cost-and-Time Analysis of Exhaustive DES-56 Key Search in the Cloud](/202607/28/2607.23443v1-renting-the-cracking-machine-with-a-cost-and-time-analysis-of-exhaustive-des-56-key-search-in-the-cloud)  
+   evidence：利用通信噪声的隐私保护分布式控制
+11. [Distributing Security Controls Through Harness Engineering](/202607/29/2607.25890v1-distributing-security-controls-through-harness-engineering)  
    标签：评分：6.0/10、query:sec-cloud-ai
-   evidence：云上的分布式暴力破解
+   evidence：为AI编码代理分发安全控制；云安全解决方案
 
 
 <div class="dpr-home-promo-card">

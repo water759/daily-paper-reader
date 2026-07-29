@@ -1,0 +1,194 @@
+Title: WASP: A Configurable Framework for Portable Stateful Serverless Applications
+
+URL Source: https://arxiv.org/pdf/2607.25493v1
+
+Published Time: Wed, 29 Jul 2026 00:45:05 GMT
+
+Number of Pages: 12
+
+Markdown Content:
+# WASP: A Configurable Framework for Portable Stateful Serverless Applications in the Edge-Cloud Continuum 
+
+Matteo Cenzato 1, Dario d’Abate 1,Arianna Dragoni 1, Giacomo Orsenigo 1, Luca Tosetti 1, and Alessandro Margara 1
+
+Politecnico di Milano, Milan, Italy 
+
+{dario.dabate, arianna.dragoni, alessandro.margara}@polimi.it {matteo.cenzato, giacomo.orsenigo, luca1.tosetti}@mail.polimi.it 
+
+Abstract. WebAssembly (WASM) is emerging as a lightweight alternative to containers for Function-as-a-Service (FaaS) across the edge-cloud continuum. However, existing WASM-based serverless platforms are tightly coupled to specific execution engines and predominantly designed for stateless workloads. This clashes with the heterogeneity of edge deployments, which demand support for stateful applications under diverse hardware and workload constraints. We introduce WASP, a configurable framework that brings stateful serverless execution to the edge-cloud continuum. By abandoning monolithic architectures in favor of strictly decoupled, pluggable components, WASP lets system administrators swap the WASM runtime and the datastore to fit available resources and application requirements, without altering application code. Configurable lifecycle and caching policies further enable fine-tuning for diverse non-functional requirements. Our experimental evaluation demonstrates that WASP introduces negligible runtime overhead and, by swapping runtimes, datastores, and policies, exposes radically different memory and latency profiles, confirming its adaptability to the heterogeneous constraints of the edge-cloud continuum. 
+
+## 1 Introduction 
+
+Driven by the proliferation of data-intensive applications and IoT devices, the edge-cloud continuum is rapidly emerging as a highly promising deployment paradigm for modern distributed systems [1, 14]. In this context, the Function-as-a-Service (FaaS) programming model is gaining significant traction [8]. By allowing developers to structure applications as independent, event-driven functions, FaaS entirely abstracts the underlying infrastructure management, significantly simplifying the development lifecycle and enabling dynamic workload placement across distributed nodes. The traditional FaaS model is inherently stateless: function instances are ephemeral entities created to handle specific requests and destroyed shortly after, retaining no local context. As a result, the standard architectural pattern for building complex serverless applications involves leveraging external datastores, typically offered as managed cloud services, to persist state across multiple function invocations. arXiv:2607.25493v1 [cs.DC] 28 Jul 2026 2 M. Cenzato et al. 
+
+To support these applications directly at the edge while reducing execution costs, WebAssembly (WASM) is positioning itself as an efficient alternative to traditional container-based FaaS runtimes [3]. WASM provides a lightweight, memory-safe, and language-agnostic execution sandbox, supported by a vast ecosystem of runtimes, each offering different execution models (e.g., Ahead-of-Time compiled, Just-in-Time compiled, interpreted) and distinct trade-offs in terms of resource footprint and initialization latency [21]. While some existing solutions have attempted to optimize the FaaS paradigm using WASM [2, 15], they typically present two main limitations: (i) they are highly customized and tightly coupled to a single execution engine, and (ii) most of them are strictly designed for purely stateless workloads. These limitations directly clash with the reality of edge deployments. Edge environments are inherently resource-constrained and highly heterogeneous [6, 12, 17]. Applications running in this continuum are often stateful and exhibit highly diverse non-functional requirements, particularly in terms of acceptable response times, memory footprint, and state access patterns. Consequently, overcoming the limitations of current WASM FaaS runtimes requires a paradigm shift to address heterogeneity in terms of hardware and deployment constraints, and characteristics of the workloads. To address these challenges, we present WASP (WebAssembly Stateful Serverless Platform), a framework explicitly designed to bring stateful serverless execution to the edge-cloud continuum. WASP offers applications a fixed API: developers invoke func-tions and, from within those functions, access persistent state through a uniform set of primitives ( get and put ). Underneath this stable interface, WASP is built around the core principle of configurability, allowing the system to be customized without requiring any modifications to the application code. To accommodate diverse hardware, deploy-ment contexts, and workload characteristics, WASP is completely agnostic to both the execution engine and the storage backend, treating them as fully pluggable compo-nents. System administrators can thus swap the WASM runtime and the datastore to best fit their specific deployment. This configurability is motivated by concrete edge scenarios in which the same application may target nodes with radically different CPU, memory, and persistence constraints, making a low-footprint interpreter with an in-memory store preferable on some devices and an AOT runtime with a durable backend preferable on others. The framework further supports customizable function lifecycle management and multi-level caching strategies, enabling execution to be optimized for the specific non-functional requirements and state access patterns of each application. To validate our approach, we implemented a fully functional prototype of WASP in Go, currently supporting three distinct WASM runtimes (Wasmtime, Wazero, and WasmEdge) and two external state backends, Redis and PostgreSQL. Our experimental evaluation demonstrates that the framework introduces negligible overhead, exposes radically different performance and resource profiles across the supported runtime and storage combinations, and remains competitive against a state-of-the-art WASM serverless framework on lightweight workloads. Finally, we show that WASP deploys unchanged on resource-constrained edge hardware, confirming its suitability across the edge-cloud continuum. The remainder of this paper is organized as follows. Sec. 2 provides the necessary background on stateful serverless computing and WASM at the edge, discussing the WASP: A Configurable Framework for Portable Stateful Serverless Applications 3
+
+limitations of related work. Sec. 3 introduces the architectural design and the imple-mentation of the WASP framework, detailing its modular components, configuration strategies, and state management approach. Sec. 4 evaluates the system, highlighting the distinct performance and memory profiles achievable through configuration tuning. Finally, Sec. 5 concludes the paper and outlines future research directions. 
+
+## 2 Background and Related Work 
+
+In this section, we analyze the challenges of serverless state management at the edge and the emergence of WASM as a lightweight execution environment, highlighting gaps in the state-of-the-art. 
+
+Stateful Serverless Computing. The traditional separation of compute and storage in FaaS enables easy horizontal scaling, but leaves applications without a native mech-anism to persist state across invocations. This has been identified as one of the key challenges for the future of serverless computing [13,18]. A significant body of work has investigated stateful serverless from adjacent angles, such as workflow orchestration and strong consistency guarantees [4,20]; these concerns are largely orthogonal to ours. Other systems tackle state more directly: Cloudburst [16], for instance, addresses the data-locality problem by co-locating mutable caches with function executors. The problem becomes especially acute in the edge-cloud continuum. At the network edge, where bandwidth is limited and latency is critical, the traditional data-shipping architecture that moves data back and forth to a central cloud database often incurs network delays exceeding the function’s own execution time. Managed solutions such as Azure Durable Functions or Cloudflare Durable Objects mitigate this, but they are proprietary, vendor-locked, and cannot be deployed on custom edge devices. A few sys-tems target stateful execution at the edge directly. Enoki [10] brings stateful functions to the edge by combining Docker with the FReD [11] key-value store, while LoLa [19] introduces a state-management abstraction for real-time edge environments, sup-porting persistence and migration. However, these platforms rely on heavy container runtimes (e.g., Docker) ill-suited for strict edge constraints, or lack abstractions for interchangeable datastores. Consequently, there is a need for lightweight, environment-agnostic solutions that manage state without overwhelming edge resources. 
+
+WASM in the Edge-Cloud Continuum. Recent benchmarks show WASM is highly suited for the edge, drastically reducing image size and memory usage compared to containers, while maintaining near-native performance [7]. The WASM ecosystem fea-tures diverse runtimes (e.g., Wasmtime, WasmEdge, Wazero) with various execution strategies. Ahead-of-Time (AOT) compilers translate bytecode into native machine code pre-execution, minimizing startup latency but producing platform-dependent binaries. Just-In-Time (JIT) compilers dynamically translate code, balancing peak performance and portability. Interpreters avoid compilation overhead, excelling in memory-constrained devices at the cost of raw speed. Several recent works leverage WASM to optimize serverless computing. Sledge [2] achieves extreme efficiency at the edge via AOT compilation and bypassing the OS kernel. However, Sledge is strictly stateless, lacks state management abstractions, and operates as a monolithic environment. Conversely, Faasm [15] introduces state via Faaslets, lightweight WASM 4 M. Cenzato et al. WASP  
+
+> Function Manager
+> Module Cache Artifact Cache
+> Executor Pool
+> Function
+> Registry API
+> Artifact
+> Retrieval API
+> Module Storage
+> and Retrieval API
+> Function
+> Execution API
+> WASM
+> Runtime Adapter
+> WASM
+> Execution
+> API
+> Storage
+> Adapter
+> State
+> Management API
+
+Fig. 1: The WASP framework architecture units sharing memory regions for zero-copy access. While excellent for data-intensive tasks, Faasm enforces a customized memory model tightly coupled to its execution logic, preventing runtime interchangeability. Similarly, WasmPulse [9] tackles stateful inference by executing functions as threads in WASM modules, leveraging lock-free, zero-copy intra-process memory sharing. Like Faasm, it operates as a monolithic framework tightly integrated with Kubernetes, lacking modular configurability. 
+
+Research Gap. Two limitations recur across the state-of-the-art. In state management ,existing WASM serverless systems either ignore state or expose it through backend-specific mechanisms, offering no abstraction that survives a change of datastore. In terms of heterogeneity , these monolithic systems lock developers into a single execution engine, lacking the architectural flexibility required by diverse edge devices. WASP fills this gap with a modular architecture for stateful serverless applications that decouples state management from execution: applications access state through a fixed, backend-agnostic API, while administrators tailor the runtime, the datastore, and the execution policies to the specific constraints of the deployment. 
+
+## 3 System Design and Implementation 
+
+WASP is designed around strict principles of modularity and separation of concerns. Fig. 1 illustrates the component diagram of the framework, highlighting its external interfaces and internal subsystems. From an external perspective, WASP acts as a stateful serverless gateway. It exposes a simple Function Execution API : given the name of a target function and a set of input parameters serialized as a byte array (e.g., a JSON payload), it triggers the execution and returns the computed result. During their execution functions are not confined to their inputs: they can read and persist state through a uniform State Management API .To fulfill these requests, the framework assumes the existence of an external 
+
+Function Registry , accessed via the Function Registry API , which acts as a repository of WASM binaries: given a function name, this registry returns the corresponding .wasm binary. Functions are assumed to be versioned, allowing developers to seamlessly update and replace logic at runtime. From a developer’s perspective, the workflow is straightforward: application logic is compiled into a standard .wasm module using any supported language toolchain, WASP: A Configurable Framework for Portable Stateful Serverless Applications 5
+
+and then uploaded to the Registry. This entirely decouples the function development lifecycle from the actual deployment and execution configuration of WASP. Internally, the architecture avoids monolithic execution paradigms and is instead structured into three primary, decoupled components: (1) Function Manager , the operational core that serves the Function Execution API by scheduling and orchestrating execution through an Executor Pool of concurrent workers and a multi-level cache ( Artifact Cache and Module Cache ); (2) WASM Runtime Adapter ,a generic wrapper around diverse WASM runtimes that exposes a uniform WASM Execution API ; and (3) Storage Adapter , a wrapper around external datastores (e.g., Redis) that exposes a unified State Management API . This decoupling is what makes WASP configurable: system administrators can tailor the platform to the specific requirements of the application and the capabilities of the host device. 
+
+3.1 WASM Runtime Adapter 
+
+A core design philosophy of WASP is that no single WASM runtime is universally optimal. Depending on deployment constraints and workload characteristics, appli-cations may require different performance profiles. To accommodate this diversity, WASP integrates different WASM runtimes through the WASM Runtime Adapter. This integration is a complex software engineering challenge because runtimes possess radically different internal memory models and concurrency paradigms (e.g., C/Rust-based engines versus pure Go-based implementations). The adapter pattern in WASP encapsulates these underlying constructs and exposes a uniform WASM Execution API . This standardizes critical operations: binary compilation, context instantiation, execution invocation, and memory boundary traversal. Beyond accommodating diverse runtimes, applications also benefit from control-ling how each module is prepared for execution. Some workloads, such as long-running or frequently-invoked functions, amortize an upfront compilation cost over many invocations, while others prefer the responsiveness of the runtime’s default execution strategy. WASP therefore exposes two execution modes. (1) A Default mode, in which the binary is loaded as-is and executed using the runtime’s default strategy, whichever it may be (e.g., JIT on Wasmtime, interpretation on WasmEdge). (2) An AOT mode, in which the .wasm binary is explicitly compiled to native code at load time, and the resulting module is cached for subsequent executions. This abstraction provides deployment flexibility: administrators can swap runtimes and execution modes via a simple configuration flag, tailoring the CPU-to-memory trade-off without altering a single line of the framework’s core networking or scheduling logic. To validate this approach, our prototype implementation, built in Go, includes adapters for three distinct WASM engines chosen to represent different execution paradigms: (i) Wasmtime, a mature C/Rust-based runtime integrated via CGO that employs a Just-In-Time (JIT) compiler (Cranelift) as its default execution strategy and supports thread-safe shared objects; (ii) Wazero, a zero-dependency, pure-Go runtime that provides AOT compilation and enables highly portable, statically compiled binaries; and (iii) WasmEdge, a high-performance C++ runtime that defaults to interpretation but supports explicit AOT compilation. 6 M. Cenzato et al. 
+
+3.2 Function Manager and Multi-level Caching 
+
+The Function Manager orchestrates executions through three sub-components, described below. 
+
+Executor Pool. Drawing inspiration from traditional thread pools, the Executor Pool acts as a concurrency limiter, managing a finite set of WASM workers to prevent resource exhaustion on the host node. In our prototype, this is heavily supported by Go’s native concurrency model based on lightweight goroutines and channels, enabling high-throughput request multiplexing with minimal OS-level thread overhead. The pool’s behavior is parametrized by the runtime adapter in use, and we illustrate this with the three runtimes integrated in our prototype. For runtimes designed for high-concurrency (e.g., Wasmtime, Wazero), it leverages shared, thread-safe objects. A heavyweight engine is shared across all executions, and workers create lightweight, ephemeral execution contexts for each call. Conversely, for runtimes not designed for concurrent sharing (e.g., WasmEdge), it maintains a set of complete, pre-allocated execution environments. A request borrows an entire environment for the duration of the execution and returns it upon completion. To guarantee security and isolation, the pool resets instances to a clean state after each use, by clearing the linear memory and global state to ensure no data leaks across invocations. 
+
+Multi-level Caching Strategy. To mitigate the cold start penalty associated with code retrieval and compilation, the pool relies on a two-tier caching mechanism. An Artifact Cache (Layer 1) stores the raw .wasm binaries locally after downloading them via the 
+
+Function Registry API . To prevent the cache stampede problem during concurrent invocations of an uncached function, this cache implements a singleflight pattern. This ensures only one network request is dispatched to the registry, while concurrent invocations are suspended and subsequently served from the newly populated cache. A Module Cache (Layer 2) stores compiled modules in main memory. Once a function’s binary has been loaded from the Artifact Cache (independently of the WASP execution mode), it is transformed into a runtime-specific module ready for execution. This module is then stored in the Module Cache, which bypasses the often unbounded native caches of different runtimes and is implemented through a custom, unified Least Recently Used (LRU) Module Cache across all adapters. For “warm starts”, the Executor Pool retrieves the pre-compiled module directly from memory, completely bypassing the module preparation phase. 
+
+3.3 Unified State API via Storage Adapter 
+
+Maintaining the FaaS paradigm’s simplicity requires abstracting how state is persisted. Embedding database drivers directly within the WASM binaries would inflate their footprint, compromise security, and tightly couple functions to specific database technologies. To resolve this, WASP implements a Storage Adapter that exposes a unified State Management API (get , put ). In our prototype, we integrated Redis and PostgreSQL as data stores, utilizing the go-redis and go-pq clients respectively. The adapter maps the generic API directly to the respective database commands. WASP: A Configurable Framework for Portable Stateful Serverless Applications 7
+
+This API is made accessible to the guest WASM sandboxes through secure 
+
+Host Functions . Because the WASM specification limits cross-boundary calls to simple numeric types, WASP employs a structured memory-sharing protocol. To exchange complex data (e.g., JSON payloads), the guest allocates a block in its linear memory, writes the payload, and passes the memory offset and length 
+
+to the Host Function. The framework safely reads this exact byte sequence, processes the state operation through the Storage Adapter, and writes the response back into the guest’s memory. Notably, these low-level memory management operations are completely abstracted from the application developer. WASP provides a dedicated SDK that exposes idiomatic state access methods in the target programming language; in our prototype, serverless functions are written in Go and compiled to .wasm via TinyGo. From the developer’s perspective, reading and writing state amounts to a single function call in the source code; all interactions with the Host Functions and linear memory are handled internally by the SDK. 
+
+## 4 Evaluation 
+
+The aim of our evaluation is to verify whether WASP lives up to the promise of configurability stated in Sec. 1: the runtime, the storage backend, and the deployment target can be varied to fit heterogeneous workloads and hardware, without modifying application code. We first ask whether the framework effectively delivers this configurability across its pluggable components, both in terms of the performance profiles it exposes and the engineering cost of integration (RQ1); we then measure the runtime overhead introduced by the framework’s abstraction layer (RQ2), and compare WASP’s performance against a state-of-the-art alternative (RQ3); finally, we verify the framework’s viability on resource-constrained edge hardware (RQ4). 
+
+RQ1. Is WASP able to exploit the heterogeneity of different WASM runtimes and data stores to support adaptable performance and resource profiles, and at what integration cost? 
+
+RQ2. What is the overhead introduced by WASP relative to standalone runtimes and native execution? 
+
+RQ3. How does WASP’s performance compare to that of a state-of-the-art reference framework? 
+
+RQ4. Can WASP be deployed on resource-constrained edge devices, beyond the cloud-class hardware? 
+
+4.1 Experiment Setup 
+
+WASP is implemented in Go (v1.25). All experiments were conducted on a server-class machine equipped with a 16-core AMD Ryzen 9 9950X processor (32 threads) and 64 GB of DDR5 RAM, running Fedora Server 42. Experiments on an edge-class device were conducted on a Raspberry Pi 3B+ (BCM2837B0, 4 ARMv8 cores, 1 GB RAM), running Debian GNU/Linux 13 (Trixie). We integrate WASP with three WASM runtimes through their respective Go APIs: Wasmtime (v44.0.1, default JIT), 8 M. Cenzato et al. 
+
+WasmEdge (v0.16.3, default interpretation), and Wazero (v1.11.0, default AOT). We compare each WASP-runtime combination against the corresponding runtime invoked standalone via its native CLI. As an additional reference, we also report native Go execution. The Storage Adapter is instantiated with Redis (v8.6.2) and PostgreSQL (v18.4) as backends. WASM modules are compiled from Go sources using TinyGo (v0.41.1, -target=wasi -buildmode=c-shared ). We evaluate both the AOT and Default modes, described in Sec. 3. To answer RQ1 and RQ2, we measure execution time and peak RSS memory across three workloads. The two computational ones are adopted from the application suite shipped with Sledge [2], the state-of-the-art framework we compare against in RQ3: 1 Fibonacci(10) , which recursively computes the 10th Fibonacci number as a lightweight, call-intensive CPU-bound function (averaged over 100 runs), and 
+
+Hash(30000) , which applies the EJB hash algorithm over 30,000 iterations as a sustained, loop-intensive CPU-bound workload (averaged over 10 runs). The third workload is a Stateful function that performs a set followed by a get on the same key-value pair via the Storage Adapter (averaged over 100 runs). Each test distinguishes between Cold execution (the first run, no cached modules) and Warm 
+
+execution (a subsequent run served from the Module Cache). To answer RQ3, we compare WASP against Sledge, a state-of-the-art WASM serverless framework highly optimized for edge environments. We run an HTTP benchmark measuring throughput and latency over 10 repetitions of 10-second runs at varying request rates. WASP is configured with 32 workers (one per core); Sledge uses 30 workers, 1 HTTP listener, and 1 worker controller. The HTTP frontend of WASP is implemented using fasthttp . For fairness, all WASP runtimes are set to AOT mode, since Sledge requires pre-compiled modules via aWsm . To answer RQ4, we deploy WASP on the edge-class device and replicate the RQ1 workloads. 
+
+4.2 Results 
+
+Table 1 reports the cold-start and warm-start execution times and the peak RSS for WASP across the six runtime/mode combinations, together with the corresponding standalone runtimes and native Go execution as a baseline. For stateful workloads, the table additionally reports the same metrics for the Stateful function under the two storage backends. 
+
+Exploiting Heterogeneity (RQ1). WASP highlights a wide spectrum of performance and resource profiles across the underlying runtimes and execution modes. The AOT compilation mode (AOT) achieves near-native execution times on Warm runs, but caching heavily dictates AOT performance: during Cold starts, WasmEdge AOT incurs prolonged compilation times (e.g., 317 ms on Fibonacci) due to its LLVM-based backend. Conversely, in Default the engine relies on its native execution strategy, which initiates lightweight execution faster than AOT but can degrade sharply on computationally heavy tasks: WasmEdge’s interpreter requires nearly 12 s for Hash. Wazero is an exception, as its default running mode, AOT , renders the two WASP execution modes effectively equivalent in our measurements.  
+
+> 1https://github.com/gwsystems/wasm_apps
+
+WASP: A Configurable Framework for Portable Stateful Serverless Applications 9                                                                                                                        
+
+> Runtime Config. Cold Warm RSS Cold Warm RSS Fibonacci Hash
+> Wasmtime
+> WASP-AOT 6.15 0.08 48.94 180.59 172.57 48.59 WASP-JIT (D) 6.06 0.08 48.88 177.88 172.56 48.80 Standalone-AOT 13.97 –19.84 187.73 –19.24 Standalone-JIT (D) 3.06 –19.21 177.49 –19.92
+> WasmEdge
+> WASP-AOT 317.25 0.06 68.66 448.21 129.55 68.75 WASP-Interp. (D) 4.21 3.47 29.01 11,783.39 11,759.89 29.26 Standalone-AOT 573.95 –69.48 701.70 –69.47 Standalone-Interp. (D) 8.28 –24.39 11,766.90 –24.48
+> Wazero
+> WASP-AOT 9.86 0.15 33.27 181.65 172.50 33.37 WASP-AOT (D) 9.25 0.14 33.27 181.47 172.65 33.06 Standalone-AOT (D) 23.80 –16.52 198.93 –16.48
+> Native (Go) 0.59 –1.79 133.03 –1.87
+> Redis PostgreSQL
+> Wasmtime WASP-AOT 38.35 0.19 141.52 40.22 1.49 140.84 WASP-JIT (D) 37.41 0.34 138.96 38.86 1.46 138.21
+> WasmEdge WASP-AOT 7,906.37 0.21 180.45 7,919.31 16.60 179.57 WASP-Interp. (D) 13.29 6.23 41.10 14.82 7.25 40.42
+> Wazero WASP-AOT 130.80 0.35 59.67 134.14 2.17 59.15 WASP-AOT (D) 131.15 0.35 59.70 134.36 2.17 59.06
+
+Table 1: Execution times (Cold, Warm) in milliseconds [ms] and peak RSS in Megabytes [MB] across benchmarks. “Standalone” refers to the runtime invoked via its native CLI without WASP; “(D)” marks each runtime’s default execution mode. Memory usage exhibits a similar spread, from 29 MB (WasmEdge Interp. ) to 69 MB (WasmEdge AOT), reflecting the cost of keeping compiled modules in memory. The Stateful function amplifies this effect: the AOT module inflates peak RSS by 
+
+3–4× over the corresponding interpreted configuration (e.g., 41 MB vs. 180 MB on WasmEdge), as our WASP SDK needs to be fully embedded in the .wasm binary to support the integration of Host Functions for storage access. The same configurability extends to the two integrated storage backends, Redis and PostgreSQL. The choice of backend is largely transparent during Cold Start, where latency is dominated by the WASM runtime initialization overhead. The architectural differences emerge in Warm execution: a warm Stateful execution on Wasmtime-AOT takes 0.19 ms with in-memory Redis, compared to 1.49 ms with PostgreSQL. PostgreSQL is inherently slower due to disk persistence and relational overhead, yet remains within the millisecond range. 
+
+Integration Cost (RQ1). The performance variety described above is made available through WASP’s adapter pattern, at a low engineering cost. Integrating a new WASM runtime required between 245 and 317 lines of Go code ( Wazero : 245, 
+
+Wasmtime : 263, WasmEdge : 317), most of which wrap engine-specific concurrency primitives and linear memory boundary handling. Similarly, the two storage adapters required 53 (Redis) and 76 (PostgreSQL) lines respectively. In both cases, the integration work is entirely confined to the adapter layer. 10 M. Cenzato et al. 10 1 10 2 10 3 10 4        
+
+> 10 1
+> 10 2
+> 10 3
+> 10 4
+> Throughput (req/s)  FIBONACCI
+> 10 110 210 3
+> 10 1
+> 10 2
+> HASH
+> 10 110 210 310 4
+> 10 1
+> 10 0
+> 10 1
+> 10 2
+> 10 3
+> Latency (ms)
+> 10 110 210 3
+> 10 3
+> 10 4
+> Effective Rate (req/s)
+> Runtimes
+> WasmEdge
+> Wasmtime
+> Wazero
+> Sledge
+
+Fig. 2: Throughput versus request rate and latency distribution for Fibonacci and Hash. Latency reports the median (p50, line) and the area up to the 90th percentile. 
+
+Framework Overhead (RQ2). As established in the literature [5,22], WASM execution introduces performance slowdown and memory inflation relative to native code; our experiments confirm this, with native Go using 1.8 MB of peak RSS against tens of MB for all runtime-based configurations. Focusing on the cost of the framework itself, WASP’s cold-start latency is compa-rable to, and in several cases lower than, the corresponding standalone runtime. For example, on Fibonacci, WASP-Wasmtime-AOT runs in 6.2 ms compared to 14.0 ms for the standalone runtime, since the framework amortizes runtime initialization across invocations whereas the standalone CLI re-instantiates the engine on each call. On Hash, the two converge within 4% (180.6 vs. 187.7 ms), showing that the framework adds no measurable cost on the compute-bound portion of the execution. The Module Cache yields up to two-order-of-magnitude speedup on warm starts (e.g., from 6.2 ms to 0.08 ms on Wasmtime-AOT), bringing warm execution within a small constant factor of native Go. The price paid for this flexibility is in memory. WASP’s peak RSS exceeds the corresponding standalone runtime by 10–50 MB, due to the worker pool maintaining live module instances and the HTTP front-end. On stateful workloads, the gap widens further when modules are compiled AOT, for the reasons discussed above. In absolute terms, however, WASP remains within tens of megabytes. 
+
+Comparison with Sledge (RQ3). Fig. 2 shows that WASP and Sledge exhibit different behaviors depending on the workload. For lightweight operations (Fibonacci), our framework scales uniformly better than Sledge. It achieves higher peak throughput and maintains a lower, more stable 90th-percentile latency even under severe load. The only exception is WasmEdge, which hits a saturation ceiling dictated by the limited size of its reusable environment pool. This advantage stems from WASP’s HTTP layer, which distributes requests across all cores via fasthttp and goroutine multiplexing, whereas Sledge funnels them through a single listener core. Conversely, heavyweight, CPU-bound workloads (Hash) expose a different trend. Under these conditions, Sledge’s architectural choices yield better overall stability. While our framework with WasmEdge manages to maintain throughput and latency comparable to Sledge, the other runtimes experience noticeable performance degrada-tion. This inversion is rooted in the scheduling architecture. Our prototype relies on WASP: A Configurable Framework for Portable Stateful Serverless Applications 11 
+
+a simple FIFO dispatcher that delegates thread management to the underlying OS scheduler. During prolonged, intensive computations, the OS aggressively preempts threads, introducing heavy context-switching penalties. Pure Go implementations like Wazero suffer the worst regressions from this context switching across the pool structure. Sledge mitigates this by employing a highly customized, unguided scheduler designed specifically to minimize context switches during long-running tasks. 
+
+Edge Portability (RQ4). The framework runs without modification on all three runtimes, confirming the portability promised by its architectural design. As expected, absolute performance degrades compared to the server-class machine: on Fibonacci, WASP-Wasmtime-AOT moves from 6.2 ms cold and 0.08 ms warm on the server to 138 ms cold and 1.4 ms warm on the Pi. The Stateful function shows the same scaling behavior, with WASP-Wasmtime-AOT on Redis going from 38 ms / 0.19 ms (cold/warm) to 1.82 s / 3.8 ms. Despite the two-order-of-magnitude slowdown on cold starts, peak RSS remains well within the Pi’s 1 GB envelope (between 28 and 277 MB across all configurations, with the upper bound reached by WASP-WasmEdge-AOT on the stateful workload). 
+
+4.3 Discussion 
+
+Across the four research questions, WASP does not introduce a one-size-fits-all configuration: different runtimes, modes, and storage backends yield radically different performance and memory profiles (RQ1), and the framework’s abstraction layer preserves these differences while adding negligible overhead (RQ2). When compared to a highly customized state-of-the-art framework (RQ3), WASP remains competitive: outperforming Sledge on lightweight workloads while staying within range on heavyweight ones, despite a deliberately naive scheduler. Crucially, the same framework deploys unchanged on a Raspberry Pi (RQ4), confirming that this configurability is not confined to cloud-class hardware. Taken together, these results validate the central premise of WASP: that stateful WASM serverless can be both portable across heterogeneous deployment targets and configurable to workload-specific requirements, without requiring application code changes. 
+
+## 5 Conclusions 
+
+In this paper, we presented WASP, a configurable framework that brings stateful serverless computing to the heterogeneous edge-cloud continuum. Structured around strictly decoupled components (a Function Manager, a WASM Runtime Adapter, and a Storage Adapter), WASP overcomes the rigidity of existing WASM-based serverless solutions. Our prototype confirms that this modularity comes at negligible runtime cost, while letting administrators tune the execution engine, the datastore, and the caching policies, and deploy the same framework from server-class machines down to resource-constrained edge devices. As a result, WASP exposes distinct latency and memory profiles, allowing the execution environment to be precisely tailored to the requirements of each application and the constraints of its deployment target. Future work will extend WASP with additional runtimes and datastores, a richer state API, and smarter scheduling, and build a full serverless platform on top of it. 12 M. Cenzato et al. 
+
+## References 
+
+1. Bittencourt, L.F., Rodrigues-Filho, R., Spillner, J., De Turck, F., Santos, J., da Fonseca, N.L., Rana, O., Parashar, M., Foster, I.: The computing continuum: Past, present, and future. Comp. Science Review 58 (2025) 2. Gadepalli, P.K., McBride, S., Peach, G., Cherkasova, L., Parmer, G.: Sledge: a serverless-first, light-weight wasm runtime for the edge. In: Middleware. ACM (2020) 3. Hoque, M.N., Harras, K.A.: WebAssembly for edge computing: Potential and challenges. IEEE Commun. Standards Mag. 6(4) (2022) 4. Jia, Z., Witchel, E.: Boki: Stateful serverless computing with shared logs. In: SOSP. ACM (2021) 5. Khelifa, S.e., Bagaa, M., Messaoud, A.O., Ksentini, A.: Case study of webassembly runtimes for ai applications on the edge. In: GIIS. IEEE (2024) 6. Kimovski, D., Mathá, R., Hammer, J., Mehran, N., Hellwagner, H., Prodan, R.: Cloud, fog, or edge: Where to compute? Internet Comp. 25 (4) (2021) 7. Liu, M., Shen, H., Zhang, Y., Mei, H., Ma, Y.: Webassembly for container runtime: Are we there yet? ACM TOSEM 34 (6) (2025) 8. Nastic, S., Rausch, T., Scekic, O., Dustdar, S., Gusev, M., Koteska, B., Kostoska, M., Jakimovski, B., Ristov, S., Prodan, R.: A serverless real-time data analytics platform for edge computing. IEEE Internet Comp. 21 (2017) 9. Pang, X., Liu, L., Zhang, Y., Chen, Z., Ding, Z., Cheng, D., Zhou, X.: Featherlight stateful webassembly for serverless inference workflows. IEEE TPDS (2025) 10. Pfandzelter, T., Bermbach, D.: Enoki: Stateful distributed FaaS from edge to cloud. In: MiddleWEdge. ACM (2023) 11. Pfandzelter, T., Japke, N., Schirmer, T., Hasenburg, J., Bermbach, D.: Managing data replication and distribution in the fog with FReD. Software: Practice and Experience 
+
+53 (10) (2023) 12. Rausch, T., Lachner, C., Frangoudis, P.A., Raith, P., Dustdar, S.: Synthesizing plausible infrastructure configurations for evaluating edge computing systems. In: HotEdge. USENIX Association (2020) 13. Schleier-Smith, J., Sreekanti, V., Khandelwal, A., Carreira, J., Yadwadkar, N.J., Popa, R.A., Gonzalez, J.E., Stoica, I., Patterson, D.A.: What serverless computing is and should become: The next phase of cloud computing. Commun. ACM 64 (5) (2021) 14. Shi, W., Cao, J., Zhang, Q., Li, Y., Xu, L.: Edge computing: Vision and challenges. IEEE IoT Jour. 3 (2016) 15. Shillaker, S., Pietzuch, P.: Faasm: Lightweight isolation for efficient stateful serverless computing. In: USENIX ATC. USENIX Association (2020) 16. Sreekanti, V., Wu, C., Lin, X.C., Schleier-Smith, J., Gonzalez, J.E., Hellerstein, J.M., Tumanov, A.: Cloudburst: Stateful functions-as-a-service. VLDB 13 (12) (2020) 17. Varghese, B., Wang, N., Bermbach, D., Hong, C.H., Lara, E.D., Shi, W., Stewart, C.: A survey on edge performance benchmarking. ACM Comp. Surv. 54 (3) (2021) 18. Wen, J., Chen, Z., Jin, X., Liu, X.: Rise of the planet of serverless computing: A systematic review. ACM TOSEM 32 (5) (2023) 19. Wen, Y., Xu, G., Wang, J., Hao, W.: Low-latency state management for real-time tasks in edge serverless. In: ISPA. IEEE (2024) 20. Zhang, H., Cardoza, A., Chen, P.B., Angel, S., Liu, V.: Fault-tolerant and transactional stateful serverless workflows. In: OSDI. USENIX Association (2020) 21. Zhang, Y., Liu, M., Wang, H., Ma, Y., Huang, G., Liu, X.: Research on webassembly runtimes: A survey. ACM TOSEM 34 (8) (2025) 22. Ţălu, M.: A comparative study of webassembly runtimes: Performance metrics, integra-tion challenges, application domains, and security features. Arch. Adv. Eng. Sci. (2025)

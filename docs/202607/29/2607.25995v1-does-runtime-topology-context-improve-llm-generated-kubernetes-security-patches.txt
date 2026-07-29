@@ -1,0 +1,435 @@
+Title: Does Runtime Topology Context Improve LLM-Generated Kubernetes Security Patches?
+
+URL Source: https://arxiv.org/pdf/2607.25995v1
+
+Published Time: Wed, 29 Jul 2026 01:18:21 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# Does Runtime Topology Context Improve LLM-Generated Kubernetes Security Patches? 
+
+Farooq Shaikh [0009 −0005 −3726 −5373] 
+
+Dynatrace Research, Linz, Austria 
+
+farooq.shaikh@dynatrace.com 
+
+Abstract. Cloud-native systems now underpin how software is built and operated at scale, and Kubernetes is central to this ecosystem, or-chestrating its containerised workloads. Recent work suggests that large language models (LLMs) can automate cluster security remediation, gen-erating configuration patches and hardening recommendations from Ku-bernetes Security Posture Management (KSPM) findings without human authoring. Such systems, however, prompt the model with each finding, in isolation from the live service call graph, assuming general harden-ing knowledge suffices for a correct repair. This assumption breaks down whenever a patch must preserve a runtime service dependency invisible to the model: an otherwise compliant fix then carries a destructive func-tional blast radius; crashing downstream callers or silently severing call edges across the cluster. Whether supplying live cluster context improves the correctness of such patches has not been measured under controlled conditions across multiple dependency classes. To this end, this paper introduces KuTIE (Kubernetes Topology Intel-ligence Engine), which builds a live cluster context from Istio call edges, Trivy KSPM findings, and the service-account bindings a workload reads, and conditions LLM patch generation on it. It is evaluated on VulnCare, a purpose-built 36-deployment, four-namespace healthcare cluster with 31 injectable findings across seven dependency classes, each labelled by topology dependence against cluster ground truth. Across 248 distinct trials, topology context raises topology-dependent patch correctness from 
+
+11 .1% to 78 .0% , a gap of ∆ = 0 .669 that holds for every model and for six of seven classes, from credential and network-policy ( ∆ = 0 .95 )to role-based access control ( ∆ = 0 .31 ); a topology-independent con-trol, by contrast, exhibits no such effect ( ∆ = 0 .0), isolating the result from generic prompt enrichment. Supplying the live service-call graph and the service-account bindings it exposes thus improves remediation of topology-dependent findings well beyond what scanner-only context achieves. 
+
+Keywords: LLM · Attack graph · Kubernetes · Automated security remediation · Topology-aware patching 
+
+## 1 Introduction 
+
+Kubernetes is an orchestration platform that runs containerised applications across a cluster of machines. It groups an application’s containers into Pods ,arXiv:2607.25995v1 [cs.CR] 28 Jul 2026 2 F. Shaikh 
+
+the smallest unit it schedules, isolates related workloads into separate names-paces , and exposes a single declarative interface governing how those workloads reach one another, which privileges they hold, and what data they may read. This consolidation of networking, access control, and runtime privilege into one configuration surface is both Kubernetes’ operational strength and its security exposure: even a moderate cluster spans thousands of interdependent configu-ration fields, and a single over-broad setting opens an attacker foothold. LLM-based systems can now automate the remediation of such misconfigurations, generating corrective configurations from KSPM findings and hardening cluster manifests without human authoring [3, 16, 23, 31]. These systems prompt the model with individual resource findings ranked by severity in isolation, on the assumption that the LLM’s general knowledge of hardening guidelines suffices for producing a correct fix. This assumption fails whenever the patch must pre-serve a runtime service dependency invisible to the model. Dropping a required Linux capability prevents a service from binding its port, so it never starts and every downstream caller that depends on it fails; applying a default-deny egress NetworkPolicy severs all observed call edges from the target service; deleting an overly-broad role-based access control (RBAC) role removes the Kubernetes API access the workload exercises at startup. Each such fix is statically compliant yet carries a destructive functional blast radius; the disruption it inflicts on live cluster behaviour as opposed to the attack blast radius security analysis con-ventionally quantifies. The same root cause, the absence of service dependency context, manifests across capability, network-policy, RBAC, secret, credential, pod-security-policy, and storage configuration classes, making it a structural property of the prompting paradigm rather than a failure confined to a single misconfiguration type. The missing element is runtime service topology: which services communi-cate with which at runtime, which containers bind privileged ports to serve downstream callers, and which compliance violations accumulate compound risk across multi-hop service paths. A cluster of moderate size can routinely yield hundreds of KSPM findings, yet per-resource severity rankings conceal this path-level exposure; a LOW-severity finding on an internet-facing service combines with a CRITICAL-severity misconfigured backend to form a high-priority attack path that neither finding signals independently. Attack graph tools [11, 20] re-construct topology from static manifest snapshots or cluster API enumeration, producing views that diverge from the live call graph as workloads evolve; none exposes this context for LLM generation tasks. Runtime monitors [14,26] observe live behaviour reactively on individual events; they do not provide structured topology context suitable for conditioning generative model prompts. No prior work measures, under controlled conditions, whether supplying topology context to an LLM changes the correctness of generated security patches. GenKubeSec [16], LLMSecConfig [31], and KubeIntellect [3] validate patches against resource schemas, and KubeGuard [23] uses runtime logs for configuration generation. To this end, KuTIE collects live service-call topology from Istio telemetry and KSPM findings from the Trivy Operator, constructs a Topology Context for LLM-Generated Kubernetes Security Patches 3
+
+compliance-weighted attack graph, and conditions LLM remediation prompts on the resulting service-call edges, bound ports, and service-account resource bindings. The contributions are threefold. 
+
+– KuTIE . A system that builds a structured topology context from Istio call edges, Trivy KSPM findings, and the service-account bindings a workload reads, ranks compliance-weighted attack paths over it, conditions LLM re-mediation on the result, and gates each patch on its functional blast radius before application; the evaluation isolates the remediation conditioning, the ranking, annotation and gate being described but not separately measured (§3, §5). 
+
+– The VulnCare benchmark. A 36-deployment, four-namespace healthcare cluster with 31 injectable findings across seven dependency classes, each la-belled topology-dependent (TD) or topology-independent (TI) against clus-ter ground truth and scored by a deterministic protocol that operationalises the concept of functional blast radius, crediting a patch only when it clears the finding while preserving the workload’s observed call edges and readiness, released for replication (§4). 
+
+– A controlled methodology for isolating the topology effect. A fac-torial design labelling each finding topology-dependent or independent and scoring patches by functional blast radius isolates topology context from generic prompt enrichment. Across 248 trials it raises topology-dependent correctness from 11 .1% to 78 .0% (∆ = 0 .669 ), for every model and six of seven classes (credential and network-policy ∆ = 0 .95 , RBAC ∆ = 0 .31 ); the topology-independent control shows no effect ( ∆ = 0 .0) (§6.2–§6.5). 
+
+## 2 Background and Related Work 
+
+Work related to KuTIE falls into three families: KSPM and static hardening, attack-graph construction, and LLM-driven remediation. All three share a struc-tural limitation: findings are scoped to individual resources, edges are derived from static configuration, and repair context centres on manifests; none condi-tions on the observed runtime service-call graph. 
+
+2.1 KSPM, Misconfiguration Detection, and Static Hardening 
+
+Kubernetes schedules containerised workloads as Pods across a cluster of nodes; security configuration spans multiple resource types, including pod securityCon-text (Linux capabilities, privilege escalation), NetworkPolicy (inter-Pod traffic rules), Role and RoleBinding (RBAC for the Kubernetes API), and Secret and 
+
+ConfigMap (sensitive data at rest). Each resource type carries hardening require-ments codified in recommended baselines [7, 18]. KSPM tools audit cluster configuration against hardening frameworks. Checkov [5] and KICS [9] scan static manifests against policy rules; the Trivy Operator [2] derives findings from live cluster state and exports them as in-cluster Custom Resources. On the other hand, Haque et al. [13] represent 4 F. Shaikh 
+
+container security relationships as a knowledge graph for posture analysis, demonstrating the value of graph structure over flat finding lists. KubeFence [8] implements fine-grain API-call filtering tailored to specific client workloads, reducing the Kubernetes API attack surface beyond what RBAC achieves, while Bufalino et al. [6] characterise lateral movement arising from permissive 
+
+NetworkPolicy rules. Runtime monitors Falco [26] and Tetragon [14] comple-ment posture analysis with eBPF-based syscall detection. Across these tools the unit of analysis remains the individual resource: each finding is scored based primarily on the resource in question, not on its position in the live service-call graph along which its impact propagates. KuTIE addresses this limitation by using per-workload KSPM severity as edge weights in an attack graph grounded in live Istio call telemetry. 
+
+2.2 Attack Graph Construction for Cloud-Native Systems 
+
+The formal attack graph model of Sheyner et al. [24] represents a system as states and attacker-executable transitions; MulVal [20] instantiates this model via Datalog rules, producing high-fidelity paths at the cost of manual rule au-thoring per environment. Risk-assessment graph work extends attack graphs with countermeasures and consequences for security assessment [28]. For cloud-native and infrastructure deployments, KubeHound [11] models Kubernetes API objects as typed graph nodes and enumerates attack-relevant edges from offline manifest snapshots; and Graphene [15] analyzes infrastructure posture through AI-generated attack graphs. Zhang et al. [33] apply LLMs to construct attack knowledge graphs from cyber threat intelligence reports, showing that language model representations recover graph structure from unstructured text, a design principle reflected in KuTIE ’s path annotation step. KuTIE constructs edges from live Istio request counters, so paths reflect the service interactions actually executed in the cluster, and annotates each hop against the MITRE ATT&CK for Containers matrix [17] via semantic search over the ATT&CK Structured Threat Information Expression (STIX) bundle [19]. 
+
+2.3 LLM-Driven Security Automation and Remediation 
+
+Recent work most closely related to KuTIE applies LLMs directly to Kubernetes configuration remediation. GenKubeSec [16] detects, localises, and remediates Kubernetes misconfigurations with 0.990 precision against rule-based baselines. LLMSecConfig [31] augments this with retrieval-augmented generation (RAG), reporting 94% repair success on 1,000 real-world manifests. Topology context and documentation-based RAG are orthogonal enrichment channels: RAG re-trieves static hardening guidance, whereas KuTIE supplies observed runtime call edges that no documentation source contains. KubeGuard [23] incorporates runtime-log evidence into the hardening loop, enabling least-privilege configu-ration generation that static manifest analysis alone cannot produce. KubeIn-tellect [3] orchestrates modular LLM agents for end-to-end cluster management via natural language interaction, while MetaKube [25] adds episodic memory Topology Context for LLM-Generated Kubernetes Security Patches 5è Trivy 
+
+> audit reports severity labels
+
+õ FAISS Index 
+
+> ATT&CK techniques bge-small vectors
+
+j LLM Annotator 
+
+> MITRE labels priority ordering risk narrative
+
+¢ Prometheus 
+
+> mesh metrics call-graph edges
+
+ó ClusterContext 
+
+> KSPM findings topology edges name map
+
+¨ Prioritiser  
+
+> Bellman-Ford top-kpaths
+
+A Attack Report 
+
+> technique IDs path priority cluster risk
+
+å Remediation 
+
+> patch generation schema validation health gate
+
+◎ Functional Blast Radius  
+
+> finding cleared edges preserved health-gate pass
+> findings
+> edges snapshot
+> techniques
+> ranked paths
+> annotated
+> topology
+> targets
+> measure
+
+Fig. 1. KuTIE pipeline: a live ClusterContext feeds path prioritisation, LLM anno-tation, and functional-blast-radius-gated remediation. 
+
+for Kubernetes failure diagnosis. Beyond remediation, intent-based configura-tion applies LLMs to generate manifests from natural-language operator intent: Sacco et al. [21] fine-tune open-source models for this task and evaluate them with text-similarity metrics, leaving deployment-based correctness testing and problem-specific evaluation as open challenges. KuTIE addresses both, scoring each patch by its effect on the running cluster rather than by textual resem-blance to a reference. End-to-end remediation benchmarks reinforce this empha-sis on functional outcome: MicroRemed [32] evaluates whether LLM-generated playbooks actually restore faulty microservices, though it targets runtime fault recovery rather than security configuration under live topology. Xu et al. [30] evaluate four LLM-based patching architectures, fixed-workflow, single-agent, multi-agent, and general-purpose code agents, and show that patching effective-ness depends on the architecture in which the LLM is embedded. Evidence from general program repair underscores the stakes: large-scale analysis shows LLM-generated patches frequently introduce vulnerabilities, especially for issues that omit relevant context [22], and adversarially crafted reports can elicit patches that pass every test yet remain exploitable [10]. KuTIE differs by conditioning remediation prompts on the Istio-derived call graph and by measuring, under a controlled factorial design, the class-specific effect of topology context on patch correctness across seven dependency classes. 
+
+## 3 System Architecture 
+
+KuTIE operates as a two-stage pipeline over a live cluster snapshot (Figure 1). The first stage builds a ClusterContext from Istio call telemetry and Trivy KSPM findings, ranks compliance-weighted attack paths over it, and annotates each path against MITRE ATT&CK to produce an analyst-facing attack report. The second stage conditions LLM remediation on the same context and gates each generated patch on its functional blast radius before application. 6 F. Shaikh 
+
+Design rationale. Istio, a service mesh [27], is used as the topology source because its per-call counter is exported as a standard Prometheus metric, requir-ing no per-service instrumentation or cluster API credentials. Trivy Operator is used for KSPM because it publishes structured ConfigAuditReport custom re-sources in-cluster, queryable without administrator access, with severity classifi-cations consistent with the Center for Internet Security Kubernetes Benchmark. 
+
+Threat model. The attacker is assumed to have no access to raw manifests and no ability to enumerate the full cluster API; observable information is limited to what an external or laterally moving workload infers from live network traffic and exposed service endpoints. KuTIE operates under the same constraint, driven by observed call topology and exported KSPM findings rather than full-cluster object inspection. 
+
+ClusterContext construction. A ClusterContext object is built once per analysis request from two data sources. KSPM findings are collected from Trivy Operator [2] ConfigAuditReport custom resources emitted in-cluster; each find-ing carries a severity classification (CRITICAL, HIGH, MEDIUM, LOW), a resource kind and workload name, and a rule title. Call-graph edges are aggre-gated from Istio into directed (src, dst ) pairs over a configurable scrape window (default five minutes). A workload name resolution map normalises Kubernetes identifiers to Prometheus-observed service labels, reconciling naming differences between the two sources. 
+
+Technique index. At startup, the MITRE ATT&CK for Containers STIX bundle is loaded and each technique description is embedded with BAAI/bge-smallenv1.5 [4] into a Facebook AI Similarity Search (FAISS) index. During annotation, the concatenated KSPM rule titles are embedded with the same model and the top-kt (kt = 7 ) nearest techniques are retrieved, grounding the annotator in the relevant ATT&CK subset. 
+
+Pipeline. The path prioritiser constructs a compliance-weighted graph from 
+
+ClusterContext edges and produces a ranked path list (§5). The list, per-node KSPM findings, and retrieved ATT&CK techniques are forwarded to the LLM annotator in a single structured prompt, whose output is an AnnotatedAttack-Report : paths ordered by comparative priority, each carrying technique labels, confidence scores, and a cluster-level risk summary. 
+
+Remediation loop. Under the topology-aware condition the cluster context is prepended to the remediation prompt as a set of labelled sections, each carry-ing one kind of live-cluster fact. The objective is to clear the finding while pre-serving the workload’s observed service calls (minimal functional blast radius). The security context gives the service KSPM score and its ranked attack path for situational awareness, together with the observed inbound callers, outbound callees, and bound ports that a correct fix must keep intact. The service-account section names the Secret and ConfigMap objects, with their keys, that the work-load is RBAC-scoped to read. Further sections report the running image digest, the cluster storage classes, the available seccomp profiles, and the namespace cost-centre taxonomy; where applicable, two additional context sources supply an operational constraint read from the deployment, such as the capability a Topology Context for LLM-Generated Kubernetes Security Patches 7
+
+port-binding workload must retain, and the current findings of the neighbouring services on the ranked path. The blind condition omits all of this context. Every value is read from the live cluster rather than taken from a reference patch; the service-account binding in particular is recovered by walking RoleBinding to 
+
+Role to resourceNames , which exposes the exact Secret a workload already reads without disclosing the correct manifest edit. The LLM returns a strategic-merge patch validated by a server-side dry-run using kubectl ; KuTIE then weighs its functional blast radius to apply the patch automatically or else flag it for human review (§4.5). A deterministic revert and post-revert health gate ensure trial independence. 
+
+## 4 The VulnCare Benchmark 
+
+4.1 Design Rationale 
+
+VulnCare is a purposefully misconfigured multi-service Kubernetes cluster, designed as a controlled benchmark for security research that requires aground-truth-validated service call topology. Healthcare is chosen as a rep-resentative domain exhibiting long service chains across external partner boundaries (pharmacy, banking settlement, claims clearing, laboratory, and imaging subsystems), where each link imposes a distinct security-relevant resource binding, from privileged-port capabilities and RBAC permissions to storage-class selection and in-image credentials. A correct security patch on nodes in such a topology must simultaneously satisfy the KSPM scanner and preserve every downstream call; VulnCare injects exactly this tension across the seven dependency classes of Table 2, on a live cluster with Istio call telemetry. The cluster runs on a three-node kind cluster (Kubernetes 1.32) with Cilium Container Network Interface 1.17.4 for network policy enforcement, Istio 1.25.2 for service-mesh telemetry, and the Trivy Operator v0.30.1 for in-cluster KSPM scanning. VulnCare is released as open source, with the full cluster definition, 31 injectable findings, ground-truth scorers, the evaluation framework, and pre-computed results provided to enable independent replication. 1
+
+Why not existing clusters? Three open-source Kubernetes testbeds were evaluated and rejected. Online Boutique [12] deploys eleven microservices with no deliberate misconfigurations; Trivy reports no topology-dependent findings, so there is no remediation task. Sock Shop [29] has a hub-spoke topology without service-mesh telemetry, making topology-dependent versus topology-independent discrimination impossible. Kubernetes Goat [1] targets interactive capture-the-flag exploitation scenarios (container escape, server-side request forgery) with single-pod challenges that do not form a realistic multi-hop service topology. VulnCare fills this gap: observable Istio edges, injected misconfigurations, and ground-truth validation that naive patches break specific downstream calls.   
+
+> 1https://github.com/dynatrace-research/vulncare (cluster and findings) and https:// github.com/dynatrace-research/kutie-artifacts (evaluation framework and results). 8F. Shaikh
+
+4.2 Service Architecture 
+
+The cluster comprises 36 deployments distributed across four Kubernetes names-paces, summarised in Table 1. The namespace boundary is itself a topology sig-nal: several topology-dependent findings require a patch whose correct value lies in a workload bound in a different namespace, so a remediation derived from finding text alone cannot recover it. Workloads communicate over 51 directed call edges exported from the Istio request counter; these edges anchor the live cluster context supplied to the LLM under the aware condition (§3). Figure 2 renders the call graph and the misconfiguration-class overlay, with panel bound-aries identifying the four namespaces. Four api-gateway -rooted exploit chains executed and validated on the live cluster are overlaid: C1 (container escape) piv-ots through bank-gateway ; C2 (RBAC escalation) reads patient-db credentials via the Kubernetes API; C3 (network lateral movement) traverses six hops to 
+
+legacy-claims-archive ; and C4 (shared persistent-volume-claim (PVC) per-sistence) reaches imaging-store . The clinical, financial, and imaging chains each cross a namespace boundary back into the core vulncare namespace.        
+
+> Table 1. VulnCare namespace structure. Representative workloads are those carrying injected findings or anchoring a multi-hop chain.
+> Namespace Function Representative workloads
+> vulncare Core clinical, financial forwarding, lab subsystem, ops/audit api-gateway, prescription-service, lab-service, lab-gateway, lab-lis-system, pharmacy-gateway, billing-service, payment-processor, bank-gateway, legacy-settlement-api, legacy-lab-archive, ops-console, audit-logger-dep
+> vulncare-clinical Identity and clinical records identity-provider, mfa-service, consent-service, fhir-gateway, session-cache
+> vulncare-financial Claims and settlement clearing claims-processor, eligibility-checker, edi-gateway, edi-clearinghouse, legacy-claims-archive
+> vulncare-imaging Medical imaging pipeline pacs-gateway, dicom-processor, imaging-store, ai-inference, radiology-report
+
+4.3 Misconfiguration Taxonomy 
+
+The benchmark injects 31 findings, 25 TD and 6 TI, the latter a deliberately small negative control, across the seven dependency classes defined in Table 2. A finding is TD when a correct, working patch requires a value discoverable only from cluster state, and TI when the patch is fully determined by the finding text. Topology Context for LLM-Generated Kubernetes Security Patches 9Class CRED NET SEC CAP RBAC POLICY STORAGE                                               
+
+> Finding ★solid =TD dashed =TI grey =none Chain C1 C2 C3 C4
+> vulncare-clinical vulncare (core) vulncare-fi nancial vulncare-imaging
+> fhir-gw ★idp ★mfa consent
+> sess-cache patient-db ★
+> load-gen
+> api-gw ★
+> auth ★
+> appt ★
+> prescr ★
+> ops-con ★
+> lab-svc ★
+> patient
+> audit
+> billing ★
+> lab-gw
+> notif ★
+> pharm-gw ★
+> lab-lis metrics pay-proc bank-gw ★
+> leg-lab ★
+> settle-api ★
+> claims ★
+> elig-chk ★edi-gw edi-clear leg-claims pacs-gw dicom img-store ★ai-infer ★radiol
+
+Fig. 2. VulnCare call graph with the per-workload misconfiguration overlay and the four api-gateway -rooted exploit chains C1–C4 (§4.2); encodings in the legend beneath the graph. 
+
+The Trivy finding text for all 31 is supplied to the LLM verbatim under both prompt conditions; the per-finding taxonomy, naming the exact cluster value each TD finding requires, is given in Appendix A (Table 5). 
+
+4.4 Topology Differentiation Design 
+
+The TD/TI split is the central design instrument of the benchmark, isolating topology context from the LLM’s general hardening knowledge. Every TD find-ing admits a KSPM-compliant but topology-neutral patch that passes the static rule yet breaks a downstream dependency or fails the exact-match criterion, whereas a TI finding is fixable from its text alone; the TI entries thus form a within-class control separating a genuine topology effect from generic prompt enrichment. 10 F. Shaikh                                        
+
+> Table 2. VulnCare dependency classes: the injected misconfiguration, per-class TD/TI counts, and the cluster-observable value a correct TD patch must recover. The full per-finding taxonomy is in Appendix A.
+> Class TD/TI Injected misconfig-uration Cluster value a correct TD patch must recover
+> CAP 2/2 Linux capabilities be-yond need Port a downstream caller binds CRED 5/0 Credentials baked into the image RBAC-bound Secret name and key NET 5/0 Missing or over-broad egress NetworkPolicy
+> Observed caller or callee labels POLICY 2/1 Pod-security and image-provenance controls None; documented patch is finding-derivable RBAC 4/2 API access broader than runtime needs
+> resourceNames of the bound
+> Secret /ConfigMap
+> SEC 5/0 Service credentials as plaintext env vars RBAC-bound Secret name and key STORAGE 2/1 Volume and storage-class selection
+> StorageClass or per-service PVC
+> Total 25/6
+
+Each class value (Table 2) is cluster-discoverable state, the same introspection a human operator performs, not the scored answer: a patch earns α = 1 only when the model itself selects and transcribes the correct value. Under blind prompting the model cannot access these values, the structural reason the blind condition fails on TD findings irrespective of model capability. 
+
+4.5 Ground-Truth Validation 
+
+Ground truth is derived from the live cluster: for each finding the dependency-preserving value was established from observed call edges, service-account bind-ings, and the cluster objects a workload reads. Scoring is deterministic and static. A per-class scorer inspects the submitted patch and assigns α = 1 only when it clears the KSPM finding and carries the value ground truth records as dependency-preserving, and α = 0 to a structurally valid but topology-neutral patch. Exact-value recovery is the stricter predicate and serves as a mechanised proxy for functional blast radius rather than a per-trial re-observation of the cluster; it can therefore score a functionally healthy but over-permissive patch as incorrect, which depresses the aware arm. The breakages are class-specific. Removing the required capability on a CAP-TD finding leaves the workload unable to bind its port, so it never becomes ready and its callers lose the depen-dency; a default-deny NetworkPolicy on a NET-TD finding cuts the observed call edges, and the affected requests start to fail. For CRED-TD, SEC-TD, and RBAC-TD findings the discriminating value is the exact Secret or role identifier Topology Context for LLM-Generated Kubernetes Security Patches 11 
+
+(and, for credentials, its key): naming the wrong object prevents the container from starting even though the scanner finding clears. STORAGE-TD needs a cluster-specific StorageClass the finding text lacks; POLICY-TD is the excep-tion, its documented patch being finding-derivable. The six TI findings check the converse: topology-neutral and topology-aware fixes produce identical outcomes, confirming they carry no topology-discriminating signal. 
+
+## 5 Graph-Based Attack Path Analysis 
+
+5.1 KSPM-Grounded Path Prioritisation on a Compliance-Weighted Service Graph 
+
+A weighted directed graph GS = ( VS , E S ) is built from live Istio call edges; edge weights encode KSPM severity at the source node: 
+
+w(u, v ) = 
+
+
+
+0.4 if σ(u) ≥ 10 (CRITICAL finding present) 
+
+0.7 if σ(u) ≥ 5 (HIGH finding present) 
+
+1.0 if σ(u) ≥ 2 (MEDIUM finding present) 
+
+1.5 otherwise (1) where σ(u) = P  
+
+> f∈KSPM (u)
+
+wf · cf sums severity-weighted finding counts, with wf ∈ { 10 , 5, 2, 1} a monotone ordinal mapping of the four severity levels and cf the per-rule finding count. 
+
+Reward function. A per-node reward balances local severity against neigh-bourhood severity: 
+
+r(v) = 0 .6 · σ(v) + 0 .4 · ¯σ(v) (2) where ¯σ(v) = P  
+
+> t∈N +(v)
+
+σ(t) sums out-neighbour severities; weff (u, v ) = 
+
+w(u, v ) · (1 − ˜r(v)) , ˜r(v) = r(v)/r max ∈ [0 , 1] .
+
+Implemented prioritisation heuristic. Bellman-Ford relaxation is used because weff (u, v ) reaches zero for edges incident on maximally misconfigured nodes, a case Dijkstra’s settled-set invariant handles incorrectly by locking in a suboptimal path before higher-reward alternatives are evaluated. Since 
+
+weff (u, v ) ≥ 0 for all edges, no negative-weight cycles arise and convergence is guaranteed within |VS | − 1 passes. 
+
+Path scoring. The final combined score for a path terminating at node v is: score (v) = ¯ r(v) − d(v)
+
+dmax 
+
+(3) where ¯r(v) is the mean normalised reward and d(v) the accumulated distance normalised by dmax . Paths are ranked in descending order; the top-kp (kp = 10 )are forwarded to the LLM annotator. 
+
+Scope. Because GS contains only service-level edges, pod-level attack prim-itives including RBAC privilege escalation, hostPath volume abuse, and con-tainer escape are not modelled. The prioritiser answers where an attacker can 12 F. Shaikh 
+
+reach within the observed service graph; how each hop is realised is the role of the LLM annotator. 
+
+5.2 LLM Annotator: MITRE Technique Assignment and Priority Ordering 
+
+The LLM annotator receives the full ranked path list produced by the prioritiser and performs two tasks in a single structured inference call: path-level MITRE ATT&CK annotation grounded in KSPM evidence, and comparative priority ordering across all candidate paths. 
+
+Input construction. The prompt supplies the top-kt ATT&CK techniques retrieved from the FAISS index, the full ranked path list with per-path scores, and the per-node KSPM findings for every node appearing in any path. 
+
+Hop annotation. For each hop (u → v) the annotator emits the content of the analyst-facing attack report: a candidate MITRE ATT&CK technique, the KSPM rule titles at u that enable it, and a confidence derived from the maximum KSPM severity at u. Grounded in the retrieved ATT&CK definitions and the observed KSPM evidence, the suggested techniques stay tied to the findings that motivate them, and the per-hop confidences combine into a path-level score as their geometric mean. These annotations characterise attack paths, the routes along which an adver-sary could traverse the cluster, while their compliance-weighted ranking surfaces the multi-hop exposures that most warrant a security analyst’s attention. To establish that this ranking reflects genuinely exploitable routes rather than its highest-scoring entries alone, five chains spanning the ranking from a top-ranked path to the deepest and lowest-ranked were executed end to end on the live clus-ter, the four in Figure 2 with one further chain, and each proved exploitable (§4.2). Separately from the prioritiser’s KSPM cost rank, the annotator assigns each path an attacker-priority rank, from 1 (highest) to k (lowest) across all candidate paths, by the severity and specificity of its KSPM evidence, reachability from an unauthenticated entry point, terminal-node impact, and path feasibility. 
+
+Output. The annotator returns a structured AnnotatedAttackReport : a list of AnnotatedPath records sorted by comparative priority. Each record carries the path annotations, a 2–4 sentence exploitation narrative for the end-to-end path, the priority rationale, and a cluster-level risk summary paragraph. This output is the analyst-facing report. 
+
+5.3 Path Prioritisation on VulnCare 
+
+Run over the benchmark cluster (§4), the prioritiser enumerates 33 ranked paths from the api-gateway ingress, of depth one to six hops {1:8 , 2:9 , 3:6 , 4:6 ,
+
+5:3 , 6:1 }. The top-ranked path is not the shortest: the three-hop lab chain from api-gateway through lab-service and lab-gateway to lab-lis-system Topology Context for LLM-Generated Kubernetes Security Patches 13 
+
+scores 0.74 and outranks all eight directly reachable services, because accumu-lated KSPM severity along the lab subsystem outweighs proximity to the en-try node. Severity-weighted ranking therefore surfaces finding-dense chains that hop-count ordering buries beneath shallow neighbours. 
+
+## 6 Evaluation 
+
+The evaluation addresses four research questions: (RQ1) does topology con-text improve patch correctness on topology-dependent misconfigurations; (RQ2) which dependency classes benefit most, and which least; (RQ3) on topology-independent misconfigurations, does topology context change correct-ness, as a control for generic prompt enrichment; and (RQ4) what failure modes account for incorrect patches under each condition. 
+
+6.1 Measurement Methodology Corpus and design. The benchmark corpus is the 31 VulnCare findings (25 TD, 6 TI; §4). The experiment crosses 31 findings × 4 models × 2 condi-tions for 248 trials. Under the aware condition the prompt includes the cluster context (§3): adjacent Istio call edges, bound ports, and the service-account binding that names the Secret , ConfigMap , or role the workload already reads. Under blind , only the Trivy finding text and the current deployment spec are supplied. 
+
+Models. Four LLMs are evaluated: two proprietary frontier models (Claude Sonnet 4.6, Haiku 4.5) and two open-weight alternatives (Llama 4 Maverick, Mistral Large). All calls are single-turn at temperature 0. 
+
+Scoring and ground truth. Ground truth is derived from the live clus-ter (§4.5); a deterministic per-class scorer then applies it across every trial by static inspection of the submitted patch, as binary correctness α ∈ { 0, 1}. A TD patch is credited with α = 1 only where it both clears the KSPM finding and recovers the cluster-specific value the class requires, whereas a structurally valid yet topology-neutral patch receives 0. One blind trial errored at generation (STORAGE-TD-2 × Llama, malformed JSON) and is excluded from its denomi-nator, leaving 99 blind TD trials. 
+
+False-negative bound. Within the 25 TD findings, three blind trials score 
+
+α = 1 for reasons unrelated to topology: RBAC-TD-1 × Sonnet (the injected manifest still carried a resourceNames hint), CAP-TD-2 × Llama (the finding text named the required capability), and SEC-TD-2 × Llama (the Secret name coincides with the env-var name). These findings set a conservative upper bound on blind correctness. 
+
+6.2 RQ1: Topology Context and TD Correctness Result. Topology context raises TD patch correctness from 11 .1% (11 /99 ) under blind prompting to 78 .0% (78 /100 ) under aware prompting, a gap of ∆ = 0 .669 .14 F. Shaikh 
+
+Across the 99 paired finding–model trials, 70 of the 73 discordant pairs favour the aware condition and 3 the blind (McNemar’s exact test, p ≈ 1 × 10 −17 ). The topology-aware advantage on TD findings is the dominant effect in the study and holds across every model (Table 3) and six of seven dependency classes (Table 4). 
+
+Robustness across models. The per-model gap ranges from 0.59 (Llama 4 Maverick) to 0.76 (Claude Sonnet) (Table 3); the effect is a property of the prompting condition, not of one family. 
+
+Table 3. Per-model TD patch correctness ( α-rate over 25 TD findings) under aware and blind conditions. 
+
+Model Aware Blind ∆
+
+Claude Sonnet 4.6 22/25 (0.88) 3/25 (0.12) 0.76 
+
+Claude Haiku 4.5 19/25 (0.76) 2/25 (0.08) 0.68 
+
+Llama 4 Maverick 19/25 (0.76) 4/24 (0.17) 0.59 
+
+Mistral Large 18/25 (0.72) 2/25 (0.08) 0.64 
+
+Overall 78/100 (0.78) 11/99 (0.11) 0.67 
+
+6.3 RQ2: Per-Class Breakdown 
+
+Table 4 reports TD correctness by class. Six of the seven classes show a positive gap varying more than threefold; POLICY alone is negative, and the interpre-tation below treats it separately as evidence of context-induced blast radius. 
+
+Table 4. Per-class TD patch correctness under aware and blind conditions. 
+
+Class n Aware Blind ∆
+
+CRED 5 19/20 (0.95) 0/20 (0.00) 0.95 
+
+NET 5 19/20 (0.95) 0/20 (0.00) 0.95 
+
+SEC 5 17/20 (0.85) 1/20 (0.05) 0.80 
+
+CAP 2 7/8 (0.88) 1/8 (0.12) 0.75 
+
+STORAGE 2 5/8 (0.62) 0/7 (0.00) 0.625 
+
+POLICY 2 5/8 (0.62) 8/8 (1.00) −0.375 
+
+RBAC 4 6/16 (0.38) 1/16 (0.06) 0.31 
+
+> n: TD findings in the class. Aware/Blind: correct trials over non-errored trials across four models.
+
+Interpretation. The credential and network classes benefit most. For CRED and SEC the correct patch must reference a pre-existing Secret by name and key, recoverable only from the service-account binding; for NET it must name the observed caller or callee. Under blind prompting no model produces any cor-rect NET or CRED patch (both 0/20 ), and only a single SEC patch succeeds, Topology Context for LLM-Generated Kubernetes Security Patches 15 TD-1                                                                   
+
+> TD-2
+> TI-1
+> TI-2
+> TD-1
+> TD-2
+> TD-3
+> TD-4
+> TI-1
+> TD-1
+> TD-2
+> TD-7
+> TI-1
+> TI-2
+> TD-1
+> TD-2
+> TI-1
+> TD-1
+> TD-2
+> TD-5
+> TD-6
+> TI-1
+> TI-2
+> TD-1
+> TD-2
+> TD-5
+> TI-1
+> TI-2
+> TD-1
+> TD-2
+> TI-1
+> Aware
+> Blind
+> CAP CRED NET POLICY RBAC SEC STORAGE
+> 3444444434434422410324444441323
+> 0144000000000000410004401000003
+> 0.00
+> 0.25
+> 0.50
+> 0.75
+> 1.00
+> =1 rate
+
+Fig. 3. Per-finding patch correctness. Tile colour is the α=1 rate over the four models (cividis, lighter is higher); the printed digit is how many of the four produced a correct patch. Columns are the 31 findings grouped by class; rows are aware vs blind prompting. 
+
+by name coincidence. RBAC benefits least among positive classes ( ∆ = 0 .31 ): even with the binding supplied, models emit a Role scoped to the right re-source type but omitting the precise resourceNames entry. POLICY inverts (∆ = −0.375 ): the supplied image digest induced three of four models to re-point the claims-processor image, severing the eligibility-checker and 
+
+edi-gateway edges the correct annotation-only patch keeps. Figure 3 shows the per-finding pattern across both conditions. 
+
+6.4 RQ3: Topology-Independent Control 
+
+The six topology-independent findings act as a within-study negative control: their correct patch is fully determined by the finding text (drop a named capa-bility, delete a named ClusterRole , add a size limit, add a chargeback annota-tion), so topology context should not change the outcome. The results clearly show it does not. Aware and blind correctness are identical at 23 /24 (95 .8% ) each, 
+
+∆ = 0 .0; the single miss ( STORAGE-TI-1 × one model) occurs under both condi-tions. The contrast with the TD gap of 0.669 confirms that the topology-aware advantage is specific to findings whose correct remediation requires a cluster-observed value, not a generic effect of a longer prompt. 
+
+6.5 RQ4: Failure Modes 
+
+Under blind prompting, 88 of the 99 TD trials fail with one shared structure: the model emits a standard hardening patch that clears the scanner finding while omitting the cluster-specific value. The recurring forms are an invented 
+
+Secret name or key (CRED, SEC), a default-deny policy that severs the ob-served edge (NET), a drop: ALL set on a port-binding service (CAP), and a default StorageClass or dangling claim reference (STORAGE). These are not malformed patches but plausible, scanner-compliant fixes with a destructive 
+
+functional blast radius , failing only because the runtime dependency is invisible to the model. 16 F. Shaikh 
+
+Under aware prompting, the 22 residual failures concentrate in RBAC ( 10 
+
+of 16 ), POLICY ( 3 of 8), and STORAGE ( 3 of 8). The common factor is tran-scription rather than reasoning: the binding is present, but the model narrows or paraphrases the supplied value rather than copying it exactly, in the per-class forms detailed in §6.3. The credential and network classes, where the value is a single name supplied verbatim, show almost no aware failures. The remaining gap is therefore a limit on transcribing a supplied value, not evidence that the value was unavailable. Prompting alone does not close it: slot-filling the patch template, or validating emitted values against the supplied context, targets tran-scription where the dry-run in place cannot. 
+
+## 7 Conclusion 
+
+Conditioning Kubernetes security remediation on observed service-call topology and the service-account bindings a workload exercises, rather than on the scanner finding alone, changes what an LLM can fix. Across 248 controlled trials on VulnCare, topology context raised topology-dependent patch correctness from 
+
+11 .1% to 78 .0% (∆ = 0 .669 ), consistently across every model and six of seven dependency classes, the gain scaling with how much of a correct fix reduces to a single cluster-observed value, from credential and network policy down to RBAC (§6.2–§6.3). This effect is specific to findings that require such a value. A topology-independent control showed no aware–blind difference, ruling out generic prompt enrichment, while the characteristic blind failure was uniform, ascanner-compliant patch that omits the runtime-required value and so carries a destructive functional blast radius, structural to finding-isolated prompting rather than an artefact of any one model (§6.4–§6.5). 
+
+KuTIE applies wherever a deployment exposes service-account bindings and an Istio-class layer-7 telemetry source; recovering the bindings needs read ac-cess to RoleBinding and Role , so mesh telemetry alone does not suffice. Three caveats qualify the result. The call graph captures service-to-service edges rather than pod-level escalation primitives, so recovered paths express lateral reacha-bility rather than per-hop exploit mechanics. Edges are aggregated over a finite scrape window, so rarely exercised paths may be absent, and a missing edge yields the destructive patch the approach exists to prevent. The effect was mea-sured on a single healthcare cluster and four models, and its magnitude depends on the 25/6 TD/TI composition chosen by construction; how often TD findings arise in production is not established here. All experiments ran on isolated kind 
+
+clusters, with no production systems or personal data involved.   
+
+> Acknowledgments. Claude (Anthropic) was used to assist with grammar and for-matting improvements to draft prose. The author takes full responsibility for all content in this paper.
+> Disclosure of Interests. The author has no competing interests to declare that are relevant to the content of this article.
+
+Topology Context for LLM-Generated Kubernetes Security Patches 17 
+
+## References 
+
+1. Akula, M.: Kubernetes goat: Interactive kubernetes security learning playground. https://github.com/madhuakula/kubernetes-goat (2021), accessed: May 2026 2. Aqua Security: Trivy: Comprehensive vulnerability scanner. https://github.com/ aquasecurity/trivy (2022), accessed: May 2026 3. Ardebili, M.S., Bartolini, A.: KubeIntellect: A modular LLM-orchestrated agent framework for end-to-end Kubernetes management. arXiv preprint arXiv:2509.02449 (2025), https://arxiv.org/abs/2509.02449 4. BAAI: BGE small english v1.5 sentence embedding model. https://huggingface. co/BAAI/bge-small-en-v1.5 (2023) 5. Bridgecrew: Checkov: Static code analysis for infrastructure as code. https:// github.com/bridgecrewio/checkov (2021), accessed: May 2026 6. Bufalino, J., Martin-Navarro, J.L., Di Francesco, M., Aura, T.: Inside job: De-fending Kubernetes clusters against network misconfigurations. Proc. ACM Netw. (2025). https://doi.org/10.1145/3749220 7. Center for Internet Security: CIS kubernetes benchmark. https://www.cisecurity. org/benchmark/kubernetes (2023), accessed: May 2026 8. Cesarano, C., Natella, R.: KubeFence: Security hardening of the Kubernetes attack surface. Proc. IEEE/IFIP Int. Conf. Dependable Systems and Networks (DSN) (2025). https://doi.org/10.1109/dsn64029.2025.00054 9. Checkmarx: KICS: Keeping infrastructure as code secure. https://github.com/ Checkmarx/kics (2021), accessed: May 2026 10. Chen, S., He, Y., Jana, S., Ray, B.: Red teaming program repair agents: When correct patches can hide vulnerabilities. arXiv preprint arXiv:2509.25894 (2025), https://arxiv.org/abs/2509.25894 11. DataDog: KubeHound: Kubernetes attack graph tool. https://github.com/ DataDog/KubeHound (2023), accessed: May 2026 12. Google LLC: Online boutique: Cloud-native microservices demo application. https: //github.com/GoogleCloudPlatform/microservices-demo (2020), accessed: May 2026 13. Haque, M.U., Kholoosi, M.M., Babar, M.A.: KGSecConfig: A knowledge graph based approach for secured container orchestrator configuration. Proc. IEEE Int. Conf. Software Analysis, Evolution, and Reengineering (SANER) (2022). https: //doi.org/10.1109/saner53432.2022.00057 14. Isovalent: Tetragon: ebpf-based security observability and runtime enforcement. https://github.com/cilium/tetragon (2022), accessed: May 2026 15. Jin, X., Katsis, C., Sang, F., Sun, J., Bertino, E., Kompella, R.R., Kundu, A.: Graphene: Infrastructure security posture analysis with AI-generated attack graphs. arXiv preprint arXiv:2312.13119 (2023), https://arxiv.org/abs/2312.13119 16. Malul, E., Meidan, Y., Mimran, D., Elovici, Y., Shabtai, A.: GenKubeSec: LLM-based Kubernetes misconfiguration detection, localization, reasoning, and remedi-ation. arXiv preprint arXiv:2405.19954 (2024), https://arxiv.org/abs/2405.19954 17. MITRE Corporation: ATT&CK for containers matrix. https://attack.mitre.org/ matrices/enterprise/containers/ (2021), accessed: May 2026 18. NSA, CISA: Kubernetes hardening guidance. https://media.defense.gov/ 2022/Aug/29/2003066362/-1/-1/0/CTR_KUBERNETES_HARDENING_ GUIDANCE_1.2_20220829.PDF (2022), accessed: May 2026 19. OASIS Open: STIX 2.1 specification. https://docs.oasis-open.org/cti/stix/v2.1/ stix-v2.1.html (2021), accessed: May 2026 18 F. Shaikh 20. Ou, X., Govindavajhala, S., Appel, A.W.: MulVAL: A logic-based net-work security analyzer. In: Proc. USENIX Security Symposium (2005), https://www.usenix.org/conference/14th-usenix-security-symposium/ mulval-logic-based-network-security-analyzer 21. Sacco, A., Zilli, C., Marchetto, G.: Intent-based Kubernetes configuration via LLMs: Current trends and open challenges. Proc. IEEE Conf. Local Computer Networks (LCN) (2025). https://doi.org/10.1109/LCN65610.2025.11146359 22. Sajadi, A., Damevski, K., Chatterjee, P.: How safe are AI-generated patches? a large-scale study on security risks in LLM and agentic automated program repair on SWE-bench. arXiv preprint arXiv:2507.02976 (2025), https://arxiv.org/abs/ 2507.02976 23. Sgan Cohen, O., Malul, E., Meidan, Y., Mimran, D., Elovici, Y., Shabtai, A.: KubeGuard: LLM-assisted Kubernetes hardening via configuration files and run-time logs analysis. arXiv preprint arXiv:2509.04191 (2025), https://arxiv.org/abs/ 2509.04191 24. Sheyner, O., Haines, J., Jha, S., Lippmann, R., Wing, J.M.: Automated generation and analysis of attack graphs. In: Proc. IEEE Symposium on Security and Privacy. pp. 273–284 (2002). https://doi.org/10.1109/SECPRI.2002.1004377 25. Sun, W., Wang, T., Tian, X., Lan, W., Feng, X., Li, H., Wang, F.: MetaKube: An experience-aware LLM framework for Kubernetes failure diagnosis. Proc. ACM Web Conf. (WWW) (2026), https://arxiv.org/abs/2603.23580 26. The Falco Project: Falco: Cloud-native runtime security. https://falco.org (2022), accessed: May 2026 27. The Istio Authors: Istio: An open source service mesh. https://istio.io (2023), ac-cessed: May 2026 28. Unger, S., Arzoglou, E., Heinrich, M., Scheuermann, D., Katzenbeisser, S.: Risk assessment graphs: Utilizing attack graphs for risk assessment. arXiv preprint arXiv:2307.14114 (2023), https://arxiv.org/abs/2307.14114 29. Weaveworks: Sock shop: A microservices demo application. https://github.com/ microservices-demo/microservices-demo (2017), accessed: May 2026 30. Xu, Q., Sheng, Z., Chen, Z., Huang, J.: A systematic study of LLM-based archi-tectures for automated patching. arXiv preprint arXiv:2603.01257 (2026), https: //arxiv.org/abs/2603.01257 31. Ye, Z., Le, T.H.M., Babar, M.A.: LLMSecConfig: An LLM-based approach for fix-ing software container misconfigurations. arXiv preprint arXiv:2502.02009 (2025), https://arxiv.org/abs/2502.02009 32. Zhang, L., Zhai, Y., Jia, T., Duan, C., He, M., Pan, L., Liu, Z., Ding, B., Li, Y.: MicroRemed: Benchmarking LLMs in microservices remediation. arXiv preprint arXiv:2511.01166 (2025), https://arxiv.org/abs/2511.01166 33. Zhang, Y., Du, T., Ma, Y., Wang, X., Xie, Y., Yang, G., Lu, Y., Chang, E.C.: AttacKG+: Boosting attack knowledge graph construction with large language models. arXiv preprint arXiv:2405.04753 (2024), https://arxiv.org/abs/2405.04753 Topology Context for LLM-Generated Kubernetes Security Patches 19 
+
+## A Full Misconfiguration Taxonomy 
+
+Identifiers are non-contiguous: findings dropped as topology-neutral during con-struction, before the reported trials, keep their numbering. 
+
+Table 5. VulnCare misconfiguration taxonomy: 31 findings across seven classes (25 TD, 6 TI). 
+
+ID Cl. Service Dep. Topology signal 
+
+CAP-TD-1 CAP api-gateway TD Caller graph: retain only downstream-used port capability CAP-TD-2 CAP prescription-service TD Callee ports determine which capabili-ties to keep CAP-TI-1 CAP patient-service TI Drop named capability (in finding text) CAP-TI-2 CAP notification-service TI Drop named capability (in finding text) CRED-TD-1 CRED bank-gateway TD core-banking-secret ; depth-5 financial chain CRED-TD-2 CRED legacy-lab-archive TD lab-archive-token ; terminal lab-chain node CRED-TD-3 CRED legacy-settlement-api TD swift-integration-secret via service-account binding CRED-TD-4 CRED eligibility-checker TD payer-network-token ; cross-namespace chain CRED-TD-5 CRED ops-console TD ops-console-credentials , key password 
+
+NET-TD-1 NET api-gateway TD Egress names exact callee labels from call graph NET-TD-2 NET prescription-service TD Egress to three named callees (patient, lab, pharmacy) NET-TD-3 NET notification-service TD Ingress must name caller appointment-service NET-TD-4 NET auth-service TD Ingress must name caller api-gateway NET-TD-7 NET ai-inference TD Egress to imaging-store, radiology-report; deny external POLICY-TD-1 POLICY claims-processor TD Provenance annotation; image must not change POLICY-TD-2 POLICY identity-provider TD Seccomp profile (RuntimeDefault ac-cepted) POLICY-TI-1 POLICY session-cache TI Add cost-center annotation (any value) RBAC-TD-1 RBAC lab-service TD resourceNames must name lab-api-key 
+
+RBAC-TD-2 RBAC billing-service TD Scope to billing-rates-config Con-figMap RBAC-TD-5 RBAC identity-provider TD Service-account bound to 
+
+idp-signing-key Secret RBAC-TD-6 RBAC ops-console TD Scope pods/exec to audit-logger-dep 
+
+RBAC-TI-1 RBAC notification-service TI Delete named ClusterRole (in finding) RBAC-TI-2 RBAC patient-service TI Delete named ClusterRole (in finding) SEC-TD-1 SEC pharmacy-gateway TD ext-pharm-api-secret via service-account binding SEC-TD-2 SEC appointment-service TD payment-webhook-secret via service-account binding SEC-TD-3 SEC notification-service TD notification-credentials , key 
+
+password 
+
+SEC-TD-4 SEC auth-service TD auth-credentials , key password 
+
+SEC-TD-5 SEC fhir-gateway TD ehr-integration-token ; clinical names-pace STORAGE-TD-1 STORAGE patient-db TD StorageClass phi-storage , cluster-only STORAGE-TD-2 STORAGE imaging-store TD Separate per-service PVCs (dicom, ai) STORAGE-TI-1 STORAGE audit-logger-dep TI Add emptyDir size limit (in finding)

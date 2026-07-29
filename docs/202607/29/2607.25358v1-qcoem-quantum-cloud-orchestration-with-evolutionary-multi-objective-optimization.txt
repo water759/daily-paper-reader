@@ -1,0 +1,489 @@
+Title: QCOEM: Quantum Cloud Orchestration with Evolutionary Multi-Objective Optimization
+
+URL Source: https://arxiv.org/pdf/2607.25358v1
+
+Published Time: Wed, 29 Jul 2026 00:35:46 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# QCOEM: Quantum Cloud Orchestration with Evolutionary Multi-Objective Optimization 
+
+Tam N. Pham 1,2 , Hoa T. Nguyen 3, and Quan Le-Trung 1,2 
+
+> 1
+
+University of Information Technology, Ho Chi Minh City 700000, Vietnam 
+
+> 2
+
+Vietnam National University, Ho Chi Minh City 700000, Vietnam 
+
+> 3
+
+Data61, CSIRO, Clayton, 3168, Victoria, Australia 
+
+tampn.18@grad.uit.edu.vn, hoa.nguyen@csiro.au, quanlt@uit.edu.vn 
+
+Abstract —Quantum cloud platforms need to dynamically or-chestrate workloads across heterogeneous quantum computation backends whose noise profiles, qubit topologies, and queues vary over time. Existing orchestrators use noise-agnostic heuristics that ignore backend-specific errors, causing reduced execution fidelity, load imbalance, and frequent rescheduling. To address these challenges, we propose QCOEM - a Quantum Cloud Orchestration framework that leverages Evolutionary algorithms for Multi-objective optimization of quantum task scheduling. We compare NSGA-II and NSGA-III for jointly minimizing mean completion time, execution error rate, and load imbalance. To select schedules from a non-convex Pareto front, we apply an Augmented Achievement Scalarization Function (AASF) as a preference-based decision rule that maps the Pareto set to a single dispatchable schedule aligned with user priorities. Our extensive performance evaluation in a heterogeneous quantum cloud en-vironment shows zero task rescheduling and about 30% higher mean fidelity than noise-agnostic heuristics, while maintaining bounded scheduling overhead. The experiment results indicate that our QCOEM framework can deliver stable, high-fidelity execution and lightweight resource management for quantum cloud computing. 
+
+Index Terms —quantum cloud computing, quantum task scheduling, multi-objective optimization, evolutionary algo-rithms, quantum cloud orchestration, quantum kubernetes 
+
+I. I NTRODUCTION 
+
+The practical deployment of quantum computing has pro-gressed from primarily theoretical investigations to large-scale cloud-based services, leading to the emergence of Quantum-as-a-Service (QaaS) platforms [1], [2]. However, existing quantum hardware still remains in the Noisy Intermediate-Scale Quantum (NISQ) era [3]. At this stage, physical Quan-tum Processing Units (QPUs) expose only a limited num-ber of qubits and are subject to gate errors, readout errors, short coherence times, and restricted qubit connectivity. These characteristics also vary across devices and drift over time, so identical circuits can achieve markedly different fidelities depending on the backend that executes them [4]. To exploit NISQ hardware, the hybrid quantum-classical execution model, in which quantum circuits run alongside clas-sical processing, has become the dominant approach. Serving such workloads at scale motivates cloud-native platforms that integrate heterogeneous QPUs into orchestration systems such as Kubernetes [5], [6]. Existing platforms, however, primarily focus on executing hybrid workloads and offer limited support for noise-aware orchestration. In particular, efficiently routing quantum circuits to suitable backends based on their device-level error characteristics remains largely an open problem. Conventional cloud orchestrators rely on classical heuristics such as Greedy and Round Robin that are tailored to maximize throughput and reduce latency [4], [7]–[9]. However, applying these noise-agnostic strategies to quantum workloads can be systematically suboptimal. For example, dispatching a deep and complex circuit to an idle but error-prone QPU lowers fidelity and may force costly re-execution, whereas repeatedly favouring a few high-quality QPUs creates queueing hotspots that can degrade fairness. Thus, quantum resource orches-tration is inherently a Multi-Objective Optimization Problem (MOOP). An effective scheduler must carefully navigate three competing goals: system efficiency, computational accuracy, and operational stability [10]. The difficulty is compounded by per-operation errors that accumulate multiplicatively with circuit depth [11], [12], resulting in a non-convex Pareto front. Consequently, techniques such as weighted-sum scalarization can recover only solutions on the convex hull of the front and cannot reach optimal policies in its concave regions [13]. To address these challenges, we propose QCOEM, a
+
+Quantum Cloud Orchestration framework that leverages different Evolutionary optimization algorithms for Multi-objective quantum task scheduling. Rather than relying on idealized analytical models, we utilize quantum backend (QNode) architecture that is calibrated using hardware snap-shot data (such as coupling maps, gate durations, and error rates) obtained from real devices, thereby constructing aphysics-informed evaluation setting. In our experiments, these snapshots are assumed to remain stable across runs, while the orchestration loop maintains awareness of queue condi-tions via heartbeat telemetry. By integrating this environment with Multi-Objective Evolutionary Algorithms (MOEAs), the framework can effectively navigate and operate within the current limitations of heterogeneous QPUs. The primary contributions of this paper are as follows:  
+
+> •
+
+We propose QCOEM as a noise- and delay-aware quan-tum orchestration framework that leverages calibrated hardware snapshots and heartbeat-based queueing-delay estimates to jointly capture mean completion time, mean error rate, and load imbalance.  
+
+> •
+
+We leverage the NSGA-II and NSGA-III approaches to approximate a non-dominated set of task-to-QNode arXiv:2607.25358v1 [cs.DC] 28 Jul 2026 assignments and use an Augmented Achievement Scalar-ization Function (A ASF) to perform preference-based selection from this candidate set. To our knowledge, this is one of the first quantum cloud scheduling frameworks to combine AASF-based decision making with an explicit load-imbalance objective.  
+
+> •
+
+We evaluate QCOEM on a heterogeneous quantum cloud environment using MQTBench workloads, demonstrating trade-offs among latency, fidelity, and stability, achiev-ing zero rescheduling and more than 30% higher mean fidelity than noise-agnostic baselines, while maintaining bounded scheduling overhead. The remainder of this paper is organized as follows: Sec-tion II details the system model and mathematical formulation. Section III presents the proposed evolutionary orchestration framework. Section IV discusses the empirical performance evaluation. Section V reviews related work, and Section VI concludes the paper. II. S YSTEM MODEL AND METHODOLOGY 
+
+A. Problem Formulation 
+
+Let T = {τ1, τ 2, . . . , τ M } be the set of M incoming quantum tasks, and Q = {q1, q 2, . . . , q N } be the set of 
+
+N available quantum nodes (QNodes). We define a binary decision variable xij ∈ { 0, 1}, where xij = 1 if task τi is assigned to QNode qj . The quantum task orchestration is for-mulated as a Multi-Objective Optimization Problem (MOOP) of minimising the objective vector F(X) = [ f1, f 2, f 3] under hardware constraints. 
+
+1) Mean Completion Time ( f1): The execution duration of a quantum circuit depends on its complexity and physical gate latency. Following the timing model in the existing studies [4], [14], we estimate the circuit execution time texec based on the Critical Path of the circuit’s Directed Acyclic Graph (DAG): 
+
+texec (τi, q j ) = 
+
+ X
+
+> g∈P i
+
+tg,j 
+
+ × Si (1) where Pi is the set of gates on the critical path of task τi,
+
+tg,j is the physical gate length on QNode qj , and Si is the number of execution shots. We assume that all gates on the critical path execute sequentially and that shots are executed sequentially rather than in batches. The first objective captures delay-aware system efficiency by minimizing the mean completion time of each QNode, com-puted from its current queueing delay (waiting-time estimate) and the estimated execution time of the tasks assigned to it. Let Hj denote the current waiting-time estimate for QNode 
+
+qj at the start of the scheduling round, computed from the QNode’s next available time t(j) 
+
+> next
+
+and the scheduler’s current time tnow as: 
+
+Hj = max {0, t (j) 
+
+> next
+
+− tnow } (2) The total completion time at QNode qj is denoted by Lj (X)
+
+and is given by: 
+
+Lj (X) = Hj +
+
+> M
+
+X
+
+> i=1
+
+xij · texec (τi, q j ) (3) The objective minimizes the mean completion time across all QNodes: 
+
+f1(X) = 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+Lj (X) (4) 
+
+2) Mean Error Rate ( f2): The reliability of NISQ devices decreases significantly with circuit depth and complexity. We estimate the fidelity of task τi on QNode qj as the product of per-operation success probabilities: 
+
+F(τi, q j ) = Y
+
+> g∈G i
+
+(1 − ϵg,j ) (5) where Gi is the set of all operations in τi (including readout), and ϵg,j is the calibrated gate and readout error rate on QNode 
+
+qj . The corresponding error rate per-task is 1 − F (τi, q j ), and the objective minimizes the mean error rate over all tasks in the batch: 
+
+f2(X) = 1
+
+M
+
+> M
+
+X
+
+> i=1
+> N
+
+X
+
+> j=1
+
+xij · (1 − F (τi, q j )) (6) 
+
+3) Load Imbalance ( f3): To discourage queueing hotspots and promote fair utilization across the available QNodes, we apply spatial load balancing by minimizing the spread of QNode completion times. The third objective is therefore given by the standard deviation of Lj (X), where f1(X) denotes the mean QNode completion time across all QNodes at evaluation time. 
+
+f3(X) = 
+
+vuut 1
+
+N
+
+> N
+
+X
+
+> j=1
+
+(Lj (X) − f1(X)) 2 (7) 
+
+4) Constraints: The orchestration is subject to the follow-ing constraints. 1) Indivisible task ( C1): Each task is executed as a single quantum circuit without splitting or partitioning. 
+
+C1 : Size( τi) = 1 , ∀τi ∈ T (8) 2) Unique assignment ( C2): Each task is assigned to exactly one QNode. 
+
+C2 :
+
+> N
+
+X
+
+> j=1
+
+xij = 1 , ∀i ∈ { 1, . . . , M } (9) 3) Qubit capacity ( C3): A task can be mapped to a QNode only if sufficient physical qubits are available. 
+
+C3 : τ ri ≤ qcj , ∀i ∈ { 1, . . . , M }, ∀j ∈ { 1, . . . , N } (10) where τ ri represents the qubit requirement of task τi, and qcj
+
+denotes the physical qubit capacity of QNode qj .
+
+5) Problem Formulation: In each orchestration round, a batch of M ready tasks T becomes available, together with a pool of N QNodes Q. Every QNode qj reports its current waiting-time estimate Hj (derived from its queue state) and its calibrated timing and noise parameters, which are used to compute f1, f2, and f3. Each task must be scheduled as an indivisible circuit and mapped to exactly one QNode that can feasibly execute it ( C1–C3). User priorities are encoded in a weight vector w = [ w1, w 2, w 3].The orchestrator need to determine a feasible task-to-QNode assignment X that minimizes: 
+
+min  
+
+> X
+
+F(X) = [ f1(X), f 2(X), f 3(X)] s.t. C1-C3 (11) where X = [ xij ] with xij = 1 if task τi is assigned to QNode 
+
+qj , and f1, f2, and f3 are the mean completion time, mean error rate and load-balance objectives defined above. 
+
+B. Evolutionary Optimization and Scalarization Strategy 
+
+With a search space of N M , evaluating all task-to-QNode mappings is an NP-hard combinatorial problem. We employ the Non-dominated Sorting Genetic Algorithm II/III (NSGA-II, NSGA-III) [13], [15]–[17] to heuristically approximate the Pareto-optimal front. Because quantum noise is heterogeneous and tasks are discrete, the objective space is inherently non-convex. As a result, classical weighted-sum decision-making has a duality gap and cannot find optimal schedules in concave regions of the Pareto front. Before scalarization, we normalize each objective to acomparable scale using min-max normalization: 
+
+f ′
+
+> k
+
+(X) = fk(X) − f min 
+
+> k
+
+f max  
+
+> k
+
+− f min 
+
+> k
+
+(12) where f min  
+
+> k
+
+and f max  
+
+> k
+
+are the minimum and maximum values of the k-th objective observed among the candidate solutions. This step prevents any objective with a larger numeric range from dominating the scalarization and improves the inter-pretability of user preferences w.To resolve the non-convexity issue, the proposed framework utilizes the Augmented Achievement Scalarization Function (AASF) for post-optimization selection [18], [19]. 
+
+min  
+
+> X
+
+S(X) = max 
+
+> k∈{ 1,2,3}
+
+ f ′
+
+> k
+
+(X) − z∗
+
+> k
+
+wk
+
+
+
++ ρ
+
+> 3
+
+X
+
+> k=1
+
+f ′
+
+> k
+
+(X) − z∗
+
+> k
+
+wk
+
+(13) where f ′ 
+
+> k
+
+is the normalized objective value, z∗ 
+
+> k
+
+is the ideal reference point, wk denotes the user-defined weight prefer-ence, and ρ is a small enhancement parameter (e.g., 10 −4)used to augment the achievement function. We use AASF as a scalarizing decision function by computing S(X) for each MOEA-generated candidate (typically non-dominated) schedule and selecting arg min S(X) under user preference weights, under scalarization assumptions. III. QCOEM F RAMEWORK 
+
+A. System Architecture 
+
+As illustrated in Fig. 1, QCOEM is deployed on Kubernetes with a centralized scheduler and a pool of QNodes; heartbeats provide queue and calibration state, and the scheduler com-putes and dispatches batch assignments.  
+
+> Fig. 1. System overview of the proposed QCOEM framework. Periodic QNode heartbeats asynchronously update the scheduler’s cached state; each orchestration round uses this state to compute a batch assignment, which is then dispatched to QNodes for FIFO execution.
+
+1) Scheduler: is the control plane that batches tasks, opti-mizes assignments, and dispatches them. It includes:  
+
+> •
+
+Global queue: Receives tasks and forms batches of size 
+
+M for NSGA-II/NSGA-III.  
+
+> •
+
+Optimizer: Estimates execution time/fidelity per task-to-QNode pair from transpilation and calibration data, solves the MOOP, and selects one schedule via AASF under weights w. 
+
+> •
+
+Heartbeat receiver: Maintains per-QNode availability, cal-ibration snapshot, and queue estimates (e.g., next avail-able time).  
+
+> •
+
+Dispatcher: Sends X∗ to QNodes and updates queue state. 
+
+2) QNodes: Each QNode is a data-plane worker that cou-ples a calibrated backend profile with lightweight telemetry and sequential circuit execution. The system exposes N QN-odes as network-accessible services; each QNode emulates a specific quantum backend using a calibration snapshot (e.g., 
+
+T1, T2, gate/readout error rates, and coupling map) and ex-ecutes requests via a local, non-preemptive first-in, first-out (FIFO) queue. Each QNode comprises:  
+
+> •
+
+Quantum backend emulator: a calibrated Qiskit 
+
+FakeBackendV2 1 snapshot that captures noise, gate durations, and connectivity constraints.  
+
+> •
+
+Task executor: parses incoming QASM circuits, transpiles them to the QNode’s native gate set, and executes circuits sequentially under the snapshot-derived noise model.  
+
+> •
+
+Heartbeat: periodically reports availability and queue state (such as next available time and number of pending 
+
+> 1https://quantum.cloud.ibm.com/docs/en/api/qiskit-ibm-runtime/ fake-provider
+
+tasks), enabling the Scheduler to maintain an up-to-date cluster view. 
+
+B. Scheduling Workflow 
+
+The scheduler operates in discrete orchestration rounds as illustrated in Algorithm 1. In each round, it ingests QNode heartbeats to estimate availability and queueing delay, applies NSGA-II/NSGA-III to approximate the Pareto set for the batch assignment, then selects a single schedule via AASF under preference weights w and dispatches tasks to QNodes. 
+
+Algorithm 1 QCOEM Scheduling Workflow 
+
+Require: Batch of tasks T ; QNodes Q; preference weights 
+
+w; MOEA configs ( P , Gmax ); termination criteria (ftol, xtol, cvtol, window) 
+
+Ensure: Selected assignment matrix X∗ 
+
+> 1:
+
+Ingest heartbeat and compute waiting-time estimate Hj
+
+for all qj ∈ Q  
+
+> 2:
+
+Initialize population A of P valid assignment vectors  
+
+> 3:
+
+g ← 1 
+
+> 4:
+
+while g ≤ Gmax and termination criteria not met do  
+
+> 5:
+
+Generate offspring A′ via crossover and mutation  
+
+> 6:
+
+for each X ∈ A ∪ A ′ do  
+
+> 7:
+
+Evaluate F(X) = [ f1, f 2, f 3] (using Hj ) and con-straint violations ( C2, C3) 
+
+> 8:
+
+end for  
+
+> 9:
+
+Perform non-dominated sorting and NSGA-II/NSGA-III survival selection  
+
+> 10:
+
+Update termination statistics (objective-space, design-space, constraint-violation change)  
+
+> 11:
+
+g ← g + 1  
+
+> 12:
+
+end while  
+
+> 13:
+
+Extract Pareto set P from A 
+
+> 14:
+
+X∗ ← arg min X∈P S(X) via AASF (Eq. (13))  
+
+> 15:
+
+Dispatch tasks according to X∗ and update QNode queues 
+
+1) Schedule Encoding and Feasibility Handling: We en-code a schedule as a one-hot binary assignment matrix X ∈{0, 1}M ×N , which is directly compatible with pymoo’s binary MOEA operators and constraint interface [20]. The unique-assignment constraint C2 (P 
+
+> j
+
+xij = 1 , ∀i) is enforced as an equality constraint, while the qubit-capacity constraint C3
+
+(xij qri ≤ qcj ) is enforced as an inequality constraint. Infeasible task-to-QNode pairs are discouraged by assigning a large penalty during fitness evaluation. 
+
+2) Fitness Evaluation: Given an assignment a, the sched-uler builds X by setting xi,a i = 1 and evaluates the three-objective vector F(X) = [ f1, f 2, f 3] using the models in Sec-tion II. The time objective uses the Heartbeat-based waiting-time estimate Hj , the error objective uses calibrated gate and readout error rates of the QNodes, and the stability objective uses the dispersion of completion times Lj .
+
+3) Dispatch and Queue Update: After selecting X∗, the Scheduler dispatches tasks to QNodes. Each QNode enqueues tasks, updates its next available time, and reports the updated availability and queue state in subsequent heartbeats; the re-sulting queueing delay is captured by Hj and the accumulated busy time in Lj (X).
+
+4) Fault Tolerance: If a QNode becomes unavailable mid-batch, the Scheduler detects the failure via heartbeat timeout, marks the QNode offline, and re-queues any not-yet-started tasks for re-optimization in the next orchestration round; tasks that fail during execution are retried. IV. P ERFORMANCE EVALUATION 
+
+A. Environment Setup 1) Infrastructure and Software Stacks: We implement and deploy QCOEM on Google Kubernetes Engine v1.33 and implement the scheduler and QNodes in Python v3.12, using Qiskit v2.0.1 for circuit transpilation and calibration-aware noise modeling, and pymoo 2 v0.6.1.5 for NSGA-II/NSGA-III optimization. 
+
+2) Heterogeneous QNode Configuration: We instantiate 
+
+N = 5 QNodes as Kubernetes pods with fixed resource limits. Each QNode emulates an IBM Quantum backend via a Qiskit 
+
+FakeBackendV2 calibration snapshot, yielding a pool of heterogeneous quantum computation resources. 
+
+3) MOEA Hyperparameters: We use pymoo’s NSGA-II/NSGA-III implementations with population size 
+
+P = 300 , up to Gmax = 1000 generations, two-point crossover (pc = 0.9), and bitflip mutation. Fitness evaluations are parallelized with 512 threads and use DefaultMultiObjectiveTermination for convergence-based early stopping. AASF selection uses 
+
+ρ = 10 −4 and we report results across multiple random seeds. 
+
+B. Workload Characteristics 
+
+We create a workload from MQTBench [21] including representative hybrid algorithms (such as VQE and QAOA). To match the heterogeneous backend pool, we restrict tasks to 2-15 qubits and model arrivals as a Poisson process with rate 
+
+λ = 2 .0 tasks/s. 
+
+C. Evaluation Metrics 
+
+We report five metrics covering latency, computational qual-ity, and operational stability.  
+
+> •
+
+Mean Task Completion Time (MCT) : for each task τi
+
+assigned to QNode qj , we compute waiting time from the heartbeat-predicted next-available time Aj and execution time texec (τi, q j ), yielding Ci = twait,i + texec (τi, q j )
+
+The MCT over K completed tasks is: 
+
+M CT = 1
+
+K
+
+> K
+
+X
+
+> i=1
+
+Ci. (14)  
+
+> •
+
+Mean Fidelity : the mean of the estimated fidelity 
+
+F(τi, q j ) (Section II), reported as a counterpart of the error-rate objective f2. 
+
+> •
+
+Load Imbalance : standard deviation of predicted QNode completion times Lj across N QNodes (lower is better).  
+
+> 2https://pymoo.org/ •
+
+Rescheduling Rate : fraction of tasks that require reassign-ment at dispatch due to infeasibility (e.g., violating qubit-capacity constraints or stale availability/queue state).  
+
+> •
+
+Scheduling Overhead : wall-clock time for the scheduler to produce an assignment per orchestration round. 
+
+D. Performance Study 1) Baseline Performance Comparison: We evaluate the orchestration performance of the proposed Multi-Objective Evolutionary Algorithms (NSGA-II and NSGA-III) against three common baseline heuristics widely used in quantum cloud orchestrators: Greedy, Round-Robin, and Random [4], [22], [23] (see Fig. 2). These heuristics optimize throughput or latency in classical clusters but ignore quantum noise and hardware constraints. Comparing against them quantifies the performance loss from neglecting backend reliability and motivates a noise-aware framework for high-fidelity quan-tum workloads. For this comparison, MOEAs use AASF with a balanced preference vector w = [0 .35 , 0.45 , 0.20] 
+
+for [f1, f 2, f 3], indicating a slight emphasis on fidelity while preserving load balancing. Noise-agnostic heuristics can minimize latency but often sacrifice fidelity and may trigger infeasible assignments. For instance, Greedy achieves a lower MCT but only reaches a mean fidelity of approximately 0.376 , while NSGA-II/NSGA-III raise the fidelity to about 0.49 with zero retries, at the expense of a higher load imbalance to the QNode with better performance. Noise- and delay-aware multi-objective scheduling therefore improves execution quality and dispatch feasibility compared to classical heuristics, while preserving predictable load distribution. 
+
+2) Sensitivity Analysis and Trade-offs: While Fig. 2demonstrates the proposed framework’s superiority over the baseline, practical quantum clouds must account for di-verse user requirements and Service Level Agreements (SLAs). In this scenario, we evaluate the sensitivity of AASF-based decision making to different weight con-figurations w = [wtime , w f id , w load ]. We consider four preference settings w: Balanced ([0 .35 , 0.45 , 0.20] ), Speed-Focus ([0 .90 , 0.05 , 0.05] ), Quality-Focus ([0 .05 , 0.90 , 0.05] ), and Load-Focus ([0 .05 , 0.05 , 0.90] ), with a minimum weight of 0.05 on non-primary objectives to avoid degenerate scalar-ization. Fig. 3 illustrates the time-fidelity trade-offs. 
+
+a) Load-Focus reduces total completion time by mitigating queueing delays. In heterogeneous QNode pools, optimizing only for short execution time concentrates tasks on low-latency QNodes, increasing queueing delays and degrading end-to-end completion time. In contrast, Load-Focus promotes a more uniform task distribution, yielding the lowest total completion time (e.g., NSGA-II at approximately 5.68 s). 
+
+b) Quality-Focus improves outcome fidelity but increases latency and load imbalance. Compared to the Balanced con-figuration (NSGA-II fidelity approximately 0.491 ), it raises mean fidelity to approximately 0.505 , while extending total completion time from 7.49 s to 8.58 s and increasing load imbalance from 493 .54 s to 643 .31 s.  
+
+> (a) Mean task completion time
+> (b) Mean fidelity and task rescheduling rate
+> (c) Task distribution across QNodes Fig. 2. Performance evaluation with baseline approaches: (a) time efficiency (MCT), (b) computational quality and resilience, and (c) task distribution across QNodes.
+
+c) Speed-Focus minimizes execution time but can degrade end-to-end latency due to queueing and hotspotting. Relative to Balanced , Speed-Focus achieves the shortest execution time (NSGA-II at about 3.50 s versus 3.66 s) but incurs substantially higher waiting times (about 8.81 s versus 3.83 s), resulting in a higher overall completion time (roughly 12 .31 s versus 
+
+7.49 s). This aggressive routing further lowers mean fidelity, approximately 0.462 versus 0.491 , and markedly increases load imbalance at about 1199 .33 s compared to 493 .54 s. 
+
+d) Balanced constitutes a practical operating point, while NSGA-II demonstrates greater robustness. The Balanced con-figuration yields a favorable trade-off between completion time and fidelity (Fig. 3). Across repeated runs, NSGA-II exhibits lower variance than NSGA-III (e.g., under Balanced , NSGA-II at approximately 7.49 s versus NSGA-III at 9.17 s), indicating that NSGA-II is a more reliable default optimization engine in this three-objective setting. Overall, preference weights ma-terially change routing behavior through queueing dynamics; explicitly modeling load imbalance helps avoid hotspotting when optimizing for speed or fidelity. (a) Mean task completion time  
+
+> (b) Mean fidelity Fig. 3. Performance under different preference settings (bal: Balance, speed: Speed-Focus, qual: Quality-Focus, load: Load-Focus)
+
+3) Scalability and Overhead: We measure scheduling over-head as the wall-clock time to obtain a dispatchable assign-ment for batch sizes M ∈ { 5, 10 , 20 , 50 }, excluding hardware execution. Heuristics form a lower bound (Random/Round Robin at about 10 −4s), while Greedy grows roughly linearly from 0.78 s ( M = 5 ) to 7.64 s ( M = 50 ). MOEAs incur higher control-plane cost from evolutionary search; at M = 50 ,NSGA-II and NSGA-III take about 94 .58 s and 84 .80 s, with NSGA-II converging in 12 .4 times the scheduling time of Greedy at this batch size. Nevertheless, in QaaS settings where QPU queueing dominates end-to-end latency, MOEA-based routing is preferable for moderate-to-large batches (or longer scheduling intervals), where gains in feasibility and fidelity can outweigh the added control-plane latency. V. R ELATED WORK 
+
+Quantum cloud research has yielded middleware, simula-tors, and schedulers; however, the problem of real-time, noise-aware orchestration across heterogeneous NISQ backends re-mains largely unresolved. Cloud-native middleware platforms can integrate QPUs into containerized infrastructures such as Kubernetes, yet they typically model backends as static resources and provide only limited capabilities for noise- and topology-aware routing [5], [6], [24]. Simulation, emulation, and digital-twin frameworks support scalable benchmarking and increasingly incorporate calibration-informed noise mod-els, but they are predominantly employed as offline experi-mentation environments rather than as production-grade or-chestration engines [25]–[27]. Existing schedulers encompass heuristic and utility-based routing as well as deep reinforce-ment learning and evolutionary strategies; nevertheless, many approaches either optimize exclusively for latency [1], [22], [28] and fidelity or aggregate multiple objectives into fixed weighted sums, which can neglect solutions on non-convex Pareto fronts and intensify load imbalance [7], [29]. Notably, Qonductor [4] applies NSGA-II to quantum scheduling, and QFOR [14] uses deep reinforcement learning for fidelity-aware orchestration; however, neither jointly models load imbalance nor applies AASF-based preference selection, which distin-guishes QCOEM. In summary, prior work still lacks an end-to-end, cloud-native orchestration workflow that jointly models noise, queueing dynamics, and load imbalance and supports preference-driven multi-objective decision-making, which our QCOEM framework is proposed to address. VI. C ONCLUSIONS AND FUTURE WORK 
+
+Integrating quantum computing into cloud-native infras-tructures is challenging due to the heterogeneity and noise sensitivity of NISQ hardware. Existing schedulers rely on noise-agnostic heuristics or static scalarization, lacking the fine-grained control needed for resource allocation in non-convex objective spaces. Our QCOEM framework formulates quantum task assignment as a multi-objective optimization problem, minimizing completion time, execution error rate, and load imbalance, and solves it by leveraging NSGA-II and NSGA-III approaches. Using an Augmented Achievement Scalarization Function, we perform preference-based selection from the MOEA-generated candidate set to obtain a dispatch-able schedule weighted by user preferences. In a heteroge-neous quantum cloud environment, QCOEM eliminates task rescheduling and improves mean fidelity by approximately 30% over noise-agnostic baselines while keeping scheduling overhead bounded. These results suggest that noise-aware scheduling can significantly improve fidelity and cluster sta-bility, forming a basis for more predictable, high-performance quantum cloud services. To enhance the comprehensiveness of our study, we will expand the evaluation by benchmarking our approach against a broader set of state-of-the-art techniques for quantum cloud scheduling, such as deep reinforcement learning and by validating QCOEM under more realistic conditions, including experiments on real quantum hardware and simulated environments to better characterise latency-fidelity-cost trade-offs. These future directions aim to advance our orchestration into a robust, scalable, and noise-aware framework for quantum cloud computing. ACKNOWLEDGMENT 
+
+This research was supported by the VNUHCM-University of Information Technology’s Scientific Research Support Fund. The Overleaf AI Assistant was used to correct grammar and spelling during manuscript preparation. All intellectual content and analysis are the sole work of the authors, who take full responsibility for the accuracy of this work. REFERENCES [1] G. S. Ravi, K. N. Smith, P. Murali, and F. T. Chong, “Adaptive job and resource management for the growing quantum cloud,” in 2021 IEEE International Conference on Quantum Computing and Engineering (QCE) . IEEE, 2021, pp. 301–312. [2] H. T. Nguyen, P. Krishnan, D. Krishnaswamy, M. Usman, and R. Buyya, “Quantum Cloud Computing: A Review, Open Problems, and Future Directions,” Apr. 2024, arXiv:2404.11420. [3] J. Preskill, “Quantum computing in the nisq era and beyond,” Quantum ,vol. 2, p. 79, 2018. [4] E. Giortamis, F. Romao, N. Tornow, D. Lugovoy, and P. Bhatotia, “Qonductor: A cloud orchestrator for quantum computing,” in Proceed-ings of the International Conference for High Performance Computing, Networking, Storage and Analysis , ser. SC ’25. New York, NY, USA: ACM, 2025, p. 728–745. [5] V. Stirbu, O. Kinanen, M. Haghparast, and T. Mikkonen, “Qubernetes: Towards a unified cloud-native execution platform for hybrid classic-quantum computing,” Information and Software Technology , vol. 175, p. 107529, 2024. [6] I. Faro, I. Sitdikov, D. G. Valiñas, F. J. M. Fernandez, C. Codella, and J. Glick, “Middleware for quantum: An orchestration of hybrid quantum-classical systems,” in 2023 IEEE International Conference on Quantum Software (QSW) . IEEE, 2023, pp. 1–8. [7] J. Li, Y. Song, Y. Liu, J. Pan, L. Yang, T. Humble, and W. Jiang, “Qusplit: Achieving both high fidelity and throughput via job splitting on noisy quantum computers,” arXiv preprint arXiv:2501.12492 , 2025. [8] S. H. H. Madni, M. S. Abd Latiff, M. Abdullahi, S. M. Abdulhamid, and M. J. Usman, “Performance comparison of heuristic algorithms for task scheduling in iaas cloud computing environment,” PloS one , vol. 12, no. 5, p. e0176321, 2017. [9] N. Soltani, B. Soleimani, and B. Barekatain, “Heuristic algorithms for task scheduling in cloud computing: a survey,” International Journal of Computer Network and Information Security , vol. 9, no. 8, p. 16, 2017. [10] E. Giortamis, F. Romão, N. Tornow, and P. Bhatotia, “Qos: quantum operating system,” in Proceedings of the 19th USENIX Conference on Operating Systems Design and Implementation , ser. OSDI ’25. USA: USENIX Association, 2025. [11] F. Wagner, D. J. Egger, and F. Liers, “Optimized noise suppression for quantum circuits,” INFORMS J. on Computing , vol. 37, no. 1, p. 22–41, Jan. 2025. [12] P. Murali, J. M. Baker, A. Javadi-Abhari, F. T. Chong, and M. Martonosi, “Noise-adaptive compiler mappings for noisy intermediate-scale quan-tum computers,” in Proceedings of the Twenty-Fourth International Conference on Architectural Support for Programming Languages and Operating Systems , ser. ASPLOS ’19. New York, NY, USA: ACM, 2019, p. 1015–1029. [13] K. Deb and H. Jain, “An evolutionary many-objective optimization algorithm using reference-point-based nondominated sorting approach, part i: solving problems with box constraints,” IEEE transactions on evolutionary computation , vol. 18, no. 4, pp. 577–601, 2013. [14] H. T. Nguyen, M. Usman, and R. Buyya, “QFOR: A Fidelity-aware Orchestrator for Quantum Computing Environments using Deep Rein-forcement Learning,” ACM Transactions on Quantum Computing , Mar. 2026. [15] K. Deb, A. Pratap, S. Agarwal, and T. Meyarivan, “A fast and elitist multiobjective genetic algorithm: Nsga-ii,” IEEE transactions on evolu-tionary computation , vol. 6, no. 2, pp. 182–197, 2002. [16] H. Jain and K. Deb, “An evolutionary many-objective optimization algorithm using reference-point based nondominated sorting approach, part ii: Handling constraints and extending to an adaptive approach,” 
+
+IEEE Transactions on evolutionary computation , vol. 18, no. 4, pp. 602– 622, 2013. [17] K. Deb, “Multi-objective optimisation using evolutionary algorithms: an introduction,” in Multi-objective evolutionary optimisation for product design and manufacturing . Springer, 2011, pp. 3–34. [18] A. P. Wierzbicki, “A mathematical basis for satisficing decision making,” 
+
+Mathematical modelling , vol. 3, no. 5, pp. 391–405, 1982. [19] H. K. Singh and K. Deb, “Investigating the equivalence between pbi and aasf scalarization for multi-objective optimization,” Swarm and Evolutionary Computation , vol. 53, p. 100630, 2020. [20] J. Blank and K. Deb, “pymoo: Multi-objective optimization in python,” 
+
+IEEE Access , vol. 8, pp. 89 497–89 509, 2020. [21] N. Quetschlich, L. Burgholzer, and R. Wille, “MQT Bench: Bench-marking software and design automation tools for quantum computing,” 
+
+Quantum , 2023, MQT Bench is available at https://www.cda.cit.tum.de/ mqtbench/. [22] H. T. Nguyen, M. Usman, and R. Buyya, “Drlq: A deep reinforce-ment learning-based task placement for quantum cloud computing,” in Proceedings of the IEEE 17th International Conference on Cloud Computing (CLOUD 2024) . IEEE, 2024, pp. 475–481. [23] T. Li and Z. Zhao, “Moirai: Optimizing quantum serverless function or-chestration via device allocation and circuit deployment,” in Proceedings of the 2024 IEEE International Conference on Web Services (ICWS) .IEEE, 2024, pp. 707–717. [24] N. Saurabh, S. Jha, and A. Luckow, “A conceptual architecture for a quantum-hpc middleware,” in 2023 IEEE international conference on quantum software (QSW) . IEEE, 2023, pp. 116–127. [25] H. T. Nguyen, M. Usman, and R. Buyya, “iQuantum: a toolkit for mod-eling and simulation of quantum computing environments,” Software: Practice and Experience , vol. 54, no. 6, pp. 1141–1171, Jun. 2024. [26] W. Luo, B. Baheri, T. Humble, J. Zhao, T. Zhan, R. Maharjan, and Q. Guan, “A digital twin of scalable quantum clouds,” in Proceedings of the 39th ACM SIGSIM Conference on Principles of Advanced Discrete Simulation , ser. SIGSIM-PADS ’25. New York, NY, USA: ACM, 2025, p. 165–175. [27] R. Zhou, Y. Gan, L. Shen, Y. Liu, M. Messel, and C. Qian, “Qucloudsim: A customizable discrete event simulator for quantum cloud computing enviroment,” in 2025 International Conference on Quantum Communi-cations, Networking, and Computing (QCNC) , 2025, pp. 58–65. [28] H. T. Nguyen, M. Usman, and R. Buyya, “Qfaas: A serverless function-as-a-service framework for quantum computing,” Future Generation Computer Systems , vol. 154, pp. 281–300, 2024. [29] W. Luo, J. Zhao, T. Zhan, and Q. Guan, “Adaptive job scheduling in quantum clouds using reinforcement learning,” in Proceedings of the 54th International Conference on Parallel Processing , ser. ICPP ’25. New York, NY, USA: ACM, 2025, p. 658–667.

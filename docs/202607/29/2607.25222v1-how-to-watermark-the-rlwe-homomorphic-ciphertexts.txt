@@ -1,0 +1,2040 @@
+Title: How to Watermark the RLWE Homomorphic Ciphertexts
+
+URL Source: https://arxiv.org/pdf/2607.25222v1
+
+Published Time: Wed, 29 Jul 2026 00:25:55 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+# How to Watermark the RLWE Homomorphic Ciphertexts 
+
+Yufei Zhou 
+
+Abstract —In recent years, homomorphic encryption (HE) schemes based on the Ring Learning with Errors (RLWE) problem have rapidly developed and been widely applied to secure computation tasks, including privacy-preserving deep learning inference, privacy-preserving database queries, and related applications. However, most existing HE schemes focus primarily on the feasibility and efficiency of homomorphic computation, often neglecting practical requirements such as copyright protection of ciphertexts, source authentication, and supervision during computation. To address these issues, we propose a watermarking technique for RLWE-based HE ciphertexts. The algebraic structure of RLWE polynomials allows us to embed small noise as watermarking information into the ciphertext polynomials without affecting the plaintext values. However, HE ciphertexts typically undergo multiple homomorphic operations, which can distort or even remove the embedded watermark information. To address this challenge, we propose two practical solutions. The first, ARWMark, is a watermarking scheme based on noise stratification and is robust to homomorphic additive operations. The second scheme, MRWMark, is constructed using the roots of a lin-ear equation and is resilient to both homomorphic additive and multiplicative operations, while supporting zero-bit water-marking. We provide a detailed theoretical analysis, proving that our schemes do not compromise the original security of HE, while ensuring the correctness and robustness of the proposed watermarking techniques. Furthermore, we conduct extensive experiments to demonstrate the effectiveness of both watermarking schemes. 
+
+## 1. Introduction 
+
+Homomorphic encryption (HE) enables computation di-rectly over encrypted ciphertexts, thereby supporting non-interactive data processing [1]. HE has been widely applied to privacy-preserving tasks, including medical data process-ing [2], [3] and natural language processing [4], [5]. Unlike non-homomorphic ciphertexts such as AES [6], processed HE ciphertexts often embody additional value beyond the original encrypted data. For example, after homomorphic image processing [7], the resulting ciphertext contains not only the original image information, but also the embedded processing logic and the computational effort contributed by the service provider. In this sense, homomorphic im-age processing adds value to the original encrypted image. Similarly, in privacy-preserving deep learning inference [4], [5], encrypted inputs are evaluated by encrypted models to produce encrypted inference results. The resulting ciphertext is the output of the deployed model and therefore embodies the value of the model computation. Based on these observations, we argue that HE cipher-texts themselves are valuable digital assets. During trans-mission and computation, HE ciphertexts are continuously transformed and enriched, while their data flow involves multiple parties with potentially conflicting interests. As a result, HE ciphertexts require dedicated protection mecha-nisms. Unfortunately, existing HE schemes do not consider the protection of ciphertext ownership and associated rights. For some applications, homomorphic hash functions [8] or homomorphic message authentication codes (MACs) [9] are sufficient. However, they introduce additional overhead and the hash values or MACs are separated from the original ciphertexts, which increases the attack surface. Moreover, homomorphic MACs and homomorphic hash functions are not robust against many practical HE operations. Noise introduced during homomorphic computation, such as relin-earization after ciphertext multiplication [10] or approximate arithmetic in CKKS [11], may invalidate these methods. Similarly, zero-knowledge proofs (ZKPs) [12], [13] can be used to verify computations. However, ZKPs typically verify only the final computation result and cannot protect intermediate ciphertext states during homomorphic evalu-ation. For example, suppose a company A participates in part of a homomorphic computation pipeline. Since both the input and output of A are encrypted, ZKPs cannot prove that the intermediate computation was indeed performed by A.As a result, the computational contribution of the company may be misappropriated by others. An adversary may falsely claim that company A did not participate in the computation, while A cannot prove its contribution. In this work, we introduce digital watermarking [14] into homomorphic ciphertexts to enable ciphertext authentication and protection. Digital watermarking can serve as an impor-tant complement to HE and has significant practical value for real-world HE applications. Next, we present an example of HE-based federated learning in Fig. 1 to illustrate the significance and applica-tion scenarios of watermarking in homomorphic ciphertexts. Suppose a company trains a machine learning model using federated learning and outsources the aggregation task to a third-party computation server. The server receives en-crypted model updates from participating clients, performs aggregation directly over the ciphertexts, and then sends the aggregated ciphertext to the company for decryption. In this example, clients can embed watermarks into their ciphertexts to prove that their encrypted updates were in-deed involved in the aggregation process. The company arXiv:2607.25222v1 [cs.CR] 28 Jul 2026 𝑚 1𝑤 1        
+
+> 𝑚 2𝑤 2
+> 𝑚 𝒩 𝑤 𝒩
+> 𝑚′ 𝑤′
+> 𝑤 1
+> 𝑚′
+> 𝑤 2
+> 𝑤 𝒩
+> 𝑝𝑘
+> 𝑠𝑘
+> 𝑝𝑘 𝑝𝑘
+> 𝑈 1𝑈 2𝑈 𝒩
+> 1. Embed 𝑤 11. Embed 𝑤 2
+> 1. Embed 𝑤 𝒩
+> Server
+> 3. Extract Watermarks
+> 2. Aggregate
+> Company 4. Compensate Based
+> on Watermarks
+> Watermarked HE Ciphertexts Figure 1. An example of homomorphic ciphertext watermarking in privacy-preserving federated learning.
+
+can extract the watermark information from the aggregated result and compensate clients according to their verified contributions. However, embedding watermarks into homomorphic ci-phertexts is non-trivial, and existing watermarking tech-niques cannot be directly applied to HE ciphertexts. HE ciphertexts follow strict mathematical structures, and di-rectly modifying ciphertext coefficients may cause decryp-tion failure. Even slight perturbations, such as flipping the least significant bit, can severely corrupt the underlying plaintext information, which requires watermark embedding to preserve ciphertext correctness. Moreover, the distribu-tion of HE ciphertexts is computationally indistinguishable from a uniform distribution, making traditional statistical watermarking methods, such as difference expansion [15] and histogram shifting [16], inapplicable in this setting. In addition, homomorphic operations differ significantly from transformations on conventional watermarking media, and embedded watermarks can be easily destroyed during ho-momorphic evaluation. In particular, numerical relationships within or across ciphertexts are difficult to preserve after homomorphic addition or multiplication. 
+
+1.1. Our Contributions 
+
+To address these challenges, we introduce digital water-marking into homomorphic ciphertexts and further propose two concrete watermarking schemes for RLWE-based HE. The main contributions of this work are summarized as follows. We first formally define the problem of watermarking homomorphic ciphertexts and establish its corresponding requirements and security properties, which provide a foun-dation for both theoretical analysis and practical deployment of HE with provenance and accountability guarantees. We then propose a 1-bit robust watermarking scheme, ARWMark, that resists homomorphic addition. The scheme exploits redundancy in ciphertext noise by embedding addi-tive perturbations and employs correlation-based detection to ensure robustness. It can be naturally extended to a t-bit watermark while maintaining robustness under homomor-phic addition, demonstrating the feasibility of watermarking additively homomorphic ciphertexts. Next, we propose a 0-bit watermarking scheme, MRWMark, that is robust against both homomorphic ad-dition and multiplication. The construction leverages prop-erties of the solution space of linear equation systems and remains stable under homomorphic operations, demonstrat-ing the feasibility of watermarking fully homomorphic ci-phertexts. Finally, we provide both theoretical analysis and exper-imental evaluation of the proposed HE ciphertext water-marking schemes. Our results characterize the impact of different homomorphic operations on the two watermark constructions and validate their robustness and security from both theoretical and empirical perspectives. The implementation is available at the github link. 
+
+## 2. Preliminaries 
+
+In this section, we first introduce the RLWE problem and then present a simplified RLWE-based HE scheme. 
+
+2.1. Basic Notation 
+
+We define the polynomial ring R = Z(x)/(xN + 1) ,where N is a power of 2. For an integer q, we use Rq
+
+to denote R/q R. In other words, the elements in Rq are all polynomials with coefficient modulus q and polynomial modulus xN + 1 , and have integer coefficients. We use lowercase bold letters for polynomials. All poly-nomial operations are performed over Rq by default. We use 
+
+[i] to denote the i-th coefficient of a polynomial or the i-th element of a vector, where i starts from 1 by default. For example, we use a[i] to denote the i-th coefficient of the polynomial a. The inner product of two ring elements 
+
+a and b is ⟨a, b⟩ = PNi=1 a[i] · b[i] mod q. If there is no ambiguity, we use P 
+
+> i
+
+to denote PNi=1 .For a positive integer q and any a ∈ R, a mod q will reduce the coefficients of a into the range (− q 
+
+> 2
+
+, q 
+
+> 2
+
+]. We use ∥a∥ = max i |a[i]| to denote the infinite norm of a.In other words, ∥a∥ is the maximum absolute value of the coefficients of a.We say a function f (x) from the natural numbers to the non-negative real numbers is negligible if for all constants c
+
+there exists an N0 such that for all integers n > N 0 it holds that f (n) < n −c [17]. An event is considered impossible (or computationally infeasible) if its probability is negligible. Two distributions are indistinguishable if the probability of distinguishing them is no more than 1/2 plus a negligible function. 
+
+2.2. The Ring Learning with Errors Problem 
+
+The RLWE problem was introduced in [18]. Here we give a special and simplified version of RLWE which is widely used in the design of HE schemes [11], [19]. Definition 2.1. Let χs, χ e be two distributions over Rq .The RLWE problem is to distinguish the following two distributions: First, choose a random element s from distribution χs,
+
+m uniformly random elements a1, · · · , am from Rq , and m
+
+elements e1, · · · , em from distribution χe. Compute bi =
+
+ais + ei and output (ai, bi), where i = 1 , · · · , m .Second, choose 2m uniformly random elements 
+
+a′
+
+> i
+
+, · · · , a′
+
+> m
+
+, b′
+
+> 1
+
+, · · · , b′ 
+
+> m
+
+from Rq . Output (a′
+
+> i
+
+, b′
+
+> i
+
+), where 
+
+i = 1 , · · · , m .
+
+The RLWE assumption is that the RLWE problem is hard. As proved in [18], the well-established shortest vector problem (SVP) [20] over ideal lattices can be reduced to it. In other words, the RLWE problem is at least as hard as the SVP problem over ideal lattices. 
+
+2.3. Homomorphic Encryption 
+
+We first present the definitions of additive homomor-phism and multiplicative homomorphism: 
+
+Definition 2.2. Let m1, m 2 be two plaintexts, Enc( ·) be the encryption function and Dec( ·) be the decryption func-tion. An encryption scheme is additive homomorphic when 
+
+Dec(Enc( m1) + Enc( m2)) = m1 + m2. Similarly, an encryption scheme is multiplicative homomorphic when 
+
+Dec(Enc( m1) × Enc( m2)) = m1 × m2.
+
+Next, we introduce the RLWE-based HE scheme RHE. The scheme supports two ciphertext forms: secret-key en-cryption SkRHE and public-key encryption PkRHE. The detailed procedures of the secret-key encryption scheme SkRHE are described as follows:  
+
+> •
+
+Setup (λ, p ): Given the security parameter λ and plaintext modulus p, determine the polynomial ring 
+
+Rq , the error distribution χe, and the secret-key distribution χs. Typically, χe is a bounded discrete Gaussian distribution, while χs is the ternary distri-bution {− 1, 0, 1}N [21]. The ciphertext modulus q
+
+is chosen such that gcd( p, q ) = 1 . 
+
+> •
+
+KeyGen : Sample s from χs. Output the secret key 
+
+sk = (1 , s). 
+
+> •
+
+SkEnc (sk , m): The message m is an element in Rp.Sample a uniformly from Rq . Then sample e from error distribution χe. Compute b = a · s + pe + m.Output the ciphertext ct = ( b, −a). 
+
+> •
+
+Dec (sk , c t): Let ciphertext ct = ( c1, c2). Output the plaintext m = ( c1 + s · c2) mod p. 
+
+> •
+
+EvalAdd (ct, c ′
+
+> t
+
+): Let ct = ( c1, c2) be the ciphertext of m1 and c′ 
+
+> t
+
+= ( c′
+
+> 1
+
+, c′
+
+> 2
+
+) be the ciphertext of m2.Output the ciphertext (c1 + c′
+
+> 1
+
+, c2 + c′
+
+> 2
+
+), which is a ciphertext of the sum of m1 and m2.The details of PkRHE, together with the security anal-ysis of RHE, are provided in Appendix A. 
+
+## 3. Homomorphic Ciphertext Watermarking 
+
+We define homomorphic ciphertext watermarking as the process of modifying a ciphertext to embed information associated with that ciphertext. The embedded information is referred to as a watermark. A homomorphic ciphertext watermarking scheme typically consists of the following three algorithms:  
+
+> •
+
+WKeyGen (λ): Generate an embedding key emk and an extracting key exk that satisfy the security pa-rameter λ. Output the keys emk , exk . 
+
+> •
+
+Embed (emk , w, c t): Embed the watermark w into the ciphertext ct with embedding key emk . Output the embedded ciphertext c′
+
+> t
+
+. 
+
+> •
+
+Extract (exk , c t): Extract the watermark from the ciphertext ct with the help of the extracting key exk .Output the embedded watermark or false when no watermark is embedded into ct.The embedding key emk contains all secret information required for watermark embedding, while the extraction key 
+
+exk contains the secret information required for watermark extraction. When the embedded watermark is a zero-bit watermark, Extract outputs either true or false, indicating whether the ciphertext contains a watermark. When the embedded watermark encodes one or multiple bits, Extract 
+
+outputs the embedded watermark value or false. We illustrate the workflow of homomorphic ciphertext watermarking in Fig. 2. The embedding algorithm Embed 
+
+uses the embedding key emk to embed the watermark infor-mation w into the ciphertext ct, 0, producing the watermarked ciphertext ct, 1. The ciphertext ct, 1 is then processed through a sequence of homomorphic operations or perturbed by additional noise, resulting in c′
+
+> t, 1
+
+. The extraction algorithm 
+
+Extract then uses the extraction key exk to recover the watermark w′ from c′
+
+> t, 1
+
+.Although the workflow is straightforward to describe, establishing a well-defined homomorphic ciphertext water-marking scheme requires clarifying the properties that such a scheme should satisfy. Next, we first review several repre-sentative examples of robust watermarking in other domains, and then derive the properties required for watermarking in homomorphic ciphertexts. 
+
+Multimedia Watermarking. Multimedia watermarking is a technique for embedding information into multimedia content [14], [22]. The embedding process is generally required not to affect the quality of the original media. For example, image watermarking schemes [23] should not in-troduce noticeable distortion to the image after embedding. At the same time, the embedded information is expected to remain robust under standard image processing operations, such as geometric transformations (e.g., cropping, scaling, and rotation) [24] and compression during transmission [25], [26]. Watermarking schemes for other multimedia carriers follow similar requirements [27], [28], [29]. 
+
+Neural Network Watermarking. Neural network wa-termarking embeds information into neural network mod-els [30]. Although the parameters of the watermarked model Embed  Extract HE operations      
+
+> 𝑐 𝑡 ,0𝑤 ′𝑐 𝑡 ,1
+> ′
+> 𝑐 𝑡 ,1
+> 𝑐 𝑡 ,2,𝑐 𝑡 ,3,⋯𝑒𝑥𝑘
+> 𝑒𝑚𝑘
+> 𝑤 Noise Figure 2. Homomorphic ciphertext watermarking system. The HE opera-tions usually are homomorphic additions or multiplications. Besides HE operations, other operations such as key switching may add noise to the ciphertext.
+
+may differ significantly from those of the original model, the model performance should not degrade substantially after watermark embedding. In practice, neural network models are often fine-tuned or pruned to better fit downstream tasks. Therefore, robustness requires that the embedded watermark remain detectable even after fine-tuning or minor pruning [31], [32]. 
+
+Cryptographic Functions Watermarking. Crypto-graphic function watermarking embeds information into cryptographic functions [33], [34], [35]. The embedding process should preserve the functionality of the original function. That is, the outputs of the watermarked function should be computationally indistinguishable from those of the original function on most inputs. Robustness further requires that, as long as the modified function remains indistinguishable from the watermarked one, the probability of removing the watermark is negligible [36], [37], [38]. From the above examples, we identify two fundamental properties of watermarking. First, watermark embedding should preserve the essential properties of the host ob-ject, which we refer to as fidelity. Second, the embedded watermark should remain robust against noise introduced by operations on the host object, which we denote as ro-bustness. Therefore, homomorphic ciphertext watermarking must simultaneously satisfy both fidelity and robustness. In addition, homomorphic ciphertext watermarking must pre-serve the security guarantees inherited from the underlying encryption scheme. 
+
+3.1. Fidelity 
+
+The property of fidelity for homomorphic ciphertext watermarking requires that watermark embedding does not alter the decryption result of the ciphertext. That is, the ciphertexts before and after watermark embedding should be equivalent with respect to decryption. We formally define fidelity as follows: 
+
+Definition 3.1. Let ct be a ciphertext of m encrypted with RHE and c′ 
+
+> t
+
+be the ciphertext after embedding wa-termark into ct using a watermark scheme. Let sk be the secret key of RHE. The watermark scheme has fidelity when 
+
+Dec (sk , c ′
+
+> t
+
+) = Dec (sk , c t).
+
+3.2. Robustness 
+
+The robustness of homomorphic ciphertext watermark-ing ensures that, after a sequence of homomorphic op-erations, the embedded watermark can still be correctly extracted. The homomorphic operations mainly refer to homomorphic addition and homomorphic multiplication. In other words, even after the watermarked ciphertext is evalu-ated under a polynomial function, the embedded watermark remains correctly recoverable. We define robustness for homomorphic ciphertext watermarking as follows: 
+
+Definition 3.2. Let ct, 1 be the ciphertext of RHE after embedding watermark w into a RHE ciphertext of m1 using a watermark scheme, (ct, 2, c t, 3, · · · ) are RHE ciphertexts of (m2, m3, · · · ). Let f (·) be a polynomial function where only additions and multiplications are allowed. Let c′ 
+
+> t, 1
+
+=
+
+f (ct, 1, c t, 2, · · · ) and m′ 
+
+> 1
+
+= f (m1, m2, · · · ). Let sk be the secret key of RHE and exk be the extracting key. The wa-termark scheme has robustness, if Extract (exk , c ′
+
+> t, 1
+
+) = w
+
+when Dec (sk , c ′
+
+> t, 1
+
+) = m′
+
+> 1
+
+.
+
+In the robustness requirement, we only consider the cor-rectness of watermark extraction under correct decryption. We do not discuss the behavior of watermark extraction when decryption fails. When decryption is incorrect, the decrypted output is typically a random plaintext, which has no meaningful interpretation in most applications; conse-quently, the extracted watermark in this case is also of limited relevance. We also require that, after adding small perturbations that do not affect correct decryption, the embedded water-mark can still be reliably extracted. In RLWE-based cipher-texts, noise management techniques such as key switching and modulus switching [39] often introduce additional ad-ditive noise while preserving correct decryption. A well-designed homomorphic ciphertext watermarking scheme should therefore remain robust against such noise. 
+
+3.3. Security 
+
+The watermarked ciphertext must preserve the security guarantees of the original encryption scheme and should not reveal any information about the plaintext, since perfectly hiding the underlying plaintext is the most fundamental property of a ciphertext. For simplicity, we only consider se-curity under passive attacks in this work. A passive attacker may intercept any information during transmission, but does not actively modify or inject messages. In the setting of homomorphic ciphertext watermarking, the adversary may obtain the embedding key, the embedded watermark, or the watermarking algorithm itself. However, we assume that the adversary cannot obtain the secret key sk of the under-lying HE scheme. We require that watermark embedding does not change the distribution of ciphertexts. In other words, ciphertexts with embedded watermarks should be computationally indistinguishable from ciphertexts without watermarks. We formalize the security of watermarking under passive attacks as follows: 𝑚 ′Extract    
+
+> noise
+> 𝑠𝑘
+> Detect
+> correlation
+> 𝒌 𝑤
+> 𝑤 ′
+> 𝑚
+> 𝑤
+> Embed
+> 𝑒𝑚𝑘
+> 𝑚 𝑤
+> HE +Figure 3. Watermarking workflow of ARWMark. The watermark wis embedded into the noise part of ciphertexts. Only homomorphic additions are considered.
+
+Definition 3.3. Assume that b is uniformly sampled at random from {0, 1}. Let ct, 0 and ct, 1 be two ciphertexts of two equal size messages. Let ct,b be the ciphertext after embedding w with a watermarking scheme. Give ct,b to an adversary. The adversary can ask for the embedded ciphertext of any ciphertext except ct, 0 and ct, 1. If every probabilistic polynomial-time adversary can correctly iden-tify b with probability at most 1/2 + ϵ(λ), where ϵ(λ) is negligible, then the watermarking scheme is secure against passive attacks. 
+
+In these properties, robustness captures the preservation of the embedded watermark: after a sequence of operations, the watermark should not be destroyed. In contrast, fidelity concerns the preservation of the hidden plaintext in the ciphertext; that is, the watermark embedding process should not affect the underlying plaintext. Finally, the security re-quirement ensures that the watermark embedding procedure does not leak any information about the plaintext. 
+
+## 4. Watermarking Constructions for RHE 
+
+In this section, we present two digital watermarking con-structions for RHE homomorphic ciphertexts: an addition-robust homomorphic watermarking scheme ARWMark and a multiplication-robust homomorphic watermarking scheme MRWMark. 
+
+4.1. ARWMark 
+
+In ARWMark, the watermark is embedded into a single ciphertext. We embed the watermark into the decryption noise of the ciphertext, so that the plaintext hidden in the ciphertext is not affected. During decryption, the decryption noise can be extracted and used for watermark detection. The watermark in this scheme can only be detected by an entity that holds the decryption secret key sk , which prevents unauthorized parties from performing watermark detection. The workflow is illustrated in Fig. 3. We first describe how to embed a 1-bit watermark into a single ciphertext, and then extend the construction to the multi-ciphertext setting and the embedding of a t-bit watermark. 
+
+4.1.1. 1-Bit Watermark Embedding. According to the decryption equation of RHE, for an entity holding the secret key sk , the noise and the plaintext in a ciphertext ct can be separated. Specifically, applying modulo-p reduction to 
+
+< c t, sk > completely separates the noise from the plain-text, which is also required for correct decryption in RHE. Our main idea is to embed the watermark into the noise component of the ciphertext structure while keeping it separated from the plaintext, thereby preserving correct decryption, as illustrated in Fig. 3. We assume that the parameters of RHE have already been generated before watermark embedding, together with the secret key sk = (1 , s). Let the 1-bit watermark to be embedded be denoted by w, where w is mapped to 
+
+{− 1, 1}. We use we to denote the mapped watermark value. Specifically, when w = 0 , we set we = −1, and when 
+
+w = 1 , we set we = 1 . In addition, we use we = 0 to indicate that no watermark is embedded. We next describe the watermark embedding and detection algorithms in detail. 
+
+Embedding. Let χw be the embedding key distribution over Rq . To prevent brute-force attacks from recovering 
+
+kw, χw should provide sufficient randomness. In practice, the encryption noise distribution χe can also be used as the embedding key distribution. To embed the watermark as part of the ciphertext noise, we first sample kw from χw as the embedding key emk , and then determine the embedding intensity Iw ∈ Z+.Similar to spread-spectrum watermarking [40], which embeds watermarks into different frequency components, our scheme embeds the watermark into different noise ranges and uses Iw to shift kw across these ranges. A larger embedding intensity reduces the influence of encryp-tion noise on the embedded watermark, thereby improving robustness. Let the cover ciphertext be ct = ( c1, c2) with plaintext modulus p. The embedding equation is defined as follows: 
+
+c′ 
+
+> 1
+
+= c1 + pw eIwkw, (1) where p is used to ensure that the plaintext remains unaf-fected. The watermarked result is c′ 
+
+> t
+
+= ( c′
+
+> 1
+
+, c2).We modify only the first component of ct while keep-ing the second component unchanged, thereby preserving the decryption structure. The embedding process does not depend on sk , which means that any party can perform watermark embedding on the ciphertext. 
+
+Detection. If the detector knows the original ciphertext 
+
+ct, the watermark can be trivially extracted from c′ 
+
+> t
+
+− ct.However, such detection fails once the ciphertext is mod-ified and therefore cannot provide robustness. We instead consider blind detection based on correlation, where the detector does not know ct.As illustrated in Fig. 3, watermark detection consists of two steps: extracting noise from the ciphertext and detecting correlation. 
+
+Extracting Noise. This step requires the secret key sk ,and its procedure is similar to decryption. Let the ciphertext to be detected be c′ 
+
+> t
+
+= (c′
+
+> 1
+
+, c′
+
+> 2
+
+). We first divide by p
+
+to separate the plaintext component, and then divide by the embedding intensity Iw to extract the watermark from the corresponding noise range. The extracted noise e′ is computed as follows: 
+
+e′ = ⌊ c′ 
+
+> 1
+
++ c′ 
+
+> 2
+
+· s
+
+Iwp ⌉ (2) where ⌊·⌉ denotes the coefficient-wise rounding operation. Since homomorphic operations increase the noise in the ciphertext, the extracted noise may contain both the embedded watermark and accumulated encryption noise. We therefore use correlation-based detection to determine whether the watermark exists. 
+
+Detecting Correlation. From a communication perspec-tive, the watermark can be viewed as the transmitted signal, while the encryption noise corresponds to the noise intro-duced during transmission. According to the construction of RHE, the encryption noise follows additive Gaussian noise. By the Neyman-Pearson lemma [41], linear correlation [42] is the optimal method for detecting the presence of kw. The correlation value can be computed as follows: 
+
+ρ = 1
+
+N × < e′, kw > . (3) We then determine the embedded information according to a predefined threshold Tw (Tw > 0) :
+
+we =
+
+
+
+−1, ρ ≤ − Tw
+
+0, −Tw < ρ < T w
+
+1, ρ ≥ Tw
+
+(4) If we = 0 , the output indicates that no watermark is embedded in ct. If we = −1, the detected watermark bit is 
+
+0. If we = 1 , the detected watermark bit is 1.Since homomorphic addition introduces Gaussian noise, the above detection procedure is robust under homomorphic addition. However, homomorphic addition also increases the variance of the Gaussian noise. Therefore, the threshold Tw
+
+depends not only on the embedding intensity Iw and the embedding key distribution χw, but also on the expected number of homomorphic additions. 
+
+4.1.2. Multi-Ciphertext Setting. Since our watermarking is achieved by adding noise to ciphertexts, it inevitably increases the overall noise in the ciphertext. When the noise in ciphertexts becomes too large, correct decryption is no longer guaranteed, and the underlying plaintext may be lost. To mitigate this issue, we extend the embedding from a sin-gle ciphertext to a set of ciphertexts. This extension reduces the amount of noise that must be added to each individual ciphertext, thereby improving decryption reliability while preserving the watermarking functionality. 
+
+Embedding. Assume that there exist m ciphertexts 
+
+ct, 1, c t, 2, · · · , c t,m . We first generate a template vector r by uniformly random sampling, where r ∈ {− 1, 1}m.Next, we compute r′ = wer. Each entry r′[i] is then em-bedded into the corresponding ciphertext ct,i using Eq. (1). 
+
+Detection. Given m ciphertexts, we first compute the correlation of each ciphertext using Eq. (3). Let the resulting correlation values be ρ1, ρ 2, · · · , ρ m.𝑋 𝑠      
+
+> 𝒆 𝑠
+> Embed
+> 𝑚 1
+> 𝑚 2
+> 𝑚 1
+> 𝑚 2
+> 𝑒𝑚𝑘
+> 𝑒 𝑠 ,1
+> 𝑒 𝑠 ,2
+> HE +&×
+> Noise
+> 𝑚 1
+> ′
+> 𝑚 2
+> ′
+> Extract
+> noise
+> 𝑠𝑘
+> 𝑋 𝑠
+> ′
+> Check
+> 𝑨 𝑙𝑒
+> 𝒆 𝑠
+> ′
+> T or F
+> Figure 4. Watermarking workflow of MRWMark. The solutions are re-arranged and then embedded into multiple ciphertexts. After extracting, check whether the extracted vectors are the solutions to the system of linear equations. Output T for true or F for false.
+
+We then compute the averaged correlation as follows: 
+
+ρ = 1
+
+m
+
+X
+
+> i
+
+ρi · r[i]. (5) Finally, we apply Eq. (4) to determine whether a water-mark is embedded and to recover the embedded information based on the value of ρ and the threshold Tw.Since the overall correlation is obtained by averaging the single-ciphertext correlation values, its variance is reduced by a factor of 1 
+
+> m
+
+compared to the single-ciphertext case, leading to a more robust detection procedure. 
+
+4.1.3. t-Bit Embedding. The watermark w may consist of 
+
+t bits rather than a single bit. A straightforward approach is to embed each bit into a separate ciphertext. However, this becomes impractical when the number of available ciphertexts is limited. Our detection method relies on linear correlation. When multiple linearly independent embedding keys are used within the same ciphertext, their respective detections do not interfere with each other. Inspired by [43], we there-fore embed multi-bit watermarks into a single ciphertext to increase the embedding capacity. Let the binary representation of w be w = w0 + w1 ·
+
+2 + w2 · 22 + · · · + wt−1 · 2t−1, where wi ∈ { 0, 1}. Using the single-ciphertext embedding method, each bit wi is embedded into the same ciphertext ct with a corresponding embedding key kw,i . The embedding keys are chosen to be linearly independent, i.e., ⟨kw,i , kw,j ⟩ = 0 for i̸ = j.In practice, perfect orthogonality is not required; it is suffi-cient that their inner products are sufficiently small, which simplifies the construction of embedding keys. During extraction, each wi is recovered separately. The full watermark w is correctly recovered only if all bits wi
+
+are successfully extracted. This construction increases the watermarking capacity from 1 bit to t bits. 
+
+4.2. MRWMark 
+
+When a multiplication is performed between two cipher-texts, the decryption noises from different ciphertexts are mixed together. This significantly complicates watermark detection, and linear correlation-based detection becomes almost ineffective for recovering the embedded watermark. In this section, we extend the previous embedding scheme to obtain a watermarking method that is robust against ciphertext multiplication. The key idea is to construct a carefully designed em-bedding key such that it preserves a certain structure under multiplication, enabling robustness of the watermark against ciphertext multiplication operations. It is worth noting that the proposed scheme in this subsection is a 0-bit watermark-ing scheme, meaning that it only detects the presence of a watermark without extracting any specific message. Ciphertext multiplication introduces substantial noise, and the noise in PkRHE is typically much larger than that in SkRHE. Therefore, we restrict our attention to embedding on SkRHE ciphertexts, where the noise level is relatively small. The watermark is carried by a set of ciphertexts, which are treated as a single logical unit, and the same operation is applied to each ciphertext. Such a scenario is common in practice, for example in multimedia processing, where identical batch operations are applied to different images. We now present the embedding and detection pro-cedures. 
+
+4.2.1. Embedding. By analyzing multiplication over Rq ,we observe that the coefficients of the product polynomial are linear combinations of coefficients from different terms of the original polynomials. Moreover, any linear combina-tion of solutions to a homogeneous linear system remains a solution to the same system [44]. Based on this observation, we embed the solution space of a homogeneous linear sys-tem into a set of ciphertexts, thereby obtaining a watermark that remains invariant under the linear combinations induced by ciphertext multiplication. Assume that the homogeneous linear system Ale ·
+
+Xle = 0 has infinitely many solutions, where Xle is a vector consisting of m unknown variables. The matrix 
+
+Ale has fewer than m rows and exactly m columns. Let 
+
+Xs, 1, X s, 2, · · · , X s,N denote N solutions of this system with relatively small norms, where different solutions are allowed to be identical but cannot be the zero vector. Note that each solution is a vector of length m. The embedding key emk is the matrix Ale .Next, we construct m noise vectors es, 1, es, 2, · · · , es,m 
+
+as follows: 
+
+es,i [j] = Xs,j [i] (6) where i = 1 , 2, · · · , m and j = 1 , 2, · · · , N .We then embed these m noise vectors into the corre-sponding m ciphertexts ct, 1, ct, 2, · · · , ct,m :
+
+cr,i [0] = ct,i [0] + pI wes,i ,
+
+cr,i [1] = ct,i [1] (7) where i = 1 , 2, · · · , m .
+
+4.2.2. Detection. Detection in this scheme mainly consists of two steps. The first step extracts the embedded noise, and the second step determines whether the vectors recon-structed from the extracted noise are nonzero solutions of the original linear system. We first use Eq. (2) to extract the noise from each ci-phertext. The extracted noise is then transformed, following the inverse process of Eq. (6), to recover N vectors. If all recovered vectors are zero vectors, we conclude that no watermark is embedded. If all recovered vectors are nonzero solutions to Ale · Xle = 0 , then the ciphertexts are determined to contain a watermark. Since the extraction process requires the secret key sk ,watermark detection can only be performed by the holder of the secret key. 
+
+4.2.3. Construction of the Embedding Key. After adding random noise to a solution of a linear system, the resulting vector may no longer satisfy the original system. Therefore, during embedding, the watermark must be shifted outside the range of the intrinsic decryption noise in practical ciphertexts to enable reliable extraction. This requires the embedding intensity to be sufficiently large. However, the tolerable decryption noise budget is limited, so the additional noise introduced by watermark embedding should be kept as small as possible. Consequently, we require the linear system to admit integer solutions with small infinity norms. Constructing a linear system that satisfies these require-ments is not straightforward. We therefore construct the linear system in a reverse manner. Assume that the target matrix Ale is a k × m matrix with k < m . We first randomly sample m small integers from the range [−Bw, B w] to construct a base solution X1.By construction, X1 has a sufficiently small norm to satisfy the watermark embedding requirement. Next, we treat each entry of Ale as a variable and construct the equation system Ale · X1 = 0 . This system contains k equations but has km variables, and therefore admits infinitely many solutions. Since Ale is not required to be an integer matrix, it is easy to obtain a matrix Ale satisfying the above condition. Clearly, Ale ·Xle = 0 has the solution X1. Moreover, be-cause k < m , the constructed linear system admits infinitely many solutions. 
+
+4.2.4. Embedding Capacity. MRWMark does not support repeated embedding within the same set of ciphertexts. Therefore, the capacity extension method described in sec-tion 4.1.3 cannot be directly applied. To address this limi-tation, we present an alternative approach for extending the watermarking capacity. We first extend the 0-bit watermark to a 1-bit watermark, and then further generalize it to a t-bit watermark. We construct two linear systems with coefficient matrices Ale, 0
+
+and Ale, 1, respectively. The solution spaces of these two systems are designed such that their nonzero solutions do not overlap. The solution space of Ale, 0 · Xle = 0 is used to represent the watermark value 0, while the solution TABLE 1. C OMPARISON OF TWO WATERMARKING SCHEMES .Robustness Capacity Embedding Intensity ARWMark + 1-bit small MRWMark + and × 0-bit large 
+
+space of Ale, 1 · Xle = 0 represents the watermark value 1.When the embedded watermark is 0, we embed a vector from the solution space of Ale, 0 · Xle = 0. When the embedded watermark is 1, we embed a vector from the solution space of Ale, 1 · Xle = 0 . During detection, we determine whether the extracted vector is a solution of either of the two linear systems. This construction yields a 1-bit watermarking scheme. Assume that a large number of ciphertexts are available. We select t × m ciphertexts and partition them into t
+
+groups, each consisting of m ciphertexts. Each group is used to embed one bit of information, thereby extending the capacity to t bits. All t groups use the same linear system construction; thus, it suffices to generate two linear systems whose nonzero solution spaces do not overlap. 
+
+4.3. Discussion 
+
+The two proposed watermarking schemes have different strengths and are suitable for different application scenarios. ARWMark is robust against homomorphic addition. Within the watermark embedding region, a certain level of additive noise can be tolerated, which allows repeated embedding into the same ciphertext and thus improves em-bedding capacity. Due to its robustness to additive noise, successful extraction can still be achieved even with rela-tively small embedding intensity. However, a clear limitation of ARWMark is that it is not robust against homomorphic multiplication. After ciphertext multiplication, the original watermark information is almost entirely destroyed. There-fore, ARWMark is more suitable for applications that only require additive homomorphic operations, such as secure aggregation or histogram statistics. In contrast, MRWMark is robust against both homomor-phic addition and multiplication. However, since solutions of linear systems are not robust to additive noise, the em-bedding region must be strictly separated from the actual decryption noise in ciphertexts. As a result, MRWMark requires a significantly larger embedding intensity compared to ARWMark. Moreover, MRWMark does not support ca-pacity expansion through repeated embedding. We summa-rize the comparison between the two schemes in Table 1. 
+
+## 5. Theoretical Analysis 
+
+We use E(·) and D(·) to denote expectation and vari-ance, respectively. And Cov (·, ·) denotes the covariance. Let χu be the uniform distribution over Rq . Let χs be a distribution over Rq with coefficients independently sam-pled from {− 1, 0, 1}. Let χe be a bounded discrete Gaussian distribution [21] over Rq , with mean 0 and variance σ2. We assume samples from χe are bounded by Be. For simplicity, we set χw = χe. We write x ∼ χ to denote that x follows distribution χ. Due to space constraints, all lemmas are deferred to Appendix B. The secret key is sk = (1 , s), and the public key is 
+
+pk = ( k1, k2) = ( ak · s + pek, −ak), where ak ∼ χu and 
+
+ek ∼ χe. Let we ∈ {− 1, 0, 1} denote the embedded message for a single ciphertext, where 0 indicates no embedding. In ARWMark, the embedding key is sampled as kw ∼ χe.
+
+5.1. Analysis of ARWMark 
+
+In this subsection, we first analyze the security and fidelity of ARWMark. We then analyze the correctness of its watermark embedding and its robustness. 
+
+5.1.1. Security. Our embedding scheme does not affect the security of the underlying HE scheme. Formally, we have the following theorem: 
+
+Theorem 1. The watermarking scheme ARWMark defined in section 4.1 is secure against passive attacks. Proof. Let ct, 0 = ( c0,1, c0,2) and ct, 1 = ( c1,1, c1,2) be two RHE ciphertexts. Let (br , ar ) be uniformly random. Let 
+
+kw be the emk , we be the encoded watermark and Iw be the embedding intensity. According to Thm. 8, we know that ct, 0 and ct, 1 are indistinguishable from (br , ar ). So, it is enough to prove that (cb, 1 + pI wkw, cb, 2) is indistinguishable from (br , ar ),where b is 0 or 1. Since cb, 1 is indistinguishable from br
+
+and pI wkw is a constant element of Rq , we have that cb, 1 +
+
+pI wkw is indistinguishable from cb, 1. Hence, we have that 
+
+(cb, 1 + pI wkw, cb, 2) is indistinguishable from (br , ar ).In the following, we focus on the watermark embedded in SkRHE ciphertexts and defer the analysis of watermark embedded in PkRHE ciphertexts to Appendix section C. 
+
+5.1.2. Fidelity. For ciphertext watermark embedding in SkRHE, the following theorem holds: 
+
+Theorem 2. When the watermark carrier is a ciphertext of SkRHE, and the embedding intensity satisfies Iw < 
+
+> q
+> 2pB e
+
+−2, the homomorphic ciphertext watermarking scheme ARWMark described in section 4.1 achieves fidelity. Proof. Let the ciphertext encrypted under SkRHE be ct =(a·s+pe1 +m, −a), where a ∼ χu and e1 ∼ χe. According to the embedding rule in Eq. (1), the ciphertext after embed-ding we is given by c′ 
+
+> t
+
+= ( a · s + pe1 + m + pw eIwkw, −a).The inner product of c′ 
+
+> t
+
+with the secret key sk is: 
+
+⟨sk , c ′
+
+> t
+
+⟩ = a · s + pe1 + m + pw eIwkw − a · s
+
+= pe1 + m + pw eIwkw. (8) By applying the norm inequality, we have ∥⟨ sk , c ′
+
+> t
+
+⟩∥ =
+
+∥pe1 + pw eIwkw + m∥ ≤ pB e + pI wBe + p. Since p ≪ q,and Be is a small integer determined by the security param-eter, when Iw < q 
+
+> 2pB e
+
+− 2, it holds that ∥⟨ sk , c ′
+
+> t
+
+⟩∥ < q 
+
+> 2
+
+.Therefore, c′ 
+
+> t
+
+can be correctly decrypted, and we obtain 
+
+m = ⟨sk , c ′
+
+> t
+
+⟩ mod p.5.1.3. Correctness. The detection of watermark information is not a continuous function, but rather a threshold-based decision. Therefore, we analyze the expectation and variance of the extracted correlation value under different embedding watermarks. According to Eq. (2), the noise term is divided by pI w
+
+and then rounded. Since ∥m∥ ≤ p/ 2, we have ⌊ m 
+
+> pI w
+
+⌉ = 0 .Therefore, in the following analysis, we ignore the effect of m on the extraction noise. In addition, we neglect the rounding error introduced during noise extraction. 
+
+Theorem 3. Let a ciphertext of SkRHE be ct = ( a · s +
+
+pe1 +m, −a), where a ∼ χu and e1 ∼ χe. After embedding the watermark we using ARWMark, the expectation of the correlation value ρsk is weσ2, and its variance is σ4
+
+> N I 2
+> w
+
++  
+
+> 2w2
+> eσ4
+> N
+
+.Proof. By Eq. (8) and Eq. (2), the extracted noise from ciphertext ct is e1 
+
+> Iw
+
++ wekw.
+
+ρsk = 1
+
+IwN · ⟨ e1 + weIwkw, kw⟩
+
+= 1
+
+N I w
+
+(⟨e1, kw⟩ + weIw⟨kw, kw⟩)
+
+By lemma 3, we have E(⟨e1, kw⟩) = 0 and 
+
+D(⟨e1, kw⟩) = N σ 4. By lemma 4, we have E(⟨kw, kw⟩) = 
+
+N σ 2 and D(⟨kw, kw⟩) = 2 N σ 4. Thus, we have 
+
+E(ρsk ) = E( 1
+
+N I w
+
+(< e1, kw > +weIw < kw, kw >)) = 1
+
+N I w
+
+E(< e1, kw >) + we
+
+N E(< kw, kw >)= weσ2.
+
+By lemma 5, we have Cov (⟨e1, kw⟩, ⟨kw, kw⟩) = 0 .Therefore, we have 
+
+D(ρsk ) = D( 1
+
+N I w
+
+(⟨e1, kw⟩ + weIw⟨kw, kw⟩)) = 1
+
+N 2I2
+
+> w
+
+D(⟨e1, kw⟩) + w2
+
+> e
+
+N 2 D(⟨kw, kw⟩)= σ4
+
+N I 2
+
+> w
+
++ 2w2 
+
+> e
+
+σ4
+
+N .
+
+Next, we estimate the extraction correctness probability based on the expectation and variance. We first analyze the case where the detection result is 1
+
+for a watermark embedded in a SkRHE ciphertext. We use 
+
+Pr {·} to denote the probability that an event occurs. Since 
+
+E(ρsk ) = σ2 and D(ρsk ) = σ4
+
+> N I 2
+> w
+
++ 2σ4 
+
+> N
+
+when we = 1 , we assume that the decision threshold satisfies Tw < σ 2.When embedding we = 1 , by Chebyshev’s Inequality [45], we have 
+
+Pr {ρsk < T w} < P r {| ρsk − σ2| > σ 2 − Tw}
+
+< 1(σ2 − Tw)2 · ( σ4
+
+N I 2
+
+> w
+
++ 2σ4
+
+N ).
+
+That is, the True Positive Rate (TPR) is at least 
+
+1 − 1(σ2 − Tw)2 · ( σ4
+
+N I 2
+
+> w
+
++ 2σ4
+
+N ).
+
+When we = 0 , we have E(ρsk ) = 0 and D(ρsk ) = σ4
+
+> N I 2
+> w
+
+.Therefore, 
+
+Pr {ρsk >= Tw} < P r {| ρsk | > T w} < σ4
+
+T 2
+
+> w
+
+N I 2
+
+> w
+
+.
+
+When we = −1, we have E(ρsk ) = −σ2 and D(ρsk ) = 
+
+> σ4
+> N I 2
+> w
+
++ 2σ4 
+
+> N
+
+. Thus, 
+
+Pr {ρsk >= Tw} < P r {| ρsk + σ2| > T w + σ2}
+
+< 1(σ2 + Tw)2 · ( σ4
+
+N I 2
+
+> w
+
++ 2σ4
+
+N ).
+
+Therefore, the False Positive Rate (FPR) is upper bounded by 
+
+σ4
+
+T 2
+
+> w
+
+N I 2
+
+> w
+
++ 1(σ2 + Tw)2 ·
+
+ σ4
+
+N I 2
+
+> w
+
++ 2σ4
+
+N
+
+
+
+.
+
+We aim for a high TPR and a low FPR. Both objectives can be achieved by increasing N and Iw. When the detection result is −1, a similar derivation leads to the same conclu-sion. When the embedding carrier is a PkRHE ciphertext, the expectation of ρ is the same as in SkRHE, which leads to analogous results. Typically, σ is treated as a fixed parameter, commonly set to 3.2 [21]. Under this setting, the expectation of ρ is fixed. Therefore, both TPR and FPR are determined by the variance of ρ. A smaller variance implies a higher TPR and a lower FPR. By adjusting the parameters N and Iw, we can control the variance of ρ, thereby increasing the TPR and decreasing the FPR. This allows the different values of 
+
+we to be distinguished with high probability. In particular, larger values of N and Iw lead to a smaller variance of 
+
+ρ, resulting in a higher TPR, a lower FPR, and a clearer separation between different values of we.
+
+5.1.4. Robustness. When Iw is larger than the number of homomorphic additions, we have ⌊ m  
+
+> Iwp
+
+⌉ = 0 . Therefore, the plaintext hidden in the ciphertext does not affect the extracted correlation value. In the following, we consider adding a ciphertext with a watermark embedded using a different key. 
+
+Theorem 4. Let SkRHE ciphertext ct, 0 = ( a0 · s + pe0 +
+
+m0 + pw eIwkw, −a0) be the ciphertext after embedding we
+
+with embedding key kw, and let ct, 1 = ( a1 · s + pe1 + m1 +
+
+pw ′
+
+> e
+
+I′
+
+> w
+
+k′
+
+> w
+
+, −a1) be the ciphertext after embedding w′ 
+
+> e
+
+with embedding key k′
+
+> w
+
+. The embedding key kw is independent of 
+
+k′
+
+> w
+
+. Let ρsk denote the correlation value of ct, 0, and let ρ′
+
+> sk
+
+denote the correlation value of ct, 0 + ct, 1 when taking kw
+
+as extracting key. Then, E(ρsk ) = E(ρ′
+
+> sk
+
+), and D(ρ′
+
+> sk
+
+) = 
+
+> σ4
+> N I 2
+> w
+
++ w′2  
+
+> eI′2
+> wσ4
+> N I 2
+> w
+
++ D(ρsk ).
+
+Proof. The ciphertext sum is given by ct, 0 + ct, 1 = (( a0 +
+
+a1)·s+p(e0+e1)+ m0+m1+pw eIwkw +pw ′
+
+> e
+
+I′
+
+> w
+
+k′
+
+> w
+
+, −(a0+a1)) . Using Eq. (2), the extracted noise leads to the follow-ing correlation value: 
+
+ρ = 1
+
+N I w
+
+· ⟨ e0 + e1 + weIwkw + w′
+
+> e
+
+I′
+
+> w
+
+k′
+
+> w
+
+, kw⟩.
+
+Note that e1 is independent of kw. Based on this obser-vation, the expectation of ρ′ 
+
+> sk
+
+can be computed as 
+
+E(ρ′
+
+> sk
+
+) = 1
+
+N I w
+
+E(⟨e0 + e1 + w′
+
+> e
+
+I′
+
+> w
+
+k′ 
+
+> w
+
++ weIwkw, kw⟩)= E(⟨e1, kw⟩)
+
+N I w
+
++ w′
+
+> e
+
+I′
+
+> w
+
+N I w
+
+E(⟨k′
+
+> w
+
+, kw⟩) + E(ρsk )= E(ρsk ).
+
+Similarly, the variance of ρ′ 
+
+> sk
+
+is given by 
+
+D(ρ′
+
+> sk
+
+) = 1
+
+N 2I2
+
+> w
+
+D(⟨e0 + e1 + w′
+
+> e
+
+I′
+
+> w
+
+k′ 
+
+> w
+
++ weIwkw, kw⟩)= D(⟨e1, kw⟩)
+
+N 2I2
+
+> w
+
++ w′2 
+
+> e
+
+I′2
+
+> w
+
+N 2I2
+
+> w
+
+D(⟨k′
+
+> w
+
+, kw⟩) + D(ρsk )= σ4
+
+N I 2
+
+> w
+
++ w′2 
+
+> e
+
+I′2 
+
+> w
+
+σ4
+
+N I 2
+
+> w
+
++ D(ρsk ).
+
+Therefore, for ARWMark watermarked SkRHE cipher-texts, adding a ciphertext that also contains a watermark w′
+
+> e
+
+increases the variance of ρ by σ4
+
+> N I 2
+> w
+
++ w′2  
+
+> eI′2
+> wσ4
+> N I 2
+> w
+
+. If the added ciphertext does not contain a watermark, i.e., w′ 
+
+> e
+
+= 0 , the variance still increases by σ4
+
+> N I 2
+> w
+
+.
+
+5.2. Analysis of MRWMark 
+
+According to the construction method of the linear equation system described in section 4.2.3, we can control the norm of the initially embedded solution. Therefore, we assume that the solution norm satisfies ∥Xs,i ∥ < B e, i.e., its norm satisfies the same requirement as kw in ARWMark. Since MRWMark is a special case of ARWMark, it pro-vides the same security and fidelity guarantees. Note that we only consider SkRHE ciphertexts in this setting. The security analysis of ARWMark does not depend on kw,while the fidelity analysis only relies on the norm bound of kw. Therefore, MRWMark also satisfies the conclusions of Thm. 1 and Thm. 2. Accordingly, in the following, we focus only on the correctness and robustness of MRWMark. 
+
+5.2.1. Correctness. Theorem 5. Assume that there are m fresh ciphertexts 
+
+ct, 1, · · · , c t,m . When the watermark embedding intensity satisfies Iw > 2Be + 1 , the watermark embedded into these 
+
+m ciphertexts using MRWMark can be correctly extracted. Proof. Let ct,i = (ai · s + pei + mi, −ai). Let es,i 
+
+denote the i-th noise term constructed from the solution 
+
+Xs, 1, X s, 2, · · · , X s,N . The ciphertext after watermark em-bedding is 
+
+c′ 
+
+> t,i
+
+= ( ai · s + pei + mi + pI wes,i , −ai).
+
+We now prove that when Iw > 2Be + 1 , the noise extracted from c′ 
+
+> t,i
+
+according to Eq. (2) satisfies e′ 
+
+> s,i
+
+= es,i .The inner product between the secret key sk and c′ 
+
+> t,i
+
+is 
+
+⟨sk , c ′
+
+> t,i
+
+⟩ = ai · s + pei + mi + pI wes,i + ( −ai · s)= pei + mi + pI wes,i .
+
+Since ∥ei∥ ≤ Be and ∥mi∥ < p 
+
+> 2
+
+, when Iw > 2Be + 1 ,we have 
+
+1
+
+Iwp (pei + mi) < 0.5.
+
+Therefore, 
+
+e′ 
+
+> s,i
+
+= ⌊ pei + mi + pI wes,i 
+
+Iwp ⌉ = es,i .
+
+5.2.2. Robustness. For robustness, we analyze two cases: adding a ciphertext and multiplying by a ciphertext. For noise extraction, we use Eq. (2). However, since we focus on error analysis, we directly use ⟨sk ,c ′  
+
+> t⟩
+> Iwp
+
+and ignore the rounding operation. We first analyze the case where an embedded ciphertext is added to another ciphertext. The following theorem holds. 
+
+Theorem 6. Assume that there are m fresh ciphertexts 
+
+ct, 1, · · · , c t,m . After embedding watermarks into these m
+
+ciphertexts using MRWMark, we obtain the watermarked ciphertexts c′
+
+> t, 1
+
+, · · · , c ′
+
+> t,m
+
+. Let ca = ( aa ·s+pea +ma, −aa).After adding ca to the watermarked ciphertexts, the upper bound of the extracted noise increases by at most Be+1  
+
+> Iw
+
+.Proof. The noise extracted from c′ 
+
+> t,i
+
+is ⟨sk ,c ′  
+
+> t,i ⟩
+> Iwp
+
+. The noise extracted from c′
+
+> t,i
+
++ca is ⟨sk ,c ′  
+
+> t,i +ca⟩
+> Iwp
+
+. Therefore, the increase in the extracted noise is upper bounded by ⟨sk ,c a⟩  
+
+> Iwp
+
+.
+
+⟨sk , c a⟩
+
+Iwp = 1
+
+Iwp (pea + ma) < Be + 1 
+
+Iw
+
+. (9) When the additional noise is smaller than 0.5, es,i can still be extracted correctly. Therefore, the robustness against homomorphic addition can be improved by increasing Iw.Next, we consider the impact of multiplying by a ci-phertext on noise extraction. The following theorem holds. 
+
+Theorem 7. Assume that there are m fresh ciphertexts 
+
+ct, 1, · · · , c t,m . After embedding watermarks into these m
+
+ciphertexts using MRWMark, we obtain the watermarked ciphertexts c′
+
+> t, 1
+
+, · · · , c ′
+
+> t,m
+
+. Let cm = (am · s + pem +
+
+mm, −am). When Iw satisfies Iw > 2pN B 2 
+
+> e
+
++ 4 pN B e +2pN , the watermark can still be correctly extracted after multiplying the watermarked ciphertexts by cm.Proof. The extracted noise from ct,i × cm is as follows: 
+
+⟨sk , c t,i × cm⟩
+
+Iwp = 1
+
+Iwp (⟨sk , c t,i ⟩ · ⟨ sk , c m⟩)= 1
+
+Iwp (pei + mi + Iwpes,i )( pem + mm)= 1
+
+Iwp (p2ei · em + pei · mm + pmi · em
+
++ mi · mm) + ( pem + mm) · es,i 
+
+< 1
+
+Iw
+
+(pN B 2 
+
+> e
+
++ 2 pN B e + pN )+ ( pem + mm) · es,i .
+
+According to the properties of the homogeneous linear equation system and the arithmetic operations over R, the solution reconstructed from (pem + mm) · es,i remains a valid solution to the original linear equation system. There-fore, when 
+
+1
+
+Iw
+
+(pN B 2 
+
+> e
+
++ 2 pN B e + pN ) < 0.5,
+
+the watermark can still be correctly extracted. This condition is satisfied when 
+
+Iw > 2pN B 2 
+
+> e
+
++ 4 pN B e + 2 pN. 
+
+## 6. Experimental Results 
+
+We implemented the proposed watermark embedding schemes in Python. For the security of RLWE, we set the parameters according to the 128-bit security recommenda-tions in [21]. By default, we set N = 2048 , p = 65537 ,and σ = 3 .2, with q being a 55-bit prime number. All experiments were conducted on a machine running Ubuntu 20.04.6 LTS Linux, equipped with an Intel Xeon Gold 6145 CPU (2.0 GHz) and 502 GB RAM. 
+
+6.1. Evaluation for ARWMark 
+
+6.1.1. Correctness Verification. To ensure reliable water-mark extraction, the distribution of the correlation value ρ
+
+should be concentrated around its expectation. In addition, the distributions corresponding to different watermark values should be separated as much as possible. In Fig. 5, we present the histogram of ρ frequencies to approximate its probability density distribution. For each scenario, we repeated the embedding process 1000 times, then extracted the noise and computed the correlation value 
+
+ρ. As shown in the figure, ρ is concentrated around its expectation, consistent with our anticipated behavior, and its distribution resembles a normal distribution. When Iw = 7 , according to Fig. 5(a), watermarks em-bedded in SkRHE ciphertexts can be clearly distinguished. However, for watermarks embedded in PkRHE ciphertexts, the correlation values ρpk partially overlap around −5 and 
+
+5, as illustrated in Fig. 5(b).                                     
+
+> (a) ρsk for SkRHE ciphertexts (b) ρpk for PkRHE ciphertexts Figure 5. Normalized frequency distribution histogram of ρwith embed-ding intensity Iw= 7 .
+> (a) ρsk of SkRHE ciphertexts (b) ρpk of PkRHE ciphertexts Figure 6. Normalized frequency distribution histogram of ρwith embed-ding intensity Iw= 100 .0510 15 20
+> 00.1 0.2 0.3 0.4 0.5 0.6
+> Stdandard Deviation of  sk
+> (a) ρsk of SkRHE ciphertexts 050 100 150 200
+> 00.2 0.4 0.6 0.8 11.2
+> Stdandard Deviation of  pk (b) ρpk of PkRHE ciphertexts Figure 7. Standard deviation of ρfor different embedding intensities.
+
+As Iw increases, the expectation of ρ remains unchanged for each embedding case, while the variance decreases, resulting in a more concentrated distribution. As shown in Fig. 6, a narrower distribution of ρ facilitates the distinction between different embedding cases. In particular, as illus-trated in Fig. 6(b), the correlation values ρpk computed from PkRHE ciphertexts no longer overlap. According to Figs. 5 and 6, under the same parameter settings, the variance of 
+
+ρsk is smaller than that of ρpk . This observation is consistent with our theoretical analysis. 
+
+6.1.2. Impact of Different Embedding Intensities. For each Iw, we repeated the experiment 20 times and computed the standard deviation to evaluate the impact of Iw on the correlation value ρ, where a smaller standard deviation indi-cates a more concentrated distribution, which implies lower extraction noise and less interference during watermark ex-traction. We present the experimental results in Fig. 7. As Iw
+
+increases, the standard deviation of ρ gradually decreases. (a) ρsk of SkRHE (b) ρpk of PkRHE Figure 8. Comparison of ρ under different embedding values after adding non-watermarked ciphertexts.         
+
+> (a) ρsk of SkRHE (b) ρpk of PkRHE Figure 9. Comparison of ρunder different embedding values after adding other ciphertexts with different embedding keys.
+
+In addition, the effect of Iw is most pronounced on the extracted ρ in the absence of any embedded watermark. As shown in Fig. 7(a), for SkRHE ciphertexts, Iw = 7 
+
+provides a reasonable trade-off. At this point, the standard deviation of ρsk is sufficiently small. Since we need to ensure correct decryption, we do not want Iw to be too large. For PkRHE ciphertexts, Iw = 100 provides a better trade-off, as illustrated in Fig. 7(b). 
+
+6.1.3. Robustness of the Watermark. We repeat each experiment 20 times independently. The mean ± standard deviation is used as the error band to improve the reliability of the evaluation. For SkRHE ciphertexts, we set Iw = 7 ,while for PkRHE ciphertexts we set Iw = 100 .In Fig. 8, we present the value of ρ when multiple ciphertexts without embedded watermarks are added. The expectation of ρ remains nearly unchanged. As the number of additions increases, the variance grows, which is particu-larly evident in both unwatermarked ciphertexts and PkRHE ciphertexts, as shown in Fig. 8(b). In Fig. 9, we present the results obtained when adding ciphertexts containing watermarks generated under different embedding keys. Compared with the results in Fig. 8, adding a single watermarked ciphertext leads to a more pronounced increase in the standard deviation of ρ. However, different embedding cases can still be clearly distinguished. Overall, our watermark is robust against the noise in-troduced by homomorphic additions. Although the standard deviation of the extracted ρ increases, there remains suffi-cient separation to ensure correct watermark extraction. 
+
+6.1.4. Resistance to Random Noise Attack. Since the goal of a watermark attacker is to remove the watermark without 0 500 1000 1500        
+
+> 00.05 0.1 0.15 0.2 0.25 0.3
+> Success Attack Rate
+> (a) SkRHE ciphertexts 00.5 11.5 2
+> 10 4
+> 00.05 0.1 0.15 0.2 0.25 0.3
+> Success Attack Rate (b) PkRHE ciphertexts Figure 10. Success attack rate for adding uniformly random noise. We set
+> Tw= 5 .
+
+affecting the plaintext, we add noise that does not affect decryption, i.e., multiples of p. Let Ba denote the norm of the attack noise. Specifically, the coefficients of the noise e
+
+are uniformly sampled from the interval [−Ba, B a]. Given a ciphertext ct = ( c1, c2), the attacked ciphertext is c′ 
+
+> t
+
+=(c1 + pe, c2). We set the detection threshold to Tw = 5 and repeat the experiment 1000 times for each Ba to calculate the attack success rate. A watermark of 0 or 1 is randomly embedded for each trial; if the extracted watermark does not match the embedded one, the attack is considered successful. The results in Fig. 10 show that when the noise level is small, the impact on watermark extraction accuracy is negligible, indicating that ARWMark is robust to random noise to a certain extent. When Ba < 100 , the addition of random noise has almost no effect on watermark extraction. As Ba increases, the attack success rate gradually increases. However, larger Iw can be used to counteract stronger noise. Under the same noise level, a higher Iw leads to a lower attack success rate. Although ARWMark requires a larger 
+
+Iw when applied to PkRHE ciphertexts, the same overall trend is observed for both PkRHE and SkRHE ciphertexts as shown in Fig. 10(b). 
+
+6.1.5. Multi-Ciphertext Watermarking. Since the noise in PkRHE ciphertexts is relatively larger, we focus our discussion on PkRHE. In Fig. 11, we show the standard deviation of ρ for Iw = 10 and Iw = 100 . From Fig. 7(b), it can be seen that when Iw = 10 , the standard deviation of ρ is similar across different embedding cases. This indicates that the noise-reduction effect of multi-ciphertext watermarking is consistent across different embedding conditions. As the number of ciphertexts increases, the standard deviation of ρ
+
+decreases, reducing the interference of extraction noise on the watermark. For a larger Iw, the number of ciphertexts has a greater impact on the extracted ρ when embedding information, as shown in Fig. 11(b). 
+
+6.2. Evaluation for MRWMark 
+
+Due to the larger noise in PkRHE ciphertexts, we only consider the case where the embedding carrier is a SkRHE ciphertext. We set N = 2048 and p = 131 . During the experiments, plaintexts are sampled uniformly from the interval [0 , p ). The number of ciphertexts is set to m = 4 .0 10 20 30 40                           
+
+> Number of Ciphertexts
+> 00.2 0.4 0.6 0.8 11.2
+> Stdandard Deviation of (a) Iw= 10 010 20 30 40
+> Number of Ciphertexts
+> 00.05 0.1 0.15 0.2 0.25 0.3
+> Stdandard Deviation of (b) Iw= 100
+> Figure 11. Standard deviation of ρwith different number of ciphertexts. TABLE 2. TPR OF MRWM ARK WITH DIFFERENT INTENSITIES .
+> Iw24 26 28 30 32 34 TPR 0.172 0.652 0.885 0.975 0.994 1.000
+
+The TPR of watermark extraction is estimated through 1000 
+
+independent trials. 
+
+6.2.1. Correctness Verification. In Table 2, we present the TPR under different values of Iw. When Iw is small, the encryption noise may overlap with the watermark noise, thereby corrupting the watermark. As Iw increases, the TPR gradually improves. When Iw = 34 , the embedded watermark can be extracted perfectly. 
+
+6.2.2. Robustness to Addition Operations. We evaluate the robustness of MRWMark against homomorphic addi-tion by adding ciphertexts without embedded watermarks to watermarked ciphertexts. In Fig. 12(a), we present the experimental results. Adding additional ciphertexts increases the noise level; consequently, when Iw is small, the extracted TPR is relatively low. As the number of addition operations increases, Iw should be increased accordingly to maintain an acceptable TPR. 
+
+6.2.3. Resistance to Random Noise Attack. In Fig. 12(b), we present the impact of adding random noise. Similar to the attacks on ARWMark, the noise added here is ran-dom but does not affect decryption. The noise coefficients are uniformly sampled from [−Ba, B a]. When Be is low, watermark extraction is barely affected; however, as the noise increases, the watermark is increasingly impacted. As shown in Fig. 12(b), increasing Iw can resist stronger noise. Compared with ARWMark, the MRWMark watermark is more sensitive to noise. As the noise increases, the attack success rate against MRWMark rises rapidly. Therefore, MRWMark generally requires a higher Iw.
+
+6.2.4. Robustness to Multiplication Operations. For ho-momorphic multiplication, we multiply a watermarked ci-phertext by a ciphertext without a watermark. In addition, we consider the effect of the Resize operation. As shown in Table 3, maintaining watermark robustness under mul-tiplication operations requires a relatively large Iw, since multiplication introduces additional noise. Even without ap-40 45 50 55 60                        
+
+> 00.2 0.4 0.6 0.8 1
+> TPR  Add 1 ciphertext
+> Add 2 ciphertexts
+> (a) HE additions 510 15 20 25
+> 00.2 0.4 0.6 0.8 1
+> Success Attack Rate (b) Adding Noise Figure 12. Effect of addition operations on MRWMark. TABLE 3. TPR OF MRWM ARK WITH DIFFERENT INTENSITIES WHEN MULTIPLYING BY ONE CIPHERTEXT .No Resize Iw608477 695402 782327 TPR 0.867 0.992 1.000
+> Resize Iw78232780 86925312 95617843 TPR 0.966 0.992 1.000
+
+plying Resize , the watermark can be reliably extracted only when Iw ≥ 782327 .Since the Resize operation introduces further noise, a larger Iw is required to ensure correct watermark extraction. In the experiments, we set the parameter of Resize to 
+
+T = 65537 . The results show that the TPR continuously im-proves as Iw increases. When Iw = 782327 , perfect extrac-tion can be achieved without Resize , while for ciphertexts processed with Resize , perfect extraction is achieved when 
+
+Iw = 95617843 . Therefore, the use of Resize requires Iw to be approximately two orders of magnitude larger to maintain reliable extraction performance. 
+
+## 7. Conclusion 
+
+In this work, we introduce digital watermarking into the domain of HE to address practical challenges such as ciphertext source authentication, copyright ownership, and tracking of computation processes. Homomorphic ciphertext watermarking provides protection for HE ciphertexts from both the data provider’s and the evaluator’s perspectives, thereby extending the application scenarios of HE and facil-itating its practical deployment. We provide a formal defini-tion of homomorphic ciphertext watermarking and propose two concrete watermarking schemes for RLWE ciphertexts, demonstrating the feasibility of homomorphic ciphertext wa-termarking. However, the two proposed schemes have their limitations. ARWMark is not robust under homomorphic multiplication, whereas MRWMark has a relatively small embedding capacity. In future work, we aim to address these limitations and design more practical homomorphic cipher-text watermarking schemes. Additionally, we plan to explore broader application scenarios for homomorphic ciphertext watermarking to provide stronger security guarantees for various privacy-preserving computation tasks. References 
+
+[1] F. Armknecht, C. Boyd, C. Carr, K. Gjøsteen, A. J¨ aschke, C. A. Reuter, and M. Strand, “A guide to fully homomorphic encryption,” 
+
+Cryptology ePrint Archive , 2015. [2] C. H. Lee, K. H. Lim, and S. Eswaran, “A comprehensive survey on secure healthcare data processing with homomorphic encryption: attacks and defenses,” Discover Public Health , vol. 22, no. 1, p. 137, 2025. [3] P. Yanez and N. Yadav, “Homomorphic encryption for secure health-care artificial intelligence,” Discover Artificial Intelligence , 2026. [4] J. Moon, D. Yoo, X. Jiang, and M. Kim, “Thor: Secure transformer inference with homomorphic encryption,” in Proceedings of the 2025 ACM SIGSAC Conference on Computer and Communications Secu-rity , 2025, pp. 3765–3779. [5] L. De Castro, D. Escudero, A. Agrawal, A. Polychroniadou, and M. Veloso, “Encryptedllm: Privacy-preserving large language model inference via gpu-accelerated fully homomorphic encryption,” in 
+
+Forty-second International Conference on Machine Learning , 2025. [6] V. Rijmen and J. Daemen, “Advanced encryption standard,” Pro-ceedings of federal information processing standards publications, national institute of standards and technology , vol. 19, p. 22, 2001. [7] R. Challa, G. VijayaKumari, and B. Sunny, “Secure image processing using lwe based homomorphic encryption,” in 2015 IEEE Inter-national Conference on Electrical, Computer and Communication Technologies (ICECCT) . IEEE, 2015, pp. 1–6. [8] H. Yao, C. Wang, B. Hai, and S. Zhu, “Homomorphic hash and blockchain based authentication key exchange protocol for strangers,” in 2018 Sixth International Conference on Advanced Cloud and Big Data (CBD) . IEEE, 2018, pp. 243–248. [9] S. Feng, S. Xu, and L. F. Zhang, “Multi-key homomorphic macs with efficient verification for quadratic arithmetic circuits,” in Proceedings of the 2022 ACM on Asia Conference on Computer and Communi-cations Security , 2022, pp. 17–27. [10] J. Mono and T. G¨ uneysu, “A new perspective on key switching for bgv-like schemes,” Cryptology ePrint Archive , 2023. [11] J. H. Cheon, A. Kim, M. Kim, and Y. Song, “Homomorphic en-cryption for arithmetic of approximate numbers,” in Advances in Cryptology–ASIACRYPT 2017: 23rd International Conference on the Theory and Applications of Cryptology and Information Security, Hong Kong, China, December 3-7, 2017, Proceedings, Part I 23 .Springer, 2017, pp. 409–437. [12] B. B¨ unz, J. Bootle, D. Boneh, A. Poelstra, P. Wuille, and G. Maxwell, “Bulletproofs: Short proofs for confidential transactions and more,” in 2018 IEEE symposium on security and privacy (SP) . IEEE, 2018, pp. 315–334. [13] K. Yang and X. Wang, “Non-interactive zero-knowledge proofs to multiple verifiers,” in International Conference on the Theory and Application of Cryptology and Information Security . Springer, 2022, pp. 517–546. [14] I. Cox, M. Miller, J. Bloom, and C. Honsinger, “Digital watermark-ing,” Journal of Electronic Imaging , vol. 11, no. 3, pp. 414–414, 2002. [15] F. Peng, W. Jiang, M. Long, and K. Li, “A reversible watermarking for 2d engineering graphics based on difference expansion with adaptive interval partitioning,” IEEE Transactions on Dependable and Secure Computing , 2022. [16] G. Coatrieux, W. Pan, N. Cuppens-Boulahia, F. Cuppens, and C. Roux, “Reversible watermarking based on invariant image clas-sification and dynamic histogram shifting,” IEEE Transactions on information forensics and security , vol. 8, no. 1, pp. 111–120, 2012. [17] J. Katz and Y. Lindell, “Introduction to modern cryptography, 2nd edn., 598 pp,” 2015. [18] V. Lyubashevsky, C. Peikert, and O. Regev, “On ideal lattices and learning with errors over rings,” in Advances in Cryptology– EUROCRYPT 2010: 29th Annual International Conference on the Theory and Applications of Cryptographic Techniques, French Riv-iera, May 30–June 3, 2010. Proceedings 29 . Springer, 2010, pp. 1–23. [19] Z. Brakerski, C. Gentry, and V. Vaikuntanathan, “(leveled) fully homomorphic encryption without bootstrapping,” ACM Transactions on Computation Theory (TOCT) , vol. 6, no. 3, pp. 1–36, 2014. [20] D. Micciancio and S. Goldwasser, “Shortest vector problem,” in Com-plexity of Lattice Problems: A Cryptographic Perspective . Springer, 2002, pp. 69–90. [21] M. Albrecht, M. Chase, H. Chen, J. Ding, S. Goldwasser, S. Gor-bunov, S. Halevi, J. Hoffstein, K. Laine, K. Lauter et al. , “Homomor-phic encryption standard,” Protecting privacy through homomorphic encryption , pp. 31–62, 2021. [22] F. Hartung and M. Kutter, “Multimedia watermarking techniques,” 
+
+Proceedings of the IEEE , vol. 87, no. 7, pp. 1079–1107, 1999. [23] W. Wan, J. Wang, Y. Zhang, J. Li, H. Yu, and J. Sun, “A compre-hensive survey on robust image watermarking,” Neurocomputing , vol. 488, pp. 226–247, 2022. [24] R. Hu and S. Xiang, “Cover-lossless robust image watermarking against geometric deformations,” IEEE Transactions on Image Pro-cessing , vol. 30, pp. 318–331, 2020. [25] W. Zhang, R. Chen, and B. Wang, “A robust watermarking algorithm against jpeg compression based on multiscale autoencoder,” IET Image Processing , vol. 18, no. 2, pp. 455–469, 2024. [26] B. Chen, Y. Wu, G. Coatrieux, X. Chen, and Y. Zheng, “Jsnet: a simulation network of jpeg lossy compression and restoration for robust image watermarking against jpeg attack,” Computer Vision and Image Understanding , vol. 197, p. 103015, 2020. [27] M. T. Ahvanooey, Q. Li, X. Zhu, M. Alazab, and J. Zhang, “Anitw: A novel intelligent text watermarking technique for forensic identifica-tion of spurious information on social media,” Computers & Security ,vol. 90, p. 101702, 2020. [28] G. Zhang, L. Zheng, Z. Su, Y. Zeng, and G. Wang, “M-sequences and sliding window based audio watermarking robust against large-scale cropping attacks,” IEEE Transactions on Information Forensics and Security , vol. 18, pp. 1182–1195, 2023. [29] X. Luo, Y. Li, H. Chang, C. Liu, P. Milanfar, and F. Yang, “Dv-mark: a deep multiscale framework for video watermarking,” IEEE Transactions on Image Processing , 2023. [30] Y. Uchida, Y. Nagai, S. Sakazawa, and S. Satoh, “Embedding water-marks into deep neural networks,” in Proceedings of the 2017 ACM on international conference on multimedia retrieval , 2017, pp. 269– 277. [31] J. Zhang, D. Chen, J. Liao, W. Zhang, H. Feng, G. Hua, and N. Yu, “Deep model intellectual property protection via deep watermarking,” 
+
+IEEE Transactions on Pattern Analysis and Machine Intelligence ,vol. 44, no. 8, pp. 4005–4020, 2021. [32] T. Yasui, T. Tanaka, A. Malik, and M. Kuribayashi, “Coded dnn watermark: Robustness against pruning models using constant weight code,” Journal of Imaging , vol. 8, no. 6, p. 152, 2022. [33] B. Barak, O. Goldreich, R. Impagliazzo, S. Rudich, A. Sahai, S. Vad-han, and K. Yang, “On the (im) possibility of obfuscating programs,” 
+
+Journal of the ACM (JACM) , vol. 59, no. 2, pp. 1–48, 2012. [34] N. Hopper, D. Molnar, and D. Wagner, “From weak to strong water-marking,” in Theory of Cryptography: 4th Theory of Cryptography Conference, TCC 2007, Amsterdam, The Netherlands, February 21-24, 2007. Proceedings 4 . Springer, 2007, pp. 362–382. [35] A. Cohen, J. Holmgren, R. Nishimaki, V. Vaikuntanathan, and D. Wichs, “Watermarking cryptographic capabilities,” in Proceedings of the forty-eighth annual ACM symposium on Theory of Computing ,2016, pp. 1115–1127. [36] R. Goyal, S. Kim, N. Manohar, B. Waters, and D. J. Wu, “Watermark-ing public-key cryptographic primitives,” in Advances in Cryptology– CRYPTO 2019: 39th Annual International Cryptology Conference, Santa Barbara, CA, USA, August 18–22, 2019, Proceedings, Part III 39 . Springer, 2019, pp. 367–398. [37] R. Nishimaki, “Equipping public-key cryptographic primitives with watermarking (or: a hole is to watermark),” in Theory of Cryptogra-phy: 18th International Conference, TCC 2020, Durham, NC, USA, November 16–19, 2020, Proceedings, Part I 18 . Springer, 2020, pp. 179–209. [38] F. Kitagawa and R. Nishimaki, “Watermarking prfs and pke against quantum adversaries,” Journal of Cryptology , vol. 37, no. 3, p. 22, 2024. [39] A. Acar, H. Aksu, A. S. Uluagac, and M. Conti, “A survey on ho-momorphic encryption schemes: Theory and implementation,” ACM Computing Surveys (Csur) , vol. 51, no. 4, pp. 1–35, 2018. [40] I. J. Cox, J. Kilian, F. T. Leighton, and T. Shamoon, “Secure spread spectrum watermarking for multimedia,” IEEE transactions on image processing , vol. 6, no. 12, pp. 1673–1687, 1997. [41] J. Neyman and E. S. Pearson, “Ix. on the problem of the most efficient tests of statistical hypotheses,” Philosophical Transactions of the Royal Society of London. Series A, Containing Papers of a Mathematical or Physical Character , vol. 231, no. 694-706, pp. 289– 337, 1933. [42] M. L. Miller and J. A. Bloom, “Computing the probability of false watermark detection,” in International Workshop on Information Hid-ing . Springer, 1999, pp. 146–158. [43] S. Kim and D. J. Wu, “Watermarking cryptographic functionali-ties from standard lattice assumptions,” in Advances in Cryptology– CRYPTO 2017: 37th Annual International Cryptology Conference, Santa Barbara, CA, USA, August 20–24, 2017, Proceedings, Part I 37 . Springer, 2017, pp. 503–536. [44] S. J. Leon, L. De Pillis, and L. G. De Pillis, Linear algebra with applications . Pearson Prentice Hall Upper Saddle River, NJ, 2006. [45] J. E. Cohen, “Markov’s inequality and chebyshev’s inequality for tail probabilities: A sharper image,” The American Statistician , vol. 69, no. 1, pp. 5–7, 2015. 
+
+## Appendix A. Additional Description of RHE 
+
+A.1. PkRHE of RHE 
+
+The main difference between PkRHE and SkRHE is that PkRHE requires generating a public key from the secret key. Encryption is then performed using the public key instead of the secret key. The remaining procedures of PkRHE are identical to those of SkRHE.  
+
+> •
+
+PkGen (sk ): Sample a uniformly from Rq and e
+
+from error distribution χe. Compute b = a · s + pe.Output the public key pk = ( b, −a). The public key is actually a SkRHE ciphertext of zero.  
+
+> •
+
+PkEnc (pk , m): Let pk = ( k1, k2). Sample u ran-domly from secret key distribution χs. Sample e1
+
+and e2 from error distribution χe. Output the ci-phertext (k1 · u + pe1 + m, k2 · u + pe2).Next, we extend RHE to support a bounded number of homomorphic multiplications.  
+
+> •
+
+EvalMult (ct, c ′
+
+> t
+
+): Let ct = ( c1, c2) be the ciphertext of m1 and c′ 
+
+> t
+
+= ( c′
+
+> 1
+
+, c′
+
+> 2
+
+) be the ciphertext of m2.Output the ciphertext (c1 ·c′
+
+> 1
+
+, c1 ·c′ 
+
+> 2
+
++c′ 
+
+> 1
+
+·c2, c2 ·c′
+
+> 2
+
+),which is a ciphertext of the product of m1 and m2. 
+
+> •
+
+Dec3 (sk , c t): Let ct = (d1, d2, d3). Output the plaintext m = ( d1 + s · d2 + s2 · d3) mod p.The relinearization technique proposed in [19] can be applied to reduce the size of the ciphertext after multipli-cation to the same size as the original ciphertext, allowing decryption using Dec . As long as the noise remains suffi-ciently small, multiple homomorphic multiplications can be supported.  
+
+> •
+
+EvkGen (sk ): Let T be a positive integer, generate 
+
+⌊log T q⌋ + 1 ciphertexts. Sample ai uniformly from 
+
+Rq , sample ei from error distribution χe, and com-pute ct,i = ( T iai · s + pei + T is2, −T iai), where 
+
+i = 1 , 2, · · · , ⌊log T q⌋+1 . Output the evaluation key 
+
+evk = ( ct, 0, c t, 1, · · · , c t, ⌊log T q⌋+1 ). 
+
+> •
+
+Resize (evk , (d1, d2, d3)) : Decompose d3 into its base-T representation: d3 = P⌊log T q⌋+1  
+
+> i=0
+
+T id3,i ,where the coefficients of d3,i have absolute values less than T . Compute c′ 
+
+> 1
+
+= d1 + P⌊log T q⌋+1  
+
+> i=0
+
+d3,i ·
+
+ct,i [1] , c′ 
+
+> 2
+
+= d2 + P⌊log T q⌋+1  
+
+> i=0
+
+d3,i · ct,i [2] . Output the new ciphertext (c′
+
+> 1
+
+, c′
+
+> 2
+
+).
+
+A.2. Security of RHE 
+
+We focus on security against chosen-plaintext attacks (CPA security). We therefore first review the corresponding definition below [17]. 
+
+Definition A.1. Assume that b is sampled uniformly at ran-dom from {0, 1}. Let ct denote a ciphertext of mb generated by an encryption scheme. The challenger gives ct to an adversary. The adversary is allowed to query the encryption oracle on any plaintext. If every probabilistic polynomial-time adversary can correctly identify b with probability at most 1/2+ ϵ(λ), where ϵ(λ) is negligible, then the encryption scheme is CPA-secure. 
+
+The security of RHE is based on the hardness of the RLWE problem. We state the following theorem. 
+
+Theorem 8. The encryption scheme RHE defined in sec-tion 2.3 is CPA-secure under the hardness assumption of the RLWE problem. 
+
+Our proof consists of two steps. We first show that SkRHE is CPA-secure. Based on this result, we then prove that PkRHE is CPA-secure. The proof of the security of SkRHE is given as follows: 
+
+Proof. Let ct, 0 = SkEnc (sk , m0) = ( a0 ·s+pe0 +m0, −a0)
+
+and ct, 1 = SkEnc (sk , m1) = ( a1 · s + pe1 + m1, −a1). Let 
+
+(br , ar ) be uniformly random. Since gcd( p, q ) = 1, the inverse p−1 exists modulo 
+
+q and is a constant. Therefore, a0 and p−1a0 follow the same distribution χu. Because of the hardness of RLWE, the two pairs (p−1a0 · s + e, −p−1a) and (br , ar ) are indistinguishable. Because p and m0 are constants, (a0 ·
+
+s + pe0 + m0, −a0) and (br , ar ) are indistinguishable. That is to say ct, 0 is indistinguishable from (br , ar ). The same argument shows that ct, 1 is indistinguishable from (br , ar ).Thus, ct, 0 and ct, 1 are indistinguishable, which means the encryption scheme SkRHE defined in section 2.3 is CPA-secure. We next prove that PkRHE is CPA-secure: 
+
+Proof. The public key pk is a ciphertext of SkRHE. Because SkRHE is CPA-secure, the public key pk is indistinguishable from uniformly randomly sampled (br , ar ). Suppose that 
+
+ct, 0 = PkEnc (pk , m0) = ( k0 · u + pe1 + m0, k1 · u + pe2),where u ∼ χs and e1, e2 ∼ χe. Actually, the public key 
+
+pk and ct, 0 are two ciphertexts of SkRHE. (u + pe1 +
+
+m, −k0),(k1 · u + pe2, −k1). Hence, we have ct, 0 is in-distinguishable from (br , ar ). Let ct, 1 = PkEnc (pk , m1).We can prove that ct, 1 is indistinguishable from (br , ar )
+
+following the same steps. Thus, the two ciphertexts ct, 0
+
+and ct, 1 are indistinguishable. Hence, the encryption scheme PkRHE defined in section 2.3 is CPA-secure. 
+
+## Appendix B. Lemmas 
+
+Lemma 1. Let x ∈ Rq , y ∈ Rq . Then ∥x·y∥ ≤ N ∥x∥·∥ y∥.Proof. Multiplication in Rq is performed modulo the poly-nomial xN + 1 , hence xN = −1 in Rq .Let z = x·y. According to the arithmetic in Rq , the i-th coefficient of z can be written as z[i] = P 
+
+> j+k=i
+
+x[j]y[k] −P  
+
+> j+k=N+i
+
+x[j]y[k], where i, j, k ∈ { 0, 1, . . . , N − 1}.For a fixed i, the equation j + k = i admits i + 1 valid pairs (j, k ). Since j, k < N , the equation j + k = N + i
+
+admits N − i − 1 valid pairs, namely j ∈ { i + 1 , . . . , N −
+
+1}. Therefore, each coefficient z[i] is a sum of exactly N
+
+products of the form x[j]y[k].It follows that |z[i]| ≤ N · max j |x[j]| · max k |y[k]|.Consequently, ∥z∥ ≤ N ∥x∥ · ∥ y∥.
+
+Lemma 2. Let x and y be two independent random vari-ables. If E(x) = E(y) = 0 , then E(xy ) = 0 , D(xy ) = 
+
+D(x) · D(y).Proof. Since x and y are independent, we have E(xy ) = 
+
+E(x) · E(y) = 0. Moreover, x2 and y2 are also inde-pendent, so E(x2y2) = E(x2) · E(y2). The variance of 
+
+xy is: D(xy ) = E(x2y2) − E(xy )2 = E(x2) · E(y2) = (E(x2) − 0) · (E(y2) − 0) = D(x) · D(y).
+
+Lemma 3. Let x, y ∼ χe, and assume that x and y are independent. Then E(⟨x, y⟩) = 0 and D(⟨x, y⟩) = N σ 4.Proof. The components x[i] and y[i] are mutually indepen-dent, with zero mean and variance σ2. By lemma 2, we have E(x[i] · y[i]) = 0 and D(x[i] · y[i]) = σ4. Hence, we have E(⟨x, y⟩) = E (P 
+
+> i
+
+x[i] · y[i]) = P 
+
+> i
+
+E(x[i] · y[i]) = 0 
+
+and D(⟨x, y⟩) = D (P 
+
+> i
+
+x[i] · y[i]) = P 
+
+> i
+
+D(x[i] · y[i]) = 
+
+N σ 4.
+
+Lemma 4. Let x ∼ χe. Then E(⟨x, x⟩) = N σ 2 and 
+
+D(⟨x, x⟩) = 2 N σ 4.Proof. Each component x[i] ∼ N (0 , σ 2), hence x[i] 
+
+> σ
+
+fol-lows the standard normal distribution. Therefore, ⟨ x 
+
+> σ
+
+, x 
+
+> σ
+
+⟩
+
+follows a chi-square distribution with N degrees of freedom. We have E(⟨ x 
+
+> σ
+
+, x 
+
+> σ
+
+⟩) = N and D(⟨ x 
+
+> σ
+
+, x 
+
+> σ
+
+⟩) = 2 N . Thus, 
+
+E(⟨x, x⟩) = E(σ2 · ⟨ x 
+
+> σ
+
+, x 
+
+> σ
+
+⟩) = σ2 · E(⟨ x 
+
+> σ
+
+, x 
+
+> σ
+
+⟩) = N σ 2.
+
+Similarly, D(⟨x, x⟩) = D(σ2 · ⟨ x 
+
+> σ
+
+, x 
+
+> σ
+
+⟩) = σ4 · D(⟨ x 
+
+> σ
+
+, x 
+
+> σ
+
+⟩) = 2N σ 4.
+
+Lemma 5. Let x, y be independent, and x, z be independent. If E(x) = E(y) = 0 , then Cov (xy, yz ) = 0 .Proof. Since x and y are independent, we have E(xy ) = 
+
+E(x) · E(y) = 0 . Moreover, since x and z are independent, 
+
+E(xy [yz − E(yz )]) = E(x) · E(y[yz − E(yz )]) = 0 . Hence, 
+
+Cov (xy, yz ) = E([ xy − E(xy )] · [yz − E(yz )]) = E(xy ·
+
+[yz − E(yz )]) = E(x) · E(y · [yz − E(yz )]) = 0 .
+
+Lemma 6. Let x ∼ χs and y ∼ χe. Let z = x · y. Then 
+
+E(z[i]) = 0 and D(z[i]) = 2N σ 2 
+
+> 3
+
+.Proof. The polynomial modulus of Rq is xN + 1 , which implies that xN = −1 in Rq . Hence, z[i] = P 
+
+> j+k=i
+
+x[j] ·
+
+y[k] − P 
+
+> j+k=i+N
+
+x[j] · y[k]. Since the ciphertext modulus 
+
+q is much larger than Be, modular reduction modulo q
+
+can be ignored in the analysis. Because x[j] and y[k] are independent, by lemma 2, we have E(x[j] · y[k]) = 0 and 
+
+D(x[j] · y[k]) = 2σ2 
+
+> 3
+
+. Hence, E(z[i]) = E(P 
+
+> j+k=i
+
+x[j] ·
+
+y[k] − P 
+
+> j+k=i+N
+
+x[j] · y[k]) = P 
+
+> j+k=i
+
+E(x[j] · y[k]) −P 
+
+> j+k=i+N
+
+E(x[j] · y[k]) = 0 . By lemma 5, when j +
+
+k̸ = j′ + k′, Cov (x[j] · y[k], x[j′] · y[k′]) = 0 . Hence, 
+
+D(z[i]) = D(P 
+
+> j+k=i
+
+x[j] · y[k] − P 
+
+> j+k=i+N
+
+x[j] · y[k]) = P 
+
+> j+k=i
+
+D(x[j] · y[k]) + P 
+
+> j+k=i+N
+
+D(x[j] · y[k]) = 
+
+> 2N σ 2
+> 3
+
+.
+
+## Appendix C. Analysis of ARWMark for PkRHE 
+
+C.1. Fidelity 
+
+For ciphertext watermark embedding in PkRHE, we state the following theorem: 
+
+Theorem 9. When the watermark carrier is a ciphertext of PkRHE, and the embedding intensity satisfies Iw < q 
+
+> 2pB e
+
+−
+
+2N − 2, the homomorphic ciphertext watermarking scheme ARWMark described in section 4.1 achieves fidelity. Proof. Let a ciphertext of PkRHE be ct = ( k1 · u + pe1 +
+
+m, k2 · u + pe2), where u ∼ χu, e1 ∼ χe, and e2 ∼ χe.After embedding the watermark we using ARWMark, the resulting ciphertext is c′ 
+
+> t
+
+= ( k1 ·u+pe1 +m+pw eIwkw, k2 ·
+
+u+pe2). Then, the inner product between c′ 
+
+> t
+
+and sk is given as follows: 
+
+⟨sk , c ′
+
+> t
+
+⟩ = k1 · u + pe1 + m + pw eIwkw + k2 · u · s
+
++ pe2 · s
+
+= ( ak · s + pek) · u + pe1 + m + pw eIwkw
+
+− ak · u · s + pe2 · s
+
+= pek · u + pe1 + pw eIwkw + pe2 · s + m.
+
+(10) By lemma 1, we have ∥ek · u∥ ≤ N ∥ek∥ · ∥ u∥. Since 
+
+u ∼ χs and s ∼ χs, it follows that ∥u∥ ≤ 1 and ∥s∥ ≤ 1.Therefore, ∥ek · u∥ ≤ N ∥ek∥, and ∥e2 · s∥ ≤ N ∥ek∥.Hence, we obtain the following inequality: 
+
+∥⟨ sk , c ′
+
+> t
+
+⟩∥ = ∥pek · u + pe1 + pw eIwkw + pe2 · s + m∥≤ pN ∥ek∥ + p∥e1∥ + pI w∥kw∥ + pN ∥e2∥ + p
+
+≤ 2pN B e + pI wBe + 2 pB e.
+
+When Iw < q 
+
+> 2pB e
+
+− 2N − 2, we have ∥⟨ sk , c ′
+
+> t
+
+⟩∥ < q 
+
+> 2
+
+, which implies correct decryption. The noise introduced by watermark embedding is mainly affected by p, q, Iw, and Be. Typically, p ≪ q, which provides a certain amount of redundancy for watermark embedding and allows Iw to take relatively large values. Furthermore, based on the above analysis, we observe that ciphertexts of SkRHE provide a larger embedding space for watermarking than ciphertexts of PkRHE. 
+
+C.2. Correctness 
+
+Theorem 10. Let a ciphertext of PkRHE be ct = ( k1 ·
+
+u + pe1 + m, k2 · u + pe2), where u ∼ χu and e1, e2 ∼
+
+χe. After embedding the watermark into ct, the expectation of the correlation value ρpk is weσ2, and the variance is 
+
+> 4σ4
+> 3I2
+> w
+
++ σ4
+
+> N I 2
+> w
+
++ 2w2  
+
+> eσ4
+> N
+
+.Proof. According to Eq. (10) and Eq. (2), the correlation value extracted from the ciphertext ct is given by 
+
+ρpk = 1
+
+N I w
+
+· ⟨ ek · u + e1 + weIwkw + e2 · s, kw⟩.
+
+By lemma 6, the expectations of ek · u and e2 · s are both 0, and their variances are both 2N σ 2 
+
+> 3
+
+. Therefore, we have 
+
+E(ρpk ) = E( 1
+
+N I w
+
+· ⟨ ek · u + e1 + weIwkw + e2 · s, kw⟩)= 1
+
+N I w
+
+(E(⟨ek · u, kw⟩) + E(⟨e2 · s, kw⟩)) + E(ρsk )= weσ2,
+
+and 
+
+D(ρpk ) = D( 1
+
+N I w
+
+· ⟨ ek · u + e1 + weIwkw + e2 · s, kw⟩)= 1
+
+N 2I2
+
+> w
+
+(D(⟨ek · u, kw⟩) + D(⟨e2 · s, kw⟩)) + D(ρsk )= 1
+
+N 2I2
+
+> w
+
+( 2N 2σ4
+
+3 + 2N 2σ4
+
+3 ) + σ4
+
+N I 2
+
+> w
+
++ 2w2 
+
+> e
+
+σ4
+
+N
+
+= 4σ4
+
+3I2
+
+> w
+
++ σ4
+
+N I 2
+
+> w
+
++ 2w2 
+
+> e
+
+σ4
+
+N .
+
+Based on the above analysis, we observe that the vari-ance of the correlation value in PkRHE is significantly larger than that in SkRHE. This implies that, to make the extracted correlation values more concentrated, PkRHE requires a larger embedding intensity Iw.
+
+C.3. Robustness 
+
+Theorem 11. Let the PkRHE ciphertext ct, 0 = ( k1 · u0 +
+
+pe1 + m0 + pw eIwkw, k2 · u0 + pe2) be the ciphertext embedded with watermark we with embedding key kw, and let ct, 1 = ( k1 · u1 + pe3 + m1 + pw ′
+
+> e
+
+I′
+
+> w
+
+k′
+
+> w
+
+, k2 · u1 + pe4) be the ciphertext embedded with watermark w′ 
+
+> e
+
+with embedding key k′
+
+> w
+
+. The embedding key kw is independent of k′
+
+> w
+
+. Let 
+
+ρpk denote the correlation value of ct, 0 and ρ′ 
+
+> pk
+
+denote the correlation value computed from the ciphertext ct, 0 + ct, 1
+
+when taking kw as extracting key. Then, E(ρpk ) = E(ρ′
+
+> pk
+
+),
+
+and D(ρ′
+
+> pk
+
+) = σ4
+
+> N I 2
+> w
+
++ w′2  
+
+> eI′2
+> wσ4
+> N I 2
+> w
+
++ 4σ4
+
+> 3I2
+> w
+
++ D(ρpk ).
+
+Proof. After extracting the noise from ct, 0 + ct, 1 using Eq. (2), we obtain 
+
+ρ = 1
+
+N I w
+
+· ⟨ ek · u0 + e1 + weIwkw + e2 · s
+
++ ek · u1 + e3 + w′
+
+> e
+
+I′
+
+> w
+
+k′ 
+
+> w
+
++ e4 · s, kw⟩.
+
+Because k′ 
+
+> w
+
+and kw are independent and the have zero expectation, we have 
+
+E(ρ′
+
+> pk
+
+) = 1
+
+N I w
+
+E(⟨ek · u0 + e1 + weIwkw + e2 · s
+
++ ek · u1 + e3 + w′
+
+> e
+
+I′
+
+> w
+
+k′ 
+
+> w
+
++ e4 · s, kw⟩)= 1
+
+N I w
+
+E(⟨ek · u1 + e3 + w′
+
+> e
+
+I′
+
+> w
+
+k′ 
+
+> w
+
++ e4 · s, kw⟩)+ E(ρpk )= E(ρpk ),
+
+and 
+
+D(ρ′
+
+> pk
+
+) = 1
+
+N 2I2
+
+> w
+
+D(⟨ek · u0 + e1 + weIwkw + e2 · s
+
++ ek · u1 + e3 + w′
+
+> e
+
+I′
+
+> w
+
+k′ 
+
+> w
+
++ e4 · s, kw⟩)= 1
+
+N 2I2
+
+> w
+
+D(⟨ek · u1 + e3 + w′
+
+> e
+
+I′
+
+> w
+
+k′ 
+
+> w
+
++ e4 · s, kw⟩)+ D(ρpk )= σ4
+
+N I 2
+
+> w
+
++ w′2 
+
+> e
+
+I′2 
+
+> w
+
+σ4
+
+N I 2
+
+> w
+
++ 4σ4
+
+3I2
+
+> w
+
++ D(ρpk ).
+
+Therefore, for ARWMark watermarked PkRHE cipher-texts, adding another ciphertext embedded with watermark 
+
+w′ 
+
+> e
+
+increases the variance of ρ by σ4
+
+> N I 2
+> w
+
++ w′2  
+
+> eI′2
+> wσ4
+> N I 2
+> w
+
++ 4σ4
+
+> 3I2
+> w
+
+. As the variance increases, the distributions of ρ corresponding to different values of we are more likely to overlap, which leads to a lower TPR. However, the robustness of the watermark can be improved by increasing the dimension 
+
+N and the embedding intensity Iw.
