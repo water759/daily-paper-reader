@@ -1,0 +1,410 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-30T20:35:39.277750+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 3,
+    "deep_cap": 6,
+    "deep_selected": 3,
+    "quick_candidates": 7,
+    "quick_skim_target": 11,
+    "quick_selected": 7
+  },
+  "deep_dive": [
+    {
+      "id": "2607.22094v2",
+      "source": "arxiv",
+      "title": "Transforming Keystroke Noise to Text: Self-Supervised Acoustic Eavesdropping Attacks on Keyboards",
+      "abstract": "We present a self-supervised acoustic eavesdropping attack that reconstructs typed text solely from keystroke sounds, without requiring labeled data for the target device. The proposed attack enables stealthy eavesdropping in two real-world scenarios-physical spaces (public and semi-public) and online meetings. Our method combines unsupervised acoustic clustering with Transformer-based language model inference and iterative self-training, enabling stable character inference under highly uncertain acoustic-to-character mappings. We demonstrate that the proposed method achieves over 99% reconstruction accuracy with only 100-150 observed keystrokes under a close-proximity recording setup using a smartphone placed near the target device, significantly outperforming prior unsupervised baselines in low-data regimes. We further evaluate robustness across multiple laptop platforms and in realistic acquisition channels, including distance recording from approximately 3 meters away on the same desk, through-the-wall eavesdropping with a contact microphone, and background keyboard noise in online conferencing systems. Across these scenarios, the proposed method achieves high reconstruction accuracy (often exceeding 90%) with approximately 150-250 observed keystrokes. These results indicate that accurate text reconstruction from keystroke sounds is feasible in practice under an audio-only setting, even with limited observed keystrokes and without requiring device-specific labeled data, highlighting a realistic and previously underestimated privacy risk.",
+      "authors": [
+        "Atsunori Okada",
+        "Akira Ito",
+        "Rei Ueno",
+        "Yuichi Hayashi",
+        "Naofumi Homma"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.SD"
+      ],
+      "published": "2026-07-24T08:43:16+00:00",
+      "link": "https://arxiv.org/pdf/2607.22094v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "acoustic side-channel attack on keystrokes",
+      "llm_evidence_cn": "针对键盘的声学侧信道攻击",
+      "llm_evidence": "针对键盘的声学侧信道攻击",
+      "canonical_evidence": "针对键盘的声学侧信道攻击",
+      "llm_tldr_en": "A self-supervised acoustic eavesdropping attack reconstructs typed text from keystroke sounds without labeled data, achieving over 99% accuracy with only 100-150 keystrokes, posing a significant AI security threat.",
+      "llm_tldr_cn": "现有声学键盘窃听攻击需要大量标记数据。本文提出一种自监督方法，结合无监督声学聚类和Transformer语言模型，无需目标设备标签即可重建键入文本。在近场录音下，仅需100-150次按键即可达到99%以上的重构准确率，对物理和在线会议场景构成严重威胁。",
+      "llm_tldr": "现有声学键盘窃听攻击需要大量标记数据。本文提出一种自监督方法，结合无监督声学聚类和Transformer语言模型，无需目标设备标签即可重建键入文本。在近场录音下，仅需100-150次按键即可达到99%以上的重构准确率，对物理和在线会议场景构成严重威胁。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.26390v1",
+      "source": "arxiv",
+      "title": "Impossible to hide secret ...: Uncovering Security and Privacy Issues in LLM-native IDEs",
+      "abstract": "LLM-native IDEs (Integrated Development Environments), aka LIDEs, are designed from the ground up to work with Large Language Models (LLMs). LIDEs have found remarkable success in Software Engineering (SE) tasks such as coding, debugging, and program comprehension. LIDEs are software systems, and, like any system, they can exhibit vulnerabilities. In this paper, we study the security and privacy issues that developers reported while using popular LIDEs in their development tasks. We collected 1.1M posts from 29 popular subreddits related to LIDEs. We identified 446 posts and analyzed over 6K comments to the posts that discussed security and privacy issues in almost all popular LIDEs, such as Cursor, Copilot, Codex, etc. Using a mix of qualitative and quantitative methods, we constructed a taxonomy of the reported security and privacy issues. Our results show that most issues in LIDEs stem from system-level design choices, rather than the underlying LLMs, such as user data access, unchecked autonomous actions, etc. To overcome these issues, developers frequently relied on external safeguards like code sandboxing and manual reviewing, highlighting prevalent mistrust among developers about LIDEs. We share lessons from our study to support future design of secure and privacy-aware LIDEs.",
+      "authors": [
+        "Mostafijur Rahman Akhond",
+        "Md Afif Al Mamun",
+        "Gias Uddin",
+        "Song Wang"
+      ],
+      "primary_category": "cs.SE",
+      "categories": [
+        "cs.SE"
+      ],
+      "published": "2026-07-29T01:49:17+00:00",
+      "link": "https://arxiv.org/pdf/2607.26390v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "security and privacy issues in LLM-native IDEs",
+      "llm_evidence_cn": "LLM原生集成开发环境中的安全与隐私问题",
+      "llm_evidence": "LLM原生集成开发环境中的安全与隐私问题",
+      "canonical_evidence": "LLM原生集成开发环境中的安全与隐私问题",
+      "llm_tldr_en": "Analyzes 1.1M Reddit posts to uncover security/privacy vulnerabilities in LIDEs like Cursor and Copilot, identifying key issues.",
+      "llm_tldr_cn": "LLM原生IDE（如Cursor、Copilot）广泛使用但存在安全隐患。本文从1.1M条Reddit帖子中筛选出446篇相关讨论，分析超过6000条评论，系统揭示LIDEs中的安全与隐私问题，包括代码泄露、凭据暴露等。研究为开发者和用户提供了防范建议。",
+      "llm_tldr": "LLM原生IDE（如Cursor、Copilot）广泛使用但存在安全隐患。本文从1.1M条Reddit帖子中筛选出446篇相关讨论，分析超过6000条评论，系统揭示LIDEs中的安全与隐私问题，包括代码泄露、凭据暴露等。研究为开发者和用户提供了防范建议。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.26791v1",
+      "source": "arxiv",
+      "title": "SecRespond: Benchmarking AI Agents for Real-World Post-Compromise Incident Response",
+      "abstract": "Large Language Model (LLM) agents are increasingly adopted in real-world security operations with access to host artifacts and command-line interfaces (CLIs), making it critical to thoroughly assess their security capabilities. However, existing cybersecurity benchmarks focus on pre-compromise settings where agents are placed in a clean and idealized environment before an attack occurs. This leaves the post-compromise setting underexplored. To address this gap, we introduce SecRespond, the first benchmark for evaluating LLM agents on the post-compromise incident-response workflow. Given a forensic disk snapshot of a compromised host together with the alerts, vulnerability scans, and baseline checks reported by a host security product, agents are required to produce forensic reports on intrusions, baseline risks, and vulnerability risks, together with a remediation plan. We instantiate this task across 10 cyber ranges, each constructed from a distinct compromised cloud host, spanning 4 entry-point types, 21 ATT&CK techniques, and 5 operating systems. We evaluate 23 frontier LLMs on the OpenCode agent harness. Experimental results show that although current agents can reliably uncover the problems exposed by alerts, they struggle to proactively investigate the disk for silent intrusions and to produce comprehensive, verified remediation plans, with no model achieving complete detection and remediation on any single range. This reveals a fundamental bottleneck in building agents for real-world incident response. The benchmark is publicly available at https://github.com/Alibaba-NLP/qqr/tree/main/data/secrespond.",
+      "authors": [
+        "Lehan Wang",
+        "Boli Chen",
+        "Ruixue Ding",
+        "Pengjun Xie",
+        "Jinwei Huang",
+        "Zhendong Liu",
+        "Shuo Wang",
+        "Tao Lei",
+        "Xin Ouyang",
+        "Xiaomeng Li"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "published": "2026-07-29T11:32:23+00:00",
+      "link": "https://arxiv.org/pdf/2607.26791v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Benchmark for LLM agents in post-compromise incident response",
+      "llm_evidence_cn": "LLM智能体在后妥协事件响应中的基准测试",
+      "llm_evidence": "LLM智能体在后妥协事件响应中的基准测试",
+      "canonical_evidence": "LLM智能体在后妥协事件响应中的基准测试",
+      "llm_tldr_en": "SecRespond benchmark evaluates LLM agents on post-compromise incident response using forensic disk snapshots, alerts, and scans, addressing a gap in cybersecurity benchmarks.",
+      "llm_tldr_cn": "网络安全基准测试多聚焦于攻击发生前的理想环境，忽略了后妥协阶段。本文提出SecRespond，首个针对LLM智能体在后妥协事件响应工作流中的评估基准。它提供被攻陷主机的磁盘快照、安全产品告警和扫描结果，要求智能体进行分析和响应。该基准有助于揭示LLM智能体在真实安全运营中的能力边界。",
+      "llm_tldr": "网络安全基准测试多聚焦于攻击发生前的理想环境，忽略了后妥协阶段。本文提出SecRespond，首个针对LLM智能体在后妥协事件响应工作流中的评估基准。它提供被攻陷主机的磁盘快照、安全产品告警和扫描结果，要求智能体进行分析和响应。该基准有助于揭示LLM智能体在真实安全运营中的能力边界。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.21551v1",
+      "source": "arxiv",
+      "title": "Unconditional Unclonable Encryption",
+      "abstract": "We give an unconditional construction of information-theoretically secure one-time private-key unclonable encryption scheme for one-bit messages, with efficient encryption and decryption and exponentially small unclonable-indistinguishability advantage.",
+      "authors": [
+        "Prabhanjan Ananth",
+        "Amit Sahai"
+      ],
+      "primary_category": "quant-ph",
+      "categories": [
+        "quant-ph",
+        "cs.CR"
+      ],
+      "published": "2026-07-23T17:35:44+00:00",
+      "link": "https://arxiv.org/pdf/2607.21551v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Unconditional unclonable encryption scheme",
+      "llm_evidence_cn": "无条件不可克隆加密方案",
+      "llm_evidence": "无条件不可克隆加密方案",
+      "canonical_evidence": "无条件不可克隆加密方案",
+      "llm_tldr_en": "An information-theoretically secure one-time private-key unclonable encryption scheme for one-bit messages with efficient encryption/decryption and exponentially small unclonable-indistinguishability advantage.",
+      "llm_tldr_cn": "不可克隆加密是密码学的重要目标。本文基于信息论安全，提出了一个针对单比特消息的无条件安全一次私钥不可克隆加密方案，具有高效加解密和指数小的不可克隆区分优势。该方案为密文防复制提供了理论保证，对隐私保护和机密计算有潜在应用价值。",
+      "llm_tldr": "不可克隆加密是密码学的重要目标。本文基于信息论安全，提出了一个针对单比特消息的无条件安全一次私钥不可克隆加密方案，具有高效加解密和指数小的不可克隆区分优势。该方案为密文防复制提供了理论保证，对隐私保护和机密计算有潜在应用价值。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.23418v1",
+      "source": "arxiv",
+      "title": "TroPUF: Evaluating Hardware Trojan Insertion in Delay-Based Physical Unclonable Functions",
+      "abstract": "Delay-based Physical Unclonable Functions (PUFs) are commonly used for device authentication and key generation due to the fact that they rely on manufacturing induced delay variations. However, these same variations make PUFs inherently non-deterministic, which can allow malicious logic to blend in with normal circuit behavior. As a result, the act of embedding hardware Trojans directly inside the PUF primitive presents a unique security risk that is not yet well understood. This work presents a unified simulation framework for evaluating stealthy hardware Trojan insertion across multiple delay-based PUF architectures and Trojan types. Functional metrics, hardware overhead, and resistance to machine learning modeling are assessed in parallel. Results show that dormant Trojans preserve expected PUF behavior, structural characteristics, and modeling resistance. Detectable degradation appears only after activation, indicating that conventional validation techniques fail to identify embedded Trojans prior to payload execution. These findings expose a gap in current PUF security assumptions, and highlight the need to evaluate PUFs and hardware Trojans as a coupled security problem.",
+      "authors": [
+        "Marissa Marcarelli",
+        "Amin Rezaei"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-26T02:33:49+00:00",
+      "link": "https://arxiv.org/pdf/2607.23418v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "PUF-based device authentication and hardware Trojan risk",
+      "llm_evidence_cn": "基于PUF的设备认证及硬件木马风险",
+      "llm_evidence": "基于PUF的设备认证及硬件木马风险",
+      "canonical_evidence": "基于PUF的设备认证及硬件木马风险",
+      "llm_tldr_en": "Evaluates hardware Trojan insertion in delay-based PUFs used for authentication and key generation, proposing a simulation framework to assess stealthy attacks across architectures.",
+      "llm_tldr_cn": "物理不可克隆函数（PUF）常用于设备认证和密钥生成，但硬件木马可嵌入PUF中造成安全风险。本文提出统一仿真框架评估多种PUF架构下的木马插入，分析功能指标和硬件开销，为PUF安全设计提供指导。",
+      "llm_tldr": "物理不可克隆函数（PUF）常用于设备认证和密钥生成，但硬件木马可嵌入PUF中造成安全风险。本文提出统一仿真框架评估多种PUF架构下的木马插入，分析功能指标和硬件开销，为PUF安全设计提供指导。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.23236v1",
+      "source": "arxiv",
+      "title": "FedSLIM: Privacy-Preserving Federated MDL-Based Descriptive Pattern Mining Across Data Silos",
+      "abstract": "Federated learning has achieved considerable success for predictive modelling, yet federated descriptive analytics remains largely unexplored. Existing federated pattern mining approaches are predominantly support-based and do not optimise a principled global objective such as Minimum Description Length (MDL). We introduce FedSLIM, the first federated MDL-based framework for descriptive pattern mining. Building on the SLIM principle, FedSLIM enables collaborative optimisation of compact pattern models across distributed databases without sharing raw transactions. We propose two complementary variants that balance privacy, communication, and optimisation fidelity under different deployment assumptions. To evaluate federated MDL mining, we introduce fidelity and discovery-oriented metrics that quantify agreement with a centralised baseline and assess recovery of globally informative patterns. Experiments on multiple real-world datasets under IID and non-IID partitioning show that both variants preserve high-quality compression structure while requiring orders of magnitude less search than the centralised baseline. We further reveal a local-global discovery gap in distributed MDL mining, where globally compressive patterns may be undiscoverable through isolated local optimisation. Both variants recover globally informative patterns absent from all standalone local models, demonstrating the benefits of federated optimisation beyond independent local mining. These results establish federated MDL mining as a practical foundation for privacy-preserving descriptive analytics across distributed data silos.",
+      "authors": [
+        "Samar Samir Khalil",
+        "Noha S. Tawfik",
+        "Marco Spruit"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-07-25T14:45:00+00:00",
+      "link": "https://arxiv.org/pdf/2607.23236v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "privacy-preserving federated pattern mining with MDL",
+      "llm_evidence_cn": "基于MDL的隐私保护联邦模式挖掘",
+      "llm_evidence": "基于MDL的隐私保护联邦模式挖掘",
+      "canonical_evidence": "基于MDL的隐私保护联邦模式挖掘",
+      "llm_tldr_en": "FedSLIM is the first federated MDL-based descriptive pattern mining framework that optimizes a principled global objective across distributed databases without sharing raw transactions, balancing privacy and optimization fidelity.",
+      "llm_tldr_cn": "现有联邦模式挖掘多为支持度方法，缺乏全局优化目标。FedSLIM首次将最小描述长度（MDL）原则引入联邦设置，通过协作优化紧凑模式模型，保护原始事务隐私。提出两个变体权衡隐私和通信效率，实验表明其优于传统联邦模式挖掘方法。",
+      "llm_tldr": "现有联邦模式挖掘多为支持度方法，缺乏全局优化目标。FedSLIM首次将最小描述长度（MDL）原则引入联邦设置，通过协作优化紧凑模式模型，保护原始事务隐私。提出两个变体权衡隐私和通信效率，实验表明其优于传统联邦模式挖掘方法。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.26239v1",
+      "source": "arxiv",
+      "title": "Round Trip Time: A Benign Signal or an Indirect Window into Datacenter Workloads?",
+      "abstract": "Multi-tenant datacenter networks increasingly rely on shared leaf-spine fabrics, where traffic from multiple tenants traverses common network resources. While logical isolation mechanisms prevent direct access between tenants, shared congestion dynamics may still expose indirect information about co-located workloads through observable latency variations. In this paper, we investigate a network side-channel vulnerability arising from shared congestion behavior in multi-tenant datacenter fabrics using RTT observations collected along overlapping network paths. We develop a framework to explore how workload-induced latency variations contain sufficiently distinguishable signatures to enable workload inference under realistic deployment conditions. Our evaluations show that indirect RTT observations can reveal meaningful workload information, achieving up to 97.3\\% run-level accuracy under cross-path evaluation when workload-induced congestion is sufficiently observable. The findings suggest that logical network isolation alone may be insufficient to prevent information leakage through shared congestion dynamics in modern datacenter infrastructures.",
+      "authors": [
+        "Sourya Saha",
+        "Md Nurul Absur",
+        "Saptarshi Debroy"
+      ],
+      "primary_category": "cs.NI",
+      "categories": [
+        "cs.NI"
+      ],
+      "published": "2026-07-28T20:19:32+00:00",
+      "link": "https://arxiv.org/pdf/2607.26239v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "datacenter side-channel vulnerability",
+      "llm_evidence_cn": "数据中心侧信道安全漏洞",
+      "llm_evidence": "数据中心侧信道安全漏洞",
+      "canonical_evidence": "数据中心侧信道安全漏洞",
+      "llm_tldr_en": "Investigates RTT-based side-channel to infer datacenter workloads, highlighting cloud security challenges from shared congestion.",
+      "llm_tldr_cn": "本文研究多租户数据中心网络中共享拥塞导致的RTT侧信道漏洞，证明可通过延迟变化推断工作负载，属于云安全挑战中的信息泄露问题。",
+      "llm_tldr": "本文研究多租户数据中心网络中共享拥塞导致的RTT侧信道漏洞，证明可通过延迟变化推断工作负载，属于云安全挑战中的信息泄露问题。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.26933v1",
+      "source": "arxiv",
+      "title": "Defending Against Backdoor Attacks via Alignment Checking in Model-Contrastive Federated Learning",
+      "abstract": "Federated Learning (FL) is vulnerable to backdoor attacks because of its distributed nature in edge computing scenarios. Existing defense methods show limited efficacy as they overlook the deviations among benign local updates caused by statistical heterogeneity and the stealthiness of backdoor attacks. To tackle these issues, we propose FedDAB, a two-phase method that combines local contrastive regularization with alignment checking, to defend against backdoor attacks. In the first phase, FedDAB introduces a novel model-contrastive term into the local objective to enhance direction and magnitude consistency among benign updates. In the second phase, FedDAB employs an alignment checking strategy to evaluate each local update in terms of overall-direction alignment and parameter-level alignment with historical information, excluding updates that exhibit abnormal alignment patterns from global aggregation. We theoretically prove FedDAB's robustness with a convergence rate of $\\mathcal{O}(1/T)$.   Extensive experiments show that FedDAB outperforms existing defense methods against backdoor attacks.",
+      "authors": [
+        "Hongliang Zhang",
+        "Zhongyuan Yu",
+        "Guijuan Wang",
+        "Tianqing He",
+        "Wenshuo Ma",
+        "Xiaosong Zhang",
+        "Jiguo Yu"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-07-29T13:59:37+00:00",
+      "link": "https://arxiv.org/pdf/2607.26933v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Backdoor defense in federated learning via alignment checking",
+      "llm_evidence_cn": "联邦学习中基于对齐检查的后门防御",
+      "llm_evidence": "联邦学习中基于对齐检查的后门防御",
+      "canonical_evidence": "联邦学习中基于对齐检查的后门防御",
+      "llm_tldr_en": "Proposes FedDAB, a two-phase method combining local contrastive regularization with alignment checking to defend against backdoor attacks in federated learning, enhancing robustness.",
+      "llm_tldr_cn": "联邦学习易受后门攻击，现有防御忽略统计异质性和攻击隐蔽性。本文提出FedDAB两阶段方法：第一阶段引入模型对比正则项增强良性更新一致性；第二阶段采用对齐检查评估局部更新，有效检测并防御后门攻击，在非独立同分布数据下保持鲁棒性。",
+      "llm_tldr": "联邦学习易受后门攻击，现有防御忽略统计异质性和攻击隐蔽性。本文提出FedDAB两阶段方法：第一阶段引入模型对比正则项增强良性更新一致性；第二阶段采用对齐检查评估局部更新，有效检测并防御后门攻击，在非独立同分布数据下保持鲁棒性。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.26409v1",
+      "source": "arxiv",
+      "title": "Can We Trust AI in 6G? Verifiable and Auditable AI-Driven Trustworthy Wireless Networks",
+      "abstract": "Mobile network operators are increasingly exploring the use of artificial intelligence (AI) to automate complex network tasks, such as cell selection and mobility management. A fundamental problem arises: there is currently no way to verify that an AI function is making the right decisions or for the right reasons, rather than arriving at correct-looking answers through unreliable shortcuts. In safety-critical and resilience-focused infrastructure, this lack of transparency poses a significant challenge to the widespread adoption of AI technologies in wireless networks. In this paper, we propose a mechanical auditing approach: inspecting a function's internal representations and checking them against machine-verifiable 3GPP specifications. Specifically, we set out a general three-step auditing principle that locates protocol-relevant features, verifies their causal role, and diagnoses how adaptation reshapes their use, grounding it throughout publicly available interpretability and telecommunications research. We present an audit-native network architecture in which a dedicated verification agent continuously checks the reasoning of AI functions in networks, supporting both predeployment certification and runtime auditing. We also discuss how it could be realised, the data and benchmarks, as well as the open challenges that remain before mechanistic auditing can enter telecommunications practice and standardisation.",
+      "authors": [
+        "Genze Jiang",
+        "Yizhou Huang",
+        "Kezhi Wang"
+      ],
+      "primary_category": "cs.NI",
+      "categories": [
+        "cs.NI"
+      ],
+      "published": "2026-07-29T02:42:29+00:00",
+      "link": "https://arxiv.org/pdf/2607.26409v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "verifiable and auditable AI for trustworthy networks",
+      "llm_evidence_cn": "可验证可审计的AI确保无线网络可信",
+      "llm_evidence": "可验证可审计的AI确保无线网络可信",
+      "canonical_evidence": "可验证可审计的AI确保无线网络可信",
+      "llm_tldr_en": "Proposes mechanical auditing of AI internal representations against 3GPP specifications to ensure trustworthy decisions in 6G networks.",
+      "llm_tldr_cn": "6G网络引入AI自动化决策但缺乏验证机制。本文提出机械审计方法，检查AI内部表示是否与3GPP规范一致，确保决策基于正确理由而非虚假关联。该方法可提高AI在安全关键网络中的透明度和信任度，但尚需进一步实验验证。",
+      "llm_tldr": "6G网络引入AI自动化决策但缺乏验证机制。本文提出机械审计方法，检查AI内部表示是否与3GPP规范一致，确保决策基于正确理由而非虚假关联。该方法可提高AI在安全关键网络中的透明度和信任度，但尚需进一步实验验证。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.26641v1",
+      "source": "arxiv",
+      "title": "FakeIDet3-DB: Refining Digital Attacks and Patch Extraction for Secure ID Benchmarking",
+      "abstract": "Identity document (ID) authentication relies on the structural integrity of complex, high-frequency security patterns. However, advanced Generative AI models can now inject localized, high-fidelity manipulations, creating deceptive attacks that bypass standard verification. Training robust image forensic models to detect these anomalies is hindered by privacy regulations, forcing reliance on synthetic templates lacking the intricate visual patterns of real IDs. To bridge this domain gap, we introduce FakeIDet3-DB, the first comprehensive database of digital manipulations on real, government-issued IDs. FakeIDet3-DB encompasses classical (e.g., copy-move) and Generative AI-driven manipulations (e.g., face-swapping, inpainting) enhanced with advanced image refinement procedures to suppress visual artifacts. In addition, to comply with strict data protection regulations (e.g., GDPR), we adopt a recently-proposed framework based on patches. In order to maximize forensic utility, we formulate privacy-aware patch extraction from a real ID as a geometrically constrained image processing problem. We propose PACE, a Pseudo-Anonymized Contextual patch Extraction algorithm, which leverages Integral Image mapping and distance-driven Non-Maximum Suppression (NMS). PACE efficiently contours anonymization masks that prevent Personally Identifiable Information (PII) leakage while maximizing semantic density in peri-censorship regions, yielding almost 5.2M patches extracted from more than 6.4K images from real/fake IDs. Furthermore, an extensive evaluation of the proposed FakeIDet3-DB is performed using state-of-the-art models, showcasing they all struggle to detect and locate attacks coming from generative and classic techniques (32.45\\% EER in detection and 83.48\\% AUC-ROC in localization).",
+      "authors": [
+        "Muñoz-Haro Javier",
+        "Teruel Andres",
+        "Tolosana Ruben",
+        "DeAlcala Daniel",
+        "Vera-Rodriguez Ruben",
+        "Morales Aythami",
+        "Fierrez Julian"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-07-29T09:03:29+00:00",
+      "link": "https://arxiv.org/pdf/2607.26641v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Digital attack detection for identity document authentication",
+      "llm_evidence_cn": "身份文档认证中的数字攻击检测",
+      "llm_evidence": "身份文档认证中的数字攻击检测",
+      "canonical_evidence": "身份文档认证中的数字攻击检测",
+      "llm_tldr_en": "Introduces FakeIDet3-DB, a comprehensive database of digital manipulations on real government-issued IDs, enabling training of robust image forensic models against generative AI attacks.",
+      "llm_tldr_cn": "身份文档认证依赖复杂的安全图案，但生成式AI可制造高保真篡改。本文创建首个真实政府ID数字操纵数据库FakeIDet3-DB，涵盖经典和生成式AI驱动攻击，为训练鲁棒图像取证模型提供基准，填补隐私约束下的数据空白。",
+      "llm_tldr": "身份文档认证依赖复杂的安全图案，但生成式AI可制造高保真篡改。本文创建首个真实政府ID数字操纵数据库FakeIDet3-DB，涵盖经典和生成式AI驱动攻击，为训练鲁棒图像取证模型提供基准，填补隐私约束下的数据空白。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "identity authentication in cloud computing",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}
