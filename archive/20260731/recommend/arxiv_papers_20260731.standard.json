@@ -1,0 +1,727 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-31T21:33:13.121894+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 11,
+    "deep_cap": 6,
+    "deep_selected": 8,
+    "quick_candidates": 10,
+    "quick_skim_target": 11,
+    "quick_selected": 10
+  },
+  "deep_dive": [
+    {
+      "id": "2607.25255v1",
+      "source": "arxiv",
+      "title": "SafeFlow: Semantic Information-Flow Control for Blocking Malicious Propagation in Multi-Agent Systems",
+      "abstract": "Multi-agent systems improve capability through task decomposition and role specialization, but these same mechanisms introduce an important safety blind spot: a harmful objective can be fragmented into locally plausible subtasks, allowing malicious intent to evade detection by any single agent. This is a growing social-impact challenge: systems handling sensitive information or consequential tools can turn routine delegation into unauthorized disclosure or unsafe action. We argue that this failure mode is better understood as a semantic information-flow problem than as a single-turn prompt classification task. To address this, we propose SafeFlow, a defense framework for multi-agent systems that formalizes malicious cross-agent propagation as a semantic information-flow problem. SafeFlow attaches structured semantic taints to root requests, propagates them through a dynamic collaboration graph, and performs workflow-level validation to reconstruct the global risk context before irreversible actions are committed. Evaluated on four benchmarks spanning prompt injection, jailbreak-based unsafe tool use, risky code execution, and harmful web-agent behavior, SafeFlow reduces attack success rates compared to undefended baselines and external defenses while retaining high benign task completion and a high paired safe--harm success rate. Our findings show that multi-agent systems still lack mechanisms for preserving risk semantics across delegation boundaries. This gap can turn routine delegation into privacy harms or unsafe actions that affect people and organizations. SafeFlow keeps this risk visible throughout the workflow, before it results in harm.",
+      "authors": [
+        "Haowen Dai",
+        "Zonghao Ying",
+        "Wenfeng Li",
+        "Xiangfan Wu",
+        "Yisong Xiao",
+        "Tianyuan Zhang",
+        "Jiaye Lin",
+        "Lei Wei",
+        "Guangyuan Dong",
+        "Xitong Ling",
+        "Xixun Lin",
+        "Quanchen Zou",
+        "Xiangzheng Zhang"
+      ],
+      "primary_category": "cs.MA",
+      "categories": [
+        "cs.MA",
+        "cs.CR"
+      ],
+      "published": "2026-07-28T03:55:47+00:00",
+      "link": "https://arxiv.org/pdf/2607.25255v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Malicious propagation in multi-agent AI systems; semantic information-flow control defense",
+      "llm_evidence_cn": "多智能体AI系统中的恶意传播；语义信息流控制防御",
+      "llm_evidence": "多智能体AI系统中的恶意传播；语义信息流控制防御",
+      "canonical_evidence": "多智能体AI系统中的恶意传播；语义信息流控制防御",
+      "llm_tldr_en": "Presents SafeFlow, a defense framework for multi-agent systems that blocks malicious propagation by formalizing harmful objectives as semantic information flow problems, preventing fragmented malicious subtasks from evading detection.",
+      "llm_tldr_cn": "多智能体系统通过任务分解和角色分工提升能力，但恶意目标可被拆分为局部合理的子任务，绕过单个智能体的检测。本文提出SafeFlow防御框架，将恶意传播建模为语义信息流问题，而非单轮提示分类任务，从而在系统层面阻断未授权披露或不安全行为。该框架为承担敏感信息处理的多智能体应用提供了新的安全防护思路。",
+      "llm_tldr": "多智能体系统通过任务分解和角色分工提升能力，但恶意目标可被拆分为局部合理的子任务，绕过单个智能体的检测。本文提出SafeFlow防御框架，将恶意传播建模为语义信息流问题，而非单轮提示分类任务，从而在系统层面阻断未授权披露或不安全行为。该框架为承担敏感信息处理的多智能体应用提供了新的安全防护思路。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.27528v1",
+      "source": "arxiv",
+      "title": "ThreatForest: Multi-Agent Attack Tree Generation with Pluggable TTP Framework Mapping",
+      "abstract": "Threat modeling is essential for secure software development, yet manual analysis of cloud-native architectures is slow and demands scarce security expertise. We present ThreatForest, a multi-agent system that generates structured attack trees from source code repositories, maps attack steps to adversary tactics, techniques, and procedures (TTPs) from a pluggable set of frameworks (MITRE ATT&CK, CAPEC, and cloud-specific threat matrices), and synthesizes actionable mitigations. ThreatForest decomposes threat modeling into a multi-stage agent pipeline -- repository analysis, context refinement, threat generation, parallel attack-tree construction with TTP mapping and mitigation synthesis, and report generation -- orchestrated as a directed graph with deterministic verification gates, bounded retries, and three human-in-the-loop validation points. A domain-specific sentence-transformer maps each attack step to candidate techniques by cosine similarity; we show empirically that this embedding stage, not the surrounding pipeline, is the dominant accuracy bottleneck. We evaluate ThreatForest across seven application domains on a sixteen-dimension rubric, scored by a panel of independent LLM raters with an adversarial verification pass and expert review. Panel-measured quality reaches 0.63-0.68 (on a 0-1 scale) for threat statements, attack trees, and mitigations, but only 0.29 for embedding-only TTP mapping -- a gap stable across all seven domains that isolates the binding constraint. A controlled single-call baseline on the same model more than doubles mapping defensibility, pinning the limitation on the embedding encoder rather than the multi-agent design. To our knowledge, ThreatForest is the first end-to-end system that turns a code repository into TTP-mapped attack trees with evidence-based mitigations across adversary frameworks, with a reusable framework for benchmarking such systems.",
+      "authors": [
+        "Cristian Leo",
+        "Anton Dykyi",
+        "Danny Cortegaca",
+        "Daniel Begimher",
+        "Prakash Jha"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI",
+        "cs.CL",
+        "cs.SE"
+      ],
+      "published": "2026-07-29T23:46:23+00:00",
+      "link": "https://arxiv.org/pdf/2607.27528v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Cloud-native threat modeling; multi-agent attack tree generation and mitigation synthesis",
+      "llm_evidence_cn": "云原生威胁建模；多智能体攻击树生成与缓解措施综合",
+      "llm_evidence": "云原生威胁建模；多智能体攻击树生成与缓解措施综合",
+      "canonical_evidence": "云原生威胁建模；多智能体攻击树生成与缓解措施综合",
+      "llm_tldr_en": "ThreatForest is a multi-agent system that automatically generates attack trees from source code, maps them to MITRE ATT&CK/CAPEC/cloud matrices, and synthesizes mitigations, accelerating cloud-native threat modeling.",
+      "llm_tldr_cn": "云原生架构的安全威胁建模依赖专家人工分析，效率低且稀缺。ThreatForest以多智能体流水线自动从代码仓库生成结构化攻击树，并将攻击步骤映射到MITRE ATT&CK、CAPEC及云特定威胁矩阵，同时合成可操作的缓解建议。实验表明该系统能够显著加速威胁建模流程，降低对安全专家的依赖，为云原生系统安全分析提供了一种可扩展的自动化方案。",
+      "llm_tldr": "云原生架构的安全威胁建模依赖专家人工分析，效率低且稀缺。ThreatForest以多智能体流水线自动从代码仓库生成结构化攻击树，并将攻击步骤映射到MITRE ATT&CK、CAPEC及云特定威胁矩阵，同时合成可操作的缓解建议。实验表明该系统能够显著加速威胁建模流程，降低对安全专家的依赖，为云原生系统安全分析提供了一种可扩展的自动化方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.27940v1",
+      "source": "arxiv",
+      "title": "TriShield: Zero-Utility-Loss Defense Against Privacy Backdoors in Federated Language Model Fine-Tuning via Orthogonal Gradient Projection and Optimizer State Entanglement",
+      "abstract": "Federated fine-tuning of large language models (LLMs) enables collaborative training without exposing raw data. However, a recent attack, NeuroImprint [1] (arXiv:2606.20553), demonstrates that a malicious parameter server can corrupt a PEFT adapter into a privacy backdoor: by assigning a dedicated memorization neuron to each training sample and ensuring each neuron updates at most once, the server can analytically reconstruct 59\\%--79\\% of client training data with high semantic fidelity. Existing defenses---including local differential privacy (LDP) [8] and gradient clipping---either fail against this attack or impose unacceptable utility degradation. We present \\textbf{TriShield}, a three-layer deterministic defense that completely prevents NeuroImprint-style reconstruction with \\textbf{zero model utility loss} and \\textbf{no additional communication rounds}. TriShield consists of: (1) a \\textbf{Parameter Artifact Detector} that identifies memory-neuron signatures in distributed model parameters before local training begins; (2) a \\textbf{Stateful Virtual Iteration} mechanism that forces Adam/AdamW's momentum state to irreversibly entangle gradients across virtual steps, invalidating NeuroImprint's closed-form inversion; and (3) a \\textbf{Zero-Utility Orthogonal Projection} operator that projects all local gradient updates onto the main-task semantic subspace computed via SVD, physically eliminating any gradient components that carry private memorization. We prove theoretically that after Layers 2 and 3, the mutual information between the uploaded gradient and any individual training sample is zero. Experiments on GPT-2 (117M) and Llama-Guard-3-1B verify that TriShield reduces NeuroImprint reconstruction rate to \\textbf{0\\%} across all tested attack variants, while maintaining or improving training accuracy, with less than 5\\% additional GPU computation overhead.",
+      "authors": [
+        "Cheng Wei"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CL"
+      ],
+      "published": "2026-07-30T09:49:13+00:00",
+      "link": "https://arxiv.org/pdf/2607.27940v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "defense against privacy backdoors in federated LLM fine-tuning",
+      "llm_evidence_cn": "联邦LLM微调中隐私后门的防御方法",
+      "llm_evidence": "联邦LLM微调中隐私后门的防御方法",
+      "canonical_evidence": "联邦LLM微调中隐私后门的防御方法",
+      "llm_tldr_en": "TriShield defends against NeuroImprint privacy backdoors in federated LLM fine-tuning using orthogonal gradient projection and optimizer state entanglement, achieving zero utility loss while blocking data reconstruction.",
+      "llm_tldr_cn": "联邦微调大语言模型可避免泄露原始数据，但恶意参数服务器可通过隐私后门重建客户训练数据，现有本地差分隐私和梯度裁剪等防御要么失效要么严重损害效用。作者提出TriShield，利用正交梯度投影和优化器状态纠缠构建零效用损失防御。该方法在保证模型效用的同时有效阻止攻击者的数据重建，为联邦LLM微调提供了实用的隐私保护方案。",
+      "llm_tldr": "联邦微调大语言模型可避免泄露原始数据，但恶意参数服务器可通过隐私后门重建客户训练数据，现有本地差分隐私和梯度裁剪等防御要么失效要么严重损害效用。作者提出TriShield，利用正交梯度投影和优化器状态纠缠构建零效用损失防御。该方法在保证模型效用的同时有效阻止攻击者的数据重建，为联邦LLM微调提供了实用的隐私保护方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.27951v1",
+      "source": "arxiv",
+      "title": "Safeguards Based on Copyable Context Cannot Provide Reliable Safety for LLMs",
+      "abstract": "Large language model safeguards decide whether to answer before seeing how an answer will be used. This creates a basic problem for dual-use tasks: the same answer can help an authorized professional or an attacker, while an attacker can imitate a benign request and interaction history. We separate the capability released by the model from the evidence available about downstream use. When that evidence is copyable, we derive the exact worst-case floor on attacker assistance while preserving useful answers. The result yields a safety trilemma: Useful Capability, Reliable Safety, and Open Access cannot coexist. We then show how a trusted credential can complement existing safeguards by adding hard-to-copy information that predicts actual downstream use, and identify the stronger condition needed to eliminate the floor. Evidence from dual-use evaluations, adaptive attacks, and deployed trusted-access programs supports the practical relevance of these conditions.",
+      "authors": [
+        "Pingyu Wu",
+        "Lingyao Zhu",
+        "Weiming Zhang",
+        "Nenghai Yu"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-30T09:59:08+00:00",
+      "link": "https://arxiv.org/pdf/2607.27951v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Analysis of LLM safeguard reliability and a safety trilemma",
+      "llm_evidence_cn": "分析LLM防护措施的可靠性并给出安全三难困境",
+      "llm_evidence": "分析LLM防护措施的可靠性并给出安全三难困境",
+      "canonical_evidence": "分析LLM防护措施的可靠性并给出安全三难困境",
+      "llm_tldr_en": "This paper shows that LLM safeguards based on copyable context are fundamentally unreliable, deriving a safety trilemma among utility, safety, and open access, and proposing trusted credentials as a complement.",
+      "llm_tldr_cn": "本文指出大语言模型（LLM）在回答前决定是否响应的防护机制面临基本困境：同样回答既能帮助合法用户也能帮助攻击者，而攻击者可模仿良性请求。通过将模型能力与下游使用证据分离，并考虑证据可复制性，得出用户能力、可靠安全与开放访问无法兼得的安全三难困境。文章提出用可信凭证引入难以复制的信息来增强现有防护，为LLM安全设计提供了新的理论视角。",
+      "llm_tldr": "本文指出大语言模型（LLM）在回答前决定是否响应的防护机制面临基本困境：同样回答既能帮助合法用户也能帮助攻击者，而攻击者可模仿良性请求。通过将模型能力与下游使用证据分离，并考虑证据可复制性，得出用户能力、可靠安全与开放访问无法兼得的安全三难困境。文章提出用可信凭证引入难以复制的信息来增强现有防护，为LLM安全设计提供了新的理论视角。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.28088v1",
+      "source": "arxiv",
+      "title": "Checking Information Flow in Cloud-based IoT Access Control Policies (Extended Version)",
+      "abstract": "Many cloud providers for IoT technologies offer access control mechanisms whose proper configuration is critical for security. However, verifying permissions in isolation is insufficient in a setting where devices have different levels of trust or are compartmentalised in various subsystems. This work analyses IoT access control policies to identify potential security vulnerabilities from unwanted information flow between devices. To this end, we formally model AWS IoT Core's components and define an information flow graph to capture the communication among devices permitted by the access control policies. We build a finite representation of the graph by leveraging an SMT solver, thus enabling the verification of information flow between devices. We implement our approach in a tool called IOT:POKER, and assess it on a realistic scenario and several real-world policies.",
+      "authors": [
+        "Lorenzo Ceragioli",
+        "Letterio Galletta",
+        "Edoardo Lunati"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.LO",
+        "cs.SE"
+      ],
+      "published": "2026-07-30T11:54:36+00:00",
+      "link": "https://arxiv.org/pdf/2607.28088v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "formal SMT-based verification of information flow in cloud IoT access control policies",
+      "llm_evidence_cn": "基于SMT的云IoT访问控制策略信息流形式化验证",
+      "llm_evidence": "基于SMT的云IoT访问控制策略信息流形式化验证",
+      "canonical_evidence": "基于SMT的云IoT访问控制策略信息流形式化验证",
+      "llm_tldr_en": "Cloud IoT access control needs system-level verification. This paper formally models AWS IoT Core, builds an information flow graph, and uses SMT solvers to verify unwanted data flows between devices.",
+      "llm_tldr_cn": "在云IoT环境中，单独验证访问控制权限不足以阻止设备间的非预期信息流。该文对AWS IoT Core组件进行形式化建模，定义信息流图刻画设备间允许的通信，并借助SMT求解器构造图的有限表示，从而高效验证信息流安全性，能够发现由策略配置引发的潜在漏洞，为云IoT访问控制提供系统级安全保障。",
+      "llm_tldr": "在云IoT环境中，单独验证访问控制权限不足以阻止设备间的非预期信息流。该文对AWS IoT Core组件进行形式化建模，定义信息流图刻画设备间允许的通信，并借助SMT求解器构造图的有限表示，从而高效验证信息流安全性，能够发现由策略配置引发的潜在漏洞，为云IoT访问控制提供系统级安全保障。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "cloud security challenges and solutions",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.28103v1",
+      "source": "arxiv",
+      "title": "MIND: Lightweight and Effective Memory Injection Defense for LLM Agents via Intent-Aware Information Bottleneck",
+      "abstract": "Memory-augmented LLM-based agents are vulnerable to memory injection attacks: Agents may retrieve poisoned memory from attackers, which diverts their behavior from initial user intent and finally causes task failure. However, existing defense mechanisms either incur high computational cost or suffer from information redundancy in multi-turn contexts. To address these challenges, we propose Memory Intent-Aware Neural Denoising(MIND), a lightweight defense framework for memory injection attack. Our preliminary analysis reveals that benign and poisoned trajectories exhibit distinguishable relationships between the initial user intent and subsequent behavior. Building on this observation, MIND employs an intent-aware Information Bottleneck(IB) to extract compact intent--behavior representations from the initial intent and turn-level behavior. The IB preserves intent-relevant cross-turn attack signals while filtering task-irrelevant and repetitive information, and a lightweight detector identifies malicious memories from the resulting representations. As such, MIND mitigates information redundancy in multi-turn contexts while avoiding the overhead of repeated LLM auditing. Extensive experiments show that MIND reduces attack success rates while preserving task accuracy and inference efficiency. Notably, on ReAct-StrategyQA, MIND reduces mean ASR-r and ASR-a by 55.4% and 55.3%, respectively, while matching the undefended agent in average accuracy and latency.",
+      "authors": [
+        "Dongyi Liu",
+        "Haixing He",
+        "Xiaobao Wu",
+        "Jia Li"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-30T12:11:49+00:00",
+      "link": "https://arxiv.org/pdf/2607.28103v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Proposes a defense against memory injection attacks on LLM agents",
+      "llm_evidence_cn": "提出针对LLM代理记忆注入攻击的防御方法",
+      "llm_evidence": "提出针对LLM代理记忆注入攻击的防御方法",
+      "canonical_evidence": "提出针对LLM代理记忆注入攻击的防御方法",
+      "llm_tldr_en": "This paper introduces MIND, a lightweight intent-aware defense that denoises memory to protect LLM agents from memory injection attacks with low computational cost.",
+      "llm_tldr_cn": "本文针对记忆增强的LLM代理容易受到记忆注入攻击的问题，提出轻量级防御框架MIND。该方法基于初始用户意图与后续行为之间的关系，利用意图感知信息瓶颈对检索到的记忆进行去噪，以区分良性轨迹和恶意轨迹。在保持低计算开销的同时有效缓解多轮上下文中的信息冗余问题，为LLM代理安全性提供了一种实用防御手段。",
+      "llm_tldr": "本文针对记忆增强的LLM代理容易受到记忆注入攻击的问题，提出轻量级防御框架MIND。该方法基于初始用户意图与后续行为之间的关系，利用意图感知信息瓶颈对检索到的记忆进行去噪，以区分良性轨迹和恶意轨迹。在保持低计算开销的同时有效缓解多轮上下文中的信息冗余问题，为LLM代理安全性提供了一种实用防御手段。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.28191v1",
+      "source": "arxiv",
+      "title": "Secure Aggregation for Privacy-Preserving Federated Learning on Clinical EEG Data",
+      "abstract": "Federated learning enables multiple institutions to train shared models without exchanging raw clinical EEG data, but it does not fully prevent privacy leakage from individual model updates. This paper presents a privacy-preserving federated learning framework for clinical EEG data using masking-based secure aggregation as the core protection mechanism. The framework combines graph-based communication, threshold secret sharing, dropout-resilient aggregation, local update clipping, an optional Bloom filter-based privacy-preserving record-linkage initialization module, and auxiliary-notary-based verifiability. It supports both semi-honest and malicious aggregation settings and is implemented using the Flower federated learning framework. The secure-aggregation variants are evaluated in a simulated cross-silo healthcare setting using TUH EEG-derived data under different client configurations. Under the stated assumptions, the secure variants hide individual updates from the aggregation server. The results show that these variants remain compatible with federated model training, although malicious-setting safeguards and lightweight consistency-checking mechanisms introduce additional computation, communication, and round-duration overhead. The semi-honest variant provides the lowest overhead among the secure configurations, while malicious and auxiliary-notary variants offer stronger consistency, integrity, and lightweight verification support at higher cost.",
+      "authors": [
+        "Pouya Rajabi",
+        "Mohsen Toorani"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.DC",
+        "cs.LG"
+      ],
+      "published": "2026-07-30T13:28:39+00:00",
+      "link": "https://arxiv.org/pdf/2607.28191v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "privacy-preserving federated learning framework for clinical EEG data using secure aggregation, directly addressing privacy preservation in AI",
+      "llm_evidence_cn": "面向临床脑电数据的联邦学习安全聚合框架，直接针对AI隐私保护",
+      "llm_evidence": "面向临床脑电数据的联邦学习安全聚合框架，直接针对AI隐私保护",
+      "canonical_evidence": "面向临床脑电数据的联邦学习安全聚合框架，直接针对AI隐私保护",
+      "llm_tldr_en": "A privacy-preserving federated learning framework for clinical EEG data uses masking-based secure aggregation, threshold secret sharing, dropout resilience, and verifiability against privacy leakage from model updates.",
+      "llm_tldr_cn": "联邦学习允许多机构在不共享原始脑电数据的前提下训练共享模型，但个体模型更新仍可能泄露隐私。该框架以掩码安全聚合为核心，结合图通信、门限秘密共享、抗掉线聚合、本地更新裁剪以及可选的布隆过滤器记录链接模块，并支持半诚实与恶意聚合场景。其在Flower框架上实现，为临床脑电数据的安全协同建模提供了切实的隐私保护方案。",
+      "llm_tldr": "联邦学习允许多机构在不共享原始脑电数据的前提下训练共享模型，但个体模型更新仍可能泄露隐私。该框架以掩码安全聚合为核心，结合图通信、门限秘密共享、抗掉线聚合、本地更新裁剪以及可选的布隆过滤器记录链接模块，并支持半诚实与恶意聚合场景。其在Flower框架上实现，为临床脑电数据的安全协同建模提供了切实的隐私保护方案。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.28338v1",
+      "source": "arxiv",
+      "title": "Encryption-Compatible Clustered Federated Learning via Distributed Expectation-Maximization over Metadata",
+      "abstract": "Clustered Federated Learning (CFL) addresses data heterogeneity in federated settings by grouping clients with similar data distributions to enable effective training. Existing methods face a trade-off between privacy preservation, communication cost, and computational efficiency. We formalize this as the CFL trilemma, according to which improving two of these dimensions comes at the expense of the third. A prominent paradigm relies on metadata (i.e., low-dimensional representations of client datasets shared with the server) to enable communication- and computation-efficient clustering. However, such approaches are not compatible with standard FL privacy-preserving mechanisms. To address this limitation, we propose FLAMECHE, which reformulates metadata-based CFL as a distributed Expectation-Maximization (EM) procedure, restricting server updates to additive operations while preserving efficiency. This design enables compatibility with practical secure FL schemes. We conducted extensive experiments on multiple datasets under various heterogeneous scenarios. Results show that FLAMECHE improves the effectiveness of client models. It enables encryption-compatible metadata-based clustering, enhancing its positioning within the CFL trilemma.",
+      "authors": [
+        "Michael Ben Ali",
+        "Imen Megdiche",
+        "André Péninou",
+        "Olivier Teste"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CR",
+        "cs.DC",
+        "stat.ML"
+      ],
+      "published": "2026-07-30T15:04:59+00:00",
+      "link": "https://arxiv.org/pdf/2607.28338v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Privacy-preserving clustered federated learning with encryption compatibility",
+      "llm_evidence_cn": "加密兼容的聚类联邦学习，实现隐私保护",
+      "llm_evidence": "加密兼容的聚类联邦学习，实现隐私保护",
+      "canonical_evidence": "加密兼容的聚类联邦学习，实现隐私保护",
+      "llm_tldr_en": "This paper addresses the CFL trilemma in clustered federated learning by proposing an encryption-compatible distributed expectation-maximization method over metadata, enabling privacy-preserving and efficient clustering.",
+      "llm_tldr_cn": "聚类联邦学习（CFL）用于解决联邦设置中的数据异构问题，但现有方法在隐私保护、通信成本和计算效率之间存在不可兼得的折衷，称为CFL三难问题。本文提出一种基于元数据的分布式期望最大化聚类方法，并设计为与标准联邦学习加密隐私保护机制兼容，从而在不牺牲通信和计算效率的前提下实现数据分布聚类。实验结果表明该方法能够有效缓解三难矛盾，为加密兼容的联邦学习提供了一种高效且隐私安全的聚类方案，对推动联邦学习在隐私敏感场景中的实用化具有重要意义。",
+      "llm_tldr": "聚类联邦学习（CFL）用于解决联邦设置中的数据异构问题，但现有方法在隐私保护、通信成本和计算效率之间存在不可兼得的折衷，称为CFL三难问题。本文提出一种基于元数据的分布式期望最大化聚类方法，并设计为与标准联邦学习加密隐私保护机制兼容，从而在不牺牲通信和计算效率的前提下实现数据分布聚类。实验结果表明该方法能够有效缓解三难矛盾，为加密兼容的联邦学习提供了一种高效且隐私安全的聚类方案，对推动联邦学习在隐私敏感场景中的实用化具有重要意义。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.27288v1",
+      "source": "arxiv",
+      "title": "Open Security Benchmark: Towards Autonomous Enterprise Cyber Defense",
+      "abstract": "Enterprises are moving toward autonomous cyber defense: agentic AI that builds situational awareness of an organization's security state and reasons from it to assessments, decisions, and actions. This rests on a holistic view of the enterprise's security state, the continuous, cross-vendor picture of identities, cloud and infrastructure, data, applications, and their configurations that security posture management assembles. As agents take on this work, what matters is not whether an agent can produce an answer but whether it should be trusted to. The field cannot yet answer this question. Real enterprise environments are private, cross-vendor, and deeply correlated, and none is exposed publicly as a shared, queryable target for evaluating such agents end to end. We call this the environment data gap. We present Open Security Benchmark (OSB), a framework that benchmarks agentic AI on this work. OSB surfaces a curated enterprise environment - a frozen, holistic view of the security state - and evaluates posture investigation across two modalities: text-to-SQL over a relational snapshot and each vendor's native API over a served instance of the same environment. Freezing the environment pins the target state as an immutable snapshot and anchors answers to a closed-form ground truth. OSB is built from five components: a data layer, a task and evaluation-set layer, a multi-dimensional scoring layer, a minimal auditable harness, and a bring-your-own path that serves public comparison and private tenant evaluation from one substrate. We instantiate the framework with two identity-security packs and a family of synthetic-organization environment datasets spanning multiple scales, and chart its extension to further posture subdomains, investigation modalities, and defense stages from assessment toward remediation.",
+      "authors": [
+        "Gal Engelberg",
+        "Michael Arenzon",
+        "Leon Goldberg"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-29T14:46:04+00:00",
+      "link": "https://arxiv.org/pdf/2607.27288v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "benchmark and evaluation framework for agentic AI in enterprise cyber defense, covering security posture management across identities, cloud, data, and infrastructure",
+      "llm_evidence_cn": "面向自主企业网络防御的代理AI评估基准，涵盖身份、云、数据与基础设施安全态势",
+      "llm_evidence": "面向自主企业网络防御的代理AI评估基准，涵盖身份、云、数据与基础设施安全态势",
+      "canonical_evidence": "面向自主企业网络防御的代理AI评估基准，涵盖身份、云、数据与基础设施安全态势",
+      "llm_tldr_en": "This paper introduces the Open Security Benchmark for evaluating whether agentic AI can be trusted to build situational awareness and drive autonomous enterprise cyber defense.",
+      "llm_tldr_cn": "企业正在走向自主网络防御，即由代理型AI综合组织安全状态并据此进行评估、决策与行动。但现有领域无法回答这类代理是否值得信任，且真实企业环境跨厂商、私有且深度关联，缺乏公开可查询的评估目标。论文提出开放安全基准，构建跨身份、云、基础设施、数据与应用配置的整体安全态势评估体系，为自主企业安全代理的可信性评测奠定基础。",
+      "llm_tldr": "企业正在走向自主网络防御，即由代理型AI综合组织安全状态并据此进行评估、决策与行动。但现有领域无法回答这类代理是否值得信任，且真实企业环境跨厂商、私有且深度关联，缺乏公开可查询的评估目标。论文提出开放安全基准，构建跨身份、云、基础设施、数据与应用配置的整体安全态势评估体系，为自主企业安全代理的可信性评测奠定基础。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.26390v2",
+      "source": "arxiv",
+      "title": "Impossible to hide secret ...: Uncovering Security and Privacy Issues in LLM-native IDEs",
+      "abstract": "LLM-native IDEs (Integrated Development Environments), aka LIDEs, are designed from the ground up to work with Large Language Models (LLMs). LIDEs have found remarkable success in Software Engineering (SE) tasks such as coding, debugging, and program comprehension. LIDEs are software systems, and, like any system, they can exhibit vulnerabilities. In this paper, we study the security and privacy issues that developers reported while using popular LIDEs in their development tasks. We collected 1.1M posts from 29 popular subreddits related to LIDEs. We identified 446 posts and analyzed over 6K comments to the posts that discussed security and privacy issues in almost all popular LIDEs, such as Cursor, Copilot, Codex, etc. Using a mix of qualitative and quantitative methods, we constructed a taxonomy of the reported security and privacy issues. Our results show that most issues in LIDEs stem from system-level design choices, rather than the underlying LLMs, such as user data access, unchecked autonomous actions, etc. To overcome these issues, developers frequently relied on external safeguards like code sandboxing and manual reviewing, highlighting prevalent mistrust among developers about LIDEs. We share lessons from our study to support future design of secure and privacy-aware LIDEs.",
+      "authors": [
+        "Mostafijur Rahman Akhond",
+        "Md Afif Al Mamun",
+        "Gias Uddin",
+        "Song Wang"
+      ],
+      "primary_category": "cs.SE",
+      "categories": [
+        "cs.SE"
+      ],
+      "published": "2026-07-29T01:49:17+00:00",
+      "link": "https://arxiv.org/pdf/2607.26390v2",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "security and privacy issues in LLM-native IDEs",
+      "llm_evidence_cn": "揭示LLM原生IDE中的安全与隐私问题，属于人工智能安全威胁",
+      "llm_evidence": "揭示LLM原生IDE中的安全与隐私问题，属于人工智能安全威胁",
+      "canonical_evidence": "揭示LLM原生IDE中的安全与隐私问题，属于人工智能安全威胁",
+      "llm_tldr_en": "Analyzes 1.1M posts to uncover security and privacy issues in LLM-native IDEs such as Cursor, Copilot, and Codex, identifying 446 relevant posts and over 6K comments to characterize vulnerabilities in these AI tools.",
+      "llm_tldr_cn": "LLM原生IDE（如Cursor、Copilot、Codex）在软件开发中广泛使用，但其安全与隐私漏洞未得到充分认识。本文收集29个热门子版块的110万条帖子，筛选出446个帖子及6000余条评论，系统分析开发者报告的安全和隐私问题。研究揭示了这类AI集成开发环境中的主要漏洞类别，为构建更安全的LLM工具提供实证依据。",
+      "llm_tldr": "LLM原生IDE（如Cursor、Copilot、Codex）在软件开发中广泛使用，但其安全与隐私漏洞未得到充分认识。本文收集29个热门子版块的110万条帖子，筛选出446个帖子及6000余条评论，系统分析开发者报告的安全和隐私问题。研究揭示了这类AI集成开发环境中的主要漏洞类别，为构建更安全的LLM工具提供实证依据。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.27480v1",
+      "source": "arxiv",
+      "title": "Granite: A Modular Methodology for Foundational Verification of Hardware-Software Leakage Contracts",
+      "abstract": "Granite is a methodology for modular verification of both functional correctness and nonleakage of RTL processors against ISA contracts. We prove that the cycle-by-cycle timing of a pipelined RISC design--with speculation, precise interrupts, and I/O--is determined solely by observables specified in an ISA leakage contract. For programs that keep observables independent of secrets (i.e., following the cryptographic-constant-time discipline), this result rules out information leakage through known and unknown timing side channels.   Granite's specifications only constrain functional correctness and information-flow dependencies: not how many cycles an instruction takes, at which instruction an interrupt is handled, or the exact latencies of submodules such as multipliers and memory. Granite's central technique is leakage-aware refinement via determinism, which establishes correctness and confidentiality together as trace equivalence with respect to a family of cycle-level, deterministic spec machines. Secret-independent nondeterminism is handled by existentially parameterizing specs with untrusted, deterministic functions acting only on public data. Submodules are proved against their own leakage-aware specs, and these proofs compose into the whole-design guarantee--which therefore holds over a space of secure implementations.   We believe this work is the first to achieve modular and foundational connection between instruction-set-level leakage contracts and microarchitecture-specific cycle-by-cycle execution with wire-level observations. Our proofs compose with a certified static analysis that recognizes cryptographic-constant-time code to derive a single Rocq theorem about the cycle-by-cycle confidentiality of a hardware-and-software cryptographic implementation--eliminating every intermediate specification, including the ISA contract itself, from the trusted computing base.",
+      "authors": [
+        "Stella Lau",
+        "Andres Erbsen",
+        "Adam Chlipala"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-29T21:44:57+00:00",
+      "link": "https://arxiv.org/pdf/2607.27480v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Modular verification of hardware-software leakage contracts for confidential computing",
+      "llm_evidence_cn": "面向机密计算的硬件软件泄漏契约模块化验证",
+      "llm_evidence": "面向机密计算的硬件软件泄漏契约模块化验证",
+      "canonical_evidence": "面向机密计算的硬件软件泄漏契约模块化验证",
+      "llm_tldr_en": "This paper introduces Granite, a modular verification methodology proving that RTL processors satisfy ISA leakage contracts, eliminating timing side channels when the cryptographic constant-time discipline is followed.",
+      "llm_tldr_cn": "本文提出Granite方法，用于对RTL处理器进行模块化功能正确性和非泄漏验证。通过证明流水线处理器的逐周期时序仅取决于ISA泄漏契约中的可观察量，从而在程序遵循加密常数时间纪律时排除已知和未知的时序侧信道。该方法为机密计算所需的硬件安全保证提供了基础性的可验证基础。",
+      "llm_tldr": "本文提出Granite方法，用于对RTL处理器进行模块化功能正确性和非泄漏验证。通过证明流水线处理器的逐周期时序仅取决于ISA泄漏契约中的可观察量，从而在程序遵循加密常数时间纪律时排除已知和未知的时序侧信道。该方法为机密计算所需的硬件安全保证提供了基础性的可验证基础。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.27696v1",
+      "source": "arxiv",
+      "title": "Distributed Point Functions and Function Secret Sharing",
+      "abstract": "A distributed point function (DPF) is a cryptographic primitive that enables compressed additive sharing of a secret weight-1 vector (equivalently, a point function) across two or more parties. The appealing lightweight structure of DPF constructions has enabled a wide range of applications. These include private information retrieval, anonymous messaging, secure computation with preprocessing, and pseudorandom correlation generators for expanding small correlated seeds into large pseudorandom instances of cryptographic correlations.   In this article, we survey definitions, constructions, and applications of DPFs. We also discuss the extension of DPF to function secret sharing (FSS), which generalizes point functions to support richer function classes. Efficient FSS schemes yield a similar generalization for most of the applications of DPFs.",
+      "authors": [
+        "Elette Boyle",
+        "Niv Gilboa",
+        "Yuval Ishai",
+        "Peter Scholl"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-30T05:27:27+00:00",
+      "link": "https://arxiv.org/pdf/2607.27696v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "survey of DPF/FSS cryptographic primitives underlying private information retrieval and secure computation; confidential computing enabler",
+      "llm_evidence_cn": "对DPF/FSS原语的综述，是隐私检索和安全计算的基础组件，支撑机密计算",
+      "llm_evidence": "对DPF/FSS原语的综述，是隐私检索和安全计算的基础组件，支撑机密计算",
+      "canonical_evidence": "对DPF/FSS原语的综述，是隐私检索和安全计算的基础组件，支撑机密计算",
+      "llm_tldr_en": "Surveys distributed point functions and function secret sharing, covering constructions and applications to private information retrieval, anonymous messaging, and secure computation.",
+      "llm_tldr_cn": "本文综述分布式点函数（DPF）和函数秘密共享（FSS）的定义、构造与应用。DPF以轻量结构实现了秘密加权向量的压缩加性共享，支撑了私有信息检索、匿名通信和预处理安全计算等场景。文章还介绍了从DPF到FSS的泛化，以及高效FSS构造带来的机遇。该综述对机密计算与隐私保护系统的设计具有重要参考价值。",
+      "llm_tldr": "本文综述分布式点函数（DPF）和函数秘密共享（FSS）的定义、构造与应用。DPF以轻量结构实现了秘密加权向量的压缩加性共享，支撑了私有信息检索、匿名通信和预处理安全计算等场景。文章还介绍了从DPF到FSS的泛化，以及高效FSS构造带来的机遇。该综述对机密计算与隐私保护系统的设计具有重要参考价值。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.27267v1",
+      "source": "arxiv",
+      "title": "FAVA: Formal Authorization for Verified Agents with Evidence-Backed Permission Graphs",
+      "abstract": "Large language model (LLM) agents autonomously interleave semantic reasoning with complex system operations. In these dynamic environments, static tool-level permissions are fundamentally insufficient; safe authorization is highly context-dependent and heavily reliant on evolving runtime states and data flows. We present FAVA (Formal Authorization for Verified Agents), a permission-carrying authorization framework for agent execution. FAVA utilizes an LLM-guided Permission Intermediate Representation (IR) to translate ambiguous natural-language tasks into structured constraints. A deterministic lowering pass then converts this IR into an evidence-backed permission graph that explicitly tracks data flows, dependencies, and contextual labels. To provide strict security guarantees, a Satisfiability Modulo Theories (SMT) authorizer mathematically verifies the current graph against security policies before any effectful action executes. A runtime gateway then enforces the solver's result, either authorizing the execution or intercepting it with a precise counterexample. We evaluate FAVA across OpenAgentSafety, OctoBench, and ActPlane scenarios. Our evaluation demonstrates that FAVA achieves a 90.5% Decision Compliance Rate (DCR) over the aggregate dataset, successfully intercepting dynamic violating traces in the evaluated trace-conditioned scenarios.",
+      "authors": [
+        "Yifan Zhang",
+        "Xinkui Zhao",
+        "Sai Liu",
+        "Hengxuan Lou",
+        "Guanjie Cheng",
+        "Chang Liu"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-29T09:41:07+00:00",
+      "link": "https://arxiv.org/pdf/2607.27267v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "formal authorization for LLM agents; AI security and access control",
+      "llm_evidence_cn": "面向LLM智能体的形式化授权框架，涉及AI安全与访问控制",
+      "llm_evidence": "面向LLM智能体的形式化授权框架，涉及AI安全与访问控制",
+      "canonical_evidence": "面向LLM智能体的形式化授权框架，涉及AI安全与访问控制",
+      "llm_tldr_en": "FAVA is an authorization framework for LLM agents using LLM-guided intermediate representation and evidence-backed permission graphs for context-dependent, verifiable permissions.",
+      "llm_tldr_cn": "论文针对LLM智能体在动态环境中静态工具权限不足的问题，提出FAVA授权框架。它用LLM把自然语言任务转化结构化的权限中间表示，再通过确定性下降生成带有证据的权限图，显式追踪数据流和上下文。这样授权决策可验证且与运行时状态一致，提升了智能体的安全性和问责性。该研究为AI智能体安全提供了一种形式化授权机制。",
+      "llm_tldr": "论文针对LLM智能体在动态环境中静态工具权限不足的问题，提出FAVA授权框架。它用LLM把自然语言任务转化结构化的权限中间表示，再通过确定性下降生成带有证据的权限图，显式追踪数据流和上下文。这样授权决策可验证且与运行时状态一致，提升了智能体的安全性和问责性。该研究为AI智能体安全提供了一种形式化授权机制。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.27815v1",
+      "source": "arxiv",
+      "title": "Robust Estimation of Sparse Numerical Vectors under Local Differential Privacy",
+      "abstract": "Local differential privacy (LDP) protocols are vulnerable to poisoning attacks. Existing research have proposed efficient defense strategies for single-item users. However, in practice, a user may possess multiple items. The defense against poisoning attacks for multi-item users is challenging, because due to larger output spaces, the adversary can conduct more powerful attacks without being detected. In this paper, we address the robust sparse vector mean estimation problem, in which each user has a vector with $m$ nonzero coordinates. We propose Randomized Projection with Clipping (RPC). Firstly, the server sends a random binary vector to each user. The user then projects its local data on the vector, and clip the value to restrict the attacker's capability. To handle clipping bias, we propose a correction method based on a careful analysis that gives an exact expression of the bias. As a result, bias-variance tradeoff is no longer needed, thus the clipping threshold can be further reduced to shrink the output space and enhance robustness. We provide a rigorous theoretical guarantee of the estimation error under all possible attacks. Numerical experiments show that under trusted environments, our new method achieves comparable or better performance than existing methods, indicating that our method is already an efficient estimator in its own right. Under untrusted environments, our method is also significantly more robust to poisoning attacks.",
+      "authors": [
+        "Puning Zhao",
+        "Zhikun Zhang",
+        "Shaowei Wang",
+        "Sheng Yue",
+        "Bangzhou Xin",
+        "Tianhang Zheng",
+        "Pengfei Zhang",
+        "Xiaochun Cao"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.LG"
+      ],
+      "published": "2026-07-30T07:55:09+00:00",
+      "link": "https://arxiv.org/pdf/2607.27815v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "privacy-preserving robust estimation with LDP against poisoning attacks",
+      "llm_evidence_cn": "基于本地差分隐私的鲁棒估计，抵御投毒攻击，与人工智能隐私保护相关",
+      "llm_evidence": "基于本地差分隐私的鲁棒估计，抵御投毒攻击，与人工智能隐私保护相关",
+      "canonical_evidence": "基于本地差分隐私的鲁棒估计，抵御投毒攻击，与人工智能隐私保护相关",
+      "llm_tldr_en": "Proposes Randomized Projection with Clipping (RPC) to robustly estimate sparse vector means under local differential privacy, defending against poisoning attacks even for multi-item users.",
+      "llm_tldr_cn": "针对本地差分隐私协议易受投毒攻击且现有防御难以处理多物品用户的问题，本文提出随机投影与裁剪（RPC）方法。服务器发送随机二值向量，用户对本地数据投影并裁剪以限制攻击影响，从而实现稀疏数值向量的鲁棒均值估计。该方法为隐私保护下的人工智能数据分析提供了一种可抵御恶意攻击的通用估计工具。",
+      "llm_tldr": "针对本地差分隐私协议易受投毒攻击且现有防御难以处理多物品用户的问题，本文提出随机投影与裁剪（RPC）方法。服务器发送随机二值向量，用户对本地数据投影并裁剪以限制攻击影响，从而实现稀疏数值向量的鲁棒均值估计。该方法为隐私保护下的人工智能数据分析提供了一种可抵御恶意攻击的通用估计工具。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "privacy preservation in artificial intelligence",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.27886v1",
+      "source": "arxiv",
+      "title": "Don't Trust the AI Ecosystem: Analyzing Privacy Leakage in Compromised Open-Source Components",
+      "abstract": "Existing model inversion (MI) attacks predominantly rely on post-training optimization to recover private data from model outputs. However, these methods are fundamentally constrained by the target model's generalization bottleneck, often yielding generic features rather than specific identities, particularly on high-dimensional datasets. In this paper, we introduce GradLock, a novel training-time injection attack that stealthily injects sensitive training data directly into the model parameters. Operating within a compromised supply chain context, GradLock leverages stateless deterministic indexing to establish isolated data vaults and employs dynamic gradient locking to prevent payload degradation during the optimization process. This mechanism allows the adversary to extract pixel-perfect data from the final model without retaining access to the training environment. Extensive experiments on MNIST, Imagenette, and CelebA demonstrate that GradLock achieves near-lossless reconstruction (SSIM ~ 1.0) and instant extraction (< 1.0s). Compared to existing training-time injection methods, our approach exhibits superior robustness against standard deployment optimizations, including quantization, pruning, and fine-tuning. Furthermore, a user deployment study reveals that 93.3% of participants failed to detect the malicious logic, highlighting a severe blind spot in the security of modern AI supply chains.",
+      "authors": [
+        "Jin-Seong Kim",
+        "Han-Ju Lee",
+        "Seok-Won Hong",
+        "Takeshi Takahashi",
+        "Chansu Han",
+        "Tomohiro Morikawa",
+        "Seok-Hwan Choi"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-30T09:02:02+00:00",
+      "link": "https://arxiv.org/pdf/2607.27886v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "training-time injection attack GradLock for privacy leakage in compromised AI components",
+      "llm_evidence_cn": "利用GradLock训练时注入攻击在受攻陷AI组件中造成隐私泄露",
+      "llm_evidence": "利用GradLock训练时注入攻击在受攻陷AI组件中造成隐私泄露",
+      "canonical_evidence": "利用GradLock训练时注入攻击在受攻陷AI组件中造成隐私泄露",
+      "llm_tldr_en": "Model inversion attacks struggle with high-dimensional data. GradLock instead injects sensitive training data into model parameters during training in compromised supply chains, using deterministic indexing and gradient locking to preserve payloads.",
+      "llm_tldr_cn": "现有模型反演攻击在高维数据上难以恢复特定身份隐私，该文提出训练时注入攻击GradLock。在供应链组件被攻陷的背景下，GradLock利用无状态确定性索引建立隔离数据保险库，并通过动态梯度锁定在训练过程中将敏感数据隐秘注入模型参数，从而绕开传统方法的生成瓶颈，实现有效的隐私泄露。该工作揭示了AI开源供应链中训练时攻击的严重威胁。",
+      "llm_tldr": "现有模型反演攻击在高维数据上难以恢复特定身份隐私，该文提出训练时注入攻击GradLock。在供应链组件被攻陷的背景下，GradLock利用无状态确定性索引建立隔离数据保险库，并通过动态梯度锁定在训练过程中将敏感数据隐秘注入模型参数，从而绕开传统方法的生成瓶颈，实现有效的隐私泄露。该工作揭示了AI开源供应链中训练时攻击的严重威胁。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.27491v1",
+      "source": "arxiv",
+      "title": "Flock: Fast Proving for Batch Boolean Computations",
+      "abstract": "For many applications of SNARKs, a key bottleneck is proving large batches of standard cryptographic hash evaluations, such as SHA-256, Keccak, or BLAKE3. We introduce Flock, a hash-based SNARK for extremely fast proving of such batched Boolean computations. Flock proves batches of the same R1CS circuit (plus input/output relations between them), can prove hash-chains and Merkle path openings, and in principle can be extended to full-fledged hash-based signature verification. At its core, Flock combines new optimizations for the lincheck and zerocheck protocols with an aggressively optimized proof-of-concept implementation co-designed by coding agents.   On a single core of an M4 Max processor, Flock proves 82k evaluations of the BLAKE3 compression function, 42k SHA-256 compressions, and 30k Keccak permutations per second --- less than a $250\\times$ overhead over native execution. On ten cores, throughput exceeds 660k BLAKE3 compressions per second; in proving SHA-256, Flock is more than $9\\times$ faster than Binius64, the prior state of the art, and more than $500\\times$ faster than the fastest elliptic curve-based SNARK we measured against.",
+      "authors": [
+        "Benedikt Bünz",
+        "Ron D. Rothblum",
+        "William Wang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR"
+      ],
+      "published": "2026-07-29T22:11:08+00:00",
+      "link": "https://arxiv.org/pdf/2607.27491v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "hash-based SNARK for fast proving of batched Boolean computations, an enabling cryptographic technique for confidential and verifiable computation",
+      "llm_evidence_cn": "基于哈希的SNARK用于批量布尔计算快速证明，是机密计算与可验证计算的关键密码技术",
+      "llm_evidence": "基于哈希的SNARK用于批量布尔计算快速证明，是机密计算与可验证计算的关键密码技术",
+      "canonical_evidence": "基于哈希的SNARK用于批量布尔计算快速证明，是机密计算与可验证计算的关键密码技术",
+      "llm_tldr_en": "Flock is a hash-based SNARK that achieves extremely fast proving of batch Boolean computations, such as SHA-256 and BLAKE3, via optimized lincheck and zerocheck protocols plus a high-performance implementation.",
+      "llm_tldr_cn": "可验证计算常因需证明大量哈希计算而性能受限。Flock提出基于哈希的SNARK方案，通过优化lincheck与zerocheck协议并采用高性能实现，极大加速批量布尔计算（如BLAKE3、SHA-256）的证明。在单核M4 Max上每秒可证明数万次哈希压缩函数求值，适合哈希链、Merkle路径与签名验证等场景，为机密计算和隐私保护应用提供了高效的密码学基础。",
+      "llm_tldr": "可验证计算常因需证明大量哈希计算而性能受限。Flock提出基于哈希的SNARK方案，通过优化lincheck与zerocheck协议并采用高性能实现，极大加速批量布尔计算（如BLAKE3、SHA-256）的证明。在单核M4 Max上每秒可证明数万次哈希压缩函数求值，适合哈希链、Merkle路径与签名验证等场景，为机密计算和隐私保护应用提供了高效的密码学基础。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "confidential computing techniques",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.27811v1",
+      "source": "arxiv",
+      "title": "SPFM-Net: Semantic-Prior-Guided Frequency-Constrained Mamba for Invisible Watermark Attack",
+      "abstract": "Existing watermark attacks typically rely on predefined signal-processing operations or locally constrained restoration networks, making it difficult to capture the long-range dependencies of globally distributed watermark signals and resulting in an unfavorable trade-off between removal effectiveness and visual fidelity. In this paper, we propose SPFM-Net, a semantic-prior-guided and frequency-constrained Mamba framework for invisible watermark attack. SPFM-Net first employs high-ratio masking to disrupt the spatial coherence of invisible watermark signals, and then utilizes a partially fine-tuned pretrained Masked Autoencoder to reconstruct semantically consistent image from sparse observations while suppressing watermark-related information. A Multi-scale Residual Frequency Feature Interaction module subsequently aggregates watermark-related residual features across multiple receptive fields, while adaptively suppressing responses from watermark-irrelevant regions. To further capture the long-range dependencies of globally distributed watermark signals, a lightweight Mamba-based Global State-space Feature Modeling (GSFM) unit is introduced to separate watermark-related features from natural image content and suppress the remaining watermark traces. In addition, SPFM-Net is optimized using a multi-level objective that jointly imposes spatial-, frequency-, and edge-domain constraints, enabling effective watermark suppression while preserving perceptual quality. Extensive experiments on representative spatial-domain, transform-domain, orthogonal moment-based, and deep learning-based watermarking schemes demonstrate that SPFM-Net achieves a favorable trade-off between watermark attack effectiveness and perceptual fidelity.",
+      "authors": [
+        "Chunpeng Wang",
+        "Yanan Shi",
+        "Zhiqiu Xia",
+        "Jidong Yang",
+        "Suo Gao",
+        "Qi Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-07-30T07:50:49+00:00",
+      "link": "https://arxiv.org/pdf/2607.27811v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "AI-driven attack on invisible watermarks; security threat to content protection",
+      "llm_evidence_cn": "AI驱动的不可见水印攻击，构成对内容保护的安全威胁",
+      "llm_evidence": "AI驱动的不可见水印攻击，构成对内容保护的安全威胁",
+      "canonical_evidence": "AI驱动的不可见水印攻击，构成对内容保护的安全威胁",
+      "llm_tldr_en": "Presents SPFM-Net, a semantic-prior-guided frequency-constrained Mamba framework for invisible watermark attack, improving removal while preserving visual fidelity.",
+      "llm_tldr_cn": "论文解决现有不可见水印攻击方法难以捕获全局水印信号长程依赖、导致去除效果与视觉保真难以兼顾的问题。提出SPFM-Net，利用语义先验引导和频率约束的Mamba框架，先通过高比例掩码破坏水印空间连贯性，再用预训练掩码自编码器重建语义一致的图像并抑制水印。实验表明该方法在去除效果和视觉质量上优于现有技术。这为AI安全中的对抗性攻击与防御研究提供了新的视角。",
+      "llm_tldr": "论文解决现有不可见水印攻击方法难以捕获全局水印信号长程依赖、导致去除效果与视觉保真难以兼顾的问题。提出SPFM-Net，利用语义先验引导和频率约束的Mamba框架，先通过高比例掩码破坏水印空间连贯性，再用预训练掩码自编码器重建语义一致的图像并抑制水印。实验表明该方法在去除效果和视觉质量上优于现有技术。这为AI安全中的对抗性攻击与防御研究提供了新的视角。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "artificial intelligence security threats and defenses",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.28193v1",
+      "source": "arxiv",
+      "title": "A Cloud Continuum Research Infrastructure for Distributed CPS Experimentation",
+      "abstract": "Cloud Continuum applications require experimental environments capable of combining heterogeneous Edge, Fog, Cloud, and high-performance computing resources while preserving reproducibility, observability, and control over distributed deployments. This paper presents a two-level reference architecture for Cloud Continuum experimentation built on top of the SLICES Cloud Continuum Blueprint. The proposed approach separates the research-infrastructure layer, which exposes and manages distributed resources, from the application layer, where Cyber-Physical workflows are organized according to an Edge-Fog-Cloud pattern in which placement, timing, and data provenance are treated as first-class experimental concerns.   The architecture is designed to support multiple continuum applications rather than a single domain-specific prototype. At the Edge, applications interact with physical devices and perform low-latency sensing or safety actions; at the Fog, they execute near-source coordination, mediation, and stream-processing logic; at the Cloud, they consolidate global knowledge through analytics, optimization, and visualization. This partitioning enables researchers to deploy, customize, and compare alternative control and monitoring strategies over the same programmable infrastructure substrate.   The approach is validated through two representative use cases: Renewable Energy Community management, where distributed Digital Twin coordination and time-window-based energy control are requested, and AirWatch, a monitoring pipeline focused on anomaly detection, low-latency alerting, and cloud-side aggregation. Both workloads are evaluated through a systematic campaign of 40 runs comparing virtualized and physical edge deployments over a geographically distributed infrastructure.",
+      "authors": [
+        "Fabio Orazio Mirto",
+        "Giuseppe Tricomi",
+        "Luca D'Agati",
+        "Andrea Sabbioni",
+        "Stefano Silvestri",
+        "Francesco Longo",
+        "Giovanni Merlino",
+        "Armir Bujari",
+        "Paolo Bellavista",
+        "Antonio Puliafito"
+      ],
+      "primary_category": "cs.DC",
+      "categories": [
+        "cs.DC"
+      ],
+      "published": "2026-07-30T13:29:14+00:00",
+      "link": "https://arxiv.org/pdf/2607.28193v1",
+      "tags": [
+        "keyword:sec-cloud-ai",
+        "query:sec-cloud-ai"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "two-level reference architecture for distributed Cloud Continuum experimentation with Edge-Fog-Cloud resources, directly related to distributed cloud computing architectures",
+      "llm_evidence_cn": "面向云连续体实验的两级参考架构，涉及边缘-雾-云资源编排，属于分布式云计算架构",
+      "llm_evidence": "面向云连续体实验的两级参考架构，涉及边缘-雾-云资源编排，属于分布式云计算架构",
+      "canonical_evidence": "面向云连续体实验的两级参考架构，涉及边缘-雾-云资源编排，属于分布式云计算架构",
+      "llm_tldr_en": "The paper proposes a two-level reference architecture for Cloud Continuum experimentation on the SLICES blueprint, separating infrastructure from application layer for distributed CPS workflows.",
+      "llm_tldr_cn": "云连续体应用需要在边缘、雾、云及高性能计算资源上开展可复现且可观测的实验。该论文基于SLICES云连续体蓝图提出一种两级参考架构，将研究基础设施层与应用层分离，后者按照边缘-雾-云模式组织网络物理工作流，并将部署位置、时序和数据来源视为一等实验关心事项。该架构支持异构资源的可控编排，是分布式云计算实验环境的重要基础设施参考。",
+      "llm_tldr": "云连续体应用需要在边缘、雾、云及高性能计算资源上开展可复现且可观测的实验。该论文基于SLICES云连续体蓝图提出一种两级参考架构，将研究基础设施层与应用层分离，后者按照边缘-雾-云模式组织网络物理工作流，并将部署位置、时序和数据来源视为一等实验关心事项。该架构支持异构资源的可控编排，是分布式云计算实验环境的重要基础设施参考。",
+      "llm_tags": [
+        "query:sec-cloud-ai"
+      ],
+      "matched_query_tag": "query:sec-cloud-ai",
+      "matched_query_text": "distributed cloud computing architectures",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

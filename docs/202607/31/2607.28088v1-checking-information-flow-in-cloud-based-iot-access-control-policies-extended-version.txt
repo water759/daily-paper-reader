@@ -1,0 +1,1424 @@
+Title: Checking Information Flow in Cloud-based IoT Access Control Policies (Extended Version)
+
+URL Source: https://arxiv.org/pdf/2607.28088v1
+
+Published Time: Fri, 31 Jul 2026 00:57:15 GMT
+
+Number of Pages: 18
+
+Markdown Content:
+# Checking Information Flow in Cloud-based IoT Access Control Policies (Extended Version) 
+
+Lorenzo Ceragioli, Letterio Galletta, Edoardo Lunati 
+
+IMT School for Advanced Studies Lucca Lucca, Italy Emails: lorenzo.ceragioli@imtlucca.it, letterio.galletta@imtlucca.it, edoardo.lunati@imtlucca.it 
+
+Abstract —Many cloud providers for IoT technologies offer access control mechanisms whose proper configuration is crit-ical for security. However, verifying permissions in isolation is insufficient in a setting where devices have different levels of trust or are compartmentalised in various subsystems. This work analyses IoT access control policies to identify potential security vulnerabilities from unwanted information flow between devices. To this end, we formally model AWS IoT Core’s components and define an information flow graph to capture the communication among devices permitted by the access control policies. We build a finite representation of the graph by leveraging an SMT solver, thus enabling the verification of information flow between devices. We implement our approach in a tool called I OT:P OKER , and assess it on a realistic scenario and several real-world policies. 
+
+I. I NTRODUCTION 
+
+Cloud computing has emerged as a cornerstone for Internet of Things (IoT) deployments, offering tailored infrastructure and platform services: numerous cloud providers offer spe-cialised Platform-as-a-Service and Infrastructure-as-a-Service solutions for IoT applications, e.g., AWS IoT Core [1] and Azure IoT Hub [2]. These services allow developers to offload security and deployment responsibilities onto cloud providers. Regarding security, many providers supply developers with languages to define their access control policies ( IoT policies ). An IoT policy is a specification of what resources an IoT device can access, which actions it can perform, and under which conditions (e.g., publish an MQTT [3] message – a type of action from a popular IoT messaging protocol, see Section II). Properly configured policies are essential for the security of IoT systems. Indeed, previous research has highlighted the susceptibility of IoT policies to misconfigu-rations and the significant risks they may cause [4]. However, preventing unauthorised access is necessary but not sufficient to ensure security in a setting where devices have a differ-ent degree of confidentiality, trust and of robustness against attacks. Therefore, developers resort to compartmentalisation and information flow control to increase the security level of their systems. To protect integrity, they assign integrity levels to devices and prevent any direct or transitive dependency that would let lower-integrity devices influence higher-integrity ones ("no read down, no write up"). Similarly, to enforce confidentiality, they assign confidentiality levels to devices and disallow interactions that would allow devices to learn from higher levels ("no read up") or leak to lower levels ("no write down"). Ensuring both integrity and confidentiality requires isolating devices and removing unwanted dependencies. We say that there is an information flow between devices d1 and 
+
+dn if some devices d2, d 3 . . . , d n−1 exist such that the device 
+
+di sends a message that is received by di+1 [5]–[9]. This paper addresses the problem of checking information flow in IoT access policies, namely, protecting critical de-vices from untrusted devices and thereby enforcing security properties, including confidentiality and integrity. We provide a formal model that characterises how access to resources in an IoT-Cloud deployment is regulated via policies. Then, we introduce a novel verification procedure to verify that a policy enjoys such information-flow properties and implement it in a tool called I OT:P OKER . Formal verification techniques have been proven effective in detecting misconfigurations and verifying security properties in access control policies at various levels. Indeed, prior work [4], [10]–[13] studied the problem of permission misconfiguration in both cloud-based and IoT access policies, focusing on AWS Identity and Access Management (IAM) and AWS IoT Core. However, such works analyse policies in isolation to check the granted permissions and do not consider possible interactions among devices, so the possible information flow (see Section VIII). Here, we fill this gap by providing a triple contribution: (i) We introduce a formal model of IoT policies, specifically targeting AWS IAM policies and their evaluation within the AWS IoT Core infrastructure. (ii) Given a set of IoT policies, we analyse them and build an information flow graph to capture the possible communication interaction between devices allowed by the policy. The information flow graph captures the counterintuitive behaviour arising from the interplay of wildcard characters and variables, which are resolved at different times during request evaluation and may lead to 
+
+wildcard injection attacks . Checking an information flow thus reduces to reachability in this graph. We compute a finite symbolic version of the graph through an SMT solver to enable practical verification, leveraging the specific constraints of AWS policies to efficiently decide the satisfiability of formulas with regular languages and arXiv:2607.28088v1 [cs.CR] 30 Jul 2026 string manipulation. (iii) Finally, we implement our verification mechanism in the tool I OT:P OKER , available online [14]. We evaluate the tool’s effectiveness in detecting misconfigurations and unintended information flows using a case study designed to capture a typical Build Automation System. Although synthetic, the case study reflects the main structural constraints and operational patterns of real IoT systems. In addition, we assess the tool’s performance by randomly synthesising a network of devices and associating them with real-world IoT policies available online [15]: we show that IOT:P OKER scales well in practice as the network grows. 
+
+Plan of the paper: In Section II, we introduce the MQTT protocol and AWS IoT Core. Section III present our running example. Section IV formalises AWS IoT Core’s main compo-nents. In Section V, we describe how to build the information flow graph from a set of policies. Section VI presents our tool and its experimental evaluation, Section VII discusses the assumptions and limitations of our model, and how to extend our proposal to additional mechanisms available in IAM poli-cies. In Sections VIII and IX, we compare our approach with the literature and draw some conclusions. Appendices contain a summary of symbols and notation (Table III), a formal model of device-broker interaction, the proofs of our formal development, and some complementary evaluation results. II. B ACKGROUND 
+
+Here, we describe the MQTT protocol and the AWS IoT policy language by focusing only on the main components, which are sufficient for our formal development. Possible extensions and advanced features are discussed in Section VII. We also partially adapt the syntax for brevity, e.g. by omitting the Amazon Resource Name (ARN) from IoT-AWS policies. 
+
+MQTT Protocol: Message Queuing Telemetry Transport (MQTT) [3] is a lightweight client/server protocol relying on a publish/subscribe communication model, designed for environments where resources and bandwidth are constrained and limited, such as machine-to-machine and IoT contexts. In the publish/subscribe communication model, the entities sending messages ( the publishers ) and the ones receiving them (the subscribers ) indirectly interact through the infrastructure provided by a third component ( the broker ), which is the only one responsible for delivering messages. In more detail, clients send CONNECT requests to establish a connection with the broker, specifying their chosen client id. After connec-tion, clients communicate via topics: virtual communication channels managed by the broker. In practice, topics are hierarchically-structured strings, organized into topic levels 
+
+through forward-slash characters ‘ /’. For example, the topic  
+
+> floor1 /room1 /temp
+
+can be used to communicate the sampled temperature in the given room and floor of a building. The bro-ker performs pattern-matching to filter and forward incoming messages to interested clients. A client can subscribe to a given set of topics by sending a SUBSCRIBE request to the broker, specifying a topic filter , namely a restricted regular expression denoting the set of topics it is interested in. Topic filters can use the single-level ‘+’ or the multi-level ‘ #’ wildcard characters: ‘+’ replaces any single topic level, whereas ‘ #’ at the end of a topic filter represents any sequence of topic levels. For example, the topic filter floor1 /+/temp allows a client to receive temperature values from any room on the first floor of a building. For publishing on a given topic, clients send a PUBLISH message specifying the topic and a payload; the broker then propagates the payload to all clients subscribed to that topic. For example, a temperature sensor in room1 
+
+can publish on the topic floor1 /room1 /temp to inform all the clients interested in that temperature value. 
+
+AWS IoT Policies: Amazon Web Services (AWS) [16] provides cloud services and a communication infrastructure on which IoT developers can deploy their devices, known as AWS IoT Core [1]. Among the various technologies provided by AWS IoT Core, we find the MQTT protocol: the cloud acts as the MQTT broker, while providing security mechanisms via the implementation of authentication and access control. Devices may connect to the broker only if they successfully authenticate through a certificate or via other Amazon authen-tication services [17], [18]; moreover, even when a client is authenticated, access to the MQTT infrastructure is controlled via a collection of access control policies, which restricts the available topics that any given client may use. IoT Core allows the definition of different access rights, which correspond to MQTT actions. Here, we only con-sider the main ones: (i) iot : Connect to connect to the cloud infrastructure; (ii) iot : Publish to publish on a certain topic; (iii) iot : Subscribe to subscribe to some topic filter; (iv) iot : Receive to receive the messages published on the specified topics. Note that clients need both the iot : Receive 
+
+and iot : Subscribe access rights to receive messages on a given topic. The access rights are specified in a policy (a JSON document) consisting of a set of policy statements 
+
+(access control rules). Each statement describes whether a specific action, e.g. iot : Publish , is permitted or not ( Allow 
+
+or Deny ) on a given resource (topic, topic filter, client id). Policy developers can use wildcard characters ‘ ?’ and ‘ ∗’ to represent any single character and any sequence of characters, respectively. For example, the following policy:               
+
+> {"Effect": "Allow", "Action": "iot:Subscribe", "Resource": ["floor1/*/temp", "floor1/room1/*" ]}, {"Effect": "Allow", "Action": "iot:Receive", "Resource": ["floor1/*/temp", "floor1/room1/*" ]}
+
+grants a client permission to subscribe and receive messages on topics concerning the temperature of any room on the first floor and any sensor in room1 of the first floor. Moreover, policy statements may use variables, such as ${iot : ClientId },which are substituted for attributes associated with the certifi-cate provided during connection. Permissions are then eval-uated on the resulting variable-free policy by following a 
+
+default-deny strategy: access is granted if there is at least a statement allowing the requested action and no statement denying it; in any other case, access is rejected. III. A RUNNING EXAMPLE : A SMART BUILDING 
+
+Assume a smart building with two floors, where several subsystems, including energy consumption, physical access control, heating, and fire alert, are all integrated. Our Building Automation System (BAS) is cloud-based, and it is organised in two layers (see Figure 1): the field layer contains off-the-shelf IoT devices that interact with the physical world via sensors and actuators, while the control layer consists of an MQTT broker and several cloud services that imple-ment the communication infrastructure and the control logic. These services execute appropriate actions when triggered by events occurring in the field layer and provide operators with dashboards to monitor, configure, and control the system. Moreover, we group IoT devices in subsystems according to their functionalities. For example, smoke detectors are part of the fire alarm system, whereas badge readers are part of the physical access control system. The physical access control system includes badge read-ers, smart locks, presence sensors, and light bulbs. Each floor of the building is expected to behave independently. Consider the first floor as an example. When the badge reader scans a bar code, it publishes a message on the topic 
+
+> phAC /floor1 /bdgReader1 /check
+
+. The cloud service AClist 
+
+waits for messages on this topic and checks the code’s validity in the message’s payload. If the badge is autho-rised to open the door, AClist publishes a message on the topic phAC /floor1 /lock1 /open . When the smart lock lock1 
+
+receives such a message, it unlocks itself and activates the presence sensor of the room by publishing on the topic 
+
+> phAC /floor1 /prsSens1 /enable
+
+. When the presence sensor  
+
+> prsSens1
+
+is active and detects someone inside the room, it publishes on the topic phAC /floor1 /dtdMovement /light1 . The light bulb light1 is subscribed to this topic and switches itself on upon reception. The service log subscribes to all the topics mentioned above to keep a trace of such events. The fire alarm subsystem consists of smoke sensors, alarm buttons, acoustic alarms, and water pumps. Its expected be-haviour for the first floor follows. When a smoke sensor detects some smoke in its area, it publishes a message on the topic  
+
+> fire /floor1 /smokeLvl
+
+that is received by the cloud service  
+
+> fireMngr
+
+subscribed to the related topic filter. If the level of detected smoke exceeds a given threshold, fireMngr publishes on the topic fire /detected to raise the fire alarm. The water pumps, acoustic alarms, doors, and elevators all subscribe to this topic. When they receive a message on it, the water pumps and acoustic alarms activate, the doors unlock, and the elevator travels to the ground floor, opens its doors, and halts. The alarm can also be raised by the fire alarm button, which publishes to the same topic. The IoT policies for each device of the BAS system are available online [14]. We assume that the cloud infrastructure is trusted, while devices may be compromised and policies misconfigured. An attacker can gain full control of vulnerable devices (e.g., a light bulb) and use them to compromise other critical devices and obtain private information. The following sections present our formal model, our verification framework and the tool I OT:P OKER , which detects policy misconfiguration and unintended information flows. IV. A F ORMAL MODEL OF IOT A CCESS POLICIES 
+
+We take AWS IoT Core as a reference implementation of an IoT-Cloud infrastructure, and we formalise a core of the AWS policy language and its semantics, focusing on the interplay between MQTT and the authorisation mechanism. In doing so, we clarify the counterintuitive semantics of AWS and MQTT wildcards and variable substitution in policy evaluation. Our presentation follows a bottom-up approach. 
+
+Definition 1 (Resource) . A resource ρ is either a client id, a topic, or a topic filter. Let Λ be the alphabet of alphanumerical characters enriched with the forward-slash character ‘/’. Topics are strings over Λ, while client ids and topic filters are strings over Λ ∪ { +, #}.
+
+We denote with I, T, and TF the set of client ids, topics, and topic filters, respectively. Note that these sets have a non-empty intersection, so as to model features of the language like substitutions of client ids for $clientId variable and matching topics with topic filters. In the following, we see that MQTT wildcards are treated as common characters in client ids, and as special characters when occurring in topic filters, which allows wildcard injection . Indeed, although client ids and topic filters have the same syntax, a topic filter tf can be interpreted as a regular expression tf mqtt where the character ‘#’ is interpreted as any sequence of characters in Λ, while the character ‘ +’ as any sequence of characters different from ‘ /’in Λ. According to MQTT rules, the substitution takes place only if ‘ #’ is the terminal character and ‘ #’ and ‘ +’ appear as topic levels, i.e. they are separated from other characters by ‘ /’. The language of tf mqtt , denoted as L(tf mqtt ), contains the topics that are matched by the topic filter tf .
+
+Example 1. The topic filter floor1 /+/temp matches the topic  
+
+> floor1 /room10 /temp
+
+because it is recognized by the regular expression floor1 /[a−zA −Z0 −9]*/temp , where [a−zA −Z0 −9]
+
+is any alphanumerical character. 
+
+In a policy, resources are specified by strings called resource expressions, which may contain AWS wildcards to compactly represent a set of resources, and the variable ${iot : ClientId }
+
+(that we abbreviate as $clientId ). 
+
+Definition 2 (Resource Expression) . A resource expression Re 
+
+for topics, topic filters, or client ids, is a string built on the same alphabet of the given kind of resource extended with the variable $clientId and with the AWS wildcards ‘?’ and ‘∗’. A resource expression is ground if it does not contain $clientId .
+
+Given a resource expression Re and a string v, we write 
+
+> Re
+
+[v/$clientId ] for the resource expression where every oc-currence of $clientId is replaced with v. For example, 
+
+> dtdMovement ?/$clientId
+
+[#/$clientId ] is dtdMovement ?/#. A ground resource expression Re can be interpreted as a regular physical AC system for floor 1/2 fire alarm system for floor 1/2 other           
+
+> Field Layer
+> Topics
+> Control Layer
+> log AClist firemanager
+> Figure 1. The Architecture of Our Building Automation System.
+> {"Effect":"Allow", "Action":"iot:Connect", "Resource":"*" }, {"Effect":"Allow", "Action":"iot:Receive", "Resource":"*" }, {"Effect":"Allow", "Action":"iot:Subscribe", "Resource": "phyAC/floor?/dtdMovement/${iot:ClientId}" }
+> Figure 2. The policy of the light bulbs in the BAS.
+
+expression Re aws where ‘ ?’ stands for any character in Λ ex-tended with the MQTT wildcards, and ‘ ∗’ for any sequence of such characters. The language L(Re aws ) contains the resources that are matched by the resource expression Re .
+
+Example 2. After the device connects with client id light1 ,the topic filter tf = phyAC /floor1 /dtdMovement /light1 
+
+is a resource matched by the expression Re =
+
+phyAC /floor ?/dtdMovement /$clientId , which uses the AWS wildcard ‘ ?’. Indeed, tf ∈ L(Re [light1 /$clientId ]aws )
+
+since Re [light1 /$clientId ] can be seen as the regular expression 
+
+phyAC /floor [a−zA −Z0 −9/+#] /dtdMovement /light1 .
+
+We now define IoT policies: a policy establishes which client ids can connect and which topics they can publish and/or subscribe to. 
+
+Definition 3 (Policy) . A policy P is a set of statements s =(ε, α, R) where  
+
+> •
+
+ε ∈ { Allow , Deny } is the effect of the statement;  
+
+> •
+
+α ∈ { Con , Pub , Rec , Sub } is an IoT action;  
+
+> •
+
+R is a set of resource expressions. The definition of ground and of substitution is naturally extended to policies. 
+
+Example 3. Figure 2 shows the policy of a light bulb in our running example, using the resource expression of Example 2. 
+
+To configure IoT Core, developers define certificates to iden-tify the devices authorised to connect to the broker. Devices are associated with their certificates, and each certificate is associated with its policies. Formally: 
+
+Definition 4 (Configuration) . A configuration is a 5-tuple 
+
+(C, P, φ, D, k ) where  
+
+> •
+
+C is a set of certificates;  
+
+> •
+
+P is a set of IoT policies;  
+
+> •
+
+φ : C → P (P) associates certificates with their policies;  
+
+> •
+
+D is a set of devices;  
+
+> •
+
+k : D → P (C) associates devices with their certificates. 
+
+We write Φ( c) = S  
+
+> P∈φ(c)
+
+P for the union of c’s policies. 
+
+Example 4. Consider the BAS of Section III, the certificates of both the light bulbs are associated with the policy of Figure 2, i.e., φ(clight1 ) = φ(clight2 ).
+
+We now introduce how permission requests are evaluated. Intuitively, the broker interrogates the access control system to check if the action requested by the message is allowed. To do that, the access control system checks whether there exists a policy statement s in P forbidding the request, i.e., with the same action of the request, with effect Deny , and with the resource ρ matched by a resource expression in R (after expanding AWS wildcards). If a match is found, the request is rejected; otherwise, the system looks for a statement s that explicitly allows the request. If there is at least one match, the request is accepted. If no matching statement is found, the request is denied ( implicit deny ). 
+
+Definition 5 (Permission) . A permission is a pair (α, ρ )
+
+where α is an IoT action to be performed over a resource 
+
+ρ. A permission (α, ρ ) is granted by the ground policy P , in symbols P |∼ (α, ρ ), if and only if both the following hold:  
+
+> •
+
+{(Allow , α, {Re } ∪ R )} exists in P with ρ ∈ L (Re aws ); 
+
+> •
+
+for all (Deny , α, R) ∈ P and Re ∈ R , ρ / ∈ L (Re aws ).
+
+We can now detail how an attacker can break desired secu-rity properties by exploiting policy misconfigurations. In more detail, we assume that the cloud provider (thus, the broker and authorisation mechanisms) is trusted and safe from tampering. On the contrary, devices may be compromised by attackers, and IoT policies may be misconfigured and subverted. In addition, we assume that the attacker knows the configuration of the system, and it can take full control of a device d, thus gaining the capability of authenticating with all the certificates in k(d). The compromised device d ignores its original scope, and it maliciously selects both the client id to connect with and the topics over which to communicate. The attacker’s objective is to compromise either confidentiality or integrity 
+
+of the system. When breaking confidentiality, the attacker gains private information, e.g. directly from some sensor d,or indirectly from other devices d′ receiving messages from 
+
+d. Conversely, the integrity of a device d is compromised when its behaviour is influenced by the attacker, possibly leveraging an intermediate device that propagates the attacker’s messages. We conclude by clarifying how the wildcard injection attack works. MQTT wildcards are not considered as reserved characters when used in client ids, but they are substituted verbatim for $clientId . During connection, attackers can use a string containing a wildcard as their client id, thus injecting it into the policies of the broker, possibly bypassing Deny 
+
+rules and breaking security guarantees. For example, consider a certificate c and a device d with c ∈ k(d), and assume that: 
+
+Φ( c) = {(Allow , Con , {∗} ), (Deny , Con , {private }),
+
+(Allow , Rec , {∗} ), (Allow , Sub , {/$clientId })}
+
+The policy should allow every device to receive on its topic (named after its client id), while forbidding them from using the topic /private , which is reserved for protected information. At first glance, eavesdropping seems impossible. However, assume d connects to the broker by identifying as #.Since # ∈ L (∗aws ), the connection permission is granted, and the last statement of Φ( c) is instantiated as (Allow , Sub , {/#}).Note that the instantiated policy allows d to subscribe to the topic filter /#, where the character ‘ #’ of the client id is interpreted as an MQTT wildcard. Thus, the device can receive all the messages published on the topic /private .In the next section, we make this formal by giving a graph representation of the possible paths along which messages can propagate through devices and topics. V. C HARACTERISING INFORMATION FLOW 
+
+We characterise the information flow permitted by an IoT configuration, i.e. which devices can influence each other. The underlying idea is to build a graph whose nodes represent devices and topics: there is an arc from a device d to a topic 
+
+t if a policy associated with the device allows it to publish on 
+
+t; vice versa there is an arc from t to d if a policy allows d
+
+to subscribe and receive messages on t. Then, we present a symbolic representation of this graph, enabling the practical verification of security properties. 
+
+A. Information Flow Graph 
+
+It is convenient to introduce some auxiliary definitions to facilitate the construction of our graphs. For each certificate 
+
+c, we define TIc as the set of topics from which the devices connected and authenticated using certificate c are permitted to receive messages. Similarly, TOc collects topics to which c
+
+may publish messages. 
+
+Definition 6 (I/O Sets) . Given a configuration, the input and output sets of certificate c are the sets of topics TIc and TOc :
+
+TIc = {t | Φ( c)[ id /$clientId ] |∼ (Con , id ),
+
+Φ( c)[ id /$clientId ] |∼ (Rec , t ),
+
+Φ( c)[ id /$clientId ] |∼ (Sub , tf )
+
+and t ∈ L (tf mqtt ), for some id and tf }
+
+TOc = {t | Φ( c)[ id /$clientId ] |∼ (Con , id )
+
+and Φ( c)[ id /$clientId ] |∼ (Pub , t ), for some id }
+
+Roughly speaking, the conditions on the first set require c
+
+to be able to connect with client id id , to subscribe to the topic filter tf , and that topic t belongs to the language of tf .The conditions on the second set, instead, require that c can connect with client id id and can publish over t.
+
+Example 5. Consider the light bulb light2 and the topic t =
+
+> phAC /floor1 /dtdMovement /light1
+
+. It holds that t ∈ TIclight2 
+
+because: (i) the light bulb can connect to the broker with client id #, and the substitution gives the policy 
+
+P ′ = {(Allow , Con , {∗} ), (Allow , Rec , {∗} ),
+
+(Allow , Sub , {phAC /floor ?/dtdMovement /#})}
+
+(ii ) the ground policy allows the client to receive mes-sages on t and to subscribe to the topic filter tf =
+
+> phAC /floor1 /dtdMovement /#
+
+; and (iii ) the topic t is a string in the language of tf when considering MQTT wildcards. Note that this is a wildcard injection attack: the second light bulb receives private information intended for another device. 
+
+We now define information flow graphs of configurations: 
+
+Definition 7 (Information Flow Graph) . Given a configura-tion, its information flow graph is a bipartite directed graph 
+
+G = ( D ∪ T, E ) with D the set of devices, T of all possible topics, and E ⊆ (D × T) ∪ (T × D) of the arcs defined as 
+
+E = {(d, t ) | ∃ c ∈ k(d) s.t. t ∈ TOc }∪ { (t, d ) | ∃ c ∈ k(d) s.t. t ∈ TIc }
+
+An arc of G represents a communication permitted by the configuration. Following a path of G, we can track all the possible device interactions, including indirect ones. We say that there is a (possible) information flow from d to d′ if d′ is reachable from d in the information flow graph, meaning that information produced by d may affect d′.
+
+Example 6. Assume that you want the information on  
+
+> lock1
+
+to be private to the physical access control of the first floor in our running example. This requirement can be checked by inspecting the information flow graph of the configuration in [14]. Indeed, the following path is a violation lock1 → t1 → prsSens1 → t2 → light2 
+
+where t1 = phAC /floor1 /prsSens1 /enable and t2 =
+
+> phAC /floor1 /dtdMovement /light1
+
+.
+
+As a final remark, recall that we do not identify a client with its client id. This is because only the association with the certificate is authenticated by the Cloud, whereas the client id is freely selected by the device. A compromised device might exploit this flexibility by using multiple ids or MQTT wildcards to maximise the attack surface. In Appendix A, we assess the adequacy of the information flow graph in capturing how information propagates in IoT systems. We give an operational semantics describing the effects of MQTT requests on message transmission between devices and on the broker state. Then, we characterise infor-mation flow as sequences of messages that may arise in some feasible execution, and we prove it consistent with the paths of the information flow graph built from the configuration. 
+
+B. Symbolic Information Flow Graph 
+
+In general, the number of nodes and arcs of the information flow graph grows exponentially with respect to the length of topics (256 bytes of UTF-8 characters in the current imple-mentation of AWS IoT Core). Clearly, building such a graph is impractical. To address this issue, we build a symbolic version where sets of topics are represented by logical formulas. We define predicates representing the conditions under which a permission may be granted during some execution. 
+
+Definition 8 (Permission Predicate) . Given a 4-tuple 
+
+(c, id , α ,ρ) where c is a certificate, α is an IoT action, and 
+
+ρ is a resource, we let the permission predicate ψ(c, id ,α ,ρ) be defined as follows, where P is Φ( c)[ id /$clientId ]:
+
+ψ(c, id ,α,ρ ) := 
+
+ _
+
+> (Allow ,α, R)∈P
+
+_
+
+Re ∈R 
+
+ρ ∈ L (Re aws )
+
+
+
+∧¬
+
+ _
+
+> (Deny ,α, R)∈P
+
+_
+
+Re ∈R 
+
+ρ ∈ L (Re aws )
+
+
+
+We introduce the auxiliary predicates Ic(t) and Oc(t),mimicking input and output sets in a symbolic setting. 
+
+Definition 9 (I/O Predicates) . Given a configuration, the input and output predicates Ic and Oc of a certificate c are: 
+
+Ic(t) = ∃ id , tf .ψ (c, id ,Sub ,tf ) ∧ ψ(c, id ,Rec ,t ) ∧
+
+ψ(c, id ,Con ,id ) ∧ t ∈ L (tf mqtt ); 
+
+Oc(t) = ∃ id .ψ (c, id ,Pub ,t ) ∧ ψ(c, id ,Con ,id )
+
+Intuitively, the symbolic version of the information flow graph has a node for each device, and an additional node for each pair of certificates that can communicate. More precisely, for each pair of certificates c and c′, we build a logic formula 
+
+Fc,c ′ that is true if and only if c can publish a message that can be read by (devices authenticated with) c′. If the formula is valid, we add a node Fc,c ′ , and we connect it with an arc from d to Fc,c ′ for each device such that c ∈ k(d). Similarly, we add an arc from Fc,c ′ to d′ if c′ ∈ k(d′). (see the next section for the algorithm to compute the symbolic graph). 
+
+Definition 10 (Symbolic Information Flow Graph) . The sym-bolic information flow graph Gs of a configuration is (N, E ):
+
+N = D ∪ { Fc,c ′ | c, c ′ ∈ C and Fc,c ′ is true }
+
+E = {(d, F c,c ′ ) | c ∈ k(d)} ∪ { (Fc,c ′ , d ′) | c′ ∈ k(d′)}
+
+where for each c and c′, Fc,c ′ = ∃t. Oc(t) ∧ I c′ (t) is a logic formula over the (first-order) theory of regular expressions.   
+
+> light1
+> light2
+> button1
+> button2
+> prsSens1 prsSens2
+> smoke1
+> smoke2
+> lock1
+> lock2
+> pump1 pump2 log
+> AClist
+> acscAlarm1
+> acscAlarm2
+> elevator
+> bdgReader1
+> bdgReader2
+> fireMngr
+> Figure 3. Information Flow Graph for the Building Automation System.
+
+We say that there is a (possible) symbolic information flow from d to d′ if d′ is reachable from d in the symbolic information flow graph Gs.
+
+Example 7. Figure 3 contains the symbolic information flow of our BAS running example. The red path is lock1 →
+
+Fclock1 ,c prsSens1 → prsSens1 → FcprsSens1 ,c light2 → light2 . The violating path of Example 6 is one of its instances where the topics t1 and t2 satisfy the formula Fclock1 ,c prsSens1 and 
+
+FcprsSens1 ,c light2 .
+
+The following theorem establishes that the symbolic infor-mation flow graph provides a sound and complete represen-tation of the information flow graph which in turn is proved to match the information flow permitted by the configuration according to the operational semantics of the MQTT broker given in Appendix A. 
+
+Theorem 1. Given a configuration, there is an information flow from d to d′ if and only if there is a symbolic information flow from d to d′.
+
+The next section presents the implementation of our tool for checking information flow in IoT systems. However, we highlight a crucial point: the symbolic information flow graph cannot be computed solely through operations on regular languages (as one might initially assume, given that both AWS and MQTT wildcards can be described using regular language operators). The issue arises from the substitution of the variable $clientId within the policy rules that complicates the task. In particular, TIc and TOc are not always regular languages. For example, consider a certificate c with 
+
+Φ( c) = {(Allow , Con , ∗), (Allow , Pub , $clientId /$clientId )}.
+
+The output set of topics over which c can publish TOc =
+
+{ω/ω | ω ∈ (Λ ∪ { /})∗} is not a regular language, as it contradicts the pumping lemma [19]. VI. I MPLEMENTATION AND EVALUATION 
+
+We implemented our verification approach in IOT:P OKER [14], an open-source AWS IoT-policy analyzer written in Python. Its architecture is shown in Figure 4: the tool takes a configuration as input, parses the policies using certificates and policies    
+
+> policy parser
+> SAT solver
+> Network X
+> query parser
+> symbolic information flow graph
+> user
+> graph builder
+> query manager
+> reply and witness
+> query
+> Figure 4. Overview of I OT:P OKER .
+
+Algorithm 1 Information Flow Graph Construction. 
+
+Input: a configuration (C, P, φ, D, k )
+
+Output: its symbolic information flow graph  
+
+> 1:
+
+(N, E ) ← (D, ∅) 
+
+> 2:
+
+for all (c, c ′) ∈ C × C do  
+
+> 3:
+
+build Fc,c ′ as in Definition 10  
+
+> 4:
+
+check its satisfiability through Algorithm 2  
+
+> 5:
+
+if Fc,c ′ is satisfiable then  
+
+> 6:
+
+N ← N ∪ { Fc,c ′ } 
+
+> 7:
+
+for all d such that c ∈ k(d) do  
+
+> 8:
+
+E ← E ∪ { (d, F c,c ′ )} 
+
+> 9:
+
+for all d′ such that c′ ∈ k(d′) do  
+
+> 10:
+
+E ← E ∪ { (Fc,c ′ , d ′)} 
+
+> 11:
+
+return (N, E )
+
+the library Policy Universe [20], and uses the SMT solver cvc5 [21] to construct the symbolic information-flow graph. Finally, a query manager answers users’ requests by checking reachability in the graph via the NetworkX library [22]. The following subsections first describe how the symbolic information flow graph is built; then clarify which queries can be performed on the resulting graph; and finally, evaluate the effectiveness and scalability of I OT:P OKER .
+
+A. Building the graph 
+
+Algorithm 1 describes the procedure to build the graph. Given a configuration (C, P, φ, D, k ), we start from a symbolic graph that has a node for each device d ∈ D and no arcs. Then, we iterate over each pair of certificates c and c′ of C, building the predicate Fc,c ′ of Definition 10, encoding it into an SMT formula (via Skolemization), and invoking the solver: if the formula is satisfiable, then we add a node for Fc,c ′ , and we connect it with all the devices associated with c (incoming arc) and c′ (outgoing arc). The core challenge is efficiently deciding the SMT problem, which amounts to finding two client ids ( id , id ′), a topic ( t)and a topic filter ( tf ) that satisfy the formula Ψ( id , id ′, t, tf )
+
+below (which encodes Oc and Ic′ ), or proving it unsatisfiable. 
+
+Ψ( id , id ′, t, tf ) = ψ(c, id ,Con ,id ) ∧ ψ(c′,id ′,Con ,id ′) ∧
+
+ψ(c, id ,Pub ,t ) ∧ ψ(c′,id ′,Rec ,t ) ∧ ψ(c′,id ′,Sub ,tf ) ∧ t ∈ L (tf mqtt )
+
+The predicates can be encoded by resorting to the strings and regular expressions theories, but the presence of two different 
+
+Algorithm 2 Witness for the predicate Fc,c ′
+
+Input: two certificates c, c′
+
+Output: a witness w = ( id , id ′, t, tf ) or None  
+
+> 1:
+
+S ← ψ(c, id ,Con ,id ) ∧ ψ(c′,id ′,Con ,id ′) ∧ ψ(c, id ,Pub ,t ) 
+
+> 2:
+
+∧ ψ(c′,id ′,Rec ,t ) ∧ ψ(c′,id ′,Sub ,tf ) 
+
+> 3:
+
+if SMT (S) is unsat then  
+
+> 4:
+
+return None ▷ Early Fail  
+
+> 5:
+
+Se ← S ∧ (t = tf ) 
+
+> 6:
+
+if SMT (Se) is sat then  
+
+> 7:
+
+return w ← (id , id ′, t, tf ) ▷ Early Success  
+
+> 8:
+
+for n = 1 , . . . , 8 do  
+
+> 9:
+
+Sh ← S ∧ t = t1/t 2/ . . . /t n 
+
+> 10:
+
+S′ 
+
+> h
+
+← tf ∈ L (( t1|+) / . . . / (tn|+))  
+
+> 11:
+
+for m = 1 , . . . , n − 1 do  
+
+> 12:
+
+S′ 
+
+> h
+
+← S′ 
+
+> h
+
+∨ tf ∈ L (( t1|+) / . . . / (tm|+) /#)  
+
+> 13:
+
+if SMT (Sh ∧ S′
+
+> h
+
+) is sat then  
+
+> 14:
+
+return w ← (id , id ′, t, tf ) 
+
+> 15:
+
+return None kinds of wildcards (AWS and MQTT) in the policies makes the problem challenging in practice: the solver would take hours and hours of computation to check the satisfiability of a single predicate Fc,c ′ , if a naive encoding of the formula is used. For solving this problem, we implement an effective strategy to invoke the solver in Algorithm 2, which is divided into three stages. The first two stages are heuristics for early failure and success, while the last one is a complete decision procedure, optimised for dealing with the potency of wildcards by taking advantage of the peculiar structure of the Fc,c ′ formulas. Our heuristics are based on checking weakened and strengthened versions of Ψ, where the constraint t ∈ L (tf mqtt )
+
+is approximated by simpler conditions. In the first stage, the algorithm considers a set of conditions that are necessary but not sufficient for guaranteeing communication between c and 
+
+c′. The constraint t ∈ L (tf mqtt ) is removed and the solver is asked to simply determine if there exists some assignment that satisfies at least the ψ_ predicates of Ψ. If this is not the case, then communication is trivially impossible, and an 
+
+early fail occurs (line 4). Note that these conditions are not sufficient for communication because we are imposing no relation between the topic filter tf and the topic t. The second stage checks a condition that is sufficient but not necessary for communication: whether c′ can subscribe to the same topic 
+
+t on which c can publish (line 7). Basically, we ignore the MQTT wildcards and run the solver on a version of Ψ where 
+
+t = tf substitutes t ∈ L(tf mqtt ). Although simple, these two heuristics greatly improve our tool’s performance, solving most real-world cases. If neither an early failure nor a solution is found, we adopt the complete resolution strategy ( hard strategy ). This third stage considers Ψ as it is, also taking MQTT wildcard characters into account. Finding an efficient SMT encoding of 
+
+t ∈ L (tf mqtt ) is made particularly challenging by the fact that 
+
+tf is not a constant value, but it is rather dynamically computed as a solution of the other constraints. To address this problem, we focus on the peculiar format of IoT resources, exploiting the hierarchical structure of topics t = t1/t 2/ . . . /t n and topic filters tf = tf 1 / tf 2 / . . . / tf m, which have a maximum depth of 8 in AWS. The algorithm essentially creates a disjunction of constraints encoding alternative formats for t and tf , and solves it with a specific search strategy. In more detail, we start from the assertions of line 2 about the ψ_ predicates of 
+
+Ψ, and we add the condition of line 9 stating that t has n
+
+levels. Finally, we impose t ∈ L (tf mqtt ) by requiring t and tf 
+
+to satisfy one of the following:  
+
+> •
+
+the number of levels of t and tf coincides (i.e., n = m)and, tf i matches ti for each level i, i.e., tf i = ti or 
+
+tf i = + (line 10, recall that + matches any single level of the topic);  
+
+> •
+
+tf has no more levels than t (i.e., m ≤ n), tf i matches 
+
+ti for all i < m , and the last level of the topic filter is 
+
+tf m = # (line 12, recall that # matches any remaining sequence of levels tm/t m+1 / . . . /t n of the topic t). For example, the fist case tells us that the topic t = 
+
+> phAC /floor1 /prsSens1 /enable
+
+is included in L(tf mqtt  
+
+> 1
+
+) with 
+
+tf 1 = phAC /+/prsSens1 /+, because each layer of tf 1 is either equal to the corresponding one of t or it is the wildcard character +, which matches both floor1 and enable (as well as any other alphanumerical string). Moreover, the second case tells us that the topic above is also included in L(tf mqtt  
+
+> 2
+
+) with 
+
+tf 2 = phAC /#, because the wildcard character # matches  
+
+> floor1 /prsSens1 /enable
+
+(as well as any other string over the alphabet of alphanumerical characters enriched with the forward-slash character ‘ /’). Our optimisations allow Algorithm 2 to effectively check the satisfiability of the formula Fc,c ′ , as shown by our experiments below. An upper bound to the complexity of computing the symbolic graph is given by the following theorem: 
+
+Theorem 2 (Complexity) . Let (C, P, φ, D, k ) be a configura-tion, and let f (n) be the cost for deciding the satisfiability of quantifier-free predicates of size n using regular expressions and string theories. Then, the time required by Algorithm 1 is at most O(|C|2 ·(|D|+|P |·|R| +f (|P |·|R| ))) , where |P | and 
+
+|R| are the size of the largest policy and resource expression. 
+
+Note that f is at least exponential, independently of the used theories, as the problem subsumes SAT, for which only exponential solutions are known. However, the exponential cost is only on the size of policies and on the number of resource expressions in statements, while the algorithm is polynomial on the size of the network (our experimental results are consistent with this estimation). Noticeably, the size of the network is expected to increase more rapidly than the complexity of the individual policies in practice (as far as policies are adequately designed). 
+
+B. Query Manager 
+
+IOT:P OKER allows users to define security labels, i.e. names 
+
+> s
+
+, s′, s′′ , . . . for sets of devices that play similar roles in the IoT system. After that, I OT:P OKER can check four kinds of               
+
+> Table I ANALYSING THE BAS WITH IOT:P OKER .
+> Query Result Counterexample
+> isolated (phyAC1 ,elevator )✓
+> onlyAffects (fire ,elevator )✓
+> onlyKnows (phyAC1 ,lock1 )✗lock1 ;prsSens1 ;light2
+
+queries on IoT systems. The first verifies the existence of a permitted information flow, while the others correspond to the security properties of integrity, confidentiality, and isolation. The query flow (s, s′) checks whether there is a permitted information flow from a device labelled with s to a device la-belled with s′. The query onlyAffects (s, s′) checks integrity, i.e. it requires that only a device labelled with s can influence the behaviour of a critical device labelled with s′. The query   
+
+> onlyKnows (s,s′)
+
+checks confidentiality, i.e. it requires that only devices labelled s can receive private information produced by devices labelled s′. Finally, the query isolated (s, s′) requires that s-labelled devices and s′-labelled devices cannot interact. By Theorem 1, query evaluation reduces to reachability in the symbolic graph: each query can be solved by stan-dard search algorithms, with worst-case performance linearly proportional to the number of edges of the graph. More specifically, flow (s, s′) (and onlyKnows (s′, s)) are evaluated by visiting the graph from the nodes associated with s-labelled devices, and checking if at least one of (respectively, all) the visited nodes corresponds to an s′-labelled device. The same approach applies to onlyAffects (s, s′), but with the edges reversed. Finally, isolated (s, s′) requires two traversals of the graph for checking that s cannot reach s′ and vice-versa. 
+
+C. Effectiveness Evaluation 
+
+We first evaluate the effectiveness of I OT:P OKER using the case study of Section III. Due to the lack of open-source configurations for multi-device IoT systems, we constructed a representative BAS that captures the structural rules, con-straints, and communication patterns of typical IoT scenarios. We assume that each device is configured with a known IoT policy. The complete configuration is available in the online repository [14] and includes 17 devices, 20 certificates, and 15 IoT policies, each of which consists of approximately 20 lines of code. Our threat model assumes that the cloud infrastructure is trusted, whereas devices may be vulnerable and IoT policies may be misconfigured. An attacker may gain full control of a vulnerable device, such as a light bulb, and maliciously select the topics to which it publishes or subscribes, exploiting overly permissive policies to compromise critical devices or access sensitive information. Security labels identify the subsystem to which each device or cloud service belongs. For example,  
+
+> phyAC1
+
+labels the devices involved in the physical access control of the first floor, such as bdgReader1 , together with the related cloud services log and AClist . Similarly, fire 
+
+labels the fire-alarm manager, the alarm buttons, and the smoke sensors on both floors. Table II IOT:P OKER SCALABILITY OVER REAL -WORLD CONFIGURATIONS .                                                                                        
+
+> hard building query nodes strategies time ( s)time ( s)
+> avg. avg. min. avg. max. avg.
+> certificates
+> 20 264.6 1.8 0.42 2.87 12.00 0.0060 40 973.0 4.5 2.30 6.28 16.55 0.0086 60 2211.2 5.6 2.93 9.22 23.39 0.0108 80 3903.9 13.6 5.93 16.34 29.08 0.0136 100 6098.1 16.7 7.50 19.46 36.55 0.0167 120 8764.2 21.5 13.58 24.69 41.49 0.0198 140 12080.1 28.7 18.61 31.06 46.63 0.0244 160 15415.9 29.6 20.03 33.01 44.43 0.0280 180 19571.7 37.0 26.61 37.87 52.79 0.0318 200 24209.9 45.8 31.62 46.06 57.34 0.0349 220 29066.2 50.5 32.39 50.93 62.02 0.0393 240 34732.6 59.0 42.11 57.68 62.41 0.0430 258 40019.0 65.0 62.35 62.67 63.53 0.0473
+
+We use I OT:P OKER to analyse the IoT policies, reconstruct the permitted device interactions, and represent them in the information-flow graph shown in Figure 3. Table I reports the queries considered in our evaluation and the corresponding results produced by I OT:P OKER . The first query evaluates an 
+
+isolation property: the elevator must be completely isolated from devices in phyAC1 subsystem. I OT:P OKER verifies that no path violates this requirement: no path starts from the elevation, and the ones reaching it – highlighted in teal in Figure 3 – do not come from phyAC1 . The second query evaluates the integrity of the elevator, whose behaviour should depend only on devices labelled fire . The property is satisfied: 
+
+teal paths originate from the intended devices. The third query, 
+
+onlyKnows (phyAC1 , lock1 ), evaluates confidentiality : infor-mation produced by the first-floor lock should be accessible only to devices and services labelled phyAC1 . I OT:P OKER 
+
+detects a violation, as a compromised light bulb can receive messages intended for other light bulbs, allowing information originating from lock1 to reach light2 on the second floor. This unintended flow results from the overly permissive policy for the light bulbs, which is shown in Figure 2. 
+
+D. Scalability Evaluation 
+
+We experimentally evaluate the scalability of I OT:P OKER 
+
+on real-world configurations when the IoT configuration’s size (number of certificates) grows, using cvc5 as our SMT solver. We conduct all our experiments below on a desktop machine with an i7-10700K processor (3.80GHz) and 32GB RAM, running Windows 11. We consider 258 real-world policies originally implemented for various IoT devices by different manufacturers, available online in the benchmark of the P-verifier tool [15]. Using these policies, we performed 30 experiments as follows: (i) we generate 13 configurations with an increasing number of devices from 20 to 258; (ii) each device is randomly associated with a distinct certificate, re-al-world policy (from the benchmark), and a fresh security label; (iii) we build the symbolic information flow graph of each configuration, measuring its computation time; (iv) we in-terrogate I OT:P OKER with 1000 reachability queries between two random devices, and record the response time. The results are in Table II, where the first column indi-cates the size of the IoT configuration (i.e., the number of certificates), the second reports the number of nodes of the graph (both devices and symbolic nodes representing sets of topics), the third one is the number of times the hard strategy was used to determine if two devices communicate, and the last two columns contain the time needed for building the graph and solving the queries. For each configuration size, the table reports the arithmetic mean of the results obtained by the configurations of that size, across the 30 experiments. Moreover, for the graph build time, which is the most ex-pensive part of the computation, we also mention the fastest and slowest runs. When considering all the 258 real-world policies of the benchmark, I OT:P OKER builds the symbolic graph in less than 64 seconds. Moreover, the time required to build the graph increases linearly with the number of times the algorithm resorts to the hard strategy. In more detail, the time needed to solve the SMT problem with the hard strategy is 0.2589 seconds on average (calculated across all 258 policies), and the worst case is 8.7353 seconds; early fail and success take 0.0220 and 0.0122 seconds on average instead, with worst cases 1.2852 and 0.0905 seconds, respectively. While running Algorithm 2 on all 258 policies, early failure occurs 90.4% of the time, early success 7.1%, and hard strategy 2.5%. The time needed for answering each slot of 1000 queries is less than 0.1 seconds on average. In conclusion, the algorithm scales well up to configurations with more than 250 devices: the one-time effort for building the graph is reasonable, and evaluating queries is almost immediate. A version of I OT:P OKER also exists, which employs Z3 [23] as SMT solver in place of cvc5. We repeated our experiments with Z3, using the same configurations generated for cvc5. The detailed experimental results are in Appendix C, from which it emerges that cvc5 performs significantly better than Z3. VII. D ISCUSSION 
+
+The model presented in Section IV focuses on the core com-munication mechanisms of MQTT and the main components of AWS IoT Core policies. While this modeling choice keeps the formal treatment tractable, it omits certain protocol and platform features available in practice that we do not capture. For example, we do not consider wildcard matching in ARN components other than the resource field, such as the region, or the possibility of temporary credentials. In this section, we discuss how the formalization can be extended to capture and account for some of these features when verifying information-flow properties. Among the advanced features of AWS IoT policies that we omitted, things and conditions are those that we can incorporate more naturally by extending our model. Policy developers can define named virtual devices, called things , in their configurations, which are associated with a set of custom attributes, e.g., geographical location, source IP address or domain name. Formally, a thing can be represented as a set of bindings from attribute names to strings which may be used in resource expressions and substituted with their values when the policy is instantiated, similarly to what is done for 
+
+> $clientId
+
+. For example, in our BAS scenario of Section III one may define the attributes $floor and $room , and add the resource expression floornum $floor /roomnum $room /light ? in the policy. As a result, two things that associate different values with the attributes above may publish on disjoint sets of topics, even if they share the same policy. Our formal model can be updated by considering an additional special case for things that are associated with connecting devices during certificate authentication, and a specific certificate is either for things or for common devices; hence, the kind of instantiation to use is always clear. When the broker receives a request 
+
+r from a device, the policy instance governing the request is obtained by taking Φ( c) and applying the substitutions defined by the attributes of the authenticated device. Updating the definition of the information flow graph and the procedure for building it in Section V and VI is trivial, since things are inherently more constrained than common devices. While we kept the formal development as simple as possible, our tool is capable of handling configurations that use things, provided their bindings are specified in advance. An additional feature of policy statements is the optional “Condition” field that further restricts the cases in which the statement is considered when evaluating a request. Con-ditioning expressions are built using a predefined finite set of operators, keys, and values [17]. Such conditions require only a mild extension of our model by enriching the policy statements in Definition 3 with suitable (decidable) predicates over requests. Then, Definitions 5, 6 and 8 are updated by considering these predicates in conjunction with ρ ∈ L (Re aws ).Finally, we argue that focusing on AWS IoT Core as a specific instance of IoT-Cloud deployments does not limit the generality of our methodology. On the one hand, focusing on a specific case enables us to concretely apply our verification approach by targeting real-world configurations. On the other hand, several MQTT brokers support authorization policies for publishing messages and subscribing to topics, e.g., Azure IoT Hub [24] and HiveMQ [25]. These policies are typically written in an RBAC policy language that supports wildcards to specify sets of topics. We are confident that our methodology can be easily adapted to these MQTT brokers with very few modifications in the technical aspects, e.g., encoding roles through suitable predicates or slightly adjusting the treatment of wildcards. VIII. R ELATED WORK 
+
+Several papers have investigated the problem of specifying and verifying cloud-based access policies and information flow in IoT systems. However, to the best of our knowledge, no paper in the literature addresses the verification of information flow properties in cloud-based IoT access policies. Backes et al. [10] proposed Zelkova, a tool that statically analyses policies by encoding them into SMT formulas and using off-the-shelf solvers to verify specific requirements. Zelkova can also compare different policies based on permis-sion inclusion. Building on that, D’Antoni et al. [26] proposed an ad hoc SMT encodings for efficiently checking whether a policy is public (i.e. if the number of allowed IPs exceeds a given threshold). With a similar approach, Eiers et al. [11]– [13] use an SMT solver to quantify the permissiveness of policies and to reduce the number of allowed requests below some predefined threshold. Jin et al. [4] proposed P-Verifier, a tool to detect security flaws in policy configurations. They focus on specific flaws like wildcard injection that may result in the granting of unwanted permissions. Their verification mechanism relies on translating the policies into suitable SMT formulas and checking them with an off-the-shelf solver. Bar-nett et al. [27] proposed a modular formalization of the AWS authorization engine and a corresponding SMT-based analysis tool, called IAM-MULTIPOLICYANALYZER, for verifying properties pertaining to multiple policies of different types (identity-based, resource-based policies, service and resource control policies, permissions boundaries). The technical aspect of this work is similar to ours, namely determining the effect of combined policies. However, they investigate how multiple policies affect permitted operations when applied together, whereas we focus on simpler policies and check whether the operations permitted to different entities allow communication. All these papers use an SMT solver to verify that a policy satisfies some requirements. However, unlike our work, they do not give a formal model of IoT systems, nor do they consider information flow among them. Since the properties they consider differ from ours, their verification mechanism is also different: they only analyse each policy in isolation to determine the permissions granted. Consequently, it is not straightforward to apply their methodology and tools to verify information-flow properties within a network of devices, as this requires consideration of several policies. In contrast, our verification mechanism considers all policies simultane-ously and all possible device interactions to construct the information flow graph. This requires matching the (possibly infinite) sets of topics over which two devices may publish and subscribe, which is challenging because topics may depend on variables, like the client id, and may use wildcards. Regarding information security in IoT systems, Bastys et al. [28] investigated the problem of securing IoT apps that use the If-This-Then-That paradigm. Similarly, Yu et al. [29] propose TAPFixer to detect and repair vulnerabilities in the setting of Home Automation. They perform model-checking on the Trigger-Action Programming (TAP) rules of the analysed system. Celik et al. [30] proposed IoTGuard, a dynamic, policy-based enforcement system that monitors the runtime behaviour of IoT apps to detect violations of safety and security policies. Mandalari et al. [31] propose another dynamic approach to automatically classify and block the non-essential network traffic of IoT devices. Some works [32], [33] propose process-algebra models that capture the core aspects of the behaviour of IoT systems, and use formal methods (control-flow analysis, type systems) to prove various security properties. All these papers share a goal similar to ours: ensuring that information flows within an IoT system complies with a given security policy. However, their approach is orthogonal to ours: they assume access to the app’s code and take into account the interaction between sensors and actuators mediated by the environment, but they ignore access control policies. In contrast, we treat IoT devices as black boxes, over-approximating their behaviour based on the actions their IoT policies allow: we consider an attacker capable of taking full control of a compromised device, subverting its code. As a result, we do not need to re-analyse systems when a device is replaced or its behaviour changes due to an attack, as long as the access policy remains unchanged. Moreover, to streamline the discussion, we isolate the information flow permitted by the broker’s access control policy; we leave to future work the analysis of scenarios involving indirect interactions between sensors and actuators. To this end, we anticipate no significant challenges in integrating our information flow graph with arcs obtained with the approaches discussed above. IX. C ONCLUSION 
+
+We addressed the problem of verifying information flow in IoT access policies. We focused on AWS IoT Core’s main components as a specific instance of IoT-Cloud deployments. First, we introduced a formal model of IoT policies, then, we built an information flow graph to capture communication between IoT devices via MQTT topics. We reduce the problem of checking information flow between devices to a graph reachability problem. To enhance practical feasibility, we in-troduced a symbolic version of the graph, replacing topics with logic formulas to succinctly represent potentially infinite sets of topics. Finally, we implemented our verification mechanism in the I OT:P OKER tool, we evaluated its effectiveness on a representative scenario and its scalability on a collection of real-world IoT policies. Future work aims to improve our analysis and foster the adoption of I OT:P OKER by practitioners. A first extension involves considering the typical dynamicity of IoT systems, where devices may join and leave. Then, we will implement a change-impact analysis to determine how a policy update affects the information flow and if it preserves the security requirements. Finally, we plan to consider scenarios where information flows occur through indirect interaction between devices’ sensors and actuators. 
+
+Acknowledgements 
+
+This work has been partially supported by RDS PTR 25-27 CYBER 2.1 "Progetto Cybersecurity" WP3 LA 3.21 - CUP: D63C24001060001. REFERENCES [1] “Aws iot core,” accessed on April 2024. [Online]. Available: https://aws.amazon.com/iot-core/ [2] “Microsoft azure iot hub,” accessed on April 2024. [Online]. Available: https://azure.microsoft.com/products/iot-hub/ [3] “Mqtt version 3.1.1,” accessed on April 2024. [Online]. Available: https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html [4] Z. Jin, L. Xing, Y. Fang, Y. Jia, B. Yuan, and Q. Liu, “P-verifier: Understanding and mitigating security risks in cloud-based iot access policies,” in Proceedings of the ACM SIGSAC Conference on Computer and Communications Security , 2022. [5] M. Bugliesi, S. Calzavara, R. Focardi, and M. Squarcina, “Gran: Model checking grsecurity RBAC policies,” in 25th IEEE Computer Security Foundations Symposium , S. Chong, Ed., 2012. [6] E. Uzun, V. Atluri, J. Vaidya, S. Sural, A. L. Ferrara, G. Parlato, and P. Madhusudan, “Security analysis for temporal role based access control,” J. Comput. Secur. , vol. 22, no. 6, 2014. [7] J. D. Guttman, A. L. Herzog, J. D. Ramsdell, and C. W. Skorupka, “Verifying information flow goals in security-enhanced linux,” J. Com-put. Secur. , vol. 13, no. 1, 2005. [8] B. S. Radhika, N. V. N. Kumar, R. K. Shyamasundar, and P. Vyas, “Consistency analysis and flow secure enforcement of selinux policies,” 
+
+Comput. Secur. , vol. 94, 2020. [9] L. Ceragioli, L. Galletta, P. Degano, and D. Basin, “Specifying and verifying information flow control in selinux configurations,” ACM Trans. Priv. Secur. , vol. 27, no. 4, 2024. [10] J. Backes, P. Bolignano, B. Cook, C. Dodge, A. Gacek, K. Luckow, N. Rungta, O. Tkachuk, and C. Varming, “Semantic-based automated reasoning for AWS access policies using SMT,” in Formal Methods in Computer Aided Design , 2018. [11] W. Eiers, G. Sankaran, A. Li, E. O’Mahony, B. Prince, and T. Bultan, “Quantifying permissiveness of access control policies,” in Proceedings of the 44th International Conference on Software Engineering . ACM, 2022. [12] ——, “Quacky: Quantitative access control permissiveness analyzer,” in Proceedings of the 37th IEEE/ACM International Conference on Automated Software Engineering , 2023. [13] W. Eiers, G. Sankaran, and T. Bultan, “Quantitative policy repair for access control on the cloud,” in Proceedings of the 32nd ACM SIGSOFT International Symposium on Software Testing and Analysis , 2023. [14] “Checking Information Flow in Cloud-based IoT Access Control Policies (Supplementary Material).” [Online]. Available: https://github.com/edoxthebest/IoTPoker [15] “P-verifier policy benchmark,” accessed on June 2024. [Online]. Available: https://github.com/P-Verifier/P-Verifier/tree/master/policy_benchmark [16] “Amazon web services,” accessed on April 2024. [Online]. Available: https://aws.amazon.com/ [17] “Policies and permissions in iam,” ac-cessed on April 2024. [Online]. Available: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html [18] “Amazon cognito,” accessed on April 2024. [Online]. Available: https://aws.amazon.com/cognito/ [19] J. E. Hopcroft and J. D. Ullman, Introduction to Automata Theory, Languages, and Computation . Addison-Wesley Publishing Company, 1979. [20] “Policyuniverse,” accessed on June 2024. [Online]. Available: https://github.com/Netflix-Skunkworks/policyuniverse [21] H. Barbosa, C. W. Barrett, M. Brain, G. Kremer, H. Lachnitt, M. Mann, A. Mohamed, M. Mohamed, A. Niemetz, A. Nötzli, A. Ozdemir, M. Preiner, A. Reynolds, Y. Sheng, C. Tinelli, and Y. Zohar, “cvc5: A versatile and industrial-strength SMT solver,” in TACAS (1) , ser. Lecture Notes in Computer Science, vol. 13243. Springer, 2022, pp. 415–442. [22] “Networkx,” accessed on June 2024. [Online]. Available: https://networkx.org/documentation/stable/index.html [23] “The z3 theorem prover,” accessed on June 2024. [Online]. Available: https://github.com/Z3Prover/z3 [24] “Access control for mqtt clients,” accessed on July 2025. [On-line]. Available: https://learn.microsoft.com/en-us/azure/event-grid/mqtt-access-control [25] “Hivemq file role based access control extension,” accessed on July 2025. [Online]. Available: https://github.com/hivemq/hivemq-file-rbac-extension [26] L. D’Antoni, A. Gacek, A. Goel, D. Jovanovi´ c, R. G. Kıcı, D. Peebles, N. Rungta, Y. Sharoda, and C. Sung, “Projective model counting for ip addresses in access control policies,” in 2024 Formal Methods in Computer-Aided Design (FMCAD) , 2024, pp. 208–216. [27] L. Barnett, L. D’Antoni, A. Goel, R. Kici, N. Rungta, M. Southern, and C. Sung, “Modeling the aws authorization engine,” 2025. [Online]. Available: https://www.amazon.science/publications/modeling-the-aws-authorization-engine [28] I. Bastys, M. Balliu, and A. Sabelfeld, “If this then what? controlling flows in iot apps,” in Proceedings of the 2018 ACM SIGSAC Conference on Computer and Communications Security , ser. CCS ’18, 2018. [29] Y. Yu, Y. Xu, K. Huang, and J. Liu, “TAPFixer: Automatic detection and repair of home automation vulnerabilities based on negated-property reasoning,” in 33rd USENIX Security Symposium . USENIX Associa-tion, 2024. [30] Z. B. Celik, G. Tan, and P. D. McDaniel, “Iotguard: Dynamic enforce-ment of security and safety policy in commodity iot,” in NDSS . The Internet Society, 2019. [31] A. M. Mandalari, D. J. Dubois, R. Kolcun, M. T. Paracha, H. Haddadi, and D. R. Choffnes, “Blocking without breaking: Identification and mitigation of non-essential iot traffic,” Proc. Priv. Enhancing Technol. ,vol. 2021, no. 4, 2021. [32] C. Bodei and L. Galletta, “Tracking Sensitive and Untrustworthy Data in IoT,” in Proceedings of the First Italian Conference on Cybersecurity (ITASEC17) , ser. CEUR Workshop Proceedings, A. Armando, R. Bal-doni, and R. Focardi, Eds., vol. 1816. CEUR-WS.org, 2017, pp. 38–52. [33] M. Balliu, M. Merro, M. Pasqua, and M. Shcherbakov, “Friendly fire: Cross-app interactions in iot platforms,” ACM Trans. Priv. Secur. ,vol. 24, no. 3, Apr. 2021. Table III SUMMARY OF SYMBOLS AND NOTATION USED IN THE PAPER .    
+
+> Notation Description
+> I,T,TF the set of client ids, topics, and topic filters
+
+$clientId the variable ${iot : ClientId } of AWS              
+
+> RA set of resources ρ
+> DA set of devices d
+> ΛAlphanumerical characters including ’/’
+> L(Λ) Language of topics
+> Λ∪ { +,#}Alphabet of client ids and topic filters
+> L(Λ ∪ { +,#})Language of client ids and topic filters
+> ε∈ {
+
+Allow , Deny } Effect of a policy statement  
+
+> α∈ {
+
+Con , Pub , Rec , Sub } IoT actions                                                                       
+
+> s= ( ε, α, R)Policy statement (Definition 3)
+> (α, ρ )Permission (Definition 5)
+> CA set of certificates
+> PA set of policies
+> φ:C→ P (P)A map from certificates to policies
+> k:D→ P (C)A map from devices to certificates
+> (C,P, φ, D, k )IoT Configuration (Definition 4)
+> LA set of active connections ℓp:L→PA map from connections to polices
+> ς:TF → P (L)A map from topic filters to sub connections
+> σ= ( L, p, ς )Broker state (Definition 11)
+> a∈ { Con (c, id ),Sub (tf ),An MQTT request (Definition 12) Disc ,UnSub (tf ),Pub (t)}
+> m= ( ℓ, a )MQTT message (Definition 12)
+> σm
+> −→σ′Broker transition step (Figure 5)
+> πBroker execution trace (Definition 13)
+> dt
+> =⇒d′Communication triples
+> ϖCommunication trace (Definition 14)
+> Rec (σ, t )Set of receivers from tin σ(Definition 15)
+> Tr (π)Communication traces of π(Definition 16)
+> TIc,TOcSet of I/O topics (Definition 6)
+> G= ( C∪T, E )Information-flow Graph (Definition 7)
+> ψ(c, id ,α,ρ )Permission predicate (Definition 8)
+> Oc(t),Ic(t)I/O Predicates (Definition 9)
+> Gs= ( N, E )Symbolic Information-flow graph (Definition 10)
+> Fc,c ′Topic formula (Definition 10)
+
+APPENDIX AFORMAL SEMANTICS 
+
+Here, we formally define the evolution of an IoT system by introducing a formal semantics that captures the interaction between devices and the broker. We derived our model from the AWS official documentation [16] and refined it by testing corner cases with handcrafted examples. More precisely, given a configuration as defined in Sec-tion IV, we define a labelled transition system (LTS): its states represent the internal state of the broker, its labels are MQTT messages, and the transitions describe how the broker state changes upon reception of messages. We start from the broker state, which is characterised by the active connections, a mapping from connections to their corresponding policies, and a mapping from topic filters to the connections of the subscribed devices. 
+
+Definition 11 (Broker State) . Given a configuration 
+
+(C, P, φ, D, k ), a broker state is a triple σ = ( L, p, ς ) where  
+
+> •
+
+L is a set of active connections;  
+
+> •
+
+p : L → P maps connections to their policies;  
+
+> •
+
+ς : TF → P (L) maps topic filters to subscribed connec-tions. 
+
+Note that a single device may create multiple connections for authenticating with different certificates and client ids, so as to maximise its granted permissions. In the following, we assume a function dev : L → D to associate each connection 
+
+ℓ with its corresponding device. Moreover, when referring to 
+
+p and ς, we represent a function as a set of pairs x 7 → y. We write function update as f ◁ [x 7 → y], meaning that the result returns y when the input is x and behaves like f otherwise. The labels of the LTS are MQTT messages to the broker, sent by devices over established connections (typically TCP) for publishing payloads or changing the broker state. 
+
+Definition 12 (MQTT Message) . Let ℓ be a connection, an MQTT message over ℓ is a pair m = ( ℓ, a ) where a is either  
+
+> •
+
+Con (c, id ) - a CONNECT request;  
+
+> •
+
+Sub (tf ) - a SUBSCRIBE request;  
+
+> •
+
+Disc - a DISCONNECT request;  
+
+> •
+
+UnSub (tf ) - an UNSUBSCRIBE request;  
+
+> •
+
+Pub (t) - a PUBLISH request. 
+
+Given a configuration (C, P, φ, D, k ), a transition σ m
+
+−→ σ′
+
+specifies how the broker state σ evolves into σ′ upon the reception of the MQTT message m. Transitions are defined by the rules of Figure 5 if some apply, or by the idle move σ m
+
+−→ σ otherwise. The rule (C ON ) states that when receiving a connection request, the broker authenticates the device association with the certificate; instantiates the policy of the provided certificate with the declared client id; asks the access control system if the obtained ground policy permits the connection; finally, if the connection is permitted, it updates the set of connected devices and records the association of the connection with the policy. The rule (S UB ) states that when receiving a subscription request, the broker retrieves the policy associated with the connection; asks the access control system if the obtained ground policy permits the subscription; finally, if the permission is granted, it updates the set of subscribers to the topic filter by adding the connection. The rule (D ISC ) simply states that when receiving a disconnection request, the broker removes all the occurrences of the connection from its state. Finally, (U NSUB ) manages unsubscription requests by removing from the ς function the binding between the connection and the specific topic filter, if present. All other messages do not cause a change in the broker states, either because it is not part of its intended semantics (e.g. Pub messages), or the request is denied by the access control mechanism, or the message is discarded (e.g. if a subscription request arrives from a device that is not connected). m = ( ℓ, Con (c, id )) c ∈ k(dev (ℓ)) P = Φ( c)[ id /$clientId ] P |∼ (Con , id )                 
+
+> (C ON )
+> (L, p, ς )m
+> −→(L∪ { ℓ}, p ◁ [ℓ7→P], ς )
+> m= ( ℓ, Sub (tf )) ℓ∈Lp(ℓ)|∼ (
+
+Sub , tf )                                                  
+
+> (S UB )
+> (L, p, ς )m
+> −→(L, p, ς ◁ [tf 7→ς(tf )∪ { ℓ}])
+> m= ( ℓ, UnSub (tf )) ℓ∈L
+> (U NSUB )
+> (L, p, ς )m
+> −→(L, p, ς ◁ [tf 7→ς(tf )\ { ℓ}])
+> m= ( ℓ, Disc )L′=L\ { ℓ}
+> (D ISC )
+> (L, p, ς )m
+> −→(L′,{ℓ′7→p(ℓ′)|ℓ′∈L′},{tf 7→ς(tf )∩L′|tf ∈TF })
+> Figure 5. Broker state evolution.
+
+Definition 13 (Broker Execution) . A broker execution π is a finite sequence of transitions 
+
+σ0
+
+> m1
+
+−−→ σ1
+
+> m2
+
+−−→ σ2
+
+> m3
+
+−−→ . . . mn
+
+−−→ σn
+
+We say that π is feasible if σ0 is the initial empty state 
+
+(∅, ∅, {tf 7 → ∅ | tf ∈ TF }).
+
+Hereafter, we denote with π ⊙ π′ the concatenation of executions, which is only defined when the last element of π
+
+coincides with the first one of π′ (in the resulting execution, we omit the first broker state of π′ to avoid duplications). 
+
+Example 8. Consider the light bulb light2 and presence sensor prsSens1 , and let the broker state be σ = ( {ℓ}, {ℓ 7 →
+
+P }, ς ∅): prsSens1 is connected with ℓ, it can publish on any topic ( P = {(Allow , Pub , {∗} )}), and there is no sub-scription (ς∅ = {tf 7 → ∅ | tf ∈ TF }). Consider the following messages where: light2 connects with ℓ′ (such that dev (ℓ′) = light2 ); it subscribes to the topic filter 
+
+phAC /floor1 /dtdMovement /#; and prsSens1 publishes on 
+
+phAC /floor1 /dtdMovement /light1 .
+
+m1 =( ℓ′, Con (clight2 , #)) 
+
+m2 =( ℓ′, Sub (phAC /floor1 /dtdMovement /#)) 
+
+m3 =( ℓ, Pub (phAC /floor1 /dtdMovement /light1 )) 
+
+Note that light2 attempts a wildcard injection by using # as its client id. The execution π = σ m1
+
+−−→ σ1
+
+> m2
+
+−−→ σ2
+
+> m3
+
+−−→ σ3 has 
+
+σ1 = ( {ℓ, ℓ ′}, {ℓ 7 → P, ℓ ′ 7 → P ′}, ς ∅)
+
+σ2 = ( {ℓ, ℓ ′}, {ℓ 7 → P, ℓ ′ 7 → P ′},
+
+{phAC /floor1 /dtdMovement /# 7 → { ℓ′}} ∪ ς∅)
+
+where P ′ is the policy of Figure 2 instantiated as: 
+
+P ′ = {(Allow , Con , {∗} ), (Allow , Rec , {∗} ),
+
+(Allow , Sub , {phAC /floor ?/dtdMovement /#})}
+
+During the first step, the condition P ′ |∼ (Con , #) holds because # ∈ L (∗aws ): the chosen id is included in the resource expression of the first allow statement (and there is no deny statement). In the second step, subscription is permitted by P ′
+
+because floor1 ∈ L (floor ?aws ). Finally, publication causes an idle move, leaving the broker state unchanged ( σ3 = σ2). 
+
+Since we are interested in how information propagates between devices through the broker, we introduce commu-nication triples d t
+
+=⇒ d′, meaning that d has communicated some information to d′ through the topic t. We compose communication triples into communication traces. 
+
+Definition 14 (Communication Trace) . A communication trace 
+
+ϖ from d0 to dn is a finite sequence of communication triples 
+
+d0
+
+> t1
+
+=⇒ d1
+
+> t2
+
+=⇒ d2
+
+> t3
+
+=⇒ . . . tn
+
+==⇒ dn.
+
+We extend ⊙ to communication traces as expected, and we abuse notation by writing Π ⊙ Π′ for the set containing all the elements of Π and Π′, as well as all the defined concatenations 
+
+ϖ ⊙ ϖ′ with some ϖ ∈ Π and ϖ′ ∈ Π′. Intuitively, Π ⊙ Π′
+
+encodes all the possible communication by considering the ones that happen separately on the two sets, as well as their concatenation when the final receiver of a trace in Π is the first sender of another trace in Π′.We now show how to derive communication traces from broker executions. First, we introduce the auxiliary notion of the set of devices that can receive messages published over a topic t when the broker is in a state σ. Formally, 
+
+Definition 15. Given a broker state σ = ( L, p, ς ) and a topic 
+
+t, the set Rec (σ, t ) ⊆ D is defined as 
+
+Rec (σ, t ) = [ 
+
+> tf ∈TF ↓t
+
+{dev (ℓ) | ℓ ∈ ς(tf ) and p(ℓ) |∼ (Rec , t )}
+
+where TF ↓t= {tf | t ∈ L (tf mqtt )}.
+
+We can now define the communication traces resulting from a given execution π: we consider each publish request in π
+
+and compute its receivers by taking into account the broker state as of when it was received. 
+
+Definition 16 (Traces of an Execution) . The set Tr (π) of the communication traces of an execution π is defined as 
+
+Tr (π) = 
+
+
+
+{d t
+
+=⇒ d′ | d = dev (ℓ) if π = σ (ℓ, Pub (t)) 
+
+−−−−−−→ σ′
+
+and d′ ∈ Rec (σ, t )} with σ = ( L, p, ς )
+
+and p(ℓ) |∼ (Pub , t )
+
+Tr (σ m
+
+−→ σ′) ⊙ Tr (π′) if π = σ m
+
+−→ σ′ ⊙ π′
+
+∅ otherwise 
+
+Example 9. Let t be phAC /floor1 /dtdMovement /light1 . The trace of the broker execution π of Example 8 is 
+
+Tr (π) = ∅ ⊙ ∅ ⊙ Tr (σ2
+
+> m3
+
+−−→ σ3) = {prsSens1 t
+
+=⇒ light2 }
+
+Note that the last message is a publish request, that the sender is prsSens1 , and that light2 is subscribed to tf =phAC /floor1 /dtdMovement /#. Thus, light2 is among the re-ceivers because t ∈ L (tf mqtt ).
+
+The formal development above enables us to prove the correctness of our verification framework of Section V. More precisely, the following theorem ensures that the information flow graph is a correct and complete representation of the information flow caused by the traces of broker executions, also for reachability through multi-step communication traces. Thus, we can use the graph to analyse the security properties of confidentiality, integrity, and isolation in our attacker model. 
+
+Theorem 3. Given a configuration and its information flow graph G, for every devices d and d′ it holds that G has an information flow from d to d′ if and only if a feasible execution 
+
+π exists such that Tr (π) contains a trace from d to d′.
+
+APPENDIX BPROOFS 
+
+We first prove that our symbolic characterization of the information flow graph is correct. Then, we ensure consistency of the permitted information flows described by the operational semantics with the paths of the information flow graph. Finally, we prove the complexity of Algorithm 1. 
+
+A. Consistency of the Symbolic Information Flow Graph 
+
+We establish the following consistency result between the intentional description of the policy interrogation of Defini-tion 5 and the predicate of Definition 8. 
+
+Lemma 1. Given a configuration I, the permission predicate 
+
+ψ(c, id ,α ,ρ) is true if and only if Φ( c)[ id /$clientId ] |∼ (α, ρ ).Proof. The result trivially holds by definition, and can be proved by induction on the cardinality of Φ( c).The following lemma ensures that two devices are reachable in one step in the information flow graph if and only if the same is true in the symbolic version. 
+
+Lemma 2. Given a configuration, let G = ( N, E ) be its information flow graph, and Gs = ( Ns, E s) the symbolic version. Let d, d ′ be a pair of devices, then the two following statements are equivalent: 1) a topic t exists such that {(d, t ), (t, d ′)} ⊆ E;2) two certificates c, c′ exist such that 
+
+{(d, F c,c ′ ), (Fc,c ′ , d ′)} ⊆ Es.Proof. We first note that, by Definition 7, the first statement holds if and only if there exists a t such that t ∈ TOc ∩ TIc′ .Notice that Lemma 1 implies: 
+
+t ∈ TOc iff Oc(t) and t ∈ TIc′ iff Ic′ (t).
+
+By Definition 10, this coincides with t satisfying Fc,c ′ , and by quantifier commutativity it is the same as the second statement. The following generalizes the previous result to multi-step reachability. 
+
+Theorem 1. Given a configuration, there is an information flow from d to d′ if and only if there is a symbolic information flow from d to d′.Proof. The statement can be proved by induction on the length of the information flow, resorting to Lemma 2 for proving that single steps coincides. 
+
+B. Consistency of Semantics and Information Flow Graph 
+
+Notation 1. In the following, we write:  
+
+> •
+
+ς⊥ for the function {tf 7 → ∅ | tf ∈ TF }; 
+
+> •
+
+σ⊥ for the initial broker state (∅, ∅, ς ⊥); 
+
+> •
+
+σ →∗ σ′ when σ m1
+
+−−→ σ1
+
+> m2
+
+−−→ . . . mn
+
+−−→ σ′ for some 
+
+m1, . . . m n and σ1, . . . σ n−1; 
+
+> •
+
+d →∗ d′ when d t1
+
+−→ d1
+
+> t2
+
+−→ . . . tn
+
+−→ d′ for some t1, . . . t n
+
+and d1, . . . d n−1;
+
+The next auxiliary results proves that necessary conditions applies to reachability of some given broker states. 
+
+Lemma 3. Let σ be a broker state such that σ⊥ →∗ σ =(L, p, ς ), and let ℓ ∈ L, then p(ℓ) = Φ( c)[ id /$clientId ]
+
+for some c and id such that c ∈ k(dev (ℓ)) and 
+
+Φ( c)[ id /$clientId ] |∼ (Con , id ).Proof. We prove the property by induction on the length of the execution π from σ⊥ to σ. The state σ⊥ vacuously satisfies the lemma, as no ℓ is in L = ∅. Assume π = π′ ⊙ (σ m
+
+−→ σ′)
+
+where σ = ( L, p, ς ) and σ′ = ( L′, p ′, ς ′). Then, by induction hypothesis, if ℓ ∈ L, then p(ℓ) = Φ( c)[ id /$clientId ] for some 
+
+c and id such that c ∈ k(dev (ℓ)) and Φ( c)[ id /$clientId ] |∼ 
+
+(Con , id ). We assume that ℓ′ ∈ L′, and show by cases on the rules in Figure 5 that the same properties hold for σ′, namely 
+
+p′(ℓ′) = Φ( c′)[ id ′/$clientId ] for some c′ and id ′ such that 
+
+c′ ∈ k(dev (ℓ′)) and Φ( c′)[ id ′/$clientId ] |∼ (Con , id ′).
+
+Case (C ON ): for ℓ′ ∈ L′ to be true it must be that either 
+
+ℓ′ ∈ L, or ℓ′ is the connection in the message m. In the former case, the thesis follows by induction hypothesis since p ◁ [ℓ′ 7 → P ]( ℓ) = p(ℓ). In the latter case, the thesis holds thank to the premises of the derivation rule, which coincide with our desiderata. 
+
+Cases (S UB ) and (UN SUB ): notice that L′ = L and p′ = p,thus for ℓ′ ∈ L′ to be true it must be that ℓ′ ∈ L and we can apply the induction hypothesis. 
+
+Case (D ISC ): induction hypothesis suffices because it must be that ℓ′ ∈ L, and it holds by construction that p′(ℓ′′ ) = 
+
+p(ℓ′′ ) for each ℓ′′ for which both functions are defined. 
+
+Default idel move: if not rule applies then σ = σ′ and the result trivially follows from induction hypothesis. 
+
+Lemma 4. Let σ be a broker state such that σ⊥ →∗ σ =(L, p, ς ), if p(ℓ) is defined, then ℓ ∈ L.Proof. We prove the property by induction on the length of the execution π from σ⊥ to σ. The state σ⊥ vacuously satisfies the lemma, as the domain of p is empty. Assume 
+
+π = π′ ⊙ (σ m
+
+−→ σ′) where σ = ( L, p, ς ) and σ′ = ( L′, p ′, ς ′),and consider the rules in Figure 5. For the (C ON ) rule, p′(ℓ′) is defined only if either p(ℓ′) is defined, or if ℓ′ is the connection in the m message. In the former case, the thesis follows by induction hypothesis; in the latter, it holds by construction. If the rule (D ISC ) is used to build the transition, then p′(ℓ′) defined implies that also p(ℓ′)′ is also defined, and ℓ′̸ = ℓ′′ with ℓ′′ 
+
+the connection in m. Then the thesis follows by induction hypothesis. The other cases hold by induction hypothesis, because p′ = p and L′ = L.
+
+Lemma 5. Let σ be a broker state such that σ⊥ →∗ σ =(L, p, ς ), and let ℓ ∈ ς(tf ), then p(ℓ) = Φ( c)[ id /$clientId ]
+
+for some c and id such that Φ( c)[ id /$clientId ] |∼ (Sub , tf ),
+
+c ∈ k(dev (ℓ)) and Φ( c)[ id /$clientId ] |∼ (Con , id ).Proof. We prove the property by induction on the length of the execution π from σ⊥ to σ. The state σ⊥ vacuously satisfies the lemma. Assume π = π′ ⊙ (σ m
+
+−→ σ′) where σ = ( L, p, ς ) and 
+
+σ′ = ( L′, p ′, ς ′). Then, by induction hypothesis, if ℓ ∈ ς(tf ),then p(ℓ) = Φ( c)[ id /$clientId ] for some c and id such that Φ( c)[ id /$clientId ] |∼ (Sub , tf ), c ∈ k(dev (ℓ)) and 
+
+Φ( c)[ id /$clientId ] |∼ (Con , id ).We assume that ℓ′ ∈ ς′(tf ′), and show by cases on the rules in Figure 5 that the same properties hold for σ′, namely 
+
+p′(ℓ′) = Φ( c′)[ id ′/$clientId ] for some c′ and id ′ such that Φ( c′)[ id ′/$clientId ] |∼ (Sub , tf ′), c′ ∈ k(dev (ℓ′)) and 
+
+Φ( c′)[ id ′/$clientId ] |∼ (Con , id ′).
+
+Case (C ON ): the result follows from the fact that ς = ς′, thus 
+
+ℓ′ ∈ ς′(tf ′) implies ℓ′ ∈ ς(tf ). In addition, ℓ′′ of m is fresh in L, thus p(ℓ′) = p′ ◁ [ℓ′ 7 → P ]( ℓ′) = p(ℓ′).
+
+Case (S UB ): if the topicfilter tf ′′ in m is tf ′, then from Lemma 3 it holds that ℓ′ ∈ L implies p(ℓ′) = 
+
+p′(ℓ′) = Φ( c′)[ id ′/$clientId ] for some c′ and id ′
+
+such that c′ ∈ k(dev (ℓ′)) and Φ( c′)[ id ′/$clientId ] |∼ 
+
+(Con , id ′). Finally, the last condition of the derivation rule guarantees that p′(ℓ′) |∼ (Sub , tf ′).If tf ′′ in m is not tf ′ instead, it must be that tf ′ is some 
+
+tf such that ℓ′ ∈ ς(tf ) an the result follows by induction hypothesis. 
+
+Cases (UN SUB ), (D ISC ), and default idel move Induction hy-pothesis suffices because it must be that ℓ′ ∈ ς(tf ′), and it holds by construction that p′(ℓ′′ ) = p(ℓ′′ ) for each ℓ′′ 
+
+for which both functions are defined. We now prove correctness and completeness of the infor-mation flow graph separately. 
+
+Lemma 6. Given a configuration I, two devices d, d ′ ∈ D
+
+and a topic t, if a feasible execution π exists such that d t
+
+=⇒
+
+d′ ∈ Tr (π), then the information flow graph of I contains both (d, t ) and (t, d ′).Proof. Take d, d ′, t and π, such that d t
+
+=⇒ d′ ∈ Tr (π).We prove the desideratum by induction over the conditions of Definition 16. As base case, let π = σ m
+
+−→ σ′, with σ = (L, p, ς ),
+
+m = ( ℓ, Pub (t)) , and p(ℓ) |∼ (Pub , t ). Since d t
+
+=⇒ d′ ∈
+
+Tr (π), it must be that d = dev (ℓ) and d′ ∈ Rec (σ, t ).By Lemma 4, ℓ ∈ L, and thus it holds by Lemma 3 that 
+
+p(ℓ) = Φ( c)[ id /$clientId ] for some c and id such that 
+
+c ∈ k(d) and Φ( c)[ id /$clientId ] |∼ (Con , id ). Therefore, we know that t ∈ TOc by Definition 6, and thus, by Definition 7, 
+
+(d, t ) is an arc of the information flow graph. Moreover, by Definition 15, d′ ∈ Rec (σ, t ) implies t is in 
+
+L(tf mqtt ) for some tf such that ℓ′ ∈ ς(tf ) and p(ℓ) |∼ (Rec , t )
+
+for some ℓ′ such that dev (ℓ′) = d′. Since ℓ′ ∈ ς(tf ),by Lemma 5, a certificate c′ must exists such that p(ℓ) = Φ( c′)[ id ′/$clientId ] and Φ( c′)[ id ′/$clientId ] |∼ (Sub , tf )
+
+for some id ′ such that c′ ∈ k(d′) and Φ( c′)[ id ′/$clientId ] |∼ 
+
+(Con , id ′). Therefore, we know that t ∈ TIc′ by Definition 6, and thus, by Definition 7, (t, d ′) is an arc of the information flow graph. Finally, we consider the induction step and assume π =
+
+σ m
+
+−→ σ′ ⊙ π′. Then, since d t
+
+=⇒ d′ is a single step, it is either that d t
+
+=⇒ d′ ∈ Tr (σ m
+
+−→ σ′) or d t
+
+=⇒ d′ ∈ Tr (π′), and in both cases we can directly rely on the induction hypothesis. 
+
+Lemma 7. Given a configuration and its information flow graph G, two devices d, d ′ ∈ D, and a topic t, if both (d, t )
+
+and (t, d ′) are arcs in G, then a feasible execution π exists such that d t
+
+=⇒ d′ ∈ Tr (π).Proof. Take d, d ′ and t, and assume both (d, t ) and (t, d ′)
+
+are arcs of the information flow graph. By Definition 7, c, c ′
+
+exists such that c ∈ k(d), c′ ∈ k(d′), with t ∈ TOc and t ∈ TIc′ ;thus we know that id , id ′ and tf exists such that we can build the following feasible execution π in accordance with the rules of Figure 5, where dev (ℓ) = d, dev (ℓ′) = d′, and Φc, id stands for Φ( c)[ id /$clientId ].
+
+σ⊥
+
+> (ℓ, Con (c, id ))
+
+−−−−−−−−→
+
+({ℓ}, {ℓ 7 → Φc, id }, ς ⊥)
+
+> (ℓ′,Con (c′,id ′))
+
+−−−−−−−−−→
+
+({ℓ, ℓ ′}, {ℓ 7 → Φc, id , ℓ ′ 7 → Φc′,id ′ }, ς ⊥) 
+
+> (ℓ′,Sub (tf ))
+
+−−−−−−−→
+
+({ℓ, ℓ ′}, {ℓ 7 → Φc, id , ℓ ′ 7 → Φc′,id ′ }, {tf 7 → { ℓ′}} )
+
+> (ℓ, Pub (t))
+
+−−−−−−→
+
+({ℓ, ℓ ′}, {ℓ 7 → Φc, id , ℓ ′ 7 → Φc′,id ′ }, {tf 7 → { ℓ′}} )
+
+The proof concludes by showing that d t
+
+=⇒ d′ ∈ Tr (π).In particular, it holds by Definition 16 that the conditions of 
+
+t ∈ TOc and t ∈ TIc′ imply d t
+
+=⇒ d′ ∈ Tr (σ (ℓ, Pub (t)) 
+
+−−−−−−→ σ), with 
+
+σ the last broker state of π.
+
+Lemma 8. Given a configuration, its information flow graph 
+
+G and two devices d, d ′, the graph G contains both the arcs 
+
+(d, t ) and (t, d ′) if and only if a feasible execution π exists such that d t
+
+=⇒ d′ ∈ Tr (π).Proof. By Lemma 6 and 7. We address now reachability over the information flow graph, and its correspondence to multi-steps communication traces. A useful property of feasible executions is that they can be composed, thanks to Disc which allows extending each feasible execution to one from σ⊥ to σ⊥.
+
+Lemma 9. Let π, π ′ be feasible executions of a configuration, then a feasible execution π′′ exists such that Tr (π′′ ) =
+
+Tr (π) ⊙ Tr (π′).Proof. Let π and π′ be as follows: 
+
+π = σ⊥
+
+> m1
+
+−−→ σ1
+
+> m2
+
+−−→ . . . mn
+
+−−→ σn
+
+π′ = σ⊥
+
+> m′
+> 1
+
+−−→ σ′
+
+> 1
+> m′
+> 2
+
+−−→ . . . m′
+
+> m
+
+−−→ σ′
+
+> m
+
+Let also σn = ( L, p, ς ), with L = {ℓi}ki=1 and let m′′  
+
+> i
+
+=(ℓi, Disc ) for all i from 1 to k. Then it holds by construction that the following π′′ is a feasible execution: 
+
+π′′ = σ⊥
+
+> m1
+
+−−→ σ1
+
+> m2
+
+−−→ . . . mn
+
+−−→
+
+σnm′′ 
+
+> 1
+
+−−→ σ′′ 
+
+> 1
+> m′′
+> 2
+
+−−→ σ′′  
+
+> 2
+
+. . . m′′ 
+
+> k
+
+−−→
+
+σ⊥
+
+> m′
+> 1
+
+−−→ σ′
+
+> 1
+> m′
+> 2
+
+−−→ . . . m′
+
+> m
+
+−−→ σ′
+
+> m
+
+.
+
+Moreover, by Definition 16, Tr (σnm′′ 
+
+> 1
+
+−−→ . . . m′′ 
+
+> k
+
+−−→) = ∅, and also Tr (π′′ ) = Tr (π) ⊙ ∅ ⊙ Tr (π′) = Tr (π) ⊙ Tr (π′).Moreover, if a trace of a feasible execution can be decom-posed (i.e., represented as the composition of two traces), then feasible executions exists also for the components. 
+
+Lemma 10. Let π and ϖ be a feasible execution of aconfiguration and a trace such that ϖ′ ⊙ϖ′′ = ϖ ∈ Tr (π) for some ϖ′ and ϖ′′ , then feasible executions π′, π ′′ exist such that ϖ′ ∈ Tr (π′) and ϖ′′ ∈ Tr (π′′ ).Proof. Let π \ Pub be the execution π where each occurrence of Pub messages are removed, and notice the following trivial properties: π\Pub is feasible if π is feasible; Tr (π\Pub ) = ∅;the final states of π and π \ Pub coincide. By Definition 16, ϖ′⊙ϖ′′ implies that π′ 
+
+> 0
+
+and π′′  
+
+> 0
+
+exists such that π = π′ 
+
+> 0
+
+⊙ π′′  
+
+> 0
+
+, with ϖ′ ∈ Tr (π′
+
+> 0
+
+) and ϖ′′ ∈ Tr (π′′  
+
+> 0
+
+). Note that π′ 
+
+> 0
+
+is feasible, hence we can take π′ = π′
+
+> 0
+
+. For π′′ , we take instead π′′ = ( π′ 
+
+> 0
+
+\ Pub ) ⊙ π′′  
+
+> 0
+
+. The result follows by noticing that π′′ is well defined because the final state of (π′ 
+
+> 0
+
+\ Pub )
+
+coincides with the one of π′
+
+> 0
+
+, that π′′ is feasible because π′
+
+> 0
+
+is feasible, and that Tr (( π′ 
+
+> 0
+
+\ Pub ) ⊙ π′′  
+
+> 0
+
+) = ∅ ⊙ Tr (π′′  
+
+> 0
+
+) = 
+
+Tr (π′′  
+
+> 0
+
+).
+
+Theorem 3. Given a configuration and its information flow graph G, for every devices d and d′ it holds that G has an information flow from d to d′ if and only if a feasible execution 
+
+π exists such that Tr (π) contains a trace from d to d′.Proof. Assume G has an information flow from d to 
+
+d′, i.e. there is are topics t1, t 2, . . . , t n and devices 
+
+d1, d 2, . . . , d n, d n+1 such that (di, t i) and (ti, d i+1 ) are arcs of G, with d1 = d and dn+1 = d′. Then, by Lemma 8, for each i = 1 , . . . , n , a feasible executions πi exist such that 
+
+diti
+
+=⇒ di+1 ∈ Tr (πi). Finally, by applying Lemma 9 n times, a feasible π exists such that Tr (π) = Tr (π1) ⊙ Tr (π2) . . . ⊙
+
+Tr (πi) contains the trace d1
+
+> t1
+
+=⇒ d2
+
+> t2
+
+=⇒ . . . d ntn
+
+==⇒ dn+1 ,which is from d to d′ by construction. Assume instead that a feasible execution π exists such that 
+
+Tr (π) contains a trace from d to d′. We prove that G has an information flow from d to d′ by induction on the length of the trace ϖ from d to d′. If ϖ is a single step, then the information flow exists in G by Lemma 8. Otherwise, assume that ϖ = ϖ′ ⊙ϖ′′ , then by Lemma 10 two feasible executions 
+
+π′ and π′′ exist with ϖ′ ∈ Tr (π′) and ϖ′′ ∈ Tr (π′′ ). By induction hypothesis, G contains both information flows for 
+
+ϖ′ (starting with d) and ϖ′′ (ending in d′), and by construction the two can compose (the final device of ϖ′ must be the initial one of ϖ′′ ). 
+
+C. Complexity of our Approach 
+
+We prove the worst case complexity of our algorithm for building the symbolic information flow graph. In spite of the theoretical result, our heuristics make the approach efficient when dealing with real-world configurations, as shown by our experimental evaluation. 
+
+Theorem 2 (Complexity) . Let (C, P, φ, D, k ) be a configura-tion, and let f (n) be the cost for deciding the satisfiability of quantifier-free predicates of size n using regular expressions and string theories. Then, the time required by Algorithm 1 is at most O(|C|2 ·(|D|+|P |·|R| +f (|P |·|R| ))) , where |P | and 
+
+|R| are the size of the largest policy and resource expression. Proof. Algorithm 1 iterates over each pair of certificates (c, c ′)
+
+and for each pairs it builds the predicate Fc,c ′ and checks its satisfiability. The overall cost is thus O(|C|2 · (B + S + U )) ,where B , S and U are the cost of building Fc,c ′ , of checking its satisfiability and of updating the graph, respectively. To estimate the value of B, consider a request r with certificate c. From Definition 8 we have that the formula 
+
+ψr is of length at most O(P 
+
+> s=( ε,α, R)∈Φ( c)
+
+|R| ). We can approximate the expression above as O(P · R ) by considering the worst case, i.e. the policy containing the greatest number of statements P and the statement with the greatest number of resource expressions R. Although each Fc,c ′ is the combi-nation of five expressions built though ψ_, its length is still at most O(P · R ) (see Definition 9 and Definition 10). The cost of building Fc,c ′ is thus B = O(P · R ).To estimate the value of S, consider that checking the satisfiability of Fc,c ′ through Algorithm 2 depends on the decision procedure used by the solver, which is invoked a fixed number of times (ten times in the worst case). Overall, the worst case for S is O(f (P · R )) , where f is the cost of the algorithm used by the SMT solver for dealing with regular expressions and string concatenation. To estimate the value of U , consider the worst case: every certificate is associated with all the devices. Then we iterate on every device twice, one for each internal loop of Algorithm 1. Therefore, U is bounded by O(|D|).Table IV IOT:P OKER SCALABILITY ON REAL -WORLD CONFIGURATIONS : COMPARISON BETWEEN CVC 5 AND Z3 AS BACKEND SMT SOLVER .
+
+nodes hard strategies building time with ( s) query time ( s)avg. avg. min. avg. max. avg. cvc5 Z3 cvc5 Z3 cvc5 Z3 certificates 
+
+20 264.6 1.8 0.42 1.22 2.87 4.94 12.00 10.69 0.0060 40 973.0 4.5 2.30 6.17 6.28 12.64 16.55 20.28 0.0086 60 2211.2 5.6 2.93 7.04 9.22 18.22 23.39 30.00 0.0108 80 3903.9 13.6 5.93 18.67 16.34 30.72 29.08 47.88 0.0136 100 6098.1 16.7 7.50 18.89 19.46 39.82 36.55 58.76 0.0167 120 8764.2 21.5 13.58 35.17 24.69 52.35 41.49 87.98 0.0198 140 12080.1 28.7 18.61 42.75 31.06 64.81 46.63 100.06 0.0244 160 15415.9 29.6 20.03 51.89 33.01 72.11 44.43 90.16 0.0280 180 19571.7 37.0 26.61 69.91 37.87 86.89 52.79 109.81 0.0318 200 24209.9 45.8 31.62 78.76 46.06 103.63 57.34 125.65 0.0349 220 29066.2 50.5 32.39 95.42 50.93 117.21 62.02 129.81 0.0393 240 34732.6 59.0 42.11 114.48 57.68 130.17 62.41 141.43 0.0430 258 40019.0 65.0 62.35 141.24 62.67 144.20 63.53 152.19 0.0473 
+
+APPENDIX CCOMPARING DIFFERENT SMT SOLVERS 
+
+Table IV compares the scalability of I OT:P OKER using cvc5 and Z3 as the SMT solver on the experiments described in Section VI. The experiments of Table IV were carried out by generating a set of random devices from which we derive the configuration on which we tested the two versions of the tool. The solutions found by using the two solvers coincide as expected, so do the average number of nodes and the times the hard strategy is required. Our results show that cvc5 performs better than Z3 almost all the time.

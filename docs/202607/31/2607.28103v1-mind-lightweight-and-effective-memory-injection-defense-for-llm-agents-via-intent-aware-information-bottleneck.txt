@@ -1,0 +1,427 @@
+Title: MIND: Lightweight and Effective Memory Injection Defense for LLM Agents via Intent-Aware Information Bottleneck
+
+URL Source: https://arxiv.org/pdf/2607.28103v1
+
+Published Time: Fri, 31 Jul 2026 00:57:55 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# MIND: Lightweight and Effective Memory Injection Defense for LLM Agents via Intent-Aware Information Bottleneck 
+
+# Dongyi Liu 1∗, Haixing He 2∗, Xiaobao Wu 2†, Jia Li 1,3 †
+
+> 1
+
+The Hong Kong University of Science and Technology (Guangzhou) 
+
+> 2
+
+Shanghai Jiao Tong University 
+
+> 3
+
+The Hong Kong University of Science and Technology xiaobaowu@sjtu.edu.cn, jialee@ust.hk 
+
+Abstract 
+
+Memory-augmented LLM-based agents are vulnerable to memory injection attacks: Agents may retrieve poisoned mem-ory from attackers, which diverts their behavior from initial user intent and finally causes task failure. However, existing defense mechanisms either incur high computational cost or suffer from information redundancy in multi-turn contexts. To address these challenges, we propose Memory Intent-Aware 
+
+Neural Denoising (MIND), a lightweight defense framework for memory injection attack. Our preliminary analysis reveals that benign and poisoned trajectories exhibit distinguishable relationships between the initial user intent and subsequent be-havior. Building on this observation, MIND employs an intent-aware Information Bottleneck (IB) to extract compact intent– behavior representations from the initial intent and turn-level behavior. The IB preserves intent-relevant cross-turn attack signals while filtering task-irrelevant and repetitive informa-tion, and a lightweight detector identifies malicious memories from the resulting representations. As such, MIND mitigates information redundancy in multi-turn contexts while avoiding the overhead of repeated LLM auditing. Extensive experi-ments show that MIND reduces attack success rates while preserving task accuracy and inference efficiency. Notably, on ReAct-StrategyQA, MIND reduces mean ASR-r and ASR-a by 55.4% and 55.3%, respectively, while matching the unde-fended agent in average accuracy and latency. 
+
+# 1 Introduction 
+
+Large Language Models (LLMs)-based agents have recently emerged as a promising paradigm for tackling long-horizon tasks (Xi et al. 2023), such as software engineering (Yang et al. 2024), deep research (Zhang et al. 2025b), and scientific discovery (Lu et al. 2024). To handle such long-horizon tasks, agents commonly employ external, retrieval-based memory systems that store persistent records from past interactions and retrieve relevant records into the model context at sub-sequent turns (Packer et al. 2023; Zhong et al. 2024; Xu et al. 2025; Chhikara et al. 2025). Despite performance im-provements, this introduces a severe security issue: Memory Injection , where adversaries can manipulate the memory system via indirect injection, resulting in task failure and in-creasing the risk of harmful outputs (Chen et al. 2024; Dong 
+
+> ∗
+
+These authors contributed equally. 
+
+> †
+
+Corresponding authors. 
+
+et al. 2025; Zhang et al. 2025a; Xie et al. 2025). For exam-ple, an attacker can inject a memory instructing a customer-service agent to approve urgent refunds without verification. Once retrieved, it causes the agent to authorize a fraudulent refund it would otherwise reject, resulting in financial loss. To defend such memory injection attacks, recent stud-ies have proposed various methods (Wei et al. 2025; Xiang et al. 2024; Ouyang and Hou 2026). However, these methods face two primary challenges as shown in Figure 1: (i) High computational cost . Reasoning-based defenses repeatedly invoke LLMs to audit retrieved memories, process retrieved passages, or monitor interaction streams (Wei et al. 2025; Xi-ang et al. 2024; Chen et al. 2025). Their computational cost significantly accumulates over long trajectories. (ii) Infor-mation redundancy in multi-turn contexts. Recent meth-ods seek to reduce computational cost through lightweight detectors. To identify malicious effects across interactions (Laban et al. 2025), multi-turn detectors encode complete interaction trajectories (Liu et al. 2026). But these trajecto-ries often contain substantial task-irrelevant and repetitive information (Shi et al. 2023; Liu et al. 2024), which can obscure attacks signals and thus hinder defense mechanisms. To address these challenges, we propose Memory Intent-Aware Neural Denoising (MIND), a lightweight defense framework for memory-augmented agents. Our preliminary analysis reveals that benign and poisoned trajectories ex-hibit distinguishable relationships between the initial user intent and subsequent behavior, as memory injection causes the agent’s behavior to deviate from its initial intent across turns. Building on this observation, MIND employs an intent-aware Information Bottleneck (IB) to extract compact intent– behavior representations from the initial intent and turn-level behavior. This process preserves intent-relevant cross-turn attack signals while filtering task-irrelevant and repetitive in-formation that could obscure them. A lightweight detector then uses the resulting representations to identify malicious memories. In this way, our MIND can address information redundancy in multi-turn contexts and avoid high computa-tional overhead of repeated LLM auditing. Across four back-bones, MIND achieves the lowest mean StrategyQA ASR-r and ASR-a (19.57% and 33.87%), together with the highest mean MMLU accuracy (79.57%) and a low mean MMLU ASR of 0.28%. On StrategyQA, MIND preserves average task accuracy while running 20.6% faster than the LLM Au-arXiv:2607.28103v1 [cs.AI] 30 Jul 2026 Figure 1: Comparison of different memory defense frameworks. (a) LLM-based reasoning defense incurs heavy computational cost due to expensive inference. (b) Existing methods leverage single-turn or multi-turn trajectories for defense, but suffer from redundant information across turns. (c) Our MIND is lightweight and, based on the information bottleneck, filters out redundant information to better focus on the initial user intent. ditor (Wei et al. 2025). Our main contributions are summa-rized as follows: 
+
+• Analysis. We conduct preliminary experiments to un-cover why memory injection attacks succeed from the perspective of intent attention. 
+
+• Method. We design a lightweight defense framework that reformulates memory defense as a denoising process based on information bottleneck, yielding an intent-aware defense signal for long-horizon tasks. 
+
+• Evaluation. Extensive experiments show that MIND improves the average security–utility trade-off across memory-augmented agent settings while preserving av-erage task accuracy and maintaining inference efficiency comparable to undefended agents. 
+
+# 2 Related Work 
+
+Memory-Augmented Agent Memory-augmented agents store and reuse past experience to support long-horizon tasks. Existing systems implement this capability through hierar-chical context management (Packer et al. 2023), interaction histories (Park et al. 2023; Zhong et al. 2024), distilled re-flections (Shinn et al. 2023; Zhao et al. 2024), and reusable skills or workflows (Wang et al. 2023, 2024); recent systems also organize such memories automatically at production scale (Xu et al. 2025; Chhikara et al. 2025). Although their interfaces differ, these systems all write records to an external store and use semantic retrieval to reuse them in later interac-tions. Retrieval-Augmented Generation (RAG) (Lewis et al. 2020; Guu et al. 2020) uses the same retrieval mechanism over an external corpus and can therefore be viewed as a form of memory. Whether a record is planted in the corpus or written by the agent, retrieval places it in the model’s deci-sion context. A malicious record can then influence multiple turns, gradually steering the agent away from the initial user intent even when each turn appears plausible. 
+
+Memory Injection and Defense Recent work shows that adversaries can inject malicious records into agent memory to divert later behavior (Chen et al. 2024; Zou et al. 2025; Dong et al. 2025; Xu et al. 2026; Zhang et al. 2025a). Agent-Poison (Chen et al. 2024) and PoisonedRAG (Zou et al. 2025) assume write access to the memory bank or retrieval corpus, planting optimized triggers or misleading passages that ac-tivate once retrieved. MINJA (Dong et al. 2025) removes this assumption: through ordinary queries alone, it induces the agent to commit specific records into its own memory. Memory control-flow attacks (Xu et al. 2026) further show that injected records can persistently hijack tool selection and workflow order across tasks, ignoring corrective instructions. In these attacks, injected records appear benign in isolation yet trigger harm in specific contexts (Zhang et al. 2025a). Existing defenses fall into two lines. LLM-based auditing vets memory via reasoning: A-MemGuard (Wei et al. 2025) compares reasoning paths derived from related memories, RobustRAG (Xiang et al. 2024) aggregates answers from iso-lated passages, and sequential monitoring (Chen et al. 2025) cumulatively evaluates the request stream with a lightweight LLM judge. Such per-turn inference is effective but slow, with latency growing along the interaction. Cheaper safeguards avoid this cost: prompt filtering (Inan et al. 2023), perplexity detection (Alon and Kamfonas 2023), and attention-variance filtering (Choudhary et al. 2025) screen individual records, provenance tracking (Ouyang and Hou 2026) audits their origin, and safety alignment (Ouyang et al. 2022) hardens the model itself. Record-level safeguards assess content or immediate effects, but do not capture how a memory record affects agent behavior across turns. Consequently, record-level analysis may miss malicious effects that emerge during Figure 2: Preliminary observations. (Left) Attention to the initial intent decays over turns, and decays faster under injection, indicating gradual forgetting of the original task. (Right) t-SNE (van der Maaten and Hinton 2008) of turn representations shows benign, poisoned, and initial-intent states trending toward separability, motivating a lightweight classifier for memory filtering. an interaction (Zhang et al. 2025a) and fail to reject mem-ories introduced through legitimate channels (Dong et al. 2025). Encoding the full trajectory provides cross-turn con-text but can obscure attack signals with redundant history. MIND instead models the relation between the initial intent and each turn through an information bottleneck, avoiding repeated LLM auditing and full-trajectory encoding. 
+
+# 3 Preliminary 
+
+3.1 Memory-Augmented Agent Settings 
+
+Given a query q, a memory-augmented agent driven by a lan-guage model πθ generates a trajectory y = ( τ1, τ 2, . . . , τ T ),where T denotes the total number of interaction turns. Each turn τt is defined as a composite semantic block consisting of three functional components (Yao et al. 2023): a reasoning step <think> , a memory retrieval operation <action> 
+
+that fetches the top-k relevant records Mr = R(q, M, k )
+
+from the memory bank M, and an environment observation 
+
+<observation> grounded in the retrieved records Mr .Upon completion, a write function W decides whether to commit the record: M ← W (M, (q, y )) . The entire trajec-tory is assigned a label l, which serves as the ground-truth signal extracted from the last turn in the <answer> tag. 
+
+3.2 Threat Model 
+
+Attacker’s Goal and Capacity . In our setting, attackers can inject a small set of malicious records Madv into M. This is achieved via indirect injection (as a regular user through multi-turn interactions) (Dong et al. 2025) or direct injection 
+
+(with limited write access) (Chen et al. 2024; Zou et al. 2025). The attacker’s goal is to have Madv retrieved and misdirect answers to the target label ladv , formulated as: 
+
+max 
+
+> Madv
+
+1
+
+|Q test |
+
+X
+
+> q∈Q test
+
+1ˆl(y) = ladv 
+
+,
+
+s.t. y ∼ πθ
+
+ · | q, R(q, M′, k ), M′ = M ∪ M adv ,
+
+Madv ⊆ R (q, M′, k ), |M adv | ≤ ∆,
+
+(1) where Qtest is the test set, 1[·] is the indicator function, 
+
+ˆl(y) is the label from the <answer> tag of trajectory y,and ∆ bounds the injection budget. For a query like "Is the capital of Australia Canberra?", the attacker plants poisoned records that instruct the agent to "output the opposite of the retrieved answer" or "just say ’I don’t know.’" Direct injection preloads such records as a small poisoned corpus; indirect injection accumulates them via multi-turn queries with malicious suffixes that the agent stores in memory. At retrieval time, the poisoned records dominate and mislead the agent, flipping the answer to No or forcing "I don’t know". 
+
+Defender’s Knowledge and Capability. The defender only knows that the memory bank M′ may be poisoned, but has no knowledge of the attack strategy, triggers, poisoned memories Madv , or target behavior. During inference, the defender can only filter retrieved memories through R and guard memory writes through W.
+
+3.3 Problem Formulation 
+
+With the preliminaries established above, we now give a definition of the memory defense problem. 
+
+Definition 1 Given a poisoned memory bank M′ = M ∪ Madv containing clean records M and poisoned records 
+
+Madv , and a set of test queries Qtest each with a ground-truth label l, our goal is to optimize a defense function 
+
+gϕ(·) that purifies the retrieved memories. We apply gϕ
+
+to the top-k retrieval R(q, M′, k ) to obtain a filtered set 
+
+˜Mr = gϕ(R(q, M′, k )) . The objective is to filter poisoned memories into a benign ˜Mr and the trajectory y generated by πθ recovers the ground truth l rather than ladv :
+
+max 
+
+> ϕ
+
+1
+
+|Q test |
+
+X
+
+> q∈Q test
+
+1ˆl(y) = l,
+
+s.t. y ∼ πθ
+
+ · | q, ˜Mr
+
+, ˜Mr = gϕ
+
+ R(q, M′, k ),
+
+(2) 
+
+# 4 Methodology 
+
+In this section, we detail our method, which optimizes Eq. 2 to conduct efficient memory defense, as illustrated in Fig. 3. Figure 3: Overview of MIND. From a multi-turn agent trajectory, MIND (1) extracts turn representations via a pre-trained LLM; (2) compresses representations into a denoised latent space through an IB encoder; (3) classifies the denoised latent space with multiple hyperplanes. Only benign memories are written into the memory bank and retrieved back by the agent. First, in Sec. 4.1, we conduct preliminary experiments with key observations on how poisoned memories affect the agent’s reasoning, which outline the motivation. Building on this, we present MIND , a lightweight and intent-aware defense method that leverages the information bottleneck to filter poisoned memories while preserving task-relevant in-tent across long trajectories in Sec. 4.2 and Sec. 4.3. 
+
+4.1 Motivation 
+
+To understand how poisoned memories mislead the agent and to guide our defense design against multi-turn memory attacks, we conduct preliminary experiments that reveal two key observations, as shown in Fig. 2. 
+
+Obs. 1: The relationship between the initial intent and the current turn is separable in the representation space. 
+
+Let ht be the last-token hidden state of the agent πθ at turn 
+
+t, and h0 represents initial intent. ( i.e. , user initial query) We visualize {ht}Tt=0 under benign memories M and poisoned memories Madv for MINJA. The hidden states associated with benign and poisoned memories show a distinguishable trend in the representation space. This suggests that the rep-resentations may contain discriminative signals that can po-tentially be captured by a lightweight classifier gϕ if their representations ht have separable trend, as guaranteed by the universal approximation capability (Augustine 2024). 
+
+Obs. 2: The agent gets lost over long turns, especially un-der injection. We analyze the agent’s attention to the initial query h0 as turns increase. The attention to h0 decreases over turns, and this drop is more severe under poisoned memo-ries Madv . Although separability allows a lightweight gϕ to filter poisoned memories, the multi-turn states ht still con-tain much task-irrelevant redundancy that weakens the intent signal. This motivates our adoption of the information bot-tleneck principle, which trains gϕ to discard task-irrelevant redundancy in ht while retaining information relevant to the initial intent h0 throughout long-horizon trajectories. 
+
+4.2 Memory Intent-Aware Neural Denoising 
+
+Trajectory Representation Extraction. We first use a pre-trained LLM to extract turn-level features. Unlike prior works (Choudhary et al. 2025; Ouyang and Hou 2026), we take the last-token hidden state of τt, i.e. , the final token of 
+
+<observation> , as the turn representation ht, and denote the query representation as h0. For closed-source agents such as DeepSeek and GPT, we use Llama-3.1-8B-Instruct as a proxy representation extractor. Then, from QA and EHR tra-jectories, we obtain {ht}Tt=1 together with h0, and construct a turn-level training set D = {(xi, x anchor  
+
+> i
+
+, l i)}Ni=1 , where 
+
+xi = [ h0; ht], xanchor  
+
+> i
+
+= h0, and li ∈ { 0, 1} labels whether the retrieval M(t) 
+
+> r
+
+= R(q, M′, k ) contains a poisoned mem-ory: 
+
+li =
+
+(1, M(t) 
+
+> r
+
+∩ M adv = ∅ (benign ),
+
+0, M(t) 
+
+> r
+
+∩ M adv ̸ = ∅ (poisoned ). (3) 
+
+Information Bottleneck Theory for Memory Defense. 
+
+Prior works (Chen et al. 2025; Choudhary et al. 2025) would classify directly on the input xi. However, motivated by Obs. 2, we formulate filtering as a denoising problem: rather than using the xi, we first compress it into a latent space 
+
+zi that discards task-irrelevant redundancy while preserving the intent-relevant information. Specifically, the input xi is passed through a feature extractor f and then an IB encoder 
+
+E, which produces the denoised latent space zi for the subse-quent defense decision. The IB objective is (Tishby, Pereira, and Bialek 1999; Alemi et al. 2017): 
+
+min I(Z; X)
+
+| {z }
+
+> compactness
+
+−α · I(Z; Y )
+
+| {z }
+
+> informativeness
+
+, (4) where I(·; ·) represents the mutual information of two vari-ables and α balances the two objectives. 
+
+Compactness min I(Z; X). Based on the variational in-formation bottleneck (Alemi et al. 2017; Voloshynovskiy et al. 2019), we use the IB encoder E to approximate I(Z; X)
+
+by minimizing an upper bound. For an input xi, E produces a Gaussian posterior over the latent space zi:
+
+qE (zi | xi) = N μ(xi), diag( σ2(xi)) , (5) where the mean μ(·) and standard deviation σ(·) are the two output heads of E. Meanwhile, we set an isotropic Gaussian as the prior distribution of the latent, i.e. , p(z) = N (0 , I ).With this variational posterior and prior, I(Z; X) is upper-bounded by the expected KL divergence: 
+
+I(Z; X) ≤ Exi∼D DKL 
+
+ qE (zi | xi) ∥ p(z) def 
+
+= LKL .
+
+(6) To optimize this bound, we make zi differentiable with re-spect to E via the reparameterization trick during train-ing (Kingma and Welling 2014): 
+
+zi = μ(xi) + σ(xi) ⊙ ϵ, ϵ ∼ N (0 , I ), (7) where ⊙ denotes element-wise multiplication. Since both the posterior and the prior are Gaussian, LKL admits a closed form and can be computed analytically without sampling: 
+
+LKL = − 12
+
+> d
+
+X
+
+> j=1
+
+
+
+1 + log σ2 
+
+> j
+
+− μ2 
+
+> j
+
+− σ2
+
+> j
+
+
+
+, (8) where d is the dimension of the latent space, and μj , σj
+
+respectively denote the j-th elements of the posterior mean 
+
+μ(xi) and standard deviation σ(xi).
+
+Informativeness max I(Z; Y ). In our setting, the tar-get Y is the ground-truth label. Since directly estimating 
+
+I(Z; Y ) is intractable, we optimize it through a supervised alignment surrogate that anchors each latent to the initial intent. Concretely, we encode both the input xi and its in-tent anchor xanchor  
+
+> i
+
+with the same encoder E, and take their posterior means μ(xi) and μ(xanchor  
+
+> i
+
+) as the corresponding latents. Let ˆμi and ˆμanchor  
+
+> i
+
+be their ℓ2-normalized versions, and di = ∥ˆμi − ˆμanchor  
+
+> i
+
+∥2 their distance in the latent space. Guided by the label li, we pull benign turns toward the an-chor and push poisoned turns away by a margin ma (Hadsell, Chopra, and LeCun 2006): 
+
+Lalign = 1
+
+|B| 
+
+X
+
+> i∈B
+
+di + 1
+
+|A| 
+
+X
+
+> i∈A
+
+max  0, m a − di
+
+, (9) where B = {i : li = 1 } and A = {i : li = 0 } denote the benign and poisoned subsets of D. In this way, maximizing 
+
+I(Z; Y ) enlarges the margin between benign and poisoned turns in the compressed space, making them easier to distin-guish under multi-turn interactions. 
+
+4.3 Lightweight Multi-hyperplane Classifier 
+
+Given the denoised latent zi produced by the IB encoder E
+
+(Sec. 4.2), we build a lightweight decision boundary on top of it to separate benign turns from poisoned ones. Rather than a single linear boundary, we adopt K hyperplanes to form a piecewise decision region, parameterized by {wk}Kk=1 with thresholds {tk}Kk=1 . This design is motivated by two con-siderations: empirically, poisoned turns span diverse attack patterns that a single linear boundary cannot capture; theo-retically, the Convex Polytope Machine (Kantchelian et al. 2014) shows that multi-hyperplane boundaries can provably approximate complex, non-linear decision regions, yielding a more expressive constraint. Operating on the denoised la-tent zi, a turn is predicted benign only if it lies below all K
+
+hyperplanes, i.e. , z⊤ 
+
+> i
+
+wk < t k for all k, which is enforced by: 
+
+Lbenign = X
+
+> i:li=1
+> K
+
+X
+
+> k=1
+
+max  0, m + z⊤ 
+
+> i
+
+wk − tk
+
+, (10) 
+
+Lpoison = X
+
+> i:li=0
+
+max  0, m − max  
+
+> k
+
+(z⊤ 
+
+> i
+
+wk − tk), (11) where m is a hyperparameter controlling the margin. Intu-itively, Lbenign pushes each benign turn below all K hyper-planes by a margin, keeping benign samples inside the region; conversely, Lpoison requires each poisoned turn to violate at least one hyperplane, forcing poisoned samples outside. In this way, the filter learns a decision region whose boundaries jointly capture the diverse patterns of poisoned memories. 
+
+4.4 Overall Training Objective 
+
+We now present the overall training objective for MIND. The defense function gϕ is parameterized by ϕ =
+
+{θE , {wk, t k}Kk=1 , f }, where θE is the IB encoder E and 
+
+{wk, t k}Kk=1 are the K hyperplanes and f is the feature extractor. Combining Lbenign and Lpoison with the IB com-pression loss LKL and the intent-alignment loss Lalign , we optimize the memory-defense objective below: 
+
+min  
+
+> ϕ
+
+Lbenign + Lpoison + β LKL + λ Lalign , (12) where β and λ are hyper-parameters that balance compres-sion and intent alignment against the classification objective. 
+
+A more detailed algorithm and time complexity is pro-vided in the supplementary material. 
+
+# 5 Experiments 
+
+5.1 Experimental Setup 
+
+Dataset and Backbone. Following prior works (Wei et al. 2025), we use EHR (Chen et al. 2024) and QA agent tra-jectories for training and evaluate cross-domain transfer on StrategyQA (Geva et al. 2021) and MMLU (Hendrycks et al. 2021). For retrieval, we adopt the BGE-large-en (Xiao et al. 2024), retrieving 5 memories at each turn. To demonstrate robustness, we evaluate four backbones, i.e. , DeepSeek-V4 (DeepSeek-AI 2026), GPT-4o-mini (OpenAI 2024), Llama-3.1-8B-Instruct (Dubey et al. 2024) and Qwen3-8B-Instruct (Yang et al. 2025). 
+
+Baselines. We compare MIND with representative mem-ory defense methods, including A-MemGuard (Wei et al. 2025), an LLM Auditor (Wei et al. 2025), a fine-tuned Dis-tilBERT (Sanh et al. 2019) classifier (Distil), perplexity fil-tering (PPL) (Alon and Kamfonas 2023), Sequential Mon-itor (Chen et al. 2025), and AV Filter (Choudhary et al. 2025). Because AV Filter requires access to model-internal Backbone Method ReAct-StrategyQA MMLU                                                                                                                                                                                                                                                                                
+
+> ACC ↑ASR-r ↓ASR-a ↓Time ↓ACC ↑ASR ↓ISR ↓Time ↓
+> DeepSeek-V4 No Defense 63.77 50.37 74.52 39.15 70.95 21.03 91.79 3.94
+> LLM Auditor 45.78 29.50 47.56 51.60 91.76 0.93 2.96 8.59 Distil 64.37 53.00 74.10 33.23 69.30 21.81 83.83 8.34 PPL 64.69 44.09 67.51 33.42 76.13 15.60 87.84 4.46 A-MemGuard 66.77 37.52 60.72 79.94 88.15 3.37 30.62 43.52 Sequential Monitor 60.39 49.05 69.36 73.19 90.00 0.00 1.42 9.81 AV Filter ––––––––
+> MIND (Ours) 62.60 20.91 32.72 33.52 92.39 0.72 0.34 7.76 GPT-4o-mini No Defense 74.72 41.99 75.51 19.30 64.26 7.04 77.04 5.33
+> LLM Auditor 57.79 47.77 59.80 27.13 75.37 0.00 0.56 9.90 Distil 75.93 46.22 79.17 17.64 69.82 7.04 68.89 9.06 PPL 73.84 34.07 66.73 17.96 69.69 7.41 75.56 6.26 A-MemGuard 74.11 30.05 61.70 92.17 74.84 1.11 20.62 48.65 Sequential Monitor 74.66 40.57 72.55 21.03 77.72 0.00 0.74 11.16 AV Filter ––––––––
+> MIND (Ours) 74.86 26.22 48.65 19.67 77.98 0.11 10.38 9.34 Llama-3.1-8B-Instruct No Defense 60.90 40.99 75.24 18.79 58.70 2.22 27.04 18.94
+> LLM Auditor 60.45 43.20 42.27 19.20 63.07 0.00 0.86 22.02 Distil 60.80 40.54 74.80 19.75 66.24 5.23 30.62 19.14 PPL 63.78 32.05 67.94 20.15 58.53 6.46 35.37 19.03 A-MemGuard 60.65 25.93 61.14 69.33 64.96 1.48 8.89 68.66 Sequential Monitor 60.14 51.81 79.91 18.11 65.66 0.00 0.00 22.82 AV Filter 57.07 52.45 82.02 46.10 65.43 0.41 10.00 52.73
+> MIND (Ours) 63.51 21.37 43.95 21.43 68.96 0.27 6.37 22.12 Qwen3-8B-Instruct No Defense 70.85 42.22 78.08 16.21 82.35 0.00 3.09 71.42
+> LLM Auditor 67.59 11.97 12.50 18.54 79.62 0.00 0.31 74.11 Distil 72.54 44.72 79.16 18.03 78.77 0.00 2.65 72.06 PPL 70.41 34.24 68.06 17.55 81.11 0.00 3.89 72.60 A-MemGuard 71.93 28.68 61.24 71.06 79.09 0.00 0.80 123.84 Sequential Monitor 70.98 40.87 73.38 16.51 78.40 0.00 0.00 78.27 AV Filter 71.43 42.96 76.73 37.58 79.67 0.00 1.11 117.36
+> MIND (Ours) 70.83 9.76 10.16 17.88 78.93 0.00 0.23 72.94
+
+Table 1: Memory defense results averaged over three seeds under two attack settings. MMLU results are further averaged over nine task–victim configurations. Rates are percentages, and Time is measured in seconds per episode. The best and second-best results are highlighted in bold and underlined, respectively. Dashes denote unavailable results. attention distributions, it cannot be evaluated on the closed-source DeepSeek-V4 and GPT-4o-mini backbones. Regard-ing attack methods, we apply AgentPoison (Chen et al. 2024) and MINJA (Dong et al. 2025). A more detailed baseline is provided in the supplementary material. Implementation Details. We use a frozen Llama-3.1-8B-Instruct as MIND’s feature encoder for all agent backbones and train the MIND classifier on the combined QA and EHR trajectories. The classifier comprises an information-bottleneck encoder and a polytope decision head. At test time, MIND separately scores the top-5 retrieved memories. We report average results over three runs. A more detailed implementation is shown in the supplementary material. Evaluation Metrics. Following A-MemGuard (Wei et al. 2025), we report benign accuracy (ACC), retrieval-stage ASR (ASR-r), agent-reasoning ASR (ASR-a), and end-to-end episode time. ASR-r and ASR-a measure the proportions of attacked episodes where target content appears in the final output and reasoning trajectory, respectively. For MMLU, we also report injection success rate (ISR), the proportion of poisoned records successfully written. 
+
+5.2 Main Results 
+
+Table 1 compares MIND with six defense baselines on ReAct-StrategyQA and MMLU. The results yield two main findings: 
+
+(1) MIND effectively reduces attack success while pre-serving task accuracy. On ReAct-StrategyQA, MIND con-sistently reduces both retrieval-level and agent-level attack success across the four backbones. On average, it lowers ASR-r and ASR-a by 55.4% and 55.3% relative to No De-fense, respectively, while maintaining comparable task accu-racy (67.95% vs. 67.56%). MIND also transfers effectively to MMLU, achieving the highest mean accuracy among the de-fense methods (79.57%) while keeping mean ASR near zero (0.28%). On Qwen backbone, all methods yield 0.00% ASR despite nonzero ISR, indicating that successful injections do not translate into the target behavior on this backbone. 
+
+(2) MIND achieves robustness with limited inference over-head. Across the evaluated settings, MIND records a mean episode time of 23.13 seconds, comparable to the 23.36 sec-onds of the undefended agent. In contrast to defenses that re-peatedly invoke an LLM to audit retrieved memories, MIND Figure 4: t-SNE visualization of turn representations at different stages of MIND. From left to right: raw hidden states, IB-compressed representations, and representations transformed by the multi-hyperplane classifier. Variant ACC ↑ ASR-a ↓ FPR ↓ FNR ↓
+
+w/o IB 72.46 51.95 28.5 1.2 
+
+w/o Multi-hyperplane 72.96 51.05 24.0 0.8 
+
+w/o Both 71.56 53.65 35.0 2.1 MIND 74.86 48.65 12.0 0.2 
+
+Table 2: Component ablation on ReAct-StrategyQA (GPT-4o-mini backbone) averaged over three independent runs. is 20.6% faster than LLM Auditor and 70.4% faster than A-MemGuard. These results show that MIND improves robust-ness without making memory filtering a major runtime bot-tleneck, which is particularly important for multi-turn agents that invoke the defense repeatedly throughout an interaction. 
+
+5.3 Ablation Study 
+
+To assess the contribution of each component, we conduct a complete ablation as shown in Table 2. We evaluate variants that remove the IB encoder, replace the multi-hyperplane classifier with a single MLP, or remove both components. The results show that the two components provide comple-mentary benefits: removing either degrades both accuracy and robustness, while removing both produces the weakest overall performance. Full MIND achieves the highest ACC of 74.86% and the lowest ASR-a of 48.65%; notably, it reduces FPR to 12.0%, a 23.0-percentage-point reduction compared with w/o Both , while maintaining a near-zero FNR of 0.2%. This result shows that the two components jointly reduce false alarms without weakening the detection of poisoned memories during multi-turn interactions. 
+
+5.4 More Analysis 
+
+Hyperparameter Sensitivity. To examine hyperparameter sensitivity, we vary the IB coefficient βIB and alignment coefficient λalign in Eq. (12), as reported in Table 3. We vary 
+
+βIB within {10 −4, 10 −3, 10 −2} while fixing λalign = 0 .2,and λalign within {0.1, 0.2, 0.4} while fixing βIB = 10 −3.Increasing either coefficient reduces FPR, but overly large values degrade ACC and increase FNR. Overall, βIB = 10 −3
+
+and λalign = 0 .2 achieve the best ACC and the lowest ASR-a, while maintaining low FPR and FNR.                                   
+
+> βIB λalign ACC ↑ASR-a ↓FPR ↓FNR ↓
+> 10 −40.2 73.16 49.25 38.0 0.1
+> 10 −30.1 73.56 50.35 18.5 0.6
+> 10 −30.2 74.86 48.65 12.0 0.2
+> 10 −30.4 72.36 48.95 9.5 0.9
+> 10 −20.2 70.86 49.95 6.0 1.5
+
+Table 3: Hyperparameter sensitivity of β and λ in Eq. (12) on ReAct-StrategyQA with GPT-4o-mini. All rates are per-centages, and the default setting is underlined. 
+
+Representation Analysis. Figure 4 visualizes the representa-tions learned at different stages of MIND. In the raw hidden-state space, benign and poisoned memories are highly en-tangled. The IB module removes redundant information and compresses the representations, making attack-relevant fea-tures more prominent and the two classes clearly separable. Building on this separation, the multi-hyperplane classifier further projects the representations onto multiple latent sub-spaces to capture diverse patterns of poisoned memories. This transformation stretches the representation space and enlarges the inter-class margin, resulting in a more expres-sive and robust decision boundary. A more detailed analysis is provided in the supplementary material. 
+
+# 6 Conclusion 
+
+In this work, we present Memory Intent-Aware Neural De-noising (MIND), a lightweight defense framework designed to protect memory-augmented agents against memory-injection attacks. By capturing the relationship between multi-turn actions and the agent’s initial intent and filter-ing redundant trajectory information through the Informa-tion Bottleneck, MIND identifies poisoned memories while preserving task-relevant information. MIND is also com-putationally efficient, requiring neither repeated LLM-based auditing nor the encoding of entire multi-turn contexts during memory retrieval. For the evaluation, MIND reduces attack success relative to the undefended agent while preserving benign-task accuracy; on ReAct-StrategyQA, it also lowers defense latency relative to LLM Auditor and A-MemGuard. References 
+
+Alemi, A. A.; Fischer, I.; Dillon, J. V.; and Murphy, K. 2017. Deep Variational Information Bottleneck. In The Fifth Inter-national Conference on Learning Representations .Alon, G.; and Kamfonas, M. 2023. Detecting Language Model Attacks with Perplexity. arXiv:2308.14132. Augustine, M. T. 2024. A Survey on Universal Approxima-tion Theorems. arXiv:2407.12895. Chen, Y.-H.; Joshi, N.; Chen, Y.; Andriushchenko, M.; An-gell, R.; and He, H. 2025. Monitoring Decomposition Attacks in LLMs with Lightweight Sequential Monitors. arXiv:2506.10949. Chen, Z.; Xiang, Z.; Xiao, C.; Song, D.; and Li, B. 2024. AgentPoison: Red-teaming LLM Agents via Poison-ing Memory or Knowledge Bases. In Advances in Neural Information Processing Systems , volume 37. Chhikara, P.; Khant, D.; Aryan, S.; Singh, T.; and Yadav, D. 2025. Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory. arXiv:2504.19413. Choudhary, S.; Palumbo, N.; Hooda, A.; Dvijotham, K. D.; and Jha, S. 2025. Through the Stealth Lens: Attention-Aware Defenses Against Poisoning in RAG. arXiv:2506.04390. DeepSeek-AI. 2026. DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence. arXiv:2606.19348. Dong, S.; Xu, S.; He, P.; Li, Y.; Tang, J.; Liu, T.; Liu, H.; and Xiang, Z. J. 2025. Memory Injection Attacks on LLM Agents via Query-Only Interaction. In Advances in Neural Information Processing Systems , volume 38. Dubey, A.; et al. 2024. The Llama 3 Herd of Models. arXiv:2407.21783. Geva, M.; Khashabi, D.; Segal, E.; Khot, T.; Roth, D.; and Berant, J. 2021. Did Aristotle Use a Laptop? A Question Answering Benchmark with Implicit Reasoning Strategies. 
+
+Transactions of the Association for Computational Linguis-tics , 9: 346–361. Guu, K.; Lee, K.; Tung, Z.; Pasupat, P.; and Chang, M.-W. 2020. REALM: Retrieval-Augmented Language Model Pre-Training. In International Conference on Machine Learning .Hadsell, R.; Chopra, S.; and LeCun, Y. 2006. Dimension-ality Reduction by Learning an Invariant Mapping. In 2006 IEEE Computer Society Conference on Computer Vision and Pattern Recognition , volume 2, 1735–1742. Hendrycks, D.; Burns, C.; Basart, S.; Zou, A.; Mazeika, M.; Song, D.; and Steinhardt, J. 2021. Measuring Massive Mul-titask Language Understanding. In The Ninth International Conference on Learning Representations .Inan, H.; Upasani, K.; Chi, J.; Rungta, R.; Iyer, K.; Mao, Y.; Tontchev, M.; Hu, Q.; Fuller, B.; Testuggine, D.; and Khabsa, M. 2023. Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations. arXiv:2312.06674. Kantchelian, A.; Tschantz, M. C.; Huang, L.; Bartlett, P. L.; Joseph, A. D.; and Tygar, J. D. 2014. Large-Margin Con-vex Polytope Machine. In Advances in Neural Information Processing Systems , volume 27. Kingma, D. P.; and Welling, M. 2014. Auto-Encoding Vari-ational Bayes. In The Second International Conference on Learning Representations .Laban, P.; Hayashi, H.; Zhou, Y.; and Neville, J. 2025. LLMs Get Lost in Multi-Turn Conversation. arXiv:2505.06120. Lewis, P.; Perez, E.; Piktus, A.; Petroni, F.; Karpukhin, V.; Goyal, N.; Küttler, H.; Lewis, M.; tau Yih, W.; Rocktäschel, T.; Riedel, S.; and Kiela, D. 2020. Retrieval-Augmented Gen-eration for Knowledge-Intensive NLP Tasks. In Advances in Neural Information Processing Systems , volume 33. Liu, N. F.; Lin, K.; Hewitt, J.; Paranjape, A.; Bevilacqua, M.; Petroni, F.; and Liang, P. 2024. Lost in the Middle: How Language Models Use Long Contexts. Transactions of the Association for Computational Linguistics , 12: 157–173. Liu, Z.; Ying, Z.; Zhang, W.; Zou, Q.; Zhang, D.; Yang, D.; Zhang, X.; and Peng, H. 2026. SafeHarbor: Defining Precise Decision Boundaries via Hierarchical Memory-Augmented Guardrail for LLM Agent Safety. arXiv:2605.05704. Lu, C.; Lu, C.; Lange, R. T.; Foerster, J.; Clune, J.; and Ha, D. 2024. The AI Scientist: Towards Fully Automated Open-Ended Scientific Discovery. arXiv:2408.06292. OpenAI. 2024. GPT-4o System Card. arXiv:2410.21276. Ouyang, C.; and Hou, R. 2026. MemLineage: Lineage-Guided Enforcement for LLM Agent Memory. arXiv:2605.14421. Ouyang, L.; Wu, J.; Jiang, X.; Almeida, D.; Wainwright, C. L.; Mishkin, P.; Zhang, C.; Agarwal, S.; Slama, K.; Ray, A.; Schulman, J.; Hilton, J.; Kelton, F.; Miller, L.; Simens, M.; Askell, A.; Welinder, P.; Christiano, P.; Leike, J.; and Lowe, R. 2022. Training Language Models to Follow In-structions with Human Feedback. In Advances in Neural Information Processing Systems , volume 35. Packer, C.; Wooders, S.; Lin, K.; Fang, V.; Patil, S. G.; Stoica, I.; and Gonzalez, J. E. 2023. MemGPT: Towards LLMs as Operating Systems. arXiv:2310.08560. Park, J. S.; O’Brien, J. C.; Cai, C. J.; Morris, M. R.; Liang, P.; and Bernstein, M. S. 2023. Generative Agents: Interactive Simulacra of Human Behavior. In Proceedings of the 36th Annual ACM Symposium on User Interface Software and Technology .Sanh, V.; Debut, L.; Chaumond, J.; and Wolf, T. 2019. Distil-BERT, a Distilled Version of BERT: Smaller, Faster, Cheaper and Lighter. arXiv:1910.01108. Shi, F.; Chen, X.; Misra, K.; Scales, N.; Dohan, D.; Chi, E. H.; Scharli, N.; and Zhou, D. 2023. Large Language Models Can Be Easily Distracted by Irrelevant Context. In Proceedings of the 40th International Conference on Machine Learning ,volume 202, 31210–31227. Shinn, N.; Cassano, F.; Gopinath, A.; Narasimhan, K.; and Yao, S. 2023. Reflexion: Language Agents with Verbal Re-inforcement Learning. In Advances in Neural Information Processing Systems , volume 36. Tishby, N.; Pereira, F. C.; and Bialek, W. 1999. The Informa-tion Bottleneck Method. In Proceedings of the 37th Annual Allerton Conference on Communication, Control, and Com-puting , 368–377. van der Maaten, L.; and Hinton, G. 2008. Visualizing Data Using t-SNE. Journal of Machine Learning Research , 9(86): 2579–2605. Voloshynovskiy, S.; Kondah, M.; Rezaeifar, S.; Taran, O.; Holotyak, T.; and Rezende, D. J. 2019. Information bottle-neck through variational glasses. arXiv:1912.00830. Wang, G.; Xie, Y.; Jiang, Y.; Mandlekar, A.; Xiao, C.; Zhu, Y.; Fan, L.; and Anandkumar, A. 2023. Voyager: An Open-Ended Embodied Agent with Large Language Models. arXiv:2305.16291. Wang, Z. Z.; Mao, J.; Fried, D.; and Neubig, G. 2024. Agent Workflow Memory. arXiv:2409.07429. Wei, Q.; Yang, T.; Wang, Y.; Li, X.; Li, L.; Yin, Z.; Zhan, Y.; Holz, T.; Lin, Z.; and Wang, X. 2025. A-MemGuard: A Proactive Defense Framework for LLM-Based Agent Mem-ory. arXiv:2510.02373. Xi, Z.; Chen, W.; Guo, X.; He, W.; Ding, Y.; Hong, B.; Zhang, M.; Wang, J.; Jin, S.; Zhou, E.; Zheng, R.; Fan, X.; Wang, X.; Xiong, L.; Zhou, Y.; Wang, W.; Jiang, C.; Zou, Y.; Liu, X.; Yin, Z.; Dou, S.; Weng, R.; Cheng, W.; Zhang, Q.; Qin, W.; Zheng, Y.; Qiu, X.; Huang, X.; and Gui, T. 2023. The Rise and Potential of Large Language Model Based Agents: A Survey. arXiv:2309.07864. Xiang, C.; Wu, T.; Zhong, Z.; Wagner, D.; Chen, D.; and Mittal, P. 2024. Certifiably Robust RAG against Retrieval Corruption. arXiv:2405.15556. Xiao, S.; Liu, Z.; Zhang, P.; Muennighoff, N.; Lian, D.; and Nie, J.-Y. 2024. C-Pack: Packed Resources For General Chi-nese Embeddings. In Proceedings of the 47th International ACM SIGIR Conference on Research and Development in Information Retrieval , 641–649. ACM. Xie, T.; Qi, X.; Zeng, Y.; Huang, Y.; Sehwag, U. M.; Huang, K.; He, L.; Wei, B.; Li, D.; Sheng, Y.; Jia, R.; Li, B.; Li, K.; Chen, D.; Henderson, P.; and Mittal, P. 2025. SORRY-Bench: Systematically Evaluating Large Language Model Safety Refusal. In The Thirteenth International Conference on Learning Representations .Xu, W.; Liang, Z.; Mei, K.; Gao, H.; Tan, J.; and Zhang, Y. 2025. A-MEM: Agentic Memory for LLM Agents. arXiv:2502.12110. Xu, Z.; Zhu, X.; Yao, Y.; Xue, M.; and Song, Y. 2026. From Storage to Steering: Memory Control Flow Attacks on LLM Agents. arXiv:2603.15125. Yang, A.; et al. 2025. Qwen3 Technical Report. arXiv:2505.09388. Yang, J.; Jimenez, C. E.; Wettig, A.; Lieret, K.; Yao, S.; Narasimhan, K.; and Press, O. 2024. SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineer-ing. In Advances in Neural Information Processing Systems ,volume 37. Yao, S.; Zhao, J.; Yu, D.; Du, N.; Shafran, I.; Narasimhan, K.; and Cao, Y. 2023. ReAct: Synergizing Reasoning and Acting in Language Models. In The Eleventh International Conference on Learning Representations .Zhang, H.; Huang, J.; Mei, K.; Yao, Y.; Wang, Z.; Zhan, C.; Wang, H.; and Zhang, Y. 2025a. Agent Security Bench (ASB): Formalizing and Benchmarking Attacks and De-fenses in LLM-based Agents. In The Thirteenth International Conference on Learning Representations .Zhang, W.; Li, X.; Zhang, Y.; Jia, P.; Wang, Y.; Guo, H.; Liu, Y.; and Zhao, X. 2025b. Deep Research: A Survey of Autonomous Research Agents. arXiv preprint arXiv:2508.12752 .Zhao, A.; Huang, D.; Xu, Q.; Lin, M.; Liu, Y.-J.; and Huang, G. 2024. ExpeL: LLM Agents Are Experiential Learners. In Proceedings of the AAAI Conference on Artificial Intelli-gence , volume 38. Zhong, W.; Guo, L.; Gao, Q.; Ye, H.; and Wang, Y. 2024. MemoryBank: Enhancing Large Language Models with Long-Term Memory. In Proceedings of the AAAI Confer-ence on Artificial Intelligence , volume 38. Zou, W.; Geng, R.; Wang, B.; and Jia, J. 2025. Poi-sonedRAG: Knowledge Corruption Attacks to Retrieval-Augmented Generation of Large Language Models. In 34th USENIX Security Symposium (USENIX Security 25) .

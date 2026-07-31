@@ -1,0 +1,680 @@
+Title: Safeguards Based on Copyable Context Cannot Provide Reliable Safety for LLMs
+
+URL Source: https://arxiv.org/pdf/2607.27951v1
+
+Published Time: Fri, 31 Jul 2026 00:48:58 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Safeguards Based on Copyable Context Cannot Provide Reliable Safety for LLMs 
+
+# Pingyu Wu 1,2 , Lingyao Zhu 3, Weiming Zhang 1∗, Nenghai Yu 1
+
+> 1
+
+University of Science and Technology of China 
+
+> 2
+
+Hefei AiDA Lab 
+
+> 3
+
+Zhejiang Wanli University 
+
+wupingyu@mail.ustc.edu.cn , zhangwm@ustc.edu.cn 
+
+Abstract 
+
+Large language model safeguards decide whether to answer before seeing how an answer will be used. This creates a basic problem for dual-use tasks: the same answer can help an autho-rized professional or an attacker, while an attacker can imitate a benign request and interaction history. We separate the ca-pability released by the model from the evidence available about downstream use. When that evidence is copyable, we derive the exact worst-case floor on attacker assistance while preserving useful answers. The result yields a safety trilemma: Useful Capability, Reliable Safety, and Open Access cannot coexist. We then show how a trusted credential can comple-ment existing safeguards by adding hard-to-copy information that predicts actual downstream use, and identify the stronger condition needed to eliminate the floor. Evidence from dual-use evaluations, adaptive attacks, and deployed trusted-access programs supports the practical relevance of these conditions. 
+
+# 1 Introduction 
+
+LLM safeguards based on safety training, request and re-sponse filtering, and safe-completion policies decide what to release from information available before downstream use is observed (Bai et al. 2022; Sharma et al. 2025; Yuan et al. 2025). This timing matters for dual-use tasks: the same vulnerability analysis can support an authorized assessment or an intrusion without any change in its technical content (Forge 2010; Bostrom 2011; Grinbaum and Adomaitis 2024; Kang et al. 2024). For the tasks studied here, the safety-relevant object is therefore the released answer together with its downstream application, rather than the request alone (Forge 2010; Grinbaum and Adomaitis 2024). Expressed intent and interaction history can improve rout-ing when users reveal useful information about their goals (Uppaal et al. 2026; Ferrao et al. 2026; Zheng et al. 2026; Deng et al. 2026). These methods infer purpose from what a user says and does before release, so their observable evi-dence still precedes the later downstream application (Uppaal et al. 2026; Zheng et al. 2026; Deng et al. 2026). Intent concealment and adaptive attacks show how a mali-cious user can reshape requests and interactions after learn-ing how a defense works (Wu, Umrawal, and Varshney 2025; Nasr et al. 2025). We therefore study attackers that can submit 
+
+> ∗
+
+Corresponding author. 
+
+the same request as an authorized user, claim the same pur-pose, and reproduce the same answers to access questions. If the two uses look identical before release, the safeguard cannot know which request should receive a different an-swer. The missing information concerns actual downstream use rather than the choice of classifier. This raises a question: how much attacker assistance is unavoidable when every useful answer can also aid malicious use? Existing work identifies unsafe information leakage (Glukhov et al. 2024), computational barriers to prompt and output filtering (Ball et al. 2025), and constraints faced by utility-preserving defense wrappers (Bhatt et al. 2026). These results expose different safety obstructions but do not give the exact assistance floor created by hidden downstream use and reproducible evidence. The question becomes more impor-tant as models complete longer and more operational tasks (Kwa et al. 2025; Wijk et al. 2024; OpenAI 2025). We answer it by separating released capability from evi-dence about downstream use. The paper makes three contributions: 
+
+• Why Safeguards Keep Failing. We identify a common weakness behind intent checks, filters, and interactive de-fenses: before an answer is used, attackers can present the same evidence as legitimate users. 
+
+• Useful, Safe, Open: Pick Two. We prove exactly how much help must still reach attackers, even when safe-guards ask additional questions, vary their decisions, or combine evidence across repeated attempts. 
+
+• What Reliable Safety Requires. We show what must change: reliable safety requires evidence attackers cannot copy and that is tied to actual use, not better guesses from prompts or conversations. 
+
+# 2 Related Work 
+
+Dual use and capability control. Dual-use and information-hazard scholarship distinguishes an artifact’s ca-pability from the purposes to which it is put (Forge 2010; Bostrom 2011; Grinbaum and Adomaitis 2024). Unlearning, filtering, and modular training change which capabilities re-main available (Li et al. 2024; O’Brien et al. 2025; Roland et al. 2026). We instead characterize the minimum attacker arXiv:2607.27951v1 [cs.CR] 30 Jul 2026 Figure 1: Illustrative capability allocation with copyable evidence and trusted credentials. A trusted credential can improve capability allocation by adding noncopyable information that predicts downstream use. assistance that necessarily remains at a fixed legitimate-use target. 
+
+Safety, utility, and impossibility. Glukhov et al. (2024) study leakage from composing individually permissible an-swers; Ball et al. (2025) prove computational barriers to filtering; Bhatt et al. (2026) constrain continuous, utility-preserving defense wrappers. Our result places no continuity or computational restriction on the release rule. Under copy-able evidence, arbitrary interactive safeguards reduce exactly to a static release-menu frontier. We quantify imperfect copy-ing, trusted evidence, and correlated sessions relative to this frontier. 
+
+Intent and trusted credentials. Intent-aware evaluation and clarification study how expressed purpose can improve average routing (Uppaal et al. 2026; Ferrao et al. 2026; Zheng et al. 2026; Deng et al. 2026). Access-control work introduces verified information about users or authorization (Wybitul 2025; Kembery, Bucknall, and Simpson 2024; Adler et al. 2024; Shih et al. 2025). We connect these regimes by asking exactly when observable access evidence has value against a strategic user. 
+
+# 3 Main Result 
+
+Our analysis separates capability allocation from evidence quality. For a fixed task context, the available releases and their two downstream utilities determine a capability floor 
+
+Γ( q) at legitimate-use target q. The evidence channel deter-mines whether a safeguard can assign different release dis-tributions to legitimate and malicious uses and move below that floor. Finite spaces make both parts explicit. For a finite set X , let ∆( X ) denote its probability simplex. A randomized decision rule from X to Y is a Markov ker-nel. We write TV( P, Q ) = 12
+
+P 
+
+> x
+
+|P (x) − Q(x)|. For every function f : X → [0 , 1] ,
+
+|EP [f ] − EQ[f ]| ≤ TV( P, Q ). (1) All approximate results below use this total-variation in-equality to measure copying error and credential separation. 
+
+3.1 Counterfactual Use and Access Evidence 
+
+Fix one observed public task context W = w, containing the complete task and the identity, role, and downstream use claimed in the request. The release rule uses W to determine the task-specific release menu, but a claimed use is not evi-dence of actual downstream use. Let Mw be the nonempty set of malicious downstream uses in the threat model. For this context, A = Aw is the finite release menu: the terminal outputs distinguished by the deployment’s utility resolution, including a refusal a0. We compare the same release under two counterfactual downstream-use worlds. In world B, the identity, task, and use stated in w are genuine and legitimate, and the release is used only for that task. In world M, a human chooses an allowed malicious use after receiving the release. The functions uB,w : A → [0 , 1] and vM,w,m : A → [0 , 1] 
+
+evaluate the direct instrumental value of the same release in the legitimate use and in a malicious use m, respectively. Because a downstream user can choose how to exploit an answer after observing it, define 
+
+uM,w (a) = sup 
+
+> m∈M w
+
+vM,w,m (a).
+
+In the vulnerability-analysis example, B evaluates the answer inside the authorized assessment and M evaluates the most useful allowed misuse of the byte-identical answer. These utilities measure assistance available at release, not the prob-ability or severity of realized downstream harm. We suppress 
+
+w in local results. After w is fixed, H = ( X1, Y 1, . . . , X T , Y T ) records di-alogue observed before release in an access-verification ex-change. At turn t, a user strategy draws Xt, and the committed policy κt returns a verification response Yt. If the exchange continues, the user’s reply to Yt becomes part of Xt+1 ; nei-ther variable records how the terminal release is ultimately used. Task-serving clarification that changes the task, menu, or utilities is absorbed into W . The exchange culminates in one terminal release A ∼ g(· | h). Let H denote the finite transcript space. Useful partial releases are covered by the multi-release causal process below. If bt is the legitimate-reference user kernel and mσt is the kernel chosen by malicious strategy σ, the access laws factor as 
+
+P κ 
+
+> B
+
+(h) = 
+
+> T
+
+Y
+
+> t=1
+
+bt(xt | w, h t−1)κt(yt | w, h t−1, x t),P κ 
+
+> M,σ
+
+(h) = 
+
+> T
+
+Y
+
+> t=1
+
+mσt (xt | w, h t−1)κt(yt | w, h t−1, x t).
+
+(2) The joint observational law is P κ,g z (h, a ) = P κz (h)g(a | h),with the strategy index included for z = M . The kernel g
+
+represents the model and every safeguard that affects the terminal release. For any transcript law P ,
+
+Uz (P, g ) = X
+
+> h,a
+
+P (h)g(a | h)uz (a), z ∈ { B, M}. (3) The legitimate-use target q requires UB(P κ 
+
+> B
+
+, g ) ≥ q, the expected legitimate-use utility for this task and reference process. Optimizing first over all finite Markov kernels g
+
+isolates the strongest allocation guarantee available from the modeled observations. The implementation boundary below then identifies what restricted mechanisms inherit. 
+
+3.2 Minimum Attacker Assistance 
+
+We first solve the capability-allocation problem when both downstream processes receive the same output distribution. The next two subsections show why copyable evidence forces this baseline in the worst case. Continue to condition on one public context w, assume a refusal a0 has zero utility for both purposes, and let qmax = max a uB(a). The minimum attacker assistance is 
+
+Γ( q) = min  
+
+> μ∈∆( A)P
+> aμ(a)uB(a)≥q
+
+X
+
+> a
+
+μ(a)uM(a), 0 ≤ q ≤ qmax .
+
+(4) It is the minimum attacker assistance compatible with legitimate-use utility q. If both utilities happen to be equal for every release, then Γ( q) = q. Equality is not required for the results below. For finite A, randomized outputs realize every point in the polytope V = conv {(uB(a), u M(a)) : a ∈ A} , so 
+
+Γ( q) = min {y : ( x, y ) ∈ V , x ≥ q} is attained, nonde-creasing, convex, and piecewise linear. Removing actions cannot enlarge V and weakly raises the minimum at the same feasible q.
+
+Example. For the running vulnerability-analysis context, the menu includes refusal, mitigation-only advice naming no exploitable path, a root-cause analysis that explains the defect without a working chain, and a complete exploit chain. The last carries nearly all of the assessor’s value and nearly all of the intruder’s, so it sits near the diagonal. The intermediate releases retain assessment value while advancing intrusion considerably less, placing V below the diagonal. Whether such actions exist is a property of the released capability and not of the access rule. Adding an output below the current tradeoff can lower Γ( q); reweighting the existing menu is already included in the minimization that defines Γ( q).
+
+Dual-use condition. We study tasks satisfying the follow-ing condition: 
+
+uB(a) > 0 =⇒ uM(a) > 0 for every a ∈ A . (5) This says that every release with legitimate value has at least one malicious downstream use. It does not require equal value in the two uses. This condition defines the dual-use task class studied here; tasks with uB = uM form a nonempty subclass. For a task with qmax > 0, finiteness of A allows us to define 
+
+ρ = min 
+
+> a:uB(a)>0
+
+uM(a)
+
+uB(a) > 0.
+
+Then uM(a) ≥ ρu B(a) for every release, and every distribu-tion feasible for Equation (4) satisfies 
+
+Eμ[uM] ≥ ρEμ[uB] ≥ ρq. 
+
+Therefore 
+
+Γ( q) ≥ ρq > 0 for every feasible q > 0. (6) Thus a shared output distribution cannot provide positive legitimate value with zero attacker assistance. Finiteness es-tablishes positivity, not a deployment-scale margin: a quan-titative ceiling β > 0 is impossible only when β < Γ( q) at the chosen utility resolution. 
+
+3.3 Copyable Evidence 
+
+Public context W , access evidence H, and public random-ness may be used by classifiers, filters, and interactive checks. The relevant question is whether the attacker can reproduce the resulting evidence distribution. Section 3.5 instead intro-duces a trusted signal S that predicts downstream use and cannot be freely reproduced; a trusted credential supplies this signal. For local targets q ∈ [0 , q max ] and an assistance ceiling 
+
+β ∈ [0 , 1] , the three deployment objectives are: preserve expected legitimate-use utility at least q, keep worst-case attacker assistance at most β, and maintain open access ,meaning that release requires no trusted credential and uses only copyable evidence. We call the worst-case ceiling β a
+
+reliable safety guarantee because it is evaluated against actual downstream use; zero assistance is the special case β = 0 .Formally, let ΣM denote the admissible malicious strategy class. The defender commits to (κ, g ), the attacker observes this commitment, and then chooses σ ∈ ΣM. Strategy σ
+
+induces P κ 
+
+> M,σ
+
+. Randomized and limiting attacks form 
+
+Cκ = co {P κ 
+
+> M,σ
+
+: σ ∈ ΣM}. (7) The following observation gives a sufficient condition for copyability. 
+
+Proposition 1 (Copying the legitimate strategy) . Fix an ac-cess policy κ. If the malicious strategy class contains a strat-egy σcopy whose user kernels equal the legitimate reference kernels at every reachable history, then 
+
+P κ 
+
+> M,σ copy
+
+= P κ 
+
+> B
+
+and hence P κ 
+
+> B
+
+∈ C κ. (8) 
+
+Proof. Substituting the same user kernels into Equation (2) gives identical probabilities for every transcript. Membership in Cκ follows immediately. The proposition covers any number of adaptive questions and any public randomization by the safeguard. Interaction can reveal a difference only when the malicious process cannot implement the legitimate user’s response strategy, or when the exchange uses evidence that is not copyable. We say that the evidence is copyable under policy κ when 
+
+P κ 
+
+> B
+
+∈ C κ. (9) This includes exact copying and arbitrary approximation through randomized and limiting strategies. A trusted cre-dential creates noncopyable evidence when its predictive distribution differs across downstream uses and the attacker cannot reproduce it. The results below cover exact and ap-proximate copying; Section 4 assesses the corresponding em-pirical premises. For the fixed context w, define 
+
+Gκ(q) = {g : UB(P κ 
+
+> B
+
+, g ) ≥ q},Rκ(q) = inf  
+
+> g∈G κ(q)
+
+sup 
+
+> Q∈C κ
+
+UM(Q, g ),
+
+and R⋆T (q) = inf κ Rκ(q). The attacker may adapt to both committed components. The strategy class generates its tran-script laws under κ before the terminal kernel g acts, so Cκ
+
+is indexed by the access policy. Assigning task utility to the terminal release makes both application utilities functions of 
+
+A.
+
+3.4 Worst-Case Value of Copyable Evidence 
+
+Theorem 1 (Exact interactive-to-static reduction under copy-able evidence) . For finite H, A, if P κ 
+
+> B
+
+∈ C κ, then 
+
+Rκ(q) = Γ( q) for every feasible q. (10) 
+
+If the evidence is copyable for every κ, then R⋆T (q) = Γ( q).Proof. For any feasible g, copyability makes the reference transcript law admissible in the closed attacker class. Its marginal release distribution μg (a) = P 
+
+> h
+
+P κ 
+
+> B
+
+(h)g(a | h)
+
+has legitimate-use utility at least q, so its attacker assistance is at least Γ( q). Conversely, a transcript-independent optimizer of Equation (4) has attacker assistance Γ( q) under every transcript law. 
+
+Corollary 1 (LLM safety impossibility trilemma) . Suppose the dual-use condition holds, fix a feasible q ∈ (0 , q max ] and an assistance ceiling β < Γ( q), and suppose every permitted access-verification policy κ uses copyable evidence: P κ 
+
+> B
+
+∈Cκ. Then no release mechanism (κ, g ) can jointly satisfy 1. useful released capability, represented by legitimate-use utility at least q,2. reliable safety, represented by worst-case attacker assis-tance at most β, and 3. open access, which requires no trusted credential and uses only copyable evidence. In particular, Equation (6) makes zero assistance such a ceiling for every feasible q > 0.Proof. The incompatibility follows from Theorem 1. Use-ful capability and open access are attained by a transcript-independent frontier optimizer; reliable safety and open ac-cess by constant refusal; useful capability and reliable safety by a trusted credential with disjoint legitimate and malicious supports. 
+
+Corollary 2 (Implementation boundary) . For an implementation-restricted class Gimpl , define Rκ, impl (q)
+
+by replacing the feasible benchmark rules in Rκ(q) with feasible rules in Gimpl . The copied-law argument never optimizes over g, so it applies verbatim and gives 
+
+Rκ, impl (q) ≥ Γ( q), (11) 
+
+with equality whenever Gimpl contains a transcript-independent optimizer of Equation (4) .
+
+For restricted implementations, Γ( q) remains the universal floor; any strict gap above it is implementation loss. Only the matching upper-bound construction in Theorem 1 uses the unrestricted-kernel benchmark. 
+
+Imperfect copying. The bound changes continuously when copying is imperfect. Let δκ = inf Q∈C κ TV( P κ 
+
+> B
+
+, Q ).Imperfect copying changes the exact result by at most this distance: 
+
+[Γ( q) − δκ]+ ≤ Rκ(q) ≤ Γ( q). (12) Applying Equation (1) to h 7 → P 
+
+> a
+
+g(a | h)uM(a) at a law within δκ + ϵ of P κ 
+
+> B
+
+and letting ϵ ↓ 0 gives the lower bound; the transcript-independent optimizer gives the upper bound. Thus δκ is the operational distance from exact copying discussed in Section 4. 
+
+3.5 Trusted Credentials and Downstream Use 
+
+The preceding result identifies the missing object: informa-tion whose distribution differs across actual downstream uses and that the attacker cannot reproduce. This information aug-ments rather than replaces the existing safeguard. The fixed context W defines the requested task and release menu, the access history H records observable interaction, and the joint release rule below uses both H and the additional signal. The actual downstream application determines whether the release belongs to the legitimate or malicious use pro-cess. Neither the claimed intent nor a credential defines that label. Continue to condition on W = w, and let S be a finite-valued trusted signal with value space S, checked at release. A deployment mechanism that supplies S is a trusted creden-tial when the attacker cannot freely acquire or reproduce the signal and its distribution predicts actual downstream use. The signal may encode verified authorization, role, continu-ity, or execution-environment state. Let Z ∈ {B, M} index which specified actual downstream-use process receives the release. Let P S 
+
+> B
+
+and 
+
+P S 
+
+> M
+
+be the signal marginals induced by the two values of 
+
+Z, and define d = TV( P S 
+
+> B
+
+, P S
+
+> M
+
+). Under equal priors on the two processes, the best binary predictor using S alone has balanced accuracy 
+
+Acc ⋆(S) = 1 + d
+
+2 , (13) the standard equal-prior testing identity (Tsybakov 2009). If 
+
+p = Acc ⋆(S) denotes this optimal balanced accuracy, then 
+
+d = 2 p − 1.Here d measures equal-prior separation rather than ac-curacy under the deployment prevalence. In the copyable-evidence comparison, d measures how well S distinguishes downstream use at release. More generally, the incremental value of S relative to H depends on the joint law of (H, S ).A signal with d = 0 has no predictive value. Acquisition, transfer, compromise, account creation, and misuse by au-thorized holders determine the malicious signal law P S 
+
+> M
+
+and hence its prediction value. Given κ, let Kκ
+
+> B
+
+(h | s) be the legitimate reference access kernel and define 
+
+P H,S,κ  
+
+> B
+
+(s, h ) = P S 
+
+> B
+
+(s)Kκ
+
+> B
+
+(h | s). (14) For each malicious strategy σ, let P H,S,κ  
+
+> M,σ
+
+be its induced joint law on (S, H ), and set 
+
+CH,S κ = co {P H,S,κ  
+
+> M,σ
+
+: σ ∈ ΣM, (P H,S,κ  
+
+> M,σ
+
+)S = P S
+
+> M
+
+}. (15) Every law in CH,S κ has the fixed marginal P S
+
+> M
+
+. Define the conditional-copy law Qκ
+
+> copy
+
+(s, h ) = P S
+
+> M
+
+(s)Kκ
+
+> B
+
+(h | s). Fix any version of Kκ
+
+> B
+
+(· | s) outside the support of P S 
+
+> B
+
+; this makes the copied law defined on the support of P S 
+
+> M
+
+with-out affecting legitimate-use utility. Conditional copying asks whether legitimate access behavior can be reproduced after fixing S = s.For a joint law P on (S, H ) and a joint release rule g,extend Equation (3) by Uz (P, g ) = P 
+
+> s,h,a
+
+P (s, h )g(a |
+
+s, h )uz (a); for an S-conditioned rule r : S → ∆( A), write 
+
+Uz (P S , r ) = P 
+
+> s,a
+
+P S (s)r(a | s)uz (a). Using the same unrestricted class of release kernels on (S, H ), define 
+
+RH,S κ (q) = inf   
+
+> g:UB(PH,S,κ
+> B,g )≥q
+
+sup 
+
+> Q∈C H,S κ
+
+UM(Q, g ), (16) 
+
+ΓS (q) = inf   
+
+> r:S→ ∆( A)
+> UB(PS
+> B,r )≥q
+
+UM(P S
+
+> M
+
+, r ). (17) Thus ΓS is the minimum assistance attainable by condition-ing the release allocation on S after W fixes the task and release menu. The next theorem asks whether H adds any worst-case information beyond this trusted signal. 
+
+Theorem 2 (Trusted-signal reduction) . If Qκ 
+
+> copy
+
+∈ C H,S κ ,then 
+
+RH,S κ (q) = Γ S (q) for every feasible q. (18) 
+
+If the premise holds for every κ, the equality above holds for every access-verification policy, so optimizing over κ does not change the minimum. Proof. For feasible g, average over the reference kernel: 
+
+rg (a | s) = X
+
+> h
+
+Kκ
+
+> B
+
+(h | s)g(a | s, h ),UB(P H,S,κ  
+
+> B
+
+, g ) = UB(P S 
+
+> B
+
+, r g ) ≥ q, UM(Qκ
+
+> copy
+
+, g ) = UM(P S
+
+> M
+
+, r g ) ≥ ΓS (q).
+
+Admissibility of the copied law proves the lower bound. Con-versely, let r⋆ attain ΓS (q) and set g⋆(a | s, h ) = r⋆(a | s).Every admissible malicious law has marginal P S
+
+> M
+
+, so this feasible rule attains ΓS (q).
+
+Corollary 3 (When zero assistance is attainable) . Assume the dual-use condition in Equation (5) , and define 
+
+S0 = {s ∈ S : P S
+
+> M
+
+(s) = 0 }. (19) 
+
+For every q ∈ [0 , q max ],
+
+ΓS (q) = 0 ⇐⇒ q ≤ qmax P S 
+
+> B
+
+(S0). (20) 
+
+Under the conditional-copying premise of Theorem 2, the same condition is equivalent to RH,S κ (q) = 0 .Proof. If a rule has zero attacker assistance, then for every 
+
+s with P S
+
+> M
+
+(s) > 0, it can assign positive probability only to releases with uM(a) = 0 . The dual-use condition gives 
+
+uB(a) = 0 for those releases. Legitimate utility can therefore arise only on S0, where it is at most qmax P S 
+
+> B
+
+(S0). Conversely, choose a release attaining qmax , use it on S0, and refuse elsewhere. This rule has zero attacker assistance and reaches the upper endpoint; randomizing with refusal reaches every smaller q.Under conditional copying, access history is a randomized post-processing of S in the Blackwell sense (Blackwell and Girshick 1954); the lower bound also applies to restricted rules. Because P S 
+
+> M
+
+changes across the stated acquisition and misuse scenarios, this minimum is conditional on the mali-cious signal distribution. A robust evaluation therefore holds one rule fixed against their union. For approximate copying, let ηκ =inf Q∈C H,S κ TV( Q, Q κ
+
+> copy
+
+). Here S collects the non-copyable information used to predict downstream use. Any systematic predictive component of H that the attacker can-not copy belongs in S; ηκ measures residual approximation error for the remaining access history. 
+
+Theorem 3 (Necessary condition with imperfect copying) .
+
+For every feasible q,
+
+[Γ S (q) − ηκ]+ ≤ RH,S κ (q) ≤ ΓS (q), (21) 
+
+and RH,S κ (q) ≥ [Γ( q) − d − ηκ]+. Therefore, if a q-feasible rule guarantees worst-case attacker assistance at most β,then 
+
+β + d + ηκ ≥ Γ( q) . (22) 
+
+Proof. For feasible g, choose admissible Qϵ within ηκ + ϵ
+
+of Qκ
+
+> copy
+
+. Equation (1) and the averaged rule rg from the preceding proof give UM(Qϵ, g ) ≥ UM(P S
+
+> M
+
+, r g ) − ηκ − ϵ ≥
+
+ΓS (q) − ηκ − ϵ. Taking the supremum, infimum, and limit proves the first lower bound. The preceding S-conditioned optimizer gives the upper bound. For any feasible r, its release marginals μz (a) = P 
+
+> s
+
+P Sz (s)r(a | s) satisfy 
+
+TV( μB, μ M) ≤ d by data processing. Since μB is feasi-ble for Γ( q), bounded utility gives ΓS (q) ≥ [Γ( q) − d]+, and combining bounds proves the second. Equation (22) gives a necessary condition whose three terms can be reported separately. By Equation (13), a pro-gram aiming at β needs a trusted signal whose optimal balanced accuracy for predicting downstream use satisfies 
+
+p ≥ (1 + Γ( q) − β − ηκ)/2. With no credential, a constant 
+
+S recovers Equation (12) with d = 0 and ηκ = δκ. This accuracy threshold is necessary, not sufficient. For β = 0 ,Corollary 3 gives the exact additional support condition: enough legitimate utility must lie on signal values that the malicious process cannot attain. 
+
+3.6 Robustness and Scope Extensions 
+
+The following results preserve the same capability and evi-dence decomposition across task families, per-turn copying error, and repeated access. 
+
+Task families. For a finite family W0, let each w have its own malicious application set, utility uM,w , and minimum 
+
+Γw. Given fixed weights ν and local targets q = ( qw)w, copy-able evidence within every context gives the weighted lower bound Γν (q) = P 
+
+> w∈W 0
+
+ν(w)Γ w(qw) by the same copied-law proof. Local constant optimizers attain this bound in the unrestricted-kernel benchmark. Local targets preserve the meaning of capability for each w. Attacker-selected contexts enter the attacker optimization in place of the fixed average. 
+
+Per-turn approximation. If the legitimate-reference and malicious next-message kernels differ by at most ϵt in total variation at turn t, uniformly over coupled reach-able histories, maximal coupling gives TV( P κ 
+
+> B
+
+, P κ 
+
+> M,σ
+
+) ≤
+
+min {1, P 
+
+> t
+
+ϵt}, which upper-bounds δκ in the copyable-evidence model. 
+
+Retries and task decomposition. Retries and task decom-position split one objective across many sessions, so the com-plete access process is the relevant unit. Allowing arbitrary causal state and correlated randomness, we study additive as-sistance, for which the local minimum values yield an exact process-level value. Across N sessions, let session i have observed public context wi, local menu Awi , utilities uB,i = uB,w i and 
+
+uM,i = uM,w i , target qi, and minimum Γi formed from these two utilities on Awi . A causal policy may condi-tion on all previous transcripts and releases and use cor-related randomness. For a committed policy π, write Pπ
+
+> B
+
+for the legitimate-reference law of the complete process 
+
+ON = ( H1, A 1, . . . , H N , A N ), and let CπN be the closed convex set of complete-process laws induced by admissible malicious strategies. Define 
+
+Rsum  
+
+> N
+
+(q) = inf    
+
+> π:EPπ
+> B[uB,i (Ai)] ≥qi
+> for every i
+
+sup 
+
+> Q∈C πN
+
+EQ
+
+" NX
+
+> i=1
+
+uM,i (Ai)
+
+#
+
+,
+
+(23) using the same unrestricted-kernel benchmark convention as the main result. 
+
+Proposition 2 (Exact additive composition under correlated access) . If Pπ 
+
+> B
+
+∈ C πN for every committed feasible policy 
+
+π, including through arbitrary approximation in the closed class, then Rsum  
+
+> N
+
+(q) = PNi=1 Γi(qi). No independence as-sumption is required. Proof. Fix any feasible causal policy π. Under the copied complete-process law Pπ
+
+> B
+
+, the marginal μπi of Ai satisfies P 
+
+> a
+
+μπi (a)uB,i (a) ≥ qi. It is therefore feasible for Γi(qi), so P 
+
+> a
+
+μπi (a)uM,i (a) ≥ Γi(qi). Linearity of expectation gives assistance at least P 
+
+> i
+
+Γi(qi) under the copied law, which lies in CπN . Conversely, drawing Ai ∼ μ⋆i from an optimizer of each Γi(qi) while ignoring all transcripts meets every target and has ith release marginal μ⋆i under every complete-process law, giving exactly that sum. Thus the exact floor adds across correlated sessions, and task decomposition cannot reduce it. Only noncopyable his-tory predictive of downstream use can move the floor. 
+
+Binary objectives. Additive assistance is one aggregation rule; an attacker who needs a single success faces a different aggregation objective. If every fresh attempt succeeds with conditional probability at least r given no earlier success, cumulative success probability is at least 1 − (1 − r)N . Each per-response quantity therefore pairs with an access budget and a composition rule. Predictive cumulative history can enter S as part of the trusted signal. 
+
+3.7 Design Implications 
+
+Equation (22) shows what an intervention must change. Changing the available outputs can lower Γ( q). As long as the changed menu still satisfies the dual-use condition, however, it cannot make Γ( q) zero while preserving a feasible q > 0.With copyable evidence, refusal can reach zero assistance only by reducing legitimate-use utility to zero. A trusted credential adds predictive information unavail-able in copyable evidence while W and H continue to sup-port task and capability decisions. Its value depends on the induced malicious signal distribution across the stated acqui-sition and misuse scenarios. At a fixed released capability, reducing assistance below Γ( q) requires noncopyable evi-dence that predicts downstream use. Prediction advantage alone is insufficient for zero assistance: Corollary 3 requires enough legitimate utility on signal values the malicious pro-cess cannot attain. In the language of the trilemma, preserv-ing useful released capability with zero-assistance safety re-quires adding a trusted credential to the existing safeguard. It therefore gives up access based only on copyable evidence. 
+
+# 4 Empirical Evidence 
+
+We assess how the conditions of the theory arise in LLM practice: dual-use outputs, copyable evidence, capability loss under blocking, and the use of trusted credentials in deployed access programs. 
+
+4.1 Dual Use in LLM Outputs 
+
+Equation (5) motivates the empirical question: whether use-ful LLM releases also have malicious downstream uses. Existing LLM evaluations provide evidence that such tasks exist. Internal Safety Collapse constructs legitimate profes-sional tasks whose correct completion requires a reusable harmful artifact and observes the corresponding failure mode across frontier models (Wu et al. 2026). OpenSafeIntent holds the underlying task fixed while varying benign, dual-use, and malicious intent, and finds that model assistance varies across matched and paraphrased variants (Uppaal et al. 2026). Together, they identify candidate dual-use task fam-ilies even without overtly malicious requests. Establishing the action-level dual-use condition and measuring ρ require evaluating each family’s attainable release menu. 
+
+4.2 Attackers Can Reproduce Legitimate Evidence 
+
+Evidence is copyable when the specified attacker class can reproduce the legitimate reference law. Concealment of In-tent hides malicious objectives through skill composition and bypasses prompt and response filters (Wu, Umrawal, and Varshney 2025); multi-turn attacks construct innocuous-looking trajectories through escalation, decomposition, or complementary requests (Russinovich, Salem, and Eldan 2025; Jiang et al. 2025; Weng et al. 2025). The Attacker Moves Second optimizes only after observ-ing the defense and reports success above 90% against most of twelve recent defenses (Nasr et al. 2025). Documented cyber misuse combined task decomposition with a false claim of acting for a legitimate security organization (An-thropic 2025), making a purpose declaration copyable evi-dence rather than evidence about downstream use. Evidence from defense evaluations is consistent with the same weakness. Malicious-input detectors can rely on in-structional patterns and trigger words (Wang et al. 2025a), while outcome-aware evaluations find reliance on surface semantic and stylistic cues (Wu et al. 2025). Some interac-tive checks are reproducible: automated solvers already pass deployed CAPTCHAs at human-comparable rates (Searles et al. 2023; Plesner, Vontobel, and Wattenhofer 2024). Together these observations make evidence copying a real-istic threat for software-capable attackers facing text and in-teraction evidence. Deployment claims nevertheless require policy-specific estimates of δκ against the stated attacker class: Equation (12) keeps the worst-case value near Γ( q)
+
+only when this distance is small. 
+
+4.3 Capability Reduction and Utility Loss 
+
+When the evidence is copyable, Theorem 1 shows that blocking cannot guarantee assistance below Γ( q) at a fixed legitimate-use target. A particular implementation may still reduce excess assistance above this minimum. Consistent with the underlying safety–utility conflict, guardrail evalua-tions find that security cannot be assessed independently of benign utility (Kumar et al. 2025; Wang et al. 2025b). XSTest and OR-Bench document broad over-refusal on safe prompts sharing surface features with unsafe requests (Röttger et al. 2024; Cui et al. 2025). In cybersecurity, Defensive Refusal Bias finds elevated re-fusal on authorized defensive tasks (Campbell et al. 2026), and same-lineage comparisons report lost vulnerability-analysis utility in aligned models relative to refusal-ablated counterparts (Li et al. 2026). CarryOnBench finds that be-nign users recover withheld utility only through clarification, with utility lock-in and unsafe recovery (Zheng et al. 2026). For tasks exhibiting Internal Safety Collapse, SafeRedirect obtains much of its mitigation by permitting task failure and unresolved placeholders (Pan, Wu, and Yao 2026). Across distinct mechanisms, these studies exhibit the pre-dicted empirical signature: capability reduction changes what the model releases without predicting downstream use. Un-der the copyability premise, this pattern is consistent with lowering excess assistance while leaving the theoretical floor in place. 
+
+4.4 Trusted Credentials in Deployed Access Programs 
+
+Trusted credentials must encode information that predicts downstream use and that a software-only attacker cannot freely reproduce. Hardware-rooted attestation and unforge-able tokens can supply verified platform state and prior autho-rization events (Parno, McCune, and Perrig 2010; Coker et al. 2011; Davidson et al. 2018). Documented cyber programs condition access on identity and trust verification, account security, and verified roles (OpenAI 2026a,b); a verification program for security researchers has also been described (Anthropic 2026). These programs add verification while re-taining content safeguards and misuse controls, matching the joint role of W, H, S . They instantiate noncopyable signals such as verified roles, platform state, and persistent history. A deployment-specific worst-case claim must estimate d and ηκ
+
+under credential transfer, compromise, account creation, and misuse by authorized holders; zero assistance additionally requires the support condition in Corollary 3. Theorem 3 governs how these terms move the worst-case floor, while Equation (22) states the necessary condition with terms that can be reported separately. 
+
+# 5 Limitations 
+
+The characterization assumes a fixed utility calibration, fi-nite operational resolution, and a specified attacker class. Deployment-specific claims additionally require a policy-specific copying-error estimate. These choices determine the bound and whether its premise applies; when the copied-law premise holds, the reduction is exact. Throughout this paper, open access means credential-free access to a committed inference-time mechanism, rather than access to released model weights. Settings in which users obtain the weights and deploy or modify the model under their own control change the mechanism or release menu and fall outside the access-evidence model. 
+
+# 6 Conclusion 
+
+An LLM safeguard decides before observing actual down-stream use. For dual-use tasks with copyable request and interaction evidence, any release rule preserving legitimate utility leaves worst-case attacker assistance at least Γ( q) > 0.Changing the output menu can lower this capability floor; moving below it requires adding a trusted credential whose noncopyable evidence predicts downstream use. References 
+
+Adler, S.; Hitzig, Z.; Jain, S.; Brewer, C.; Chang, W.; et al. 2024. Personhood Credentials: Artificial Intelligence and the Value of Privacy-Preserving Tools to Distinguish Who Is Real Online. arXiv preprint arXiv:2408.07892 .Anthropic. 2025. Disrupting the First Reported AI-Orchestrated Cyber Espionage Campaign. https://www. anthropic.com/news/disrupting-AI-espionage. Published November 13, 2025. Anthropic. 2026. Introducing Claude Opus 4.7. https://www. anthropic.com/news/claude-opus-4-7. Accessed 2026-07-19. Bai, Y.; Kadavath, S.; Kundu, S.; Askell, A.; et al. 2022. Constitutional AI: Harmlessness from AI Feedback. arXiv preprint arXiv:2212.08073 .Ball, S.; Głuch, G.; Goldwasser, S.; Kreuter, F.; Reingold, O.; and Rothblum, G. N. 2025. On the Impossibility of Separating Intelligence from Judgment: The Computational Intractability of Filtering for AI Alignment. arXiv preprint arXiv:2507.07341 .Bhatt, M.; Munshi, S.; Narajala, V. S.; Habler, I.; Al-Kahfah, A.; Huang, K.; Webb, J.; Gatto, B.; and Hoque, M. T. 2026. The Defense Trilemma: Why Prompt Injection De-fense Wrappers Fail? arXiv preprint arXiv:2604.06436 .Blackwell, D.; and Girshick, M. A. 1954. Theory of Games and Statistical Decisions . New York: John Wiley & Sons. Bostrom, N. 2011. Information Hazards: A Typology of Potential Harms from Knowledge. Review of Contemporary Philosophy , 10: 44–79. Campbell, D.; Kale, N.; Sehwag, U. M.; Herring, B.; Price, N.; Borges, D.; Levinson, A.; and Knight, C. Q. 2026. De-fensive Refusal Bias: How Safety Alignment Fails Cyber Defenders. arXiv preprint arXiv:2603.01246 .Coker, G.; Guttman, J.; Loscocco, P.; Herzog, A.; Millen, J.; O’Hanlon, B.; Ramsdell, J.; Segall, A.; Sheehy, J.; and Snif-fen, B. 2011. Principles of Remote Attestation. International Journal of Information Security , 10(2): 63–81. Cui, J.; Chiang, W.-L.; Stoica, I.; and Hsieh, C.-J. 2025. OR-Bench: An Over-Refusal Benchmark for Large Language Models. In Proceedings of the 42nd International Confer-ence on Machine Learning , volume 267 of Proceedings of Machine Learning Research , 11515–11542. PMLR. Davidson, A.; Goldberg, I.; Sullivan, N.; Tankersley, G.; and Valsorda, F. 2018. Privacy Pass: Bypassing Internet Chal-lenges Anonymously. Proceedings on Privacy Enhancing Technologies , 2018(3): 164–180. Deng, M.; Li, Z.; Li, X.; Zhu, T.; Zhao, Y.; Guo, Z.; and Wang, W. 2026. Uncertainty-Aware Clarification in LLM Agents with Information Gain. arXiv preprint arXiv:2606.03135 .Ferrao, J.; Müller-Hof, N.; Sîrbu, I.; Rebedea, T.; and Ziser, Y. 2026. Paved with True Intents: Intent-Aware Training Im-proves LLM Safety Classification Across Training Regimes. 
+
+arXiv preprint arXiv:2606.27210 .Forge, J. 2010. A Note on the Definition of “Dual Use”. 
+
+Science and Engineering Ethics , 16(1): 111–118. Glukhov, D.; Han, Z.; Shumailov, I.; Papyan, V.; and Pa-pernot, N. 2024. Breach by a Thousand Leaks: Unsafe In-formation Leakage in “Safe” AI Responses. arXiv preprint arXiv:2407.02551 .Grinbaum, A.; and Adomaitis, L. 2024. Dual Use Concerns of Generative AI and Large Language Models. Journal of Responsible Innovation , 11(1): 2304381. Jiang, Y.; Aggarwal, K.; Laud, T.; Munir, K.; Pujara, J.; and Mukherjee, S. 2025. Red Queen: Exposing Latent Multi-Turn Risks in Large Language Models. In Findings of the Asso-ciation for Computational Linguistics: ACL 2025 , 25554– 25591. Association for Computational Linguistics. Kang, D.; Li, X.; Stoica, I.; Guestrin, C.; Zaharia, M.; and Hashimoto, T. 2024. Exploiting Programmatic Behavior of LLMs: Dual-Use Through Standard Security Attacks. In 
+
+2024 IEEE Security and Privacy Workshops (SPW) , 132– 143. IEEE. Kembery, E.; Bucknall, B.; and Simpson, M. 2024. Posi-tion Paper: Model Access Should Be a Key Concern in AI Governance. arXiv preprint arXiv:2412.00836 .Kumar, D.; Birur, N. A.; Baswa, T.; Agarwal, S.; and Harshangi, P. 2025. No Free Lunch with Guardrails. arXiv:2504.00441. Kwa, T.; West, B.; Becker, J.; Deng, A.; Garcia, K.; Hasin, M.; Jawhar, S.; et al. 2025. Measuring AI Ability to Complete Long Software Tasks. arXiv preprint arXiv:2503.14499 .Li, M.; Qiu, M.; Peng, Z.; Fan, H.; Fu, S.; Ding, J.; and Feng, Y. 2026. Beyond Refusal: A Same-Lineage Study of Aligned and Abliterated LLMs for Vulnerability Analysis. 
+
+arXiv preprint arXiv:2607.05842 .Li, N.; Pan, A.; Gopal, A.; Yue, S.; Berrios, D.; et al. 2024. The WMDP Benchmark: Measuring and Re-ducing Malicious Use with Unlearning. arXiv preprint arXiv:2403.03218 .Nasr, M.; Carlini, N.; Sitawarin, C.; Schulhoff, S. V.; et al. 2025. The Attacker Moves Second: Stronger Adaptive At-tacks Bypass Defenses Against LLM Jailbreaks and Prompt Injections. arXiv preprint arXiv:2510.09023 .O’Brien, K.; Casper, S.; Anthony, Q.; Korbak, T.; Kirk, R.; Davies, X.; Mishra, I.; Irving, G.; Gal, Y.; and Bi-derman, S. 2025. Deep Ignorance: Filtering Pretraining Data Builds Tamper-Resistant Safeguards into Open-Weight LLMs. arXiv preprint arXiv:2508.06601 .OpenAI. 2025. Preparedness Framework, Version 2. Tech-nical framework. Accessed July 17, 2026. OpenAI. 2026a. Introducing Trusted Access for Cy-ber. https://openai.com/index/trusted-access-for-cyber/. Ac-cessed July 16, 2026. OpenAI. 2026b. Scaling Trusted Access for Cyber with GPT-5.5 and GPT-5.5-Cyber. https://openai.com/index/gpt-5-5-with-trusted-access-for-cyber/. Accessed July 16, 2026. Pan, C.; Wu, Y.; and Yao, X. 2026. SafeRedirect: Defeating Internal Safety Collapse via Task-Completion Redirection in Frontier LLMs. arXiv preprint arXiv:2604.20930 .Parno, B.; McCune, J. M.; and Perrig, A. 2010. Bootstrap-ping Trust in Commodity Computers. In 2010 IEEE Sympo-sium on Security and Privacy , 414–429. IEEE. Plesner, A.; Vontobel, T.; and Wattenhofer, R. 2024. Break-ing reCAPTCHAv2. In 2024 IEEE 48th Annual Computers, Software, and Applications Conference (COMPSAC) , 1047– 1056. IEEE. Roland, E.; Cubuktepe, M.; Martinez, E.; Servaes, S.; Pepper, K.; Vaiana, M.; de Lucena, D. S.; Rosenblatt, J.; Foote, A.; Anil, C.; and Cloud, A. 2026. Modular Pretraining Enables Access Control. arXiv preprint arXiv:2607.08077 .Röttger, P.; Kirk, H.; Vidgen, B.; Attanasio, G.; Bianchi, F.; and Hovy, D. 2024. XSTest: A Test Suite for Identifying Exaggerated Safety Behaviours in Large Language Models. In Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers) ,5377–5400. Association for Computational Linguistics. Russinovich, M.; Salem, A.; and Eldan, R. 2025. Great, Now Write an Article About That: The Crescendo Multi-Turn LLM Jailbreak Attack. In 34th USENIX Security Symposium (USENIX Security 25) , 2421–2440. USENIX Association. Searles, A.; Nakatsuka, Y.; Ozturk, E.; Paverd, A.; Tsudik, G.; and Enkoji, A. 2023. An Empirical Study & Evaluation of Modern CAPTCHAs. In 32nd USENIX Security Symposium (USENIX Security 23) , 3081–3097. USENIX Association. Sharma, M.; Tong, M.; Mu, J.; Wei, J.; Kruthoff, J.; et al. 2025. Constitutional Classifiers: Defending against Univer-sal Jailbreaks across Thousands of Hours of Red Teaming. 
+
+arXiv preprint arXiv:2501.18837 .Shih, M.; Rosenberg, M.; Kailad, H.; and Miers, I. 2025. zk-promises: Anonymous Moderation, Reputation, and Block-ing from Anonymous Credentials with Callbacks. In 34th USENIX Security Symposium (USENIX Security 25) , 4995– 5014. Seattle, WA: USENIX Association. ISBN 978-1-939133-52-6. Tsybakov, A. B. 2009. Introduction to Nonparametric Esti-mation . New York: Springer. Uppaal, R.; Lyu, S.; Sung, S.; and Hu, J. 2026. OpenSafeIn-tent: Evaluating Intent-Calibrated Safe Completion Across Dual-Use Prompt Sets. arXiv preprint arXiv:2607.02047 .Wang, C.; Wei, Z.; Liu, Q.; and Chen, M. 2025a. False Sense of Security: Why Probing-Based Malicious Input Detection Fails to Generalize. arXiv preprint arXiv:2509.03888 .Wang, X.; Ji, Z.; Wang, W.; Li, Z.; Wu, D.; and Wang, S. 2025b. SoK: Evaluating Jailbreak Guardrails for Large Lan-guage Models. arXiv preprint arXiv:2506.10597 .Weng, Z.; Jin, X.; Jia, J.; and Zhang, X. 2025. Foot-In-The-Door: A Multi-Turn Jailbreak for LLMs. In Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing , 1939–1950. Association for Compu-tational Linguistics. Wijk, H.; Lin, T.; Becker, J.; Jawhar, S.; Parikh, N.; Broadley, T.; Chan, L.; et al. 2024. RE-Bench: Evaluating Frontier AI R&D Capabilities of Language Model Agents against Human Experts. arXiv preprint arXiv:2411.15114 .Wu, R.; Quan, Y.; Shi, Z.; Wang, Z.; Li, Y.; and Tang, R. 2025. Read the Scene, Not the Script: Outcome-Aware Safety for LLMs. arXiv preprint arXiv:2510.04320 .Wu, X.; Umrawal, A.; and Varshney, L. R. 2025. Conceal-ment of Intent: A Game-Theoretic Analysis. arXiv preprint arXiv:2505.20841 .Wu, Y.; Liu, X.; Gao, Y.; Zheng, X.; Huang, H.; Li, Y.; Wang, C.; Li, B.; Ma, X.; and Jiang, Y.-G. 2026. Internal Safety Collapse in Frontier Large Language Models. arXiv preprint arXiv:2603.23509 .Wybitul, E. 2025. Access Controls Will Solve the Dual-Use Dilemma. arXiv preprint arXiv:2505.09341 . Accepted at the ICML Workshop on Technical AI Governance. Yuan, Y.; Sriskandarajah, T.; Brakman, A.-L.; Helyar, A.; Beutel, A.; et al. 2025. From Hard Refusals to Safe-Completions: Toward Output-Centric Safety Training. arXiv preprint arXiv:2508.09224 .Zheng, M.; Morgan, M.; Jiang, L.; Rose, C.; and Sap, M. 2026. Useless but Safe? Benchmarking Utility Recovery with User Intent Clarification in Multi-Turn Conversations. 
+
+arXiv preprint arXiv:2604.27093 .

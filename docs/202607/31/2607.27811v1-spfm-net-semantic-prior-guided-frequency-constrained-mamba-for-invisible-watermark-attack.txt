@@ -1,0 +1,242 @@
+Title: SPFM-Net: Semantic-Prior-Guided Frequency-Constrained Mamba for Invisible Watermark Attack
+
+URL Source: https://arxiv.org/pdf/2607.27811v1
+
+Published Time: Fri, 31 Jul 2026 00:38:42 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# SPFM-Net: Semantic-Prior-Guided Frequency-Constrained Mamba for Invisible Watermark Attack 
+
+# Chunpeng Wang 1, Yanan Shi 1, Zhiqiu Xia 2, Jidong Yang 1, Suo Gao 3, Qi Li 1∗
+
+> 1
+
+Qilu University of Technology (Shandong Academy of Sciences) 
+
+> 2
+
+Dalian Maritime University 
+
+> 3
+
+Dalian Polytechnic University 
+
+Abstract 
+
+Existing watermark attacks typically rely on predefined signal-processing operations or locally constrained restoration net-works, making it difficult to capture the long-range dependen-cies of globally distributed watermark signals and resulting in an unfavorable trade-off between removal effectiveness and vi-sual fidelity. In this paper, we propose SPFM-Net , a semantic-prior-guided and frequency-constrained Mamba framework for invisible watermark attack. SPFM-Net first employs high-ratio masking to disrupt the spatial coherence of invisible watermark signals, and then utilizes a partially fine-tuned pretrained Masked Autoencoder to reconstruct semantically consistent image from sparse observations while suppress-ing watermark-related information. A Multi-scale Residual Frequency Feature Interaction module subsequently aggre-gates watermark-related residual features across multiple re-ceptive fields, while adaptively suppressing responses from watermark-irrelevant regions. To further capture the long-range dependencies of globally distributed watermark sig-nals, a lightweight Mamba-based Global State-space Feature Modeling (GSFM) unit is introduced to separate watermark-related features from natural image content and suppress the remaining watermark traces. In addition, SPFM-Net is op-timized using a multi-level objective that jointly imposes spatial-, frequency-, and edge-domain constraints, enabling effective watermark suppression while preserving percep-tual quality. Extensive experiments on representative spatial-domain, transform-domain, orthogonal moment-based, and deep learning-based watermarking schemes demonstrate that 
+
+SPFM-Net achieves a favorable trade-off between watermark attack effectiveness and perceptual fidelity. 
+
+# Introduction 
+
+Invisible image watermarking embeds imperceptible infor-mation into visual content and has become an important technique for copyright protection, ownership verification, and content authentication (Zhang et al. 2026; Wang et al. 2025b; Liu et al. 2023). A practical watermarking method should not only maintain visual quality but also ensure re-liable watermark extraction under routine post-processing and adversarial manipulation (Chen et al. 2025b). Therefore, studying invisible watermark attack is essential for evaluating the security boundaries of existing watermarking methods (Jobin and Varghese 2019; Amrullah and Aminuddin 2026; 
+
+> ∗
+
+Corresponding author. 
+
+Wahyudi, Fauzi, and Atmojo 2025; Kusuma and Panggabean 2026; He et al. 2024; Zhang et al. 2025; Tang et al. 2024; Hu et al. 2024; Wen et al. 2023; Fernandez et al. 2023). A major problem in watermark attacks is balancing water-mark suppression and image fidelity: stronger modifications improve removal but degrade image quality, while weaker modifications preserve visual imperceptibility but may leave the watermark recoverable. Existing watermark attacks, ranging from conventional image transformations to CNN-based and generative ap-proaches, predominantly formulate watermark removal as a local perturbation or pixel-level restoration task. Such for-mulations have limited capability to distinguish watermark-related signals from reconstructed details, particularly when watermark information is deeply coupled with semantic and frequency representations. From an image restoration per-spective, invisible watermarks can be viewed as weak but structured perturbations superimposed on the underlying im-age content, inducing subtle deviations in local statistics and feature representations while preserving perceptual imper-ceptibility. Therefore, effective attack requires more than simply suppressing pixel-level perturbations; it should re-cover intrinsic image representations while selectively weak-ening watermark-related information. Existing approaches remain limited in this regard for three main reasons. (1) in-sufficient semantic guidance : the lack of reliable semantic priors makes it difficult to distinguish watermark-related fea-tures from image content; (2) limited global dependency modeling : architectures dominated by local feature extrac-tion are constrained by receptive fields, making it difficult to model long-range dependencies among spatially distributed watermark features; (3) removal–fidelity trade-off : stronger watermark attack usually requires more modification of high-frequency regions, leading to texture degradation and visible artifacts. To this end, we propose SPFM-Net , a semantic-prior-guided frequency-constrained mamba for universal invisible watermark attack. Instead of directly learning to remove wa-termark signals, SPFM-Net reformulates watermark attack as a semantic-guided image restoration problem, aiming to re-cover intrinsic image content while suppressing watermark-related features. Specifically, SPFM-Net first leverages a pre-trained masked autoencoder to derive reliable semantic priors from partially observed image content, thereby reducing the arXiv:2607.27811v1 [cs.CV] 30 Jul 2026 interference of watermark-related local details. Guided by these priors, a Multi-scale Residual Frequency Feature In-teraction (MRFFI) module captures watermark-related dis-crepancies across different spatial scales and frequency com-ponents. A Mamba-based Global State-space Feature Mod-eling (GSFM) module is further introduced to model long-range dependencies among spatially distributed watermark features. Finally, joint pixel-, frequency-, and structure-level constraints further balance watermark removal and visual fidelity. Our main contributions are summarized as follows. 1. We propose SPFM-Net , a semantic-prior-guided frequency-constrained framework that reformulates in-visible watermark removal as a semantic-guided image restoration task rather than direct perturbation suppres-sion. 2. We introduce a semantic-prior-guided frequency mod-eling strategy, where semantic priors facilitate content– watermark separation and MRFFI captures multi-scale frequency discrepancies for watermark suppression with reduced visual distortion. 3. We design a Mamba-based GSFM module to capture long-range watermark dependencies, while multi-domain constraints preserve high-frequency details and improve the watermark removal–fidelity trade-off. 4. Extensive experiments demonstrate strong attack effec-tiveness and generalization, with SPFM-Net achieving zero-shot removal on unseen deep watermarks without target-specific fine-tuning, validating the feasibility of semantic-guided image reconstruction. 
+
+# Related Work 
+
+Invisible Watermarking 
+
+Existing watermarking methods present distinct strengths and vulnerabilities across different domains. Traditional spa-tial techniques (e.g., LSB), transform (e.g., DFT, DCT, wavelet), or orthogonal moment domains (e.g., PHFMs, RHFMs). While spatial methods offer high fidelity, they lack robustness against common processing. Transform and orthogonal moment methods improve resistance against spe-cific distortions like rotation and scaling, yet remain sensitive to complex geometric changes or non-stationary noise, often incurring high computational costs. Conversely, end-to-end neural watermarking frameworks (Ma et al. 2022) provide stronger imperceptibility and robustness. For example, HiD-DeN (Zhu et al. 2018) introduced an encoder-decoder with a differentiable noise layer, and Jia (Jia, Fang, and Zhang 2021) incorporated real and simulated JPEG compression during training. Yu (Yu et al. 2022) proposed adversarial watermark generation, while RAIMARK (Wang et al. 2024; Bui, Agar-wal, and Collomosse 2023) utilized implicit neural represen-tations to enhance cross-resolution robustness. By implicitly encoding information into high-dimensional semantic and frequency representations, these advanced methods signifi-cantly complicate watermark removal. 
+
+Invisible Watermark Attack 
+
+Watermark attacks aim to disrupt embedded signals while preserving visual quality relative to the watermarked im-ages. Early traditional signal-processing attacks (e.g., Gaus-sian noise, filtering, JPEG compression) effectively damage spatial-domain watermarks but cause severe image degrada-tion against robust schemes. Consequently, deep learning-based attacks explore more effective removal. GAN-based methods, such as RWCA (Sun et al. 2021) and perceptual loss-guided attacks (Li et al. 2021), reconstruct images via adversarial learning but may introduce local artifacts. CNN-based denoising approaches, including HIWANet (Wang et al. 2025a) and WAN (Nam et al. 2021), suffer from lim-ited receptive fields, struggling to remove globally distributed watermark patterns. Although diffusion-based methods like DDWRM (Mareen et al. 2023; Li 2023) and WARDM (Wang et al. 2026) achieve stronger removal through iter-ative restoration, their high computational costs and insuffi-cient control over high-frequency residues frequently cause perceptual distortions measured by LPIPS(Zhang et al. 2018) and A-FINE (Chen et al. 2025a). Furthermore, recent studies increasingly expose the instability of latent diffusion water-marks like Stable Signature (Hu et al. 2024) and exploring realistic removal strategies under restrictive no-box settings (Wu et al. 2025; Guo et al. 2023). 
+
+Masked Autoencoders(MAE) 
+
+Balancing removal effectiveness, visual fidelity, and com-putational efficiency remains a critical challenge. Masked Autoencoders (MAE) (He et al. 2022; Tian et al. 2024) learn strong semantic priors by reconstructing heavily masked patches, capturing the global natural image structure while resisting local high-frequency disturbances. Although highly suitable for image restoration, MAE’s semantic reconstruc-tion capability remains underexplored for watermark attacks. Motivated by this, SPFM-Net introduces a pretrained MAE encoder as the semantic backbone. By combining these global semantic priors with multi-scale frequency modeling, our method effectively separates watermark features from natural image content(Sun, Su, and Wu 2023), achieving thorough watermark removal while preserving high visual fidelity. 
+
+# Method 
+
+Overview 
+
+As illustrated in Figure. 1, the proposed SPFM-Net removes invisible watermarks through an image restoration pipeline guided by high-level semantic priors. Given a single water-marked image Xw, the input is first patchified and randomly masked before being fed into the pretrained MAE encoder E.The encoder extracts semantic features Fsem while preserv-ing the global structure of natural images. To adaptively fit faint watermark perturbations, the encoder remains mostly frozen, with only the final three blocks unfrozen for optimiza-tion. Subsequently, Fsem is processed by the MRFFI module 
+
+M to capture multi-scale watermark residuals and suppress irrelevant responses through adaptive attention. The refined features are then fed into the Mamba-based GSFM module 
+
+S, which models the long-range dependencies of globally-distributed watermark patterns and separates residual water-mark information from natural image content. Finally, the Figure 1: Overview of the proposed SPFM-Net. decoder T reconstructs the watermark-free image ˆX under spatial-frequency joint constraints with skip connections. 
+
+Image Patching and Random Masking 
+
+Modern deep learning watermarks implicitly embed copy-right information into spatial or high-dimensional features, deeply entangling with natural textures and complicating segmentation. Processing these images as continuous en-tities through conventional convolutional or self-attention modules often traps networks in local smoothing, confus-ing faint watermarks with host textures and causing incom-plete removal. To sever the topological coherence of wa-termark signals without degrading natural high-frequency edges, we introduce an image patching and random mask-ing mechanism at the pipeline frontend. Given an input 
+
+X ∈ RH×W ×C , the network divides it into non-overlapping patches Xp = {X(1)  
+
+> p
+
+, X (2)  
+
+> p
+
+, . . . , X (N ) 
+
+> p
+
+} ∈ RN ×(P 2C). Here, 
+
+P = 16 represents the patch size, and N = HW/P 2 denotes the flattened sequence length. A uniform random masking strategy is then applied. We define a randomly sampled mask index set F controlled by a mask ratio ρ set to 0.9. By dis-carding patches in F (where F ⊂ { 1, 2, . . . , N } such that 
+
+|F| = ρ × N ), the network retains only a sparse sequence of visible patches Xv = {X(i) 
+
+> p
+
+| i / ∈ F} ∈ RN (1 −ρ)×(P 2C).This design offers two advantages. First, extensive spatial masking destroys the continuity and joint distribution of wa-termark signals, preventing local denoising shortcuts. Sec-ond, the extremely sparse input severs local pixel depen-dencies, forcing the model to abandon superficial detail re-construction and leverage global contextual priors to deduce deep image semantics. 
+
+Partially Unfrozen Masked Encoder 
+
+We introduce a masked encoder E, pre-trained via self-supervision on large-scale natural scenes, as the primary fea-ture backbone using a partial unfreezing strategy. As shown in Figure 2, the watermarked input Xw ∈ R224 ×224 ×3 is partitioned into non-overlapping patches, flattened, and lin-early projected into tokens. These tokens receive fixed 2D sine-cosine positional embeddings, and a classification to-ken is appended. The sequence then enters E, comprising 24 Transformer blocks. Each block contains a Multi-Head Self-Attention mechanism and a feed-forward network, with a hidden dimension of 1024 and 16 attention heads. This high-dimensional extraction is expressed as: 
+
+Tglobal = E(Xw) ∈ RN ×C (1) where N = ( H/P ) × (W/P ) = 14 × 14 = 196 denotes the sequence length. To adapt the pre-trained model for invisible watermark removal, we apply a local unfreezing strategy during joint optimization. Specifically, the first 21 Transformer blocks Figure 2: Partially Unfrozen Masked Encoder Architecture. remain frozen to preserve macro-level structures and seman-tic priors, preventing quality degradation. Conversely, the final three blocks (blocks.21, blocks.22, and blocks.23) and the normalization layer are explicitly unfrozen for gradient backpropagation. These trainable components capture and adapt to subtle watermark residuals in the high-level feature space. Finally, after discarding the CLS token, the 1D se-quence feature Tglobal is reshaped and transposed to recover the spatial representation required downstream, formulated as Fsem ∈ R1024 ×14 ×14 .
+
+MRFFI Module 
+
+The MRFFI module utilizes parallel branches with diverse receptive fields to collaboratively extract multi-granularity watermark residuals, effectively overcoming the limitations of single-receptive-field mechanisms that struggle to balance capturing globally continuous perturbations and preserving natural edges across complex energy distributions.(He et al. 2025). As shown in Figure 3, given Fsem ∈ R1024 ×14 ×14 from 
+
+E, M utilizes three parallel 3 × 3 convolution branches with distinct strides ( s ∈ { 1, 2, 4}) to capture watermark features from local textures, intermediate structures, and global se-mantics: 
+
+F1 = Conv s=1 3×3(Fsem ) ∈ R256 ×14 ×14 (2) 
+
+F2 = Interp (Conv s=2 3×3(Fsem )) ∈ R256 ×14 ×14 (3) 
+
+F3 = Interp (Conv s=4 3×3(Fsem )) ∈ R256 ×14 ×14 (4) All branches output 256 channels using SAME padding. For strides s ∈ { 2, 4}, bilinear interpolation Interp (·) spa-tially aligns the down-sampled resolutions to 14 × 14 . This yields three feature representations with identical resolutions encoding different information levels: F1, F2, and F3.To promote collaboration across receptive fields, MRFFI concatenates the features along the channel dimension and employs a 1 × 1 convolution for nonlinear interaction and dimensional alignment: fc = Concat (F1, F 2, F 3) ∈
+
+R768 ×14 ×14 and fm = Conv 1×1(fc) ∈ R1024 ×14 ×14 . Since 
+
+Figure 3: MRFFI Module Architecture. watermark perturbations distribute unevenly, uniform fea-ture processing risks damaging clean backgrounds. Thus, 
+
+M introduces a channel attention mechanism to generate an adaptive weight map A:
+
+A = σ(Conv 1×1(fm)) (5) 
+
+Fout = A ⊙ fm ∈ R1024 ×14 ×14 (6) where σ(·) is the Sigmoid function and ⊙ denotes the Hadamard product. This dynamic weighting significantly en-hances watermark-related region responses while suppress-ing clean background interference, yielding the purified fea-ture Fout .
+
+Mamba-based GSFM Module 
+
+To enhance residual watermark removal, we propose the lightweight Mamba-based Global State-space Feature Mod-eling (GSFM) module. As shown in Figure 4, GSFM comprises three cascaded dual-residual sequence modeling blocks. The feature Fout from MRFFI is reshaped into a 1D token sequence: X = Flatten (Fout ) ∈ R196 ×1024 . Each block uses 1D depthwise separable convolution for efficient modeling. The forward refinement is formulated as: 
+
+X′ = X + DWConv1D (LN (X)) (7) where LN (·) denotes layer normalization, and DWConv1D (·) is a depthwise convolution with kernel size 3, enhancing local contextual interaction among neighboring tokens with low overhead. Subsequently, a feed-forward transformation refines discriminative watermark representations: 
+
+Y = X′ + FFN (LN (X′)) (8) where FFN (·) contains two linear projection layers with an expansion ratio of 2 and a GELU activation. This dual-residual design preserves semantics while pro-gressively enhancing watermark-sensitive features. GSFM’s global sequence scanning accurately isolates image-wide watermark traces from incomplete sequences, outputting a highly discriminative representation Y ∈ R196 ×1024 .
+
+Decoder and Optimization 
+
+Decoder. To project the enhanced sequence Y back into continuous pixel space, we design a lightweight decoder T
+
+with a resolution restoration symmetric to the front-end en-coder E. First, Y is reshaped into a low-resolution spatial Figure 4: Mamba-based GSFM Module Architecture. feature: fdec ∈ R1024 ×14 ×14 . T contains four consecutive transposed convolution layers, each using a 2 × 2 kernel and a stride of 2. Feature channels are hierarchically reduced from 1024 to 512, 256, 128, and finally 3, while spatial resolution exponentially enlarges from 14 to 28, 56, 112, and 224 to progressively refine image details. Since feature reduction inevitably degrades structures and edge details, we introduce cross-level skip connec-tions during reconstruction. This transfers high-resolution details from shallow MAE encoder layers to concatenate directly with corresponding decoder features, effectively al-leviating blurring and structural distortion. Finally, a Sig-moid activation normalizes output pixels to [0,1], yielding a watermark-free restored image with original spatial dimen-sions: ˆX = Sigmoid (T (fdec )) 
+
+Joint Loss Function. To guarantee visual fidelity and ex-plicitly reinforce the destruction of watermarks concealed in frequency domains and edge details, we construct a multi-level joint loss function. The spatial pixel reconstruction loss uses the L1 norm to penalize the absolute difference between the reconstructed image x and the clean ground-truth Xclean ,macroscopically ensuring tonal consistency: 
+
+Lpixel = 13HW 
+
+> 3
+
+X
+
+> c=1
+> H
+
+X
+
+> i=1
+> W
+
+X
+
+> j=1
+
+|x(i, j, c ) − Xclean (i, j, c )|
+
+(9) Because invisible watermarks distribute energy across specific frequency coefficients, pixel-level loss exhibits lim-ited frequency sensitivity. Thus, we introduce a 2D Fast Fourier Transform (FFT) constraint. Minimizing amplitude differences between predicted and ground-truth images en-courages the network to reduce abnormal watermark-induced amplitude variations: 
+
+Lf f t = ∥F 2D (x) − F 2D (Xclean )∥1 (10) where F2D (·) denotes the spatial 2D FFT, and ∥ · ∥ 1 is the 
+
+L1 norm of the magnitude difference. To suppress bound-ary artifacts, a spatial topological edge constraint utilizes the Sobel operator to extract horizontal and vertical gradient in-tensities: Sobel (X) = p∇x(Xgray )2 + ∇y (Xgray )2 + ϵ0
+
+Ledge = ∥Sobel (x) − Sobel (Xclean )∥1 (11) where Xgray is the grayscale image and ϵ0 = 10 −6 is a smoothing constant. This aligns edge gradient distributions. Finally, based on empirical optimization, the three loss terms construct the joint objective function: 
+
+Ltotal = Lpixel + λ1Lf f t + λ2Ledge (12) with hyperparameters set to λ1 = 0 .5 and λ2 = 0 .3. This joint constraint guarantees both high-fidelity reconstruction and effective watermark removal. 
+
+# Experiments 
+
+Experimental Settings 
+
+Implementation Details and Training. We implement 
+
+SPFM-Net using PyTorch 2.1.0 on a single NVIDIA RTX 4090 GPU. The visual backbone leverages self-supervised pre-trained weights (checkpoint-300.pth ). During joint fine-tuning, the first 21 Transformer blocks are frozen; only bocks 21, 22, and 23 are updated to specifically fit faint watermark noise features. We train for 100 epochs us-ing the AdamW optimizer (learning rate 1 × 10 −5, weight decay 1 × 10 −6) and a batch size of 2. To enhance robust-ness, random Gaussian noise ( σ = 0 .02 ) is superimposed during forward propagation. The optimization objective is a weighted combination of the spatial pixel reconstruction loss, 2D-FFT constraint, and Sobel topological edge loss. 
+
+Datasets and Watermarking Methods. All images are resized to 224 × 224 . For the 20,000-image training set, we embed multi-scale watermarks ( 16 × 16 and 32 × 32 ) into internally loaded clean face images using traditional schemes (LSB, DCT, QPHFMs). For evaluation, we randomly sample 100 images per advanced deep watermarking target: CelebA-HQ for Yu, Stable Diffusion Prompts (SDP) for Stable Sig-nature (SS), and SDXL 1.0 (Base) for HiDDeN. Notably, the evaluated deep learning-based schemes are absent from the training phase. This cross-mechanism setup allows us to ob-jectively assess the zero-shot generalization capability of our semantic-prior-guided attack. 
+
+Baseline Attacks and Metrics. We benchmark SPFM-Net against conventional signal processing distortions (JPEG 
+
+QF = 80 , cropping ratio 0.9, Gaussian blur, and Gaussian noise σ2 = 0 .05 ) and representative SOTA deep learning attacks (DiffusionAttack (Zhao et al. 2024), VAEAttack (An et al. 2024), and UnMarker (Kassis and Hengartner 2025)). We use Bit Error Rate (BER) to quantify watermark de-struction, where values approaching 0.5 indicate random ex-traction (strong attack). To evaluate visual fidelity, we report PSNR, SSIM, LPIPS, and A-FINE. Crucially, all image qual-ity metrics are strictly computed in a paired manner between the attacked images and their corresponding watermarked images. 
+
+Attack Effectiveness Evaluation 
+
+Attack Effectiveness. Table 1 demonstrates that traditional signal processing attacks struggle against modern deep wa-termarks (e.g., spatial cropping on SS yields a 0 BER, in-dicating 100% recovery). Conversely, SPFM-Net achieves significant effectiveness against advanced deep watermark-ing schemes. On SS and HiDDeN, SPFM-Net yields BERs of 0.48 and 0.55, respectively, which are comparable to or higher than those of the unconstrained UnMarker (0.48 and Attacks JPEG Crop Blur Noise DiffusionAttack VAEAttack UnMarker SPFM-Net 
+
+SS 0.06 0 0.08 0.06 0.44 0.46 0.48 0.48 
+
+Yu 0.20 0.23 0.05 0.30 0.38 0.41 0.37 0.12 Hidden 0.30 0.10 0.33 0.43 0.43 0.43 0.50 0.55 
+
+Table 1: Comparison of BER performance among different attack under three deep learning-based watermark schemes.                                                                                                               
+
+> WM SS Yu Hidden
+> PSNR SSIM LPIPS A-FINE PSNR SSIM LPIPS A-FINE PSNR SSIM LPIPS A-FINE JPEG 28.54 0.98 0.05 5.70 7.01 0.01 0.44 69.99 33.55 0.99 0.01 48.14 Crop 12.95 0.64 0.28 54.16 7.17 0.02 0.45 76.45 16.31 0.74 0.11 55.60 Blur 27.89 0.98 0.17 0.61 7.04 0.01 0.51 83.12 29.92 0.98 0.13 76.47 Noise 24.14 0.97 0.26 52.56 6.98 0.01 0.53 69.86 25.91 0.96 0.14 54.04 DiffusionAttack 24.90 0.57 0.34 0.10 18.37 0.83 0.10 60.37 29.81 0.74 0.12 64.80 VAEAttack 26.98 0.98 0.24 19.02 30.43 0.99 0.17 75.66 27.72 0.97 0.16 77.63 UnMarker 22.22 0.55 0.29 72.76 18.23 0.88 0.08 50.97 25.03 0.71 0.11 57.85
+> SPFM-Net 32.83 0.99 0.04 50.47 42.76 0.99 0.13 26.86 40.65 0.99 0.07 30.36
+
+Table 2: Comparison of Visual Quality among Various invisible watermark attacks. 0.50) and closely approach the binary random guessing level. This confirms that integrating multi-scale feature extraction and global sequence scanning effectively models and neu-tralizes globally distributed watermark perturbations. 
+
+Zero-shot Cross-Mechanism Generalization. Table 1 highlights SPFM-Net ’s zero-shot capability. Although trained exclusively on traditional watermarks (LSB, DCT, QPHFMs), the network generalizes to disrupt unseen deep generative watermarks, such as SS (BER 0.48) and HiDDeN (BER 0.55). This stems from our semantic-prior-guided for-mulation; instead of overfitting to specific noise patterns, the frozen MAE encoder forces reconstruction to strictly follow natural image priors. Consequently, embedded watermarks, regardless of their generation mechanisms, are treated as high-frequency anomalies and filtered out during decoding. 
+
+Limitation. However, this strong prior constraint intro-duces a trade-off on specific spatial-domain schemes like Yu, yielding a lower BER (0.12) compared to the uncon-strained UnMarker (0.37). By restricting the degradation of edge textures to prioritize high fidelity, a small amount of watermark signals deeply coupled with high-frequency de-tails may survive. Nevertheless, this conservative strategy guarantees a significant advantage in post-attack visual qual-ity (42.76 dB PSNR vs. UnMarker’s 18.23 dB), presenting a practical compromise for realistic scenarios. 
+
+Visual Quality Comparison of Attacked Images 
+
+Quantitative Evaluation. As detailed in Table 2, SPFM-Net 
+
+maintains high reconstruction fidelity. Existing deep learning attacks often sacrifice image quality for watermark disrup-tion. For instance, UnMarker’s PSNR drops to 22.22 dB on SS with an increase in LPIPS, while VAEAttack suffers per-ceptual degradation on Yu due to absent manifold constraints, causing high-frequency detail filtering. In contrast, SPFM-Net achieves consistent performance across metrics, main-taining 0.99 SSIM and comparatively low LPIPS across SS 
+
+Figure 5: SOTA removal attack outputs across different wa-termarking schemes. Top row: HiDDeN; Middle row: Stable Signature; Bottom row: LSB. and HiDDeN. This is attributed to robust semantic priors from the frozen encoder and edge gradient constraints that restrict pixel contour distortion. 
+
+Visual Corroboration. Fig. 5 provides direct visual evi-dence of these quantitative results. VAEAttack induces no-ticeable over-smoothing, resulting in a reduction of facial textures, while UnMarker introduces color drift and irregu-lar granular noise. SPFM-Net effectively suppresses these ar-tifacts, preserving structural integrity across both broad skin tone distributions and high-frequency regions (e.g., eyes). 
+
+Performance Trade-off. Furthermore, the Pareto frontiers in Fig. 6 illustrate the two-dimensional distribution of visual fidelity (PSNR) and attack effectiveness (BER). Traditional methods are typically confined to the inefficient left region, while existing deep attacks, such as UnMarker and Diffu-sionAttack, fall into the low-fidelity bottom-right quadrant. WM SS Yu Hidden 
+
+PSNR SSIM LPIPS A-FINE PSNR SSIM LPIPS A-FINE PSNR SSIM LPIPS A-FINE 
+
+Full 32.83 0.99 0.04 50.47 42.76 0.99 0.13 26.86 40.65 0.99 0.07 30.36 
+
+Baseline 32.34 0.99 0.07 53.37 41.56 0.98 0.20 34.85 40.53 0.99 0.08 43.58 Variant 1 27.05 0.98 0.18 62.29 38.50 0.99 0.18 32.51 36.15 0.99 0.11 40.73 Variant 2 38.25 0.99 0.17 36.28 40.47 0.99 0.17 30.32 36.62 0.99 0.10 37.57 Table 3: Visual quality evaluation results of each variant across different watermarking scenarios. 
+
+Figure 6: Performance trade-off between attack effectiveness (BER) and visual fidelity (PSNR). (a) Spatial-domain wa-termark (HiDDeN). (b) Generative latent watermark (Stable Signature). Conversely, SPFM-Net consistently occupies the top-right quadrant under both spatial (HiDDeN) and generative (SS) watermarking mechanisms, achieving a favorable balance between watermark disruption and visual fidelity. 
+
+Ablation Study 
+
+Experimental Setup. We design progressive ablation studies to validate SPFM-Net ’s core components: the MRFFI mod-ule, GSFM module, and multi-level joint loss (Tables 3 and 4, Fig. 7). The baseline model comprises only the partially unfrozen masked encoder and foundational decoder. We se-quentially introduce MRFFI (Variant 1), GSFM (Variant 2), and spatial-frequency composite constraints (Full). 
+
+Module Contributions. The baseline model exhibits lim-ited capability in disrupting complex deep watermarks. How-ever, the progressive integration of the MRFFI and GSFM modules yields a steady increase in the extraction error. No-tably, Variant 2 increases the BER to 0.52 on SS and 0.57 on HiDDeN, both of which surpass the theoretical expec-tation of binary random guessing ( ≈ 0.5). This substantial efficacy improvement substantiates the necessity of MRFFI and GSFM in modeling and neutralizing globally distributed hidden watermark features within high-dimensional spaces. 
+
+Joint Constraints. As illustrated in Fig. 7, variants lack-ing composite loss constraints (Variants 1 and 2) experience PSNR reductions and perceptual degradation due to the ex-cessive filtering of high-frequency features. Incorporating the 2D-FFT and Sobel edge losses (Full) improves visual fidelity (achieving 42.46 dB PSNR on Yu, the highest across variants) while maintaining disruption effectiveness. Ulti-mately, SPFM-Net achieves a favorable trade-off, balancing 
+
+WM BER Yu SS HiDDeN 
+
+Full 0.12 0.48 0.55 Baseline 0.08 0.43 0.51 Variant 1 0.12 0.47 0.54 Variant 2 0.12 0.52 0.57 
+
+Table 4: BER results of each variant across different water-marking scenarios. 
+
+Figure 7: Trade-off between image quality and attack effec-tiveness under HiDDeN and Yu watermark scenarios. watermark disruption via global correlation modeling and structural preservation via semantic priors and frequency-domain constraints. 
+
+# CONCLUSION 
+
+This paper proposes SPFM-Net , a universal image watermark attack network using semantic priors and frequency domain constraints to effectively remove traditional and deep learn-ing invisible watermarks. Coupling extreme spatial masking with semantic-guided reconstruction, SPFM-Net achieves in-visible watermark removal while maintaining exceptionally high visual fidelity. Extensive experiments demonstrate that our method outperforms existing baselines in balancing at-tack effectiveness and image quality, offering a novel seman-tic decoupling perspective for digital watermarking. Given the rapid iteration of generative watermarking and adversar-ial steganography, future research will focus on enhancing the model’s generalization stability against cross-modal scenar-ios and novel watermarks with dynamic topological changes to tackle broader applications. References 
+
+Amrullah, A.; and Aminuddin, A. 2026. Tamper localiza-tion and content restoration in fragile image watermarking: A review. International Journal of Advanced Computer In-formation , 2: 62–74. An, B.; Ding, M.; Rabbani, T.; Agrawal, A.; Xu, Y.; Deng, C.; Zhu, S.; Mohamed, A.; Wen, Y.; Goldstein, T.; et al. 2024. Waves: Benchmarking the robustness of image watermarks. arXiv preprint arXiv:2401.08573. Bui, T.; Agarwal, S.; and Collomosse, J. P. 2023. TrustMark: Universal Watermarking for Arbitrary Resolution Images. 
+
+arXiv preprint arXiv:2311.18297 .Chen, D.; Wu, T.; Ma, K.; and Zhang, L. 2025a. Toward gen-eralized image quality assessment: Relaxing the perfect ref-erence quality assumption. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 12742–12752. Chen, Y.; Ma, Z.; Fang, H.; et al. 2025b. TAG-WM: Tamper-Aware Generative Image Watermarking via Diffusion Inver-sion Sensitivity. In Proceedings of the IEEE/CVF Interna-tional Conference on Computer Vision , 16723–16732. Fernandez, P.; Couairon, G.; Jégou, H.; Douze, M.; and Furon, T. 2023. The stable signature: Rooting watermarks in latent diffusion models. In Proceedings of the IEEE/CVF In-ternational Conference on Computer Vision (ICCV) , 22466– 22477. Guo, H.; Zhang, Q.; Luo, J.; Guo, F.; Zhang, W.; Su, X.; and Li, M. 2023. Practical Deep Dispersed Watermarking with Synchronization and Fusion. In Proceedings of the ACM International Conference on Multimedia , 7922–7932. He, H.; Zhang, J.; Cai, Y.; et al. 2025. SPFM-Net: Lightweight multi-receptive visual mamba network. In Pro-ceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , 4497–4507. He, K.; Chen, X.; Xie, S.; et al. 2022. Masked autoencoders are scalable vision learners. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition ,16000–16009. He, M.; Wang, H.; Zhang, F.; and Xiang, Y. 2024. Explor-ing accurate invariants on polar harmonic Fourier moments in polar coordinates for robust image watermarking. IEEE Transactions on Multimedia , 26: 5435–5449. Hu, Y.; Jiang, Z.; Guo, M.; and Gong, N. 2024. Stable signa-ture is unstable: removing image watermark from diffusion models. arXiv:2405.07145. Jia, Z.; Fang, H.; and Zhang, W. 2021. MBRS: Enhancing Robustness of DNN-based Watermarking by Mini-Batch of Real and Simulated JPEG Compression. In ACM , 41–49. Jobin, A.; and Varghese, P. 2019. An imperceptible spatial domain color image watermarking scheme. Journal of King Saud University - Computer and Information Sciences , 31(1): 125–133. Kassis, A.; and Hengartner, U. 2025. Unmarker: a universal attack on defensive image watermarking. In Proceedings of the IEEE Symposium on Security and Privacy (SP) , 2602– 2620. IEEE. Kusuma, M. R.; and Panggabean, S. 2026. Robust digi-tal image watermarking using DWT, Hessenberg, and SVD for copyright protection. International Journal of Advanced Computer Information , 2(1): 41–52. Li, Q.; Wang, X.; Ma, B.; et al. 2021. Concealed attack for robust watermarking based on generative model and percep-tual loss. IEEE Transactions on Circuits and Systems for Video Technology , 32(8): 5695–5706. Li, X. 2023. DiffWA: Diffusion models for watermark attack. In International Conference on Intelligent Information and Computing Systems (ICIICS) , 1–8. Liu, Y.; Li, Z.; Backes, M.; et al. 2023. Watermarking diffu-sion model. arXiv preprint arXiv:2305.12502 .Ma, R.; Guo, M.; Hou, Y.; Fan, Y.; Li, Y.; Jia, H.; and Xie, X. 2022. Towards Blind Watermarking: Combining Invertible and Non-invertible Mechanisms. In Proceedings of the ACM International Conference on Multimedia , 1532–1542. Mareen, H.; De Meulenaere, K.; Lambert, P.; et al. 2023. Diffusion Denoising Watermark Removal Models to Attack Invisible Image Watermarks. Ghent University Academic Bibliography. Nam, S. H.; Ahn, W.; Yu, I. J.; et al. 2021. WAN: Water-marking Attack Network. In Proceedings of the 32nd British Machine Vision Conference (BMVC) , 1–13. BMVA Press. Sun, R.; Su, Y.; and Wu, Q. 2023. DENet: Disentangled embedding network for visible watermark removal. In Pro-ceedings of the AAAI Conference on Artificial Intelligence ,2411–2419. Sun, S.; Wang, H.; Xue, M.; et al. 2021. Detect and remove watermark in deep neural networks via generative adversar-ial networks. In International Conference on Information Security , 341–357. Springer. Tang, Y.; Li, K.; Wang, C.; Bian, S.; and Huang, Q. 2024. A two-stage robust reversible watermarking using polar har-monic transform for high robustness and capacity. Informa-tion Sciences , 654: 119786. Tian, C.; Xiao, J.; Zhang, B.; Zuo, W.; Zhang, Y.; and Lin, C. 2024. A self-supervised network for image denoising and watermark removal. Neural Networks , 174: 106218. Wahyudi, M. I.; Fauzi, I.; and Atmojo, D. 2025. Robust im-age watermarking based on hybrid IWT-DCT-SVD. Inter-national Journal of Advanced Computer Information , 1(2): 89–98. Wang, C.; Tian, P.; Xia, Z.; Li, Q.; Li, J.; Wei, Z.; Luo, T.; and Ma, B. 2025a. Highly applicable and imperceptible watermark attack network. Signal Processing , 230: 109840. Wang, C.; Zhang, F.; Zhang, S.; et al. 2026. Can watermarks be removed like noise? A watermarking attack network using residual diffusion model. IEEE Transactions on Dependable and Secure Computing .Wang, Y.; Zhu, X.; Ye, G.; et al. 2024. Achieving resolution-agnostic dnn-based image watermarking: A novel perspec-tive of implicit neural representation. In Proceedings of the 32nd ACM International Conference on Multimedia , 10354– 10362. Wang, Z.; Guo, J.; Zhu, J.; et al. 2025b. Sleepermark: To-wards robust watermark against fine-tuning text-to-image diffusion models. In Proceedings of the Computer Vision and Pattern Recognition Conference , 8213–8224. Wen, Y.; Kirchenbauer, J.; Geiping, J.; and Goldstein, T. 2023. Tree-rings watermarks: Invisible fingerprints for diffu-sion images. In Advances in Neural Information Processing Systems (NeurIPS) , volume 36, 58047–58063. Wu, X.; Tang, T.; Li, X.; Ni, J.; and Yu, Y. 2025. When there is no decoder: Removing watermarks from stable diffusion models in a no-box setting. arXiv:2507.03646. Yu, N.; Skripniuk, V.; Chen, D.; Davis, L. S.; and Fritz, M. 2022. Responsible disclosure of generative models us-ing scalable fingerprinting. In International Conference on Learning Representations (ICLR) .Zhang, H.; Li, Z.; Chen, Y.; Lu, C.; and Yan, P. 2025. Fast image reconstruction method using radial harmonic Fourier moments and its application in digital watermarking. Journal of the Franklin Institute , 362(1): 107391. Zhang, J.; Zhang, Z.; Li, Z.; et al. 2026. A large-capacity and robust screen-shooting resilient image watermarking based on attention-enhanced invertible neural network. Journal of Information Security and Applications , 97: 104346. Zhang, R.; Isola, P.; Efros, A. A.; Shechtman, E.; and Wang, O. 2018. The unreasonable effectiveness of deep features as a perceptual metric. In Proceedings of the IEEE conference on computer vision and pattern recognition , 586–595. Zhao, X.; Zhang, K.; Su, Z.; Vasan, S.; Grishchenko, I.; Kruegel, C.; Vigna, G.; Wang, Y.-X.; and Li, L. 2024. In-visible image watermarks are provably removable using gen-erative AI. In Advances in Neural Information Processing Systems (NeurIPS) , volume 37, 8643–8672. Zhu, J.; Kaplan, R.; Johnson, J.; and Fei-Fei, L. 2018. Hid-den: Hiding data with deep networks. In Proceedings of the European Conference on Computer Vision (ECCV) , 657– 672.
